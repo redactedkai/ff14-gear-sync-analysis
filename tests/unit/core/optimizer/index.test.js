@@ -7,8 +7,8 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { optimize } from '../../../../src/core/optimizer/index.ts';
 import { pruneDominated, makeScorer } from '../../../../src/core/optimizer/candidates.ts';
 import { suffixBounds } from '../../../../src/core/optimizer/search.ts';
-import { optimizeGcd } from '../../../../src/core/target-gcd.js';
-import { rankByTier } from '../../../../src/core/tier-rank.js';
+import { optimizeGcd } from '../../../../src/core/target-gcd.ts';
+import { rankByTier } from '../../../../src/core/tier-rank.ts';
 import { exhaustive, gamePool, loadoutCount } from '../../helpers/exhaustive.js';
 
 const sge = makeJobContext('SGE');

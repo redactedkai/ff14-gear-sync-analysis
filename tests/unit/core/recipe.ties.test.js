@@ -22,12 +22,12 @@
      stones differ (crit, crit or det, det: both reach the same capped totals). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { weaponDamage } from '../../../src/core/damage-defense.js';
-import { makeJobContext } from '../../../src/core/job-context.js';
-import { equipLevel, jobGear } from '../../../src/core/items.js';
-import { runRecipe } from '../../../src/core/recipe.js';
-import { makeSession } from '../../../src/core/session.js';
-import { evaluateSet } from '../../../src/core/set.js';
+import { weaponDamage } from '../../../src/core/damage-defense.ts';
+import { makeJobContext } from '../../../src/core/job-context.ts';
+import { equipLevel, jobGear } from '../../../src/core/items.ts';
+import { runRecipe } from '../../../src/core/recipe.ts';
+import { makeSession } from '../../../src/core/session.ts';
+import { evaluateSet } from '../../../src/core/set.ts';
 import { syncSettings } from '../../../src/ui/job-sync-panel.js';
 import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.js';
 import { rankedOf, setKey, shuffled } from '../helpers/recipe-sets.js';

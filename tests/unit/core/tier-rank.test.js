@@ -1,4 +1,4 @@
-/* Rank by tier (core/tier-rank.js) against the reference in helpers/tier-reference.js: every legal loadout and meal,
+/* Rank by tier (core/tier-rank.ts) against the reference in helpers/tier-reference.js: every legal loadout and meal,
    the stage rule of the spec applied to the whole list. A longer random sweep for the search's speed-ups is in
    tests/sweep/ (npm run test:full). */
 import { test } from 'node:test';
@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { foodChoices } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { optimize } from '../../../src/core/optimizer/index.ts';
-import { rankByTier } from '../../../src/core/tier-rank.js';
+import { rankByTier } from '../../../src/core/tier-rank.ts';
 import { rankTierOf, tierStart } from '../../../src/core/tiers.ts';
 import { rng } from '../helpers/common.js';
 import { smallPool } from '../helpers/exhaustive.js';

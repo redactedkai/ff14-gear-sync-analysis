@@ -438,7 +438,7 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | --- | --- | --- |
 | `piece.ts` | A piece under sync: its synced item level, its stats there, the most each stat can be, whether it keeps its melds (note 1) | the optimizer, `meld.ts`, `set.ts`, the views |
 | `meld.ts` | The meld rules (gates, high grades only in the big slots, caps) and what they are used for (note 2) | the optimizer, `set.ts`, `sheets/fill-settings.js`, `views/stone-menu.js` |
-| `set.ts` | A gear set as plain frozen data (`makeSet`, `setFromPicks`) and what it adds up to (`evaluateSet`) | `recipe.js`, the set page's views |
+| `set.ts` | A gear set as plain frozen data (`makeSet`, `setFromPicks`) and what it adds up to (`evaluateSet`) | `recipe.ts`, the set page's views |
 
 1. `piece.ts` holds the item level a piece is synced to (`itemSyncIlvl`), its stats there (`effStats`), the most each stat can be (`itemCaps`, `meldCaps`) and whether it keeps its melds (`keepsMelds`).
 2. `meld.ts` applies the same meld rules for four uses:
@@ -467,7 +467,7 @@ A relic whose substats the player allocates (roadmap A11) is the same case: a cu
 
 ## 8. Recipes and the solver session
 
-**The question:** how is a search asked for, and what is kept between searches (only the job's gear)? A **recipe** says what to look for: a set's Auto-fill settings (`fillRecipe` in `sheets/fill-settings.js`: goal and tiebreaks, the filters under Gear to search, materia, food, the Target GCD and its mode, rank by tier). `runRecipe(job, sync, level, recipe, session, choices, pins)` in `src/core/recipe.js` solves it and returns `{status, set, record, found}`:
+**The question:** how is a search asked for, and what is kept between searches (only the job's gear)? A **recipe** says what to look for: a set's Auto-fill settings (`fillRecipe` in `sheets/fill-settings.js`: goal and tiebreaks, the filters under Gear to search, materia, food, the Target GCD and its mode, rank by tier). `runRecipe(job, sync, level, recipe, session, choices, pins)` in `src/core/recipe.ts` solves it and returns `{status, set, record, found}`:
 
 - **status:** `ok`, or why there is no gear set (`excluded`, `noset`, `nogcd`, `infeasible`, `badpin`: a pin cannot be kept, listed in `found.badPins`).
 - **set:** the gear set the result shows, as plain data ([section 7](#7-pieces-and-sets-in-the-core)): each row the player's pick where it still gives the same result, else the easiest piece that does; the meal the Food row shows.
@@ -476,7 +476,7 @@ A relic whose substats the player allocates (roadmap A11) is the same case: a cu
 
 `choices` are picks on a last result (`{pieces: {row: gameId}, meal}`), not saved; the page passes none. `pins` are what the solve must keep, `{pieces: [{slot, gameId, stones}], meal}`: a set's pinned rows and meal. A pinned piece is worn with exactly its stones, counts in the totals, tiers and a Target GCD, and need not pass the recipe's filters; a pinned meal is the meal even with Food off; the search fills the other slots (`resolvePins`; [optimizer.md, section 2](optimizer.md#the-game-rules-in-the-model)). A subset of the pins is a partial fill. The solver's handler calls `runRecipe` through `solveView` (`solve.js`), which returns the plain set; the set page evaluates it (`evaluateSet`) and formats it.
 
-**The solver session** (`makeSession` in `src/core/session.js`) holds the one thing a solve keeps for the next: each job's gear, every piece the job can wear as frozen pool items (5 to 10 ms to build). It keeps the gear of the last four jobs, least recently used dropped first. The page has one session, in the solver's worker ([section 9](#9-the-optimizers-worker)), shared by every set page. The meld caps are cached per pool item, so the same gear objects keep them warm.
+**The solver session** (`makeSession` in `src/core/session.ts`) holds the one thing a solve keeps for the next: each job's gear, every piece the job can wear as frozen pool items (5 to 10 ms to build). It keeps the gear of the last four jobs, least recently used dropped first. The page has one session, in the solver's worker ([section 9](#9-the-optimizers-worker)), shared by every set page. The meld caps are cached per pool item, so the same gear objects keep them warm.
 
 Nothing else is kept. Every solve builds its candidate lists, the fastest GCD and the rows' menus again: a new Target GCD, a pick from a menu or a return to an earlier set each cost a full search (about 0.1 to 3 s in the measured cases).
 
@@ -531,8 +531,8 @@ Notes:
 | A gear set and what it adds up to; a given list of stones on a piece | `src/core/set.ts` (`makeSet`, `setFromPicks`, `evaluateSet`); `src/core/meld.ts` (`applyStones`) |
 | Item stat rounding steps and the off-hand rule, written once | `src/core/formulas.ts` (`statLine`, `offhandParts`) |
 | Per-level game data (ParamGrow: base speed, level divisor, level sync item level) | `src/core/level-params.ts` (`levelParams`, `clampLevel`) |
-| Meal choice (totals with food, then food points, then the first) | `src/core/food.ts` (`pickMeal`, `mealTotals`, `bestFood`); Target GCD and tier ranking share their defaults through `goalSettings` in `src/core/target-gcd.js` |
-| Other core modules | `src/core/formulas.ts`, `gear-groups.ts`, `sync-target.ts`, `speed.ts`, `tiers.js`, `meld.ts`, `piece.ts`, `set.ts`, `recipe.js`, `session.js`, `food.ts`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.ts`, `optimizer/` |
+| Meal choice (totals with food, then food points, then the first) | `src/core/food.ts` (`pickMeal`, `mealTotals`, `bestFood`); Target GCD and tier ranking share their defaults through `goalSettings` in `src/core/target-gcd.ts` |
+| Other core modules | `src/core/formulas.ts`, `gear-groups.ts`, `sync-target.ts`, `speed.ts`, `tiers.ts`, `meld.ts`, `piece.ts`, `set.ts`, `recipe.ts`, `session.ts`, `food.ts`, `target-gcd.ts`, `tier-rank.ts`, `same-result.ts`, `damage-defense.ts`, `optimizer/` |
 | Entry point: restore, make the store and register its two facades and the elements, start the router, autosave | `src/main.js` |
 | Addresses: the hash of each screen and the settings in its query (`query.js`: `readQuery`, `writeQuery`), the page title, the router that keeps the address and the two stores in step, the focus after Back | `src/ui/router/routes.js` (`parseRoute`, `formatRoute`, `titleOf`), `router.js` (`createRouter`, `windowPort`), `focus.js` (`focusScreenHeading`), `plain-click.js` (`plainClick`, `followInPage`), `scroll-storage.js` (`readScrollPositions`, `writeScrollPositions`), `unload-guard.js` (`installUnloadGuard`, `UNLOAD_GUARD_OFF_KEY`) |
 | Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `defaultBrowse`: the browser's defaults, `resetForJob`, `clampLevels`, `splitPanelSettings`, `restoreState`, `restoreBrowseFields` and `restorePieceFields` (the checks a saved setting and an address's setting share), `STORE_KEY`, `SEARCH_MAX_LENGTH`) |
@@ -552,8 +552,8 @@ Notes:
 | View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `math-bar.js`, `piece-stats.js`, `gear.js`, `tiers.js`, `meal-menu.js`; the set page's views (rows below) and the sheet views (notes below the table)) |
 | Charts | `src/ui/sync-charts.js` (SVG for `unsafeSVG` in the Stat Allocation and GCD Scaling elements; every name passed in goes through `escapeXml`) |
 | Gear browser rows a page, page numbers shown | `src/ui/views/gear.js` (`PAGE_SIZE`, `PAGE_SLOTS`) |
-| A recipe and its solve; the pool it searches; the page's node limit | `src/core/recipe.js` (`runRecipe`, `recipePool`, `gearFromCounts`, `askedGcd`, `gcdRange`, `NODE_LIMIT`) |
-| The solver session; the job's gear it keeps | `src/core/session.js` (`makeSession`, `SESSION_SIZE`); `src/core/items.ts` (`jobGear`) |
+| A recipe and its solve; the pool it searches; the page's node limit | `src/core/recipe.ts` (`runRecipe`, `recipePool`, `gearFromCounts`, `askedGcd`, `gcdRange`, `NODE_LIMIT`) |
+| The solver session; the job's gear it keeps | `src/core/session.ts` (`makeSession`, `SESSION_SIZE`); `src/core/items.ts` (`jobGear`) |
 | What the solver answers for an Auto-fill: the Gear to search line, the solve | `src/ui/solve.js` (`gearToSearchView`, `searchCount`, `solveView`, which takes the Auto-fill's pins and answers `badpin` with plain messages) |
 | The Food menu's list: meals passing the filters, their lines, sort | `src/ui/views/meal-menu.js` (`mealMenu`, `mealList`, `mealsPassing`, `sortMeals`) |
 | Which rows of a saved set hold a piece, row labels | `src/ui/sheets/saved-set.js` (`usedRows`, `holdsPiece`, `rowLabel`, `sameRow`) |

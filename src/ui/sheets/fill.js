@@ -1,6 +1,6 @@
 /* Partial fill for a saved gear set: which slots the optimizer must keep (the pinned ones), the button's label, and how a
    solve's result goes back onto the set's rows. Pure view helpers over plain data: no store, so Node can test
-   them. The solve itself is core/recipe.js runRecipe (its `pins`), reached through ui/solver.js.
+   them. The solve itself is core/recipe.ts runRecipe (its `pins`), reached through ui/solver.js.
 
    A gear set here is the saved shape (docs/engineering/sheets.md, "Saved data"): `pieces` 12 rows in SLOT_TYPES order
    with 'ring' twice, each {slot, gameId, stones} or {slot} when empty; `meal` an allMeals key or null; `pinned`
@@ -13,7 +13,7 @@
      every set has a meal row); the two ring rows count one each. A meal pin counts only when a meal is chosen.
    - Nothing pinned: every slot is open and `pins` is null, so the solve is the plain one. Every slot pinned, the meal
      included: the count is 0 and the button is off. Every piece pinned and the meal open is a fill of the meal alone. */
-import { hasPins } from '../../core/recipe.js';
+import { hasPins } from '../../core/recipe.ts';
 import { joinNames, oneOrMany, plural } from '../text.ts';
 import { usedRows } from './saved-set.js';
 
@@ -99,7 +99,7 @@ export function applyFill(job, gearSet, result) {
 
 /* The line shown when the pinned pieces cannot be worn together. The page does not list the causes (two copies of a Unique
    piece, more than two rings, two in one slot, or one covering the slot of another); core/optimizer/candidates.ts
-   (buildCandidates) and core/recipe.js explain them where the search throws. */
+   (buildCandidates) and core/recipe.ts explain them where the search throws. */
 export const PINS_CONFLICT_TEXT = 'The pinned pieces cannot be worn together.';
 
 /* The line under the header after Auto-fill dropped pins: `names` the rows unpinned for a plain reason (a piece or meal that

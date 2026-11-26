@@ -8,13 +8,13 @@
      reply    a Promise of {result (solveView's or gearToSearchView's), ms (how long the handler took)}; rejected
               with the handler's error message if it threw, or with a cancelled error (isCancelled) if cancel(kind)
               stopped it (the worker solver only)
-   The solver session (core/session.js: the job's gear and the search caches) lives with the handler: in the worker
+   The solver session (core/session.ts: the job's gear and the search caches) lives with the handler: in the worker
    when there is one, so the page's thread never builds the job's gear and only one copy of it is held.
 
    Pure module: no DOM and no Worker, so Node can test it. The page's worker is made in main.js (a Blob URL of the
    worker bundle, scripts/build/build.mjs solverWorker); its entry is ui/solver-worker.js. */
 import { makeJobContext } from '../core/job-context.ts';
-import { makeSession } from '../core/session.js';
+import { makeSession } from '../core/session.ts';
 import { gearToSearchView, solveView } from './solve.js';
 
 /** A solver request from an element's inputs: `kind` 'solve' (an Auto-fill's answer) or 'gearToSearch' (the line under Gear

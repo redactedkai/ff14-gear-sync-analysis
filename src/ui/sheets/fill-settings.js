@@ -39,7 +39,7 @@ export function fillSettingsOf(job, gearSet) {
   return { goal, searchCriteria };
 }
 
-/* The recipe core/recipe.js runRecipe takes (its fields flat: the goal's, then Gear to search's), from Auto-fill settings
+/* The recipe core/recipe.ts runRecipe takes (its fields flat: the goal's, then Gear to search's), from Auto-fill settings
    ({goal, searchCriteria}: fillSettingsOf). */
 export function fillRecipe(settings) {
   const { goal, searchCriteria } = settings;

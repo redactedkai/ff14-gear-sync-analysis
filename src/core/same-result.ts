@@ -18,6 +18,30 @@ import { foodBonus, withFood } from './food.ts';
 import { equipLevel, slotInfo } from './items.ts';
 import { vectorDims } from './optimizer/index.ts';
 import { rankTierOf } from './tiers.ts';
+import type { Candidate, DimKey, Eff, FilledPick, JobContext, SlotPick, SlotType, Totals } from './types.ts';
+import type { FoodChoice } from './food.ts';
+
+/* The settings resultOf and sameResult read: the synced level, the meal (null for none), the job's always-on haste in percent
+   (0 for none), and the stat key whose exact points must stay (the plain optimizer's goal), or null for tiers only. */
+export interface ResultContext {
+  level: number;
+  food: FoodChoice | null;
+  haste?: number;
+  goal?: DimKey | null;
+}
+/* What a set does (resultOf): its main stat, weapon damage (null for a job that does not rank it), the goal stat's points (null
+   if not asked) and each substat's tier (null for a stat without tiers). */
+export interface Outcome {
+  main: number;
+  wd: number | null;
+  goal: number | null;
+  tiers: (number | null)[];
+}
+/* One row of sameResult: the piece the row shows, and every piece that fits there (one candidate each). */
+export interface SameRow {
+  pick: SlotPick;
+  options: Candidate[];
+}
 
 /* What a set does, from gear totals ({stat key: points}, and weapon damage under WD_KEY) with the meal's bonus:
    {main, wd, goal, tiers}: its main stat; its weapon damage (null for a job that does not rank it); the goal stat's
@@ -25,7 +49,7 @@ import { rankTierOf } from './tiers.ts';
    Two results are the same when sameOutcome says so. ctx = {level, food, haste, goal}: the synced level, the meal (a
    foodChoices entry) or null, the job's always-on haste in percent (hasteFor; 0 for none), and the stat key whose
    exact points must stay (the plain optimizer's goal), or null for tiers only (tier ranking). */
-export function resultOf(job, gearTotals, { level, food, haste = 0, goal = null }) {
+export function resultOf(job: JobContext, gearTotals: Totals, { level, food, haste = 0, goal = null }: ResultContext): Outcome {
   const totals = withFood(gearTotals, food ? foodBonus(job, food, gearTotals, level) : {});
   return {
     main: totals[job.mainKey] || 0,
@@ -36,7 +60,7 @@ export function resultOf(job, gearTotals, { level, food, haste = 0, goal = null 
 }
 
 /* True when two resultOf results (of the same job and ctx) are the same: equal in every field. */
-export function sameOutcome(a, b) {
+export function sameOutcome(a: Outcome, b: Outcome): boolean {
   return a.main === b.main && a.wd === b.wd && a.goal === b.goal && a.tiers.every((tier, i) => tier === b.tiers[i]);
 }
 
@@ -55,23 +79,36 @@ export function sameOutcome(a, b) {
    A piece must leave the same slots empty as the optimizer's pick (a cloak never replaces a plain body), and a Unique
    piece can't be in two rows (rings). A pinned pick (`pinned`, from solve with pinned pieces) never changes: its row's
    menu holds only it, and it counts in what the other rows are measured against. */
-export function sameResult(job, picks, cands, ctx, chosen = {}) {
+export function sameResult(
+  job: JobContext,
+  picks: readonly SlotPick[],
+  cands: Readonly<Record<string, readonly Candidate[]>>,
+  ctx: ResultContext,
+  chosen: Record<number, number | null> = {},
+): SameRow[] {
   const target = resultOf(job, sumOf(job, picks), ctx);
-  const shown = picks.map(p =>
-    p.item ? { type: p.type, item: p.item, eff: p.eff, meld: p.meld ?? null, ...(p.pinned ? { pinned: true } : {}) } : p,
+  const shown: SlotPick[] = picks.map(
+    (p): SlotPick => (p.item ? { type: p.type, item: p.item, eff: p.eff, meld: p.meld ?? null, ...(p.pinned ? { pinned: true } : {}) } : p),
   );
-  const blocksKey = blocks => [...blocks].sort().join();
+  const blocksKey = (blocks: readonly SlotType[]) => [...blocks].sort().join();
   const pickBlocks = picks.map(p => (p.item ? blocksKey(slotInfo(job, p.item).blocks) : null));
 
   // the pieces that fit row i while the other rows show what they show now, one candidate per piece
-  const fitting = i => {
+  const fitting = (i: number): Candidate[] => {
     const p = picks[i];
     if (!p.item) {
       return [];
     }
     if (p.pinned) {
       return [
-        { item: p.item, eff: p.eff, meld: p.meld ?? null, blocks: slotInfo(job, p.item).blocks, copies: p.item.copies || 1, fixed: true },
+        {
+          item: p.item,
+          eff: p.eff,
+          meld: p.meld ?? null,
+          blocks: slotInfo(job, p.item).blocks,
+          copies: p.item.copies || 1,
+          fixed: true,
+        } as Candidate,
       ];
     }
     const others = shown.filter((_, j) => j !== i);
@@ -79,8 +116,8 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
     // the main stat has no tiers and food never raises it: a piece must bring exactly what the set is missing (a
     // cheap first check that rules out most of the pool)
     const mainNeeded = target.main - (rest[job.mainKey] || 0);
-    const out = [];
-    const seen = new Set();
+    const out: Candidate[] = [];
+    const seen = new Set<unknown>();
     for (const c of cands[p.type] || []) {
       if (seen.has(c.item) || (c.eff[job.mainKey] || 0) !== mainNeeded) {
         continue;
@@ -103,10 +140,11 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
     }
     return out;
   };
-  const easiest = (a, b) => (equipLevel(a.item) ?? 0) - (equipLevel(b.item) ?? 0) || a.item.ilvl - b.item.ilvl;
+  const easiest = (a: Candidate, b: Candidate) => (equipLevel(a.item) ?? 0) - (equipLevel(b.item) ?? 0) || a.item.ilvl - b.item.ilvl;
 
   // 1. the player's picks, where they still fit
-  for (const [i, gameId] of Object.entries(chosen)) {
+  // the keys are row indices (as text at run time, which indexes an array all the same)
+  for (const [i, gameId] of Object.entries(chosen) as unknown as [number, number | null][]) {
     const c = picks[i]?.item && !picks[i].pinned && gameId != null && fitting(Number(i)).find(x => x.item.gameId === gameId);
     if (c) {
       shown[i] = asPick(picks[i].type, c);
@@ -120,7 +158,7 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
     }
     const fits = fitting(i);
     const own = fits.find(c => c.item === shown[i].item);
-    const best = [own, ...fits.filter(c => c !== own)].filter(Boolean).sort(easiest)[0];
+    const best = ([own, ...fits.filter(c => c !== own)].filter(Boolean) as Candidate[]).sort(easiest)[0];
     if (best && best.item !== shown[i].item) {
       shown[i] = asPick(p.type, best);
     }
@@ -135,10 +173,17 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
    ctx as for resultOf (its food is ignored). Returns them in `meals` order. For the result's Food menu: the meals it
    tags "best for goal", the one of the highest item level of which the Food row shows. The gear stays as the search found it with `meal`;
    under tier ranking or a Target GCD another meal could make the search choose other gear, which this does not check. */
-export function sameMeals(job, gearTotals, meal, meals, ctx, keys) {
-  const exact = keys.filter(k => k && !rankTierOf(job, k, ctx.level, ctx.haste ?? 0));
+export function sameMeals(
+  job: JobContext,
+  gearTotals: Totals,
+  meal: FoodChoice,
+  meals: readonly FoodChoice[],
+  ctx: Omit<ResultContext, 'food'>,
+  keys: readonly (DimKey | '' | null | undefined)[],
+): FoodChoice[] {
+  const exact = keys.filter(k => k && !rankTierOf(job, k, ctx.level, ctx.haste ?? 0)) as DimKey[];
   // the result with meal `m`, and its totals with food on the exact keys
-  const resultWith = m => {
+  const resultWith = (m: FoodChoice) => {
     const totals = withFood(gearTotals, foodBonus(job, m, gearTotals, ctx.level));
     return { result: resultOf(job, gearTotals, { ...ctx, food: m }), exact: exact.map(k => totals[k] || 0) };
   };
@@ -151,16 +196,16 @@ export function sameMeals(job, gearTotals, meal, meals, ctx, keys) {
 
 /* The gear totals of a list of picks ({eff}; empty slots count nothing): the job's stats, and weapon damage when the job
    ranks it (vectorDims). */
-function sumOf(job, picks) {
+function sumOf(job: JobContext, picks: readonly { item?: unknown; eff?: Eff }[]): Eff {
   const dims = vectorDims(job);
-  const t = {};
+  const t: Eff = {};
   for (const s of dims) {
     t[s] = 0;
   }
   for (const p of picks) {
     if (p.item) {
       for (const s of dims) {
-        t[s] += p.eff[s] || 0;
+        t[s] += (p.eff as Eff)[s] || 0;
       }
     }
   }
@@ -168,6 +213,6 @@ function sumOf(job, picks) {
 }
 
 /* A candidate as a row's pick. */
-function asPick(type, c) {
+function asPick(type: SlotType, c: Candidate): FilledPick {
   return { type, item: c.item, eff: c.eff, meld: c.meld ?? null };
 }

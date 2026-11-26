@@ -10,7 +10,73 @@
      tiebreaks, then the most food points, then the first in the job's food choices (pickMeal in food.ts, as bestFood). */
 import { gearNeeded, mealsFor, mealTotals, pickMeal } from './food.ts';
 import { prepare, rankedKeys, solve } from './optimizer/index.ts';
-import { BASE_GCD_MS, gcdFor, hasteFor, speedForGcd } from './speed.ts';
+import { BASE_GCD_MS, gcdFor, hasteFor, speedForGcd, type GcdMode, type Haste } from './speed.ts';
+import type { Candidate, DimKey, Eff, JobContext, PoolItem, SolveResult, SolveSuccess, Sync, Totals } from './types.ts';
+import type { FoodBonus, FoodChoice } from './food.ts';
+import type { Prepared } from './optimizer/index.ts';
+
+/* The goal and limits of a Target GCD (optimizeGcd) or tier ranking (rankByTier) search, the `opts` they share. */
+export interface GoalOptions {
+  target?: DimKey | '';
+  tiebreak?: readonly (DimKey | '' | null | undefined)[];
+  melds?: boolean;
+  /* pinned pieces (fixedCandidate) */
+  fixed?: readonly Candidate[];
+  nodeLimit?: number;
+  /* null for no food, a foodChoices entry, or 'best' for every choice of the job */
+  food?: FoodChoice | 'best' | null;
+  /* default: the synced level, else the job's level cap */
+  level?: number;
+  /* the Target GCD in seconds (required by optimizeGcd), and how it is asked for */
+  gcd?: number;
+  mode?: GcdMode;
+}
+/* A band on the gear speed (gearBand). */
+export interface GearBand {
+  gearMin: number;
+  gearMax: number | null;
+}
+/* The food part of a Target GCD or tier ranking result (foodFields). */
+export interface FoodFields {
+  food: FoodChoice | null;
+  bonus: FoodBonus;
+  withFood: Totals;
+  gcd: number;
+}
+/* What a Target GCD search that found a loadout returns (optimizeGcd): the solve result and the meal and GCD facts. */
+export interface GcdSuccess extends SolveSuccess, FoodFields {
+  asked: number;
+  mode: GcdMode;
+  haste: Haste | null;
+  level: number;
+  faster: boolean;
+  band: { min: number; max: number | null; gearMin: number; gearMax: number | null };
+  searches: number;
+  prep: Prepared;
+}
+/* What it returns when none did: 'unreachable' (no speed gives the GCD) or 'none' (no loadout meets it). */
+export interface GcdFailure {
+  ok: false;
+  reason: 'unreachable' | 'none';
+  asked: number;
+  mode: GcdMode;
+  haste: Haste | null;
+  level: number;
+  fastest: number | null;
+  truncated?: boolean;
+  nodes?: number;
+  searches?: number;
+  prep?: Prepared;
+}
+/* What goalSettings returns. */
+export interface GoalSettings {
+  level: number;
+  haste: Haste | null;
+  hastePct: number;
+  target: DimKey;
+  tiebreak: DimKey[];
+  keys: DimKey[];
+}
 
 /**
  * @param job   JobContext
@@ -29,11 +95,17 @@ import { BASE_GCD_MS, gcdFor, hasteFor, speedForGcd } from './speed.ts';
  *          than the GCD with no speed), 'none' when no loadout meets it; fastest is then the
  *          shortest GCD the pool can reach (with the best speed meal when food is on)
  */
-export function optimizeGcd(job, pool, sync, opts, prep = null) {
+export function optimizeGcd(
+  job: JobContext,
+  pool: readonly PoolItem[],
+  sync: Sync,
+  opts: GoalOptions & { gcd: number },
+  prep: Prepared | null = null,
+): GcdSuccess | GcdFailure {
   // meals rank by the totals with food in the search's order, weapon damage first (keys): meals give different speed
   // bands, so their best sets can differ in it
   const { level, haste, hastePct: pct, target, tiebreak, keys } = goalSettings(job, sync, opts);
-  const mode = opts.mode === 'min' ? 'min' : 'exact';
+  const mode: GcdMode = opts.mode === 'min' ? 'min' : 'exact';
   const base = { asked: opts.gcd, mode, haste, level };
   const band = speedForGcd(opts.gcd, level, mode, pct);
   if (!band) {
@@ -42,8 +114,8 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
 
   const meals = mealsFor(job, opts.food);
   const searchPrep = prep || prepare(job, pool, sync, { target, tiebreak, melds: opts.melds, speed: mode, fixed: opts.fixed });
-  const runs = new Map(); // "gear min,gear max" -> solve result
-  const entries = []; // {meal, totals, r, band} per meal with a loadout, for pickMeal
+  const runs = new Map<string, SolveResult>(); // "gear min,gear max" -> solve result
+  const entries: { meal: FoodChoice | null; totals: Eff; r: SolveSuccess; band: GearBand }[] = []; // {meal, totals, r, band} per meal with a loadout, for pickMeal
   for (const meal of meals) {
     const gear = gearBand(job, meal, band, level);
     if (!gear) {
@@ -54,7 +126,7 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
     if (!runs.has(key)) {
       runs.set(key, solve(searchPrep, { spdMin: gearMin, spdMax: gearMax, nodeLimit: opts.nodeLimit }));
     }
-    const r = runs.get(key);
+    const r = runs.get(key) as SolveResult;
     if (r.ok) {
       entries.push({ meal, totals: r.totals, r, band: { gearMin, gearMax } });
     }
@@ -95,17 +167,22 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
    the job's level cap; haste: the job's always-on haste there (hasteFor, null for none), hastePct its percent (0 for
    none); target: the goal (the job's main stat when unset); tiebreak: the tiebreaks set; keys: the keys a search ranks, weapon
    damage first when the job ranks it (rankedKeys). */
-export function goalSettings(job, sync, opts) {
+export function goalSettings(job: JobContext, sync: Sync, opts: GoalOptions): GoalSettings {
   const level = opts.level ?? sync.level ?? job.maxLevel;
   const haste = hasteFor(job.jobId, level);
-  const target = opts.target || job.mainKey;
-  const tiebreak = (opts.tiebreak || []).filter(Boolean);
+  const target = (opts.target || job.mainKey) as DimKey;
+  const tiebreak = (opts.tiebreak || []).filter(Boolean) as DimKey[];
   return { level, haste, hastePct: haste ? haste.pct : 0, target, tiebreak, keys: rankedKeys(job, target, tiebreak) };
 }
 
 /* The food part of a Target GCD or tier ranking result, from the meal pickMeal chose (`best`, its entry's meal null for
    none): {food, bonus, withFood, gcd}, gcd the GCD (the job's speed stat) with food and the haste `hastePct` at `level`. */
-export function foodFields(job, best, level, hastePct) {
+export function foodFields(
+  job: JobContext,
+  best: { entry: { meal: FoodChoice | null }; bonus: FoodBonus; withFood: Totals },
+  level: number,
+  hastePct: number,
+): FoodFields {
   const gcd = gcdFor(best.withFood[job.speedKey] || 0, level, BASE_GCD_MS, hastePct);
   return { food: best.entry.meal, bonus: best.bonus, withFood: best.withFood, gcd };
 }
@@ -113,7 +190,12 @@ export function foodFields(job, best, level, hastePct) {
 /* A band on total speed ({min, max}; max null for none, speedForGcd) as a band on gear speed with `meal` (null for
    none) at `level`: {gearMin, gearMax}, or null when the meal jumps over the band (no gear speed lands in it). The most
    gear speed is one below the fewest whose total reaches band.max + 1. Shared by Target GCD and tier ranking. */
-export function gearBand(job, meal, band, level) {
+export function gearBand(
+  job: JobContext,
+  meal: FoodChoice | null,
+  band: { min: number; max: number | null },
+  level: number,
+): GearBand | null {
   const gearMin = gearNeeded(job, meal, job.speedKey, band.min, level);
   const gearMax = band.max == null ? null : gearNeeded(job, meal, job.speedKey, band.max + 1, level) - 1;
   if (gearMax != null && gearMax < gearMin) {
@@ -126,7 +208,7 @@ export function gearBand(job, meal, band, level) {
    loadout with the most gear speed also has the most with any speed meal, since gear + food rises with gear), with the
    job's haste. The most speed at any weapon damage (weaponFirst off): a search for a faster GCD may take a weapon with
    less. opts = {melds, food, nodeLimit, level} as for optimizeGcd. Null when the pool has no loadout. */
-export function fastestGcd(job, pool, sync, opts) {
+export function fastestGcd(job: JobContext, pool: readonly PoolItem[], sync: Sync, opts: GoalOptions): number | null {
   const { level, hastePct: pct } = goalSettings(job, sync, opts);
   const r = solve(prepare(job, pool, sync, { target: job.speedKey, melds: opts.melds, weaponFirst: false, fixed: opts.fixed }), {
     nodeLimit: opts.nodeLimit,

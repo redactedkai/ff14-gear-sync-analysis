@@ -17,7 +17,7 @@
      factors); the overflow is lost, and a meld never lowers a stat that is already above the cap.
    - Only combat substats can be melded, never the main stat or Vitality. Every meld succeeds (owner's decision). */
 import { MATERIA } from './tables.ts';
-import type { JobContext, Meld, PerStat, PoolItem, StatKey, StatMap, Stone, StoneGroup, Sync } from './types.ts';
+import type { DimKey, JobContext, Meld, PerStat, PoolItem, StatKey, StatMap, Stone, StoneGroup, Sync } from './types.ts';
 
 /* A stone as the rules pick it: its grade (1-based) and the points it adds. */
 interface StoneValue {
@@ -78,8 +78,8 @@ function highGrade(grade: number): boolean {
 }
 
 /* True when `stat` (a stat key) can be melded for the job: a combat substat, never the main stat or Vitality. */
-function meldableStat(job: JobContext, stat: StatKey): boolean {
-  return job.substats.includes(stat);
+function meldableStat(job: JobContext, stat: DimKey): boolean {
+  return job.substats.includes(stat as StatKey);
 }
 
 /* How far melds can raise `stat` on `item`: its room under the piece's own cap (`caps`, meldCaps), 0 when the stat is
@@ -194,12 +194,12 @@ export function meldCacheStats() {
    nHi, nLo: how many hi and lo stones fit at most (with one grade every slot takes it, and nLo is 0);
    hi, lo: the two stones ({grade, value}); meldable: the keys that are substats, in objective order; headroom: room under
    each one's cap, clamped to what every stone together can add (more changes nothing, and more pieces share a memo). */
-function meldSetup(job: JobContext, item: PoolItem, keys: readonly StatKey[]): MeldSetup | null {
+function meldSetup(job: JobContext, item: PoolItem, keys: readonly DimKey[]): MeldSetup | null {
   const { big: nBig, small: nSmall } = meldSlots(item);
   if (!nBig) {
     return null;
   }
-  const meldable = [...new Set(keys)].filter(k => meldableStat(job, k));
+  const meldable = [...new Set(keys)].filter(k => meldableStat(job, k)) as StatKey[];
   if (!meldable.length) {
     return null;
   }
@@ -271,7 +271,7 @@ function bestPlacement(m: MeldSetup): Placement | null {
    Returns {gain: {stat: n}, stones: [{stat, grade, n}], free}. The stats a piece ends up with are its own plus `gain`.
    `stones` is in slot order, the order they are melded in: the hi stones (which fit only the guaranteed slots and the
    first overmeld slot) first, then the lo stones. */
-export function bestMeld(job: JobContext, item: PoolItem, keys: readonly StatKey[]): Meld | null {
+export function bestMeld(job: JobContext, item: PoolItem, keys: readonly DimKey[]): Meld | null {
   const m = meldSetup(job, item, keys);
   if (!m) {
     return null;
@@ -291,7 +291,7 @@ const versionMemo = new Map<string, Placement[]>();
    only lowers a gain, so it adds a vector only under a maximum, and there it found no better set in 2,045 Target GCD
    runs while adding about 14% search work (docs/mechanics/materia.md, "Which stones are shown"; owner: dropped). It can
    still be the placement shown for a vector. A piece that takes no stones has one version, no melds: [null]. */
-export function meldVersions(job: JobContext, item: PoolItem, keys: readonly StatKey[], { exactSpd = false } = {}): (Meld | null)[] {
+export function meldVersions(job: JobContext, item: PoolItem, keys: readonly DimKey[], { exactSpd = false } = {}): (Meld | null)[] {
   const m = meldSetup(job, item, keys);
   if (!m) {
     return [null];

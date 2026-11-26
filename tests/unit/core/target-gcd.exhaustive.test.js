@@ -10,7 +10,7 @@ import { foodChoices } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { optimize, prepare, solve } from '../../../src/core/optimizer/index.ts';
 import { gcdFor, gcdTierAt, hasteFor } from '../../../src/core/speed.ts';
-import { optimizeGcd } from '../../../src/core/target-gcd.js';
+import { optimizeGcd } from '../../../src/core/target-gcd.ts';
 import { exhaustive, foodAdd, gamePool, smallPool, WINDOWS } from '../helpers/exhaustive.js';
 import { rng } from '../helpers/common.js';
 

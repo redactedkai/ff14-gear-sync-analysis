@@ -86,7 +86,7 @@ The Total row's item level cell shows the set's average item level, a whole numb
 
 ### Which piece an Auto-fill suggests
 
-Roadmap A9. Under sync many pieces reach the same caps: for Sage at level 50, cap 123, with crafted and tomestone gear, every slot has 11 to 20 others. An Auto-fill suggests, for each row, the piece with the same result that is easiest to get: the lowest equip level, then the lowest item level, the search's own pick on a tie, which follows the order of the pool ([optimizer.md, Ties](optimizer.md#ties); `core/same-result.js`).
+Roadmap A9. Under sync many pieces reach the same caps: for Sage at level 50, cap 123, with crafted and tomestone gear, every slot has 11 to 20 others. An Auto-fill suggests, for each row, the piece with the same result that is easiest to get: the lowest equip level, then the lowest item level, the search's own pick on a tie, which follows the order of the pool ([optimizer.md, Ties](optimizer.md#ties); `core/same-result.ts`).
 
 - **The same result:** the same main stat, and every substat at the same tier, counted with the set's meal. The tiers are tier ranking's (`rankTierOf`, [tier-ranking.md](tier-ranking.md)). The goal stat's raw points stay as well. Two tiers may drop a step:
   - speed holds its GCD (with haste) but its DoT/HoT tick scaling may drop a step (**owner's decision**, as for tier ranking);
@@ -361,7 +361,7 @@ Every `z-index` in `src/styles/` names a `--z-*` token from `tokens.css` (`--z-r
 | The Math tab, the Gear browser, the sheet manager and sheet page, a set's page | the page root `src/ui/elements/app/app-root.ts`, which draws the Gear browser element `src/ui/elements/gear-browser/gear-browser.ts`; the Math tab is the element `src/ui/elements/math-page/math-screen.ts`; the Sheets tab is the element `src/ui/elements/sheets/sheets-screen.ts`, which draws the sheet manager, sheet page and set page (the elements `sheet-manager.ts`, `sheet-page.ts` and `src/ui/elements/set-page/set-page.ts`) |
 | What the solver answers for an Auto-fill: the answer, the Gear to search line and the Target GCD label | `src/ui/solve.js` (`solveView`, `gearToSearchView`, `searchCount`) |
 | The Food row's menu | `src/ui/elements/set-page/food-menu.ts` (`<gsa-food-menu>`) and `food-menu-model.ts`, `src/ui/views/meal-menu.js` (`mealMenu`, `mealsPassing`, `mealPillOff`, `mealEmptyReason`, `mealLine`, `sortMeals`, `mealList`, `mealBestKeys`, `mealBestNote`); `src/core/food.ts` (`allMeals`) |
-| Pieces and meals with the same result | `src/core/same-result.js` (`sameMeals`), `src/core/tiers.ts` (`rankTierOf`), `src/core/items.ts` (`searchMatches`) |
+| Pieces and meals with the same result | `src/core/same-result.ts` (`sameMeals`), `src/core/tiers.ts` (`rankTierOf`), `src/core/items.ts` (`searchMatches`) |
 | Relics left out | `src/core/items.ts` (`allocatedRelic`) |
 | Gear browser: element and view (Reset, cells of lowered pieces, pages) | `src/ui/elements/gear-browser/gear-browser.ts`, `gear-browser-model.ts`, `src/ui/views/gear.js` (`browseFiltered`, `browseCell`, `pageList`) |
 | Sheets tab: element and store | `src/ui/elements/sheets/sheets-screen.ts` and `sheets-screen-model.ts` (the screens are elements beside them), `src/ui/store/sheets-actions.ts`, `sheets-facade.ts`; sheet and set operations in `src/ui/sheets/ops.js` |

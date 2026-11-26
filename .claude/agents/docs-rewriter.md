@@ -53,7 +53,7 @@ a link to `docs/glossary.md`). Both want the problem first, then the precise sta
    and similar anchors. If a heading really must change, search `docs/` (and `README.md`, `CLAUDE.md`) for every link
    to the old anchor and fix each one, and say so in the report.
 4. **No invented numbers.** A new number in an example must come from running the code: `node` with imports from
-   `src/core/` (import what you need the way `src/core/tier-rank.js` does). Put any script you write under
+   `src/core/` (import what you need the way `src/core/tier-rank.ts` does). Put any script you write under
    `docs/scratchpad/docs-rewrite/` (gitignored; create the folder, it may not exist) and say which numbers it produced, with the date.
 5. **Prose explains with math, not code.** Say it in plain words first; a code name (function, file) may follow
    where a reader needs it to find the code, and every concept gets a row in the closing "Where this lives" table, as

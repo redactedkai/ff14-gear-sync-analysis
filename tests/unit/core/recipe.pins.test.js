@@ -1,13 +1,13 @@
-/* Pins in a solve (src/core/recipe.js: runRecipe's `pins`, resolvePins): a pinned piece is kept with exactly
+/* Pins in a solve (src/core/recipe.ts: runRecipe's `pins`, resolvePins): a pinned piece is kept with exactly
    its stones and counts in the totals, the tiers and a Target GCD; a pinned meal is the meal; a pin the solve cannot
    keep says so. Real Sage items; the optimizer's own pin coverage is core/optimizer/index.pinned.test.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import { gcdRange, resolvePins, runRecipe } from '../../../src/core/recipe.js';
+import { gcdRange, resolvePins, runRecipe } from '../../../src/core/recipe.ts';
 import { jobGear } from '../../../src/core/items.ts';
-import { makeSession } from '../../../src/core/session.js';
+import { makeSession } from '../../../src/core/session.ts';
 import { evaluateSet } from '../../../src/core/set.ts';
 import { appState, piece } from '../helpers/common.js';
 

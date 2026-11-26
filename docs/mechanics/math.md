@@ -721,7 +721,7 @@ The status of each claim about the stat model (item stats, stat factors, substat
 | The cap shown on How the math works; level sync off at the job's cap | `src/ui/job-sync-panel.js` (`shownSync`, `levelSyncOn`) |
 | GCD, tick multiplier, GCD tiers, haste, speed for a target GCD | `src/core/speed.ts` (`gcdFor`, `hasteFor`, `speedForGcd`); haste table `HASTE` in `src/core/constants.ts` |
 | The 1.50 s GCD floor | `src/core/constants.ts` (`GCD_FLOOR_MS`) |
-| Target GCD: meals and gear together | `src/core/target-gcd.js` (`optimizeGcd`) |
+| Target GCD: meals and gear together | `src/core/target-gcd.ts` (`optimizeGcd`) |
 | Food: bonus, choices per job, best meal for a goal, gear needed for a total | `src/core/food.ts`; meals in `src/data/food.json` |
 | A character's base stat at a level (`statBase`), main stat base `LEVEL_MAIN` | `src/core/base-stats.ts` |
 | Weapon damage and defense: synced values, a gear set's defense, mitigation | `src/core/damage-defense.ts`; budgets, factors and shares (`SHARES`) in `src/data/item-level.json`; the job's weapon damage `damageKey` in `src/core/job-context.ts` |

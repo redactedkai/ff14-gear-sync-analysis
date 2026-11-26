@@ -1,4 +1,4 @@
-/* Target GCD sweep (not part of `check`): the real engine (src/core/target-gcd.js) on every job x sync setting
+/* Target GCD sweep (not part of `check`): the real engine (src/core/target-gcd.ts) on every job x sync setting
    (workloads.mjs SYNCS) x goals (every substat but speed, plus the main stat as a stress case) with no, one or two
    tiebreaks x GCD targets spread from the job's no-speed GCD (with its haste) down to the fastest the gear reaches, so
    GCDs slower than the free result (the drift case) are in, x both modes x food off and "Best for the goal". The pool
@@ -81,7 +81,7 @@ if (isMainThread) {
   const { DEFAULT_EXCLUDE } = await import(`${ROOT}src/ui/job-sync-panel.js`);
   const { optimize, solve } = await import(`${ROOT}src/core/optimizer/index.ts`);
   const { gcdFor, hasteFor, speedForGcd } = await import(`${ROOT}src/core/speed.ts`);
-  const { optimizeGcd } = await import(`${ROOT}src/core/target-gcd.js`);
+  const { optimizeGcd } = await import(`${ROOT}src/core/target-gcd.ts`);
   const { exhaustive } = await import(`${ROOT}tests/unit/helpers/exhaustive.js`);
   const score = (r, keys) => (r?.ok ? keys.map(key => r.totals[key] || 0) : null);
   let k = 0;

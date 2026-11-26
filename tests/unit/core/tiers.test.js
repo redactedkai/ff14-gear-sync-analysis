@@ -227,7 +227,7 @@ test('no ladder for main stat, Vitality or a missing special substat', () => {
 });
 
 /* The special substat is a key of its own: Piety for every healer, Tenacity for every tank, none for the other roles; each
-   key has its own effects (tiers.js). */
+   key has its own effects (tiers.ts). */
 test('specKey: Piety for healers (MP), Tenacity for tanks (damage done and taken), none for the rest', () => {
   const keys = {};
   for (const { id, profile } of JOBS) {

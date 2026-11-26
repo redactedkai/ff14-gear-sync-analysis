@@ -8,8 +8,8 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { optimize } from '../../../src/core/optimizer/index.ts';
 import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.js';
 import { statBase } from '../../../src/core/base-stats.ts';
-import { runRecipe } from '../../../src/core/recipe.js';
-import { makeSession } from '../../../src/core/session.js';
+import { runRecipe } from '../../../src/core/recipe.ts';
+import { makeSession } from '../../../src/core/session.ts';
 import { evaluateSet, makeSet } from '../../../src/core/set.ts';
 
 // "Gear categories" boxes left out by default, in a set's Auto-fill settings and the browser (owner's decision); the checks use them too.

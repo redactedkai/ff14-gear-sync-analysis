@@ -1,7 +1,7 @@
 /* Rank by tier (roadmap A7): the best loadout by the tiers of the target and tiebreaks, in that order, then by their
    raw totals (order A, owner: leftover points go to the target). Tiers and totals count food; speed's tier is
    its GCD with the job's haste, Tenacity's its mitigation step, main stat and Vitality have none (every point counts;
-   tiers.js rankTierOf). Spec: docs/engineering/tier-ranking.md.
+   tiers.ts rankTierOf). Spec: docs/engineering/tier-ranking.md.
    - Weapon damage comes first when the job ranks it (rankedKeys in optimizer/candidates.js; owner), as a key
      without tiers (a set page's Tier row has no weapon damage).
    - One search per key, in order: maximize the key under the minimums so far, note the tier it reaches, then hold the
@@ -17,13 +17,61 @@
 import { gearNeeded, mealsFor, mealTotals, pickMeal } from './food.ts';
 import { prepare, solve } from './optimizer/index.ts';
 import { speedForGcd } from './speed.ts';
-import { fastestGcd, foodFields, gearBand, goalSettings } from './target-gcd.js';
+import { fastestGcd, foodFields, gearBand, goalSettings } from './target-gcd.ts';
 import { rankTierOf, tierStart } from './tiers.ts';
+import type { GcdMode, Haste } from './speed.ts';
+import type { FoodChoice } from './food.ts';
+import type { DimKey, JobContext, PoolItem, Proven, SolveResult, SolveSuccess, StatKey, Sync } from './types.ts';
+import type { PrepareOptions, Prepared } from './optimizer/index.ts';
+import type { FoodFields, GoalOptions } from './target-gcd.ts';
+
+/* A key tier ranking held: its stat, the tier it reached (rankTierOf's number, null for a key without tiers) and the total
+   with food it is held at. */
+export interface HeldKey {
+  stat: string;
+  tier: number | null;
+  hold: number;
+}
+/* One meal's progress through the stages of rankByTier: its gear speed band, the minimums (gear points) held so far, the keys held,
+   its last result and the maxima its stages proved. */
+interface MealState {
+  meal: FoodChoice | null;
+  gear: { gearMin: number; gearMax: number | null } | null;
+  mins: Record<string, number>;
+  held: HeldKey[];
+  last: SolveSuccess | null;
+  proven: Proven[];
+}
+/* What rankByTier returns when it found a loadout: the solve result, the meal's facts, the keys held and the search's work. */
+export interface TierRankSuccess extends SolveSuccess, FoodFields {
+  haste: Haste | null;
+  level: number;
+  asked: number | null;
+  mode: GcdMode | null;
+  held: HeldKey[];
+  faster: boolean;
+  searches: number;
+  band: { min: number; max: number | null } | null;
+}
+/* What it returns when none: 'unreachable' (no speed gives the Target GCD) or 'none' (no loadout meets every minimum). */
+export interface TierRankFailure {
+  ok: false;
+  reason: 'unreachable' | 'none';
+  haste: Haste | null;
+  level: number;
+  asked: number | null;
+  mode: GcdMode | null;
+  band?: { min: number; max: number | null };
+  truncated?: boolean;
+  nodes?: number;
+  searches?: number;
+  fastest: number | null;
+}
 
 /* What a finished stage search `result` proves for a meal's `state` (rankByTier's): {stat, most, minStats, speed}, the
    most gear points of `stat` under the state's minimums and speed band (optimizer/regain.js). */
-function provenMost(state, stat, result) {
-  let speed = null;
+function provenMost(state: MealState, stat: string, result: SolveSuccess): Proven {
+  let speed: Proven['speed'] = null;
   if (state.gear) {
     speed = state.gear.gearMax != null ? 'band' : 'min';
   }
@@ -46,20 +94,37 @@ function provenMost(state, stat, result) {
  *          result's GCD with food and haste, faster is true when it beats the asked GCD ('min' mode only); band = {min,
  *          max} on total speed with a Target GCD (speedForGcd), else null
  */
-export function rankByTier(job, pool, sync, opts, cache = new Map()) {
+export function rankByTier(
+  job: JobContext,
+  pool: readonly PoolItem[],
+  sync: Sync,
+  opts: GoalOptions,
+  cache: Map<string, Prepared> = new Map(),
+): TierRankSuccess | TierRankFailure {
   // keys: weapon damage first when the job ranks it (rankedKeys): a stage of its own, with no tiers, held at the most
   // reached like main stat, so every later stage's proven maximum holds under it (regain cuts stay exact)
   const { level, haste, hastePct: pct, keys } = goalSettings(job, sync, opts);
-  let gcdMode = null;
+  let gcdMode: GcdMode | null = null;
   if (opts.gcd != null) {
     gcdMode = opts.mode === 'min' ? 'min' : 'exact';
   }
-  const base = { haste, level, asked: opts.gcd ?? null, mode: gcdMode };
+  const base: {
+    haste: Haste | null;
+    level: number;
+    asked: number | null;
+    mode: GcdMode | null;
+    band?: { min: number; max: number | null };
+  } = {
+    haste,
+    level,
+    asked: opts.gcd ?? null,
+    mode: gcdMode,
+  };
 
   // 1. the Target GCD's band on total speed, if one is set
-  let band = null;
+  let band: { min: number; max: number | null } | null = null;
   if (gcdMode) {
-    band = speedForGcd(opts.gcd, level, gcdMode, pct);
+    band = speedForGcd(opts.gcd as number, level, gcdMode, pct);
     if (!band) {
       return { ok: false, reason: 'unreachable', ...base, fastest: fastestGcd(job, pool, sync, { ...opts, level }) };
     }
@@ -67,7 +132,7 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
   }
 
   // 2. one state per meal: its gear speed band, the minimums (gear points) held so far and the maxima its stages proved
-  let meals = [];
+  let meals: MealState[] = [];
   for (const meal of mealsFor(job, opts.food)) {
     const gear = band ? gearBand(job, meal, band, level) : null;
     if (band && !gear) {
@@ -79,33 +144,47 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
   // every stage's meld versions on all the keys (and speed with a Target GCD), in one order: the stages share the meld
   // memo (prepare's versionKeys) and build each piece's versions once (versionCache)
   const versionKeys = gcdMode ? [...keys, job.speedKey] : keys;
-  const versionCache = new Map();
+  const versionCache: NonNullable<PrepareOptions['versionCache']> = new Map();
 
   // searches shared by meals asking the same, and candidate lists per objective and limited stats. Each search after
   // the first starts from the meal's last result (`seed`), which meets every limit so far: it only looks for a better
   // set, and when it stops early it still has one (White Mage at level 100, exactly 2.40, Piety > Determination >
   // Direct Hit: 700,000 nodes and no set found without it)
-  const runs = new Map();
+  const runs = new Map<string, SolveResult>();
   let truncated = false,
     nodes = 0;
-  const search = (state, target, tiebreak) => {
+  const search = (state: MealState, target: DimKey, tiebreak: readonly DimKey[]): SolveResult => {
     const minStats = Object.keys(state.mins);
     const prepKey = `${target}|${tiebreak.join()}|${minStats.join()}|${gcdMode}|${Boolean(opts.melds)}`;
     if (!cache.has(prepKey)) {
-      const prepOpts = { target, tiebreak, melds: opts.melds, speed: gcdMode, minStats, versionKeys, versionCache, fixed: opts.fixed };
+      const prepOpts: PrepareOptions = {
+        target,
+        tiebreak,
+        melds: opts.melds,
+        speed: gcdMode,
+        minStats: minStats as StatKey[],
+        versionKeys,
+        versionCache,
+        fixed: opts.fixed,
+      };
       cache.set(prepKey, prepare(job, pool, sync, prepOpts));
     }
     const limits = { spdMin: state.gear?.gearMin, spdMax: state.gear?.gearMax, mins: state.mins };
     const runKey = `${prepKey}|${JSON.stringify(limits)}|${JSON.stringify(state.proven)}`;
     if (!runs.has(runKey)) {
-      const r = solve(cache.get(prepKey), { ...limits, seed: state.last?.picks, nodeLimit: opts.nodeLimit, proven: state.proven });
+      const r = solve(cache.get(prepKey) as Prepared, {
+        ...limits,
+        seed: state.last?.picks,
+        nodeLimit: opts.nodeLimit,
+        proven: state.proven,
+      });
       truncated ||= Boolean(r.truncated);
       nodes += r.nodes || 0;
       runs.set(runKey, r);
     }
-    return runs.get(runKey);
+    return runs.get(runKey) as SolveResult;
   };
-  const none = () => ({
+  const none = (): TierRankFailure => ({
     ok: false,
     reason: 'none',
     ...base,
@@ -174,7 +253,7 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
     searches: runs.size,
     ...food,
     held: best.entry.state.held,
-    faster: gcdMode != null && food.gcd < opts.gcd,
+    faster: gcdMode != null && food.gcd < (opts.gcd as number),
     band,
   };
 }

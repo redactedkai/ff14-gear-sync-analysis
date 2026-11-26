@@ -8,7 +8,7 @@
 import { BASE_GCD_MS, gcdFor, gcdTierAt } from './speed.ts';
 import { levelParams } from './level-params.ts';
 import { statBase } from './base-stats.ts';
-import type { JobContext, StatKey } from './types.ts';
+import type { DimKey, JobContext, StatKey } from './types.ts';
 
 /* The kinds of effect a stat has (EFFECTS). */
 export type EffectKind = 'rate' | 'onCrit' | 'dmgHeal' | 'dmgTaken' | 'mp' | 'gcd';
@@ -79,8 +79,8 @@ const RANK_STEP: Readonly<Partial<Record<StatKey, number>>> = { ten: TEN_MITIGAT
 
 /* The effects of a stat key of the job ({kind, step} objects), or null for stats without tiers (the main stat,
    Vitality) and for a stat the job lacks (Piety on a job without it). */
-function effectsOf(job: JobContext, stat: StatKey): readonly Effect[] | null {
-  return job.stats.includes(stat) ? (EFFECTS[stat] ?? null) : null;
+function effectsOf(job: JobContext, stat: DimKey): readonly Effect[] | null {
+  return job.stats.includes(stat as StatKey) ? (EFFECTS[stat as StatKey] ?? null) : null;
 }
 
 /* The kinds of effect a stat key has, in the order the page shows them ([] for a stat without tiers). */
@@ -89,7 +89,7 @@ export function statEffectKinds(stat: StatKey): EffectKind[] {
 }
 
 /* The step size of a stat key's first effect, or null for speed and stats without tiers. */
-function stepOf(job: JobContext, stat: StatKey): number | null {
+function stepOf(job: JobContext, stat: DimKey): number | null {
   return effectsOf(job, stat)?.[0].step ?? null;
 }
 
@@ -302,11 +302,11 @@ export function tierSizes(
    with every better tier and never falls with more points; null for stats without tiers (main stat, Vitality: every
    point counts). Speed's tier is its GCD with the job's `haste` (percent), in hundredths, negated so that faster is
    higher; Tenacity's is its mitigation step (RANK_STEP); the others as statTier. */
-export function rankTierOf(job: JobContext, stat: StatKey, level: number, haste = 0): ((total: number) => number) | null {
+export function rankTierOf(job: JobContext, stat: DimKey, level: number, haste = 0): ((total: number) => number) | null {
   if (stat === job.speedKey) {
     return total => -Math.round(gcdFor(Math.max(0, total), level, BASE_GCD_MS, haste) * 100);
   }
-  const step = effectsOf(job, stat) ? (RANK_STEP[stat] ?? stepOf(job, stat)) : null;
+  const step = effectsOf(job, stat) ? (RANK_STEP[stat as StatKey] ?? stepOf(job, stat)) : null;
   if (step == null) {
     return null;
   }

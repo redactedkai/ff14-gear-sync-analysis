@@ -10,7 +10,7 @@ import { performance } from 'node:perf_hooks';
 import { withActivities } from '../../src/core/items.ts';
 import { meldCacheStats } from '../../src/core/meld.ts';
 import { optimize } from '../../src/core/optimizer/index.ts';
-import { NODE_LIMIT } from '../../src/core/recipe.js';
+import { NODE_LIMIT } from '../../src/core/recipe.ts';
 import { flag, listOption, numberOption, option } from './args.mjs';
 import { excludeMasks, fullPool, JOB_IDS, job as ctx, objectivesFull, objectivesLite, SYNCS } from './workloads.mjs';
 

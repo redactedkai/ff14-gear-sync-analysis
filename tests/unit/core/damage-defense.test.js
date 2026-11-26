@@ -8,7 +8,7 @@ import { mkItem } from '../../../src/core/items.ts';
 import { optimize } from '../../../src/core/optimizer/index.ts';
 import { itemSyncIlvl } from '../../../src/core/piece.ts';
 import { mitigationPct, setDefense, syncedValue, weaponDamage } from '../../../src/core/damage-defense.ts';
-import { resultOf } from '../../../src/core/same-result.js';
+import { resultOf } from '../../../src/core/same-result.ts';
 import { IL } from '../../../src/core/tables.ts';
 import { gamePool } from '../helpers/exhaustive.js';
 import { piece } from '../helpers/common.js';
@@ -96,7 +96,7 @@ test('a speed limit only a lower weapon meets: the most weapon damage that meets
   assert.equal(limited.totals.wd, IL.damageMag[690]);
 });
 
-/* Same-result rows (same-result.js) keep weapon damage: two sets that differ only in it are not the same result. */
+/* Same-result rows (same-result.ts) keep weapon damage: two sets that differ only in it are not the same result. */
 test('same result: a weapon with less weapon damage is not the same result', () => {
   const ctx = { level: 100, food: null, haste: 0, goal: null };
   const t = { mind: 800, vit: 800, crit: 400, det: 300, dh: 0, sps: 0, piety: 0 };

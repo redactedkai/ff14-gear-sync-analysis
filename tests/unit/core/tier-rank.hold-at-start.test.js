@@ -1,4 +1,4 @@
-/* Tier ranking holds a key at the start of the tier it reached (src/core/tier-rank.js), with no spare point. The Dark Knight case
+/* Tier ranking holds a key at the start of the tier it reached (src/core/tier-rank.ts), with no spare point. The Dark Knight case
    from the raw-against-tier comparison: level 100, cap 790, Critical Hit > Skill Speed > Strength, GCD exactly 2.50, no
    food. The 2.50 tier starts at 0 speed points, so holding it needs none; a hold one point above the start cost 20
    Strength (Critical Hit 3,143, Skill Speed 18, Strength 5,910 against 3,147, 0, 5,930 with the plain ranking). */

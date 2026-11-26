@@ -1,5 +1,5 @@
 /* Per-level game data: the ParamGrow sheet (generated into tables.ts PG). One row per character level from 1 to the
-   level cap; its columns feed speed (speed.ts), substat tiers (tiers.js), base stats (base-stats.ts), level sync
+   level cap; its columns feed speed (speed.ts), substat tiers (tiers.ts), base stats (base-stats.ts), level sync
    (sync-target.ts), defense mitigation (damage-defense.ts) and the expansion bounds (items.ts). */
 import { clamp } from './clamp.ts';
 import { MAX_LEVEL, PG } from './tables.ts';

@@ -60,11 +60,11 @@ One record per sheet: two browser tabs never overwrite each other's sheets, and 
 
 A **piece row** is `{ slot, gameId, stones }`; an empty row is `{ slot }`. The game id is the identity: no name is saved. `stones` has one entry per meld slot, `{ stat, grade }` or null; a missing list counts as an empty one (`src/ui/sheets/saved-set.js` `sameRow`). A row the job does not use (the off-hand of a job without a shield) keeps what it holds, stored but not counted; White Mage and Black Mage use the Off-hand row at every level, so a shield stays when the sheet's level changes.
 
-**Auto-fill settings** are `goal` (target stat, two tiebreaks, Target GCD and its mode, rank by tier, melds, food) and `searchCriteria` (expansions, "Gear categories" boxes, the market board switch, item level and equip level limits). `sheets/fill-settings.js` `fillRecipe` turns them into the recipe `core/recipe.js` solves.
+**Auto-fill settings** are `goal` (target stat, two tiebreaks, Target GCD and its mode, rank by tier, melds, food) and `searchCriteria` (expansions, "Gear categories" boxes, the market board switch, item level and equip level limits). `sheets/fill-settings.js` `fillRecipe` turns them into the recipe `core/recipe.ts` solves.
 
 **`bestMeals`** is a hint the page shows ("best for goal" on the Food row and the Food menu, [ui.md](ui.md#the-food-rows-menu)).
 
-- Saved: Apply on an Auto-fill result saves it (`views/set-suggestion.js` `appliedFields`: `found.food.tagged` of `core/recipe.js` `runRecipe`, null with Food off) only when nothing is declined. A declined Take box means the set is not as Auto-fill made it.
+- Saved: Apply on an Auto-fill result saves it (`views/set-suggestion.js` `appliedFields`: `found.food.tagged` of `core/recipe.ts` `runRecipe`, null with Food off) only when nothing is declined. A declined Take box means the set is not as Auto-fill made it.
 - Kept: it stays whichever meal the set holds (`views/meal-menu.js` `mealBestKeys`). Pin changes keep it. Copy set keeps it, and Copy sheet keeps it only for the same job, level and sync. An Apply on a manual draft of the meal or the pins alone keeps it.
 - Dropped (set to null): by Apply on a manual draft that changes a piece or a stone, by any change of the set's Auto-fill settings, and by a change of the sheet's level or sync.
 - An Auto-fill with nothing to change saves it as soon as the Auto-fill ends. Apply is off, so nothing else is saved (`elements/set-page/fill-run.ts` `endFill`).

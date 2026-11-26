@@ -26,8 +26,8 @@ import type { Candidate, DimKey, Eff, JobContext, Meld, PoolItem, SlotType, Stat
 export type VersionCache = Map<PoolItem, Map<string, Candidate[]>>;
 /* A search's goal: the stat to maximize and up to two tiebreaks ('' or missing for none). */
 export interface Objective {
-  target: StatKey;
-  tiebreak?: readonly (StatKey | '' | null | undefined)[];
+  target: DimKey;
+  tiebreak?: readonly (DimKey | '' | null | undefined)[];
 }
 /* The options of buildCandidates (the fields are explained at buildCandidates). */
 export interface BuildOptions {
@@ -35,7 +35,7 @@ export interface BuildOptions {
   melds?: boolean;
   speed?: 'min' | 'exact' | null;
   minStats?: readonly StatKey[];
-  versionKeys?: readonly StatKey[];
+  versionKeys?: readonly DimKey[];
   versionCache?: VersionCache | null;
   weaponFirst?: boolean;
   fixed?: readonly Candidate[];
@@ -137,11 +137,11 @@ export function vectorDims(job: JobContext): DimKey[] {
    tiebreaks, each once. fastestGcd turns `weaponFirst` off: it asks for the most speed at any weapon damage. */
 export function rankedKeys(
   job: JobContext,
-  target: StatKey,
-  tiebreak: readonly (StatKey | '' | null | undefined)[],
+  target: DimKey,
+  tiebreak: readonly (DimKey | '' | null | undefined)[],
   weaponFirst = true,
 ): DimKey[] {
-  return [...new Set([...(weaponFirst && job.damageKey ? [WD_KEY] : []), target, ...(tiebreak.filter(Boolean) as StatKey[])])] as DimKey[];
+  return [...new Set([...(weaponFirst && job.damageKey ? [WD_KEY] : []), target, ...(tiebreak.filter(Boolean) as DimKey[])])] as DimKey[];
 }
 
 /* A pool item's candidate: its effective stat vector and, when `keys` is given (melds on) and the piece is not synced,
@@ -190,7 +190,7 @@ function itemVersions(
   job: JobContext,
   item: PoolItem,
   sync: Sync,
-  keys: readonly StatKey[],
+  keys: readonly DimKey[],
   exactSpd: boolean,
   versionCache: VersionCache | null | undefined,
 ): Candidate[] {
@@ -419,7 +419,7 @@ export function buildCandidates(
               job,
               item,
               sync,
-              [...new Set([...versionKeys, ...(keys as StatKey[]), ...limitStats])],
+              [...new Set<DimKey>([...versionKeys, ...(keys as StatKey[]), ...limitStats])],
               speed === 'exact',
               versionCache,
             ),

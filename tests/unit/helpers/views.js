@@ -1,9 +1,9 @@
 /* Shared setup of the view builder and solve tests: store-shaped state with sync on at cap 123 and a set's recipe (its
    Auto-fill settings at their defaults, rank by tier off), small real-gear pools whose best loadouts the brute force
-   (exhaustive.js) can check, a solve as a set page's Auto-fill asks for it (core/recipe.js runRecipe, evaluated by
+   (exhaustive.js) can check, a solve as a set page's Auto-fill asks for it (core/recipe.ts runRecipe, evaluated by
    core/set.ts evaluateSet), and the other tabs' builders called as their components call them. */
-import { recipePool, runRecipe } from '../../../src/core/recipe.js';
-import { makeSession } from '../../../src/core/session.js';
+import { recipePool, runRecipe } from '../../../src/core/recipe.ts';
+import { makeSession } from '../../../src/core/session.ts';
 import { evaluateSet } from '../../../src/core/set.ts';
 import { syncSettings } from '../../../src/ui/job-sync-panel.js';
 import { gearView } from '../../../src/ui/views/gear.js';
@@ -38,7 +38,7 @@ export function solveOf(app, gear, choices = {}, pins = null) {
   const set = run.status === 'ok' ? evaluateSet(job, run.set, sync, level) : null;
   return { run, set, panel: stat => set.withFood[stat] + set.base[stat], gearPanel: stat => set.gear[stat] + set.base[stat] };
 }
-/* The pool the solve searches for `app` (core/recipe.js recipePool), from `gear` or the job's own. */
+/* The pool the solve searches for `app` (core/recipe.ts recipePool), from `gear` or the job's own. */
 export const poolOf = (app, gear) => recipePool(app.jobCtx, app.recipe, gear ?? gearOf(app.jobCtx));
 /* {searched, left} under Gear to search (solve.js searchCount). */
 export const countOf = (app, gear) => searchCount(app.jobCtx, app.recipe, gear ?? gearOf(app.jobCtx));

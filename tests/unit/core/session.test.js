@@ -1,10 +1,10 @@
-/* The solver session (src/core/session.js): the gear of the last SESSION_SIZE jobs, least recently used dropped
+/* The solver session (src/core/session.ts): the gear of the last SESSION_SIZE jobs, least recently used dropped
    first, and a job's gear is built once while it is kept. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { jobGear } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import { makeSession, SESSION_SIZE } from '../../../src/core/session.js';
+import { makeSession, SESSION_SIZE } from '../../../src/core/session.ts';
 
 test('session: gear is built once per job and kept for the last SESSION_SIZE jobs, a hit counts as a use', () => {
   let builds = 0;

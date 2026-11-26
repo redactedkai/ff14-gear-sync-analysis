@@ -1,4 +1,4 @@
-/* The reference for rank by tier (core/tier-rank.js), shared by tests/unit/core/tier-rank.test.js and the longer sweep in
+/* The reference for rank by tier (core/tier-rank.ts), shared by tests/unit/core/tier-rank.test.js and the longer sweep in
    tests/sweep/: every legal loadout (forEachLoadout, with its own stone enumeration), every meal, food and tiers
    computed from the formulas (not gearNeeded or rankTierOf), and the stage rule of the spec applied to the whole list,
    with weapon damage first when the job ranks it (a key without tiers, held at its most; owner's decision 2026-10-18).
@@ -10,7 +10,7 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { optimize } from '../../../src/core/optimizer/index.ts';
 import { levelParams } from '../../../src/core/level-params.ts';
 import { gcdFor, hasteFor } from '../../../src/core/speed.ts';
-import { rankByTier } from '../../../src/core/tier-rank.js';
+import { rankByTier } from '../../../src/core/tier-rank.ts';
 import { rng } from './common.js';
 import { foodAdd, forEachLoadout, loadoutCount, smallPool } from './exhaustive.js';
 import { pickPins, pinsCoexist, pinsOf } from './pins.js';

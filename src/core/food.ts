@@ -230,13 +230,14 @@ export function bestFood(
 /* The fewest gear points of `stat` whose total with `food` (null for none) reaches `total` at `level`. Gear plus food
    rises with every gear point, so a binary search finds it; for Target GCD and tier ranking, which set minimums on
    totals with food while the optimizer works on gear points. */
-export function gearNeeded(job: JobContext, food: FoodLines | null, stat: StatKey, total: number, level: number): number {
+export function gearNeeded(job: JobContext, food: FoodLines | null, stat: DimKey, total: number, level: number): number {
   const line = food && foodLines(food).find(x => x.stat === stat);
   // no food for this stat: the gear has to bring the whole total
   if (!line || total <= 0) {
     return Math.max(0, total);
   }
-  const reachesTotal = (g: number) => g + (foodBonus(job, { stats: [line] }, { [stat]: g }, level)[stat] as FoodBonusLine).bonus >= total;
+  const reachesTotal = (g: number) =>
+    g + (foodBonus(job, { stats: [line] }, { [stat]: g }, level)[stat as StatKey] as FoodBonusLine).bonus >= total;
   // binary search for the fewest gear points that reach it (gear alone always does at g = total)
   let lo = 0,
     hi = total;

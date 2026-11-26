@@ -1,10 +1,10 @@
-/* Other pieces with the same result (core/same-result.js, roadmap A9): which pieces each row of a result can show
+/* Other pieces with the same result (core/same-result.ts, roadmap A9): which pieces each row of a result can show
    without changing what the result does, and which one it shows. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { equipLevel, mkItem } from '../../../src/core/items.ts';
-import { resultOf, sameOutcome, sameResult } from '../../../src/core/same-result.js';
+import { resultOf, sameOutcome, sameResult } from '../../../src/core/same-result.ts';
 import { dotMult, gcdFor } from '../../../src/core/speed.ts';
 import { rankTierOf, statTier } from '../../../src/core/tiers.ts';
 import { makeApp, solveOf } from '../helpers/views.js';
@@ -136,7 +136,7 @@ test('a piece that leaves another slot empty never replaces one that does not (a
 
 /* The owner's case (a screenshot): Sage, level 50, item level 123, crafted and tomestone gear, Endwalker and Dawntrail
    off, Mind then Critical Hit and Determination, best meal. Most pieces of item level 150 and up reach the same caps, so
-   every row has others. Solved as a set page's Auto-fill (core/recipe.js runRecipe): found.options per row, found.picks. */
+   every row has others. Solved as a set page's Auto-fill (core/recipe.ts runRecipe): found.options per row, found.picks. */
 function ownerCase() {
   const app = makeApp('SGE', { level: 50, cap: 123, sync: true });
   Object.assign(app.recipe, {

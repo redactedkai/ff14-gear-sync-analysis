@@ -514,7 +514,7 @@ export function copiesOf(type: SlotType, unique: boolean): number {
 }
 
 /* Every database piece `job` (a JobContext) can wear, as frozen pool items (browseItems leaves out gear above the job's
-   level cap): what the optimizer searches before its filters (~5-10 ms to build; a solver session keeps it, session.js). */
+   level cap): what the optimizer searches before its filters (~5-10 ms to build; a solver session keeps it, session.ts). */
 export function jobGear(job: JobContext): readonly PoolItem[] {
   return Object.freeze(browseItems(job, {}).map(r => poolItemFromRow(job, r)));
 }

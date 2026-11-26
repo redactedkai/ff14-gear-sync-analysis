@@ -4,7 +4,7 @@
    stands in for the browser's: it answers when the test says so. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeSession } from '../../../src/core/session.js';
+import { makeSession } from '../../../src/core/session.ts';
 import { evaluateSet } from '../../../src/core/set.ts';
 import { inProcessSolver, isCancelled, makeSolverHandler, solverRequest, workerSolver } from '../../../src/ui/solver.js';
 import { gearToSearchView, solveView } from '../../../src/ui/solve.js';

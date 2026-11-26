@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ACTIVITIES } from '../../../src/core/constants.ts';
 import { mkItem } from '../../../src/core/items.ts';
-import { makeSession } from '../../../src/core/session.js';
+import { makeSession } from '../../../src/core/session.ts';
 import { gearToSearchView, searchCount, solveView } from '../../../src/ui/solve.js';
 import { hasParts } from '../helpers/common.js';
 import { gearOf, inputsOf, makeApp, solveOf, testSession, windowPool } from '../helpers/views.js';

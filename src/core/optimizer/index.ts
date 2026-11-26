@@ -7,6 +7,7 @@ import { realSlotType } from './slot-index.ts';
 import { SLOT_TYPES } from '../constants.ts';
 import type {
   Candidate,
+  DimKey,
   Eff,
   JobContext,
   Limit,
@@ -26,12 +27,12 @@ import type { Start } from './search.ts';
 export type SpeedRule = 'min' | 'exact' | null;
 /* The options of prepare (the fields are explained there). */
 export interface PrepareOptions {
-  target?: StatKey | '';
-  tiebreak?: readonly (StatKey | '' | null | undefined)[];
+  target?: DimKey | '';
+  tiebreak?: readonly (DimKey | '' | null | undefined)[];
   melds?: boolean;
   speed?: SpeedRule;
   minStats?: readonly (StatKey | '' | null | undefined)[];
-  versionKeys?: readonly StatKey[];
+  versionKeys?: readonly DimKey[];
   versionCache?: VersionCache | null;
   weaponFirst?: boolean;
   fixed?: readonly Candidate[];
@@ -62,7 +63,7 @@ export interface OptimizeOptions extends PrepareOptions {
   nodeLimit?: number;
 }
 
-/* The optimizer's other entry points for the modules built on it (same-result.js, target-gcd.js, tier-rank.js, the
+/* The optimizer's other entry points for the modules built on it (same-result.ts, target-gcd.ts, tier-rank.ts, the
    optimizer view): every candidate unpruned (buildCandidates), the dimensions a candidate tracks (vectorDims) and the
    keys a score ranks (rankedKeys). A piece under sync (itemSyncIlvl, effStats, itemCaps) is core/piece.ts. */
 export {
@@ -106,7 +107,7 @@ function speedRule(opts: { spdMin?: number | null; spdMax?: number | null }): {
    Returns {slotList, posList, dims, noMeldData, speed, minStats, speedKey (the job's), fixed, fixedBlocked}. */
 export function prepare(job: JobContext, pool: readonly PoolItem[], sync: Sync, opts?: PrepareOptions): Prepared {
   const options: PrepareOptions = opts || {};
-  const target = (options.target || job.mainKey) as StatKey;
+  const target = (options.target || job.mainKey) as DimKey;
   const tiebreak = (options.tiebreak || []).filter(Boolean);
   const asked = [...new Set((options.minStats || []).filter(Boolean))] as StatKey[];
   const speed = options.speed || (asked.includes(job.speedKey) ? 'min' : null);

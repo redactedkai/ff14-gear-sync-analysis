@@ -50,7 +50,7 @@ export const DOMAINS = {
     title: 'The search for the best gear set, in the core',
     src: [
       'src/core/optimizer/**',
-      'src/core/{recipe,same-result,session,target-gcd,tier-rank}.js',
+      'src/core/{recipe,same-result,session,target-gcd,tier-rank}.ts',
       'src/core/set.ts',
       'scripts/perf/{adversarial,args,bench,compare,memory,split,target-gcd-sweep,workloads}.mjs',
     ],

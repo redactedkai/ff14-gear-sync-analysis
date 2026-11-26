@@ -1,10 +1,10 @@
 /* What the page's solver (ui/solver.js) answers for a set page's Auto-fill: the solve's answer, and the Auto-fill settings' Gear
-   to search line. The solve is core/recipe.js runRecipe; a set page puts its plain set on the set's rows
+   to search line. The solve is core/recipe.ts runRecipe; a set page puts its plain set on the set's rows
    (sheets/fill.js applyFill). Every builder takes plain inputs: the job (a JobContext), the sync settings ({cap, sync,
    level}: ui/job-sync-panel.js syncSettings), the character level, the recipe (sheets/fill-settings.js fillRecipe) and a solver
-   session (core/session.js), never the store.
+   session (core/session.ts), never the store.
    Pure view builders, so Node can load and test them. */
-import { gcdRange, gearFromCounts, recipePool, runRecipe } from '../core/recipe.js';
+import { gcdRange, gearFromCounts, recipePool, runRecipe } from '../core/recipe.ts';
 import { fmtInt } from './text.ts';
 import { badPinMessages } from './sheets/fill.js';
 

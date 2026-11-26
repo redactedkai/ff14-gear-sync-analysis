@@ -17,7 +17,7 @@ The repo's flow is feature branch → `dev` → `main`, fast-forward only (CLAUD
 4. **Checks**, on the rebased branch, by what it touches (`git diff --stat dev...HEAD`):
    - always `npm run check` (must pass; the smoke test prints `no errors`, not a partial line; a `test:<domain>` run is not a check);
    - `scripts/data/` or `src/data/`: also `npm run check:all`;
-   - scoring, pruning or the search (`src/core/optimizer/`, `src/core/tier-rank.js`, `src/core/target-gcd.js`): also `npm run test:full` and `npm run perf`. Report node counts and truncations; timing matters only above about 1 s, so ignore budget misses below that and don't rerun them;
+   - scoring, pruning or the search (`src/core/optimizer/`, `src/core/tier-rank.ts`, `src/core/target-gcd.ts`): also `npm run test:full` and `npm run perf`. Report node counts and truncations; timing matters only above about 1 s, so ignore budget misses below that and don't rerun them;
    - UI changes: also look at the built page at full width and at 960 px.
 5. **Fast-forward dev.** In the checkout that holds `dev`: `git merge --ff-only <branch>`. If no checkout holds `dev`: `git fetch . <branch>:dev` (refuses anything but a fast-forward). If the fast-forward is refused, go back to step 2.
 6. **Rebuild.** In the checkout that holds `dev`: `npm run build`, so the local `dist/index.html` shows `dev` (with the DEV badge).

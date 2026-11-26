@@ -1,4 +1,4 @@
-/* A set page's Auto-fill on real gear (src/core/recipe.js runRecipe, evaluated by src/core/set.ts evaluateSet): the gear it
+/* A set page's Auto-fill on real gear (src/core/recipe.ts runRecipe, evaluated by src/core/set.ts evaluateSet): the gear it
    searches and its filters, the totals in character panel numbers, Target GCD, food and rank by tier, against the
    core's own searches and the brute force. The recipe is a set's (its Auto-fill settings, sheets/fill-settings.js fillRecipe), on
    store-shaped state (helpers/views.js). */
@@ -10,10 +10,10 @@ import { allMeals, bestFood, foodChoices } from '../../../src/core/food.ts';
 import { allocatedRelic, browseItems, itemRoutes, mkItem, poolItemFromRow, poolKey, withActivities } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { optimize } from '../../../src/core/optimizer/index.ts';
-import { sameMeals } from '../../../src/core/same-result.js';
+import { sameMeals } from '../../../src/core/same-result.ts';
 import { gcdFor, hasteFor } from '../../../src/core/speed.ts';
-import { optimizeGcd } from '../../../src/core/target-gcd.js';
-import { rankByTier } from '../../../src/core/tier-rank.js';
+import { optimizeGcd } from '../../../src/core/target-gcd.ts';
+import { rankByTier } from '../../../src/core/tier-rank.ts';
 import { statTier } from '../../../src/core/tiers.ts';
 import { DEFAULT_EXCLUDE, syncSettings } from '../../../src/ui/job-sync-panel.js';
 import { exhaustive, gamePool } from '../helpers/exhaustive.js';
@@ -336,7 +336,7 @@ test('Rank by tier: the core result, each key held at its tier, food chosen with
     r.food.name,
   );
   assert.equal(solved.set.meal.name, tagged.reduce((a, b) => (b.ilvl > a.ilvl ? b : a)).name);
-  // every key keeps the tier the core held it at (the rows may show other pieces with the same tiers, same-result.js);
+  // every key keeps the tier the core held it at (the rows may show other pieces with the same tiers, same-result.ts);
   // weapon damage is held first (no tiers)
   assert.equal(r.held[0].stat, 'wd');
   const stats = app.jobCtx.stats;
@@ -401,7 +401,7 @@ test('allocated relics: left out of the search and counted; other relics and sta
 
 /* A slot another piece covers names the piece the row shows. Found while moving the result onto evaluateSet: White
    Mage at cap 123, Mind > Critical Hit > Determination with melds and tier ranking, the search picked Phantom Cane
-   Eclipticum, the Weapon row showed Zelkova Cane (an easier weapon with the same result, core/same-result.js), and the
+   Eclipticum, the Weapon row showed Zelkova Cane (an easier weapon with the same result, core/same-result.ts), and the
    Off-hand row still said "covered by Phantom Cane Eclipticum". */
 test('the Off-hand row is covered by the weapon the Weapon row shows', () => {
   const app = makeApp('WHM', { sync: true, cap: 123, level: 100 });

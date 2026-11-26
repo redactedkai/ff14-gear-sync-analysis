@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { inProcessSolver } from '../../../../../src/ui/solver.js';
 import { fillRecipe } from '../../../../../src/ui/sheets/fill-settings.js';
 import { evaluateInSheet } from '../../../../../src/ui/views/set-totals.js';
-import { makeSession } from '../../../../../src/core/session.js';
+import { makeSession } from '../../../../../src/core/session.ts';
 import { gearToSearchView } from '../../../../../src/ui/solve.js';
 import { makeJobContext } from '../../../../../src/core/job-context.ts';
 import { bind, lateSolver, refusingSolver, tick, twoToFill } from '../../../helpers/set-page-bind.js';

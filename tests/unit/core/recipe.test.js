@@ -1,12 +1,12 @@
-/* A recipe and its solve (src/core/recipe.js): the session keys each recipe field belongs to, the solve's set and record,
+/* A recipe and its solve (src/core/recipe.ts): the session keys each recipe field belongs to, the solve's set and record,
    picks by gameId, and that a warm session gives what a fresh one does without solving again what it already holds. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ACTIVITIES } from '../../../src/core/constants.ts';
 import { allMeals } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import { gearFromCounts, recipePool, runRecipe } from '../../../src/core/recipe.js';
-import { makeSession } from '../../../src/core/session.js';
+import { gearFromCounts, recipePool, runRecipe } from '../../../src/core/recipe.ts';
+import { makeSession } from '../../../src/core/session.ts';
 import { syncSettings } from '../../../src/ui/job-sync-panel.js';
 import { itemRoutes } from '../../../src/core/items.ts';
 import { appState } from '../helpers/common.js';

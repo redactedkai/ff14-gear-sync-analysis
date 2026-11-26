@@ -9,6 +9,12 @@
    Gear comes from one source for the whole session (`gear`, by default every piece the job can wear): a test with its
    own pool makes its own session. */
 import { jobGear } from './items.ts';
+import type { JobContext, PoolItem } from './types.ts';
+
+/* A solver session (makeSession): `gear(job)` is the job's gear, built once and kept while the job is among the last few. */
+export interface SolverSession {
+  readonly gear: (job: JobContext) => readonly PoolItem[];
+}
 
 /* How many jobs' gear the session keeps (least recently used dropped first). */
 export const SESSION_SIZE = 4;
@@ -16,12 +22,18 @@ export const SESSION_SIZE = 4;
 /* A new, empty session. `gear(job)` builds the pool items a job's solves search (`job` a JobContext; jobGear, every
    piece the job can wear, unless a test passes its own); `size` the jobs kept. Returns {gear}:
    - gear(job): the job's gear, built once and kept while it is among the last `size` jobs. */
-export function makeSession({ gear = jobGear, size = SESSION_SIZE } = {}) {
-  const kept = new Map();
+export function makeSession({
+  gear = jobGear,
+  size = SESSION_SIZE,
+}: {
+  gear?: (job: JobContext) => readonly PoolItem[];
+  size?: number;
+} = {}): SolverSession {
+  const kept = new Map<string, readonly PoolItem[]>();
   return Object.freeze({
-    gear: job => {
+    gear: (job: JobContext) => {
       if (kept.has(job.jobId)) {
-        const items = kept.get(job.jobId);
+        const items = kept.get(job.jobId) as readonly PoolItem[];
         kept.delete(job.jobId);
         kept.set(job.jobId, items);
         return items;
@@ -29,7 +41,7 @@ export function makeSession({ gear = jobGear, size = SESSION_SIZE } = {}) {
       const items = gear(job);
       kept.set(job.jobId, items);
       if (kept.size > size) {
-        kept.delete(kept.keys().next().value);
+        kept.delete(kept.keys().next().value as string);
       }
       return items;
     },

@@ -1,4 +1,4 @@
-/* Target GCD (src/core/target-gcd.js): the GCD the result reports is checked with the GCD formula and food bonus
+/* Target GCD (src/core/target-gcd.ts): the GCD the result reports is checked with the GCD formula and food bonus
    directly, food choices against running each meal on its own, and the edge cases on hand-made pools. Whether the
    loadout is the best one is the exhaustive tests' job (core/optimizer/index.exhaustive.test.js). */
 import { test } from 'node:test';
@@ -8,7 +8,7 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { mkItem } from '../../../src/core/items.ts';
 import { prepare, solve } from '../../../src/core/optimizer/index.ts';
 import { gcdFor } from '../../../src/core/speed.ts';
-import { optimizeGcd } from '../../../src/core/target-gcd.js';
+import { optimizeGcd } from '../../../src/core/target-gcd.ts';
 import { gamePool } from '../helpers/exhaustive.js';
 
 const sge = makeJobContext('SGE');

@@ -1,5 +1,5 @@
 /* A recipe and its solve: what to look for, and the set that answers it. Each gear set of a sheet keeps its own Auto-fill
-   settings, which make its recipe, so the solve takes the recipe and a solver session (session.js) as plain inputs,
+   settings, which make its recipe, so the solve takes the recipe and a solver session (session.ts) as plain inputs,
    never the page's store.
 
    A recipe: a set's Auto-fill settings as one flat object (ui/sheets/fill-settings.js fillRecipe):
@@ -11,7 +11,7 @@
      melds             give pieces their best materia melds
      food              add the meal for the goal (a picked meal in its place, runRecipe's `choices`)
      gcd, gcdMode      the Target GCD in seconds ('' for any; askedGcd), 'exact' or 'min' (that or faster)
-     byTier            rank the goal and tiebreaks by tier first (tier-rank.js)
+     byTier            rank the goal and tiebreaks by tier first (tier-rank.ts)
    Job, sync and level are not part of a recipe: like evaluateSet (set.ts), the solve takes them, as a sheet will hold
    them for all its sets.
 
@@ -22,11 +22,111 @@ import { activityCounts, allocatedRelic, filterGear, gearFilter, itemRoutes, poo
 import { buildCandidates, fixedCandidate, optimize, pinProblem } from './optimizer/index.ts';
 import { realSlotType } from './optimizer/slot-index.ts';
 import { itemSyncIlvl } from './piece.ts';
-import { sameMeals, sameResult } from './same-result.js';
+import { sameMeals, sameResult } from './same-result.ts';
 import { evaluateSet, setFromPicks } from './set.ts';
 import { BASE_GCD_MS, gcdFor, hasteFor } from './speed.ts';
-import { fastestGcd, optimizeGcd } from './target-gcd.js';
-import { rankByTier } from './tier-rank.js';
+import { fastestGcd, optimizeGcd } from './target-gcd.ts';
+import { rankByTier, type HeldKey, type TierRankFailure, type TierRankSuccess } from './tier-rank.ts';
+import type { FoodChoice, Meal } from './food.ts';
+import type { GcdMode, Haste } from './speed.ts';
+import type { GcdFailure, GcdSuccess } from './target-gcd.ts';
+import type { SolverSession } from './session.ts';
+import type { Candidate, GearSet, JobContext, PoolItem, SlotPick, SlotType, SolveResult, StatKey, Stone, Sync } from './types.ts';
+
+/* A recipe: a set's Auto-fill settings as one flat object (the fields are explained above). `min`, `max`, `lvl` and `gcd` hold
+   a number or the empty text of an empty box. */
+export interface Recipe {
+  target: StatKey;
+  tb: StatKey | '';
+  tb2: StatKey | '';
+  expOff: readonly string[];
+  exclude?: readonly string[];
+  market?: boolean;
+  min: unknown;
+  max: unknown;
+  lvl: unknown;
+  melds?: boolean;
+  food?: boolean;
+  gcd?: unknown;
+  gcdMode?: GcdMode;
+  byTier?: boolean;
+}
+/* A pinned piece as a set saves it: its slot, its game id and its stones. */
+export interface PinPiece {
+  slot: SlotType;
+  gameId: number;
+  stones?: readonly (Stone | null)[];
+}
+/* What a solve keeps (runRecipe's `pins`): the set's pinned pieces and the pinned meal's allMeals key (or null). */
+export interface Pins {
+  pieces: readonly PinPiece[];
+  meal: string | null;
+}
+/* Why a pin cannot be kept (resolvePins). */
+export interface PinProblem {
+  index: number | null;
+  reason: 'missing' | 'slot' | 'wearable' | 'relic' | 'conflict' | 'meal';
+}
+/* What the player picked on the last result (runRecipe's `choices`). */
+export interface RecipeChoices {
+  pieces?: Record<number, number | null>;
+  meal?: string | null;
+}
+/* The search part of a Target GCD result (gcdFacts). */
+export interface GcdFacts {
+  ok: boolean;
+  reason?: string;
+  asked?: number | null;
+  mode?: GcdMode | null;
+  faster?: boolean;
+  gcd?: number;
+}
+/* The meals of a result with Food on (runRecipe's found.food). */
+export interface RecipeFood {
+  searched: FoodChoice;
+  best: FoodChoice | null;
+  tagged: FoodChoice[];
+  shown: FoodChoice;
+  picked: boolean;
+}
+/* How a recipe's solve was made (runRecipe's record). */
+export interface RecipeRecord {
+  readonly job: string;
+  readonly sync: Readonly<Sync>;
+  readonly level: number;
+  readonly recipe: Readonly<Recipe>;
+  readonly pins?: Readonly<Pins>;
+}
+/* A solve that found no set (runRecipe): why, and what the search found beyond it. */
+export interface RecipeFailure {
+  readonly status: 'excluded' | 'noset' | 'nogcd' | 'infeasible' | 'badpin';
+  readonly set: null;
+  readonly record: RecipeRecord;
+  readonly found: { truncated: boolean | undefined; gcd: GcdFacts | null; badPins: PinProblem[] };
+}
+/* A solve that found a set (runRecipe). */
+export interface RecipeSuccess {
+  readonly status: 'ok';
+  readonly set: GearSet;
+  readonly record: RecipeRecord;
+  readonly found: {
+    truncated: boolean;
+    gcd: GcdFacts | null;
+    picks: SlotPick[];
+    options: Candidate[][];
+    held: HeldKey[];
+    synced: boolean;
+    food: RecipeFood | null;
+  };
+}
+/* What runRecipe returns. */
+export type RecipeResult = RecipeSuccess | RecipeFailure;
+/* What resolvePins returns: the pinned candidates, the pinned meal and what cannot be kept. */
+export interface ResolvedPins {
+  fixed: Candidate[];
+  meal: Meal | null;
+  problems: PinProblem[];
+}
 
 /* The page's search node budget: a search that visits more nodes stops, keeps the best set found so far and is marked
    truncated (the result's "node limit" note). Lower than the engine's own default (1,500,000), since the search holds
@@ -36,14 +136,14 @@ export const NODE_LIMIT = 700000;
 
 /* `gear` (pool items) through the recipe's filters under Gear to search: Gear categories and the market board, then the
    expansions, item level range and equip level. */
-function filtered(recipe, gear) {
+function filtered(recipe: Recipe, gear: readonly PoolItem[]): readonly PoolItem[] {
   return filterGear(withActivities(gear, recipe.exclude || [], recipe.market !== false), gearFilter(recipe));
 }
 
 /* The pool a recipe searches, from `gear` (a session's gear for `job`): the pieces that pass its filters, minus any
    piece above the job's level cap (jobGear has none; this guards gear passed in) and the relics whose substats the
    player allocates (allocatedRelic in items.ts). */
-export function recipePool(job, recipe, gear) {
+export function recipePool(job: JobContext, recipe: Recipe, gear: readonly PoolItem[]): PoolItem[] {
   return filtered(recipe, gear).filter(i => wearable(job, i) && !allocatedRelic(job, i));
 }
 
@@ -52,14 +152,14 @@ export function recipePool(job, recipe, gear) {
    substats the player allocates. The boxes ticked and the market board switch are not applied, so the counts do not change
    when a box is ticked; a piece obtainable in two ways is in both boxes. The menu shows them, a box at 0 has nothing for the job
    and filters. */
-export function gearFromCounts(job, recipe, gear) {
+export function gearFromCounts(job: JobContext, recipe: Recipe, gear: readonly PoolItem[]): Record<string, number> {
   const pool = filterGear(gear, gearFilter(recipe)).filter(i => wearable(job, i) && !allocatedRelic(job, i));
-  return activityCounts(pool.map(itemRoutes).filter(Boolean));
+  return activityCounts(pool.map(itemRoutes).filter(Boolean) as (readonly number[])[]);
 }
 
 /* The Target GCD asked for, in seconds, or null for none: the box is empty, or the goal is speed itself (the box is
    disabled then: maximizing speed already gives the fastest GCD). */
-function askedGcd(job, recipe) {
+function askedGcd(job: JobContext, recipe: Recipe): number | null {
   if (recipe.target === job.speedKey || recipe.gcd === '' || recipe.gcd == null) {
     return null;
   }
@@ -69,17 +169,17 @@ function askedGcd(job, recipe) {
 
 /* The meal the player picked (`mealKey`, an allMeals key, or null) as its allMeals entry, or null: with Food off, or a
    key no meal of the job has, there is none. */
-function pickedMeal(job, recipe, mealKey) {
+function pickedMeal(job: JobContext, recipe: Recipe, mealKey: string | null | undefined): Meal | null {
   return (recipe.food && mealKey && allMeals(job).find(m => m.key === mealKey)) || null;
 }
 
 /* Each game id's piece in `gear` (a session's gear for the job), kept per gear list. */
-const gearIndexes = new WeakMap();
-function gearById(gear) {
+const gearIndexes = new WeakMap<readonly PoolItem[], Map<number | undefined, PoolItem>>();
+function gearById(gear: readonly PoolItem[]): Map<number | undefined, PoolItem> {
   if (!gearIndexes.has(gear)) {
     gearIndexes.set(gear, new Map(gear.map(item => [item.gameId, item])));
   }
-  return gearIndexes.get(gear);
+  return gearIndexes.get(gear) as Map<number | undefined, PoolItem>;
 }
 
 /* The pins a solve keeps, resolved for `job` under `sync`, with pieces taken from `gear` (the session's gear for the
@@ -94,13 +194,13 @@ function gearById(gear) {
    it: not in `gear`), 'relic' (its substats are the player's to allocate, which the model leaves out), 'conflict' (pinned pieces that
    cannot be worn together: more than two rings, a Unique piece twice, or one covering another's slot), 'meal' (no such meal for the job). A
    piece with a problem is not in `fixed`. */
-export function resolvePins(job, sync, pins, gear) {
-  const fixed = [];
-  const problems = [];
+export function resolvePins(job: JobContext, sync: Sync, pins: Pins | null | undefined, gear: readonly PoolItem[]): ResolvedPins {
+  const fixed: Candidate[] = [];
+  const problems: PinProblem[] = [];
   const byId = gearById(gear);
   (pins?.pieces ?? []).forEach((piece, index) => {
     const item = byId.get(piece.gameId) ?? null;
-    let reason = null;
+    let reason: PinProblem['reason'] | null = null;
     if (!item) {
       reason = poolItemById(job, piece.gameId) ? 'wearable' : 'missing';
     } else if (item.type !== piece.slot) {
@@ -111,7 +211,7 @@ export function resolvePins(job, sync, pins, gear) {
     if (reason) {
       problems.push({ index, reason });
     } else {
-      fixed.push(fixedCandidate(job, item, piece.stones ?? [], sync));
+      fixed.push(fixedCandidate(job, item as PoolItem, piece.stones ?? [], sync));
     }
   });
   if (!problems.length && pinProblem(fixed)) {
@@ -125,19 +225,19 @@ export function resolvePins(job, sync, pins, gear) {
 }
 
 /* Whether `pins` (runRecipe's) keep anything: a piece or a meal. */
-export function hasPins(pins) {
+export function hasPins(pins: Pins | null | undefined): boolean {
   return Boolean(pins?.pieces?.length || pins?.meal);
 }
 
 /* Whether a solve counts a meal: Food is on in the recipe, or a meal is pinned (`pinnedMeal`, resolvePins' meal: a
    pinned meal is the meal even with Food off). */
-function usesFood(recipe, pinnedMeal) {
+function usesFood(recipe: Recipe, pinnedMeal: Meal | null): boolean {
   return Boolean(recipe.food) || Boolean(pinnedMeal);
 }
 
 /* The meal Target GCD and tier ranking search with: none with Food off (`foodOn` false), the player's pick (`picked`, an
    allMeals entry), or every choice ('best'). */
-function searchMeal(foodOn, picked) {
+function searchMeal(foodOn: boolean, picked: Meal | null): FoodChoice | 'best' | null {
   if (!foodOn) {
     return null;
   }
@@ -149,7 +249,15 @@ function searchMeal(foodOn, picked) {
    Food is on; null when no set exists), haste (hasteFor, or null)}. The fastest is one search for the most speed,
    run every time (20 to 100 ms). `pins` (as for runRecipe): the pinned pieces count, with their speed, and a
    pinned meal is the meal. */
-export function gcdRange(job, sync, level, recipe, session, meal = null, pins = null) {
+export function gcdRange(
+  job: JobContext,
+  sync: Sync,
+  level: number,
+  recipe: Recipe,
+  session: SolverSession,
+  meal: Meal | null = null,
+  pins: Pins | null = null,
+): { top: number; fastest: number | null; haste: Haste | null } {
   const haste = hasteFor(job.jobId, level);
   const top = gcdFor(0, level, BASE_GCD_MS, haste?.pct ?? 0);
   const pinned = resolvePins(job, sync, pins, session.gear(job));
@@ -167,11 +275,13 @@ export function gcdRange(job, sync, level, recipe, session, meal = null, pins = 
 
 /* The search part of a Target GCD result, for the line under its box: {ok, reason, asked, mode, faster, gcd}
    (optimizeGcd, rankByTier). */
-const gcdFacts = r => ({ ok: r.ok, reason: r.reason, asked: r.asked, mode: r.mode, faster: r.faster, gcd: r.gcd });
+const gcdFacts = (r: GcdFacts): GcdFacts => ({ ok: r.ok, reason: r.reason, asked: r.asked, mode: r.mode, faster: r.faster, gcd: r.gcd });
 
 /* A recipe's copy, frozen with its lists, for the record. */
-const frozenRecipe = recipe =>
-  Object.freeze(Object.fromEntries(Object.entries(recipe).map(([k, v]) => [k, Array.isArray(v) ? Object.freeze([...v]) : v])));
+const frozenRecipe = (recipe: Recipe): Readonly<Recipe> =>
+  Object.freeze(
+    Object.fromEntries(Object.entries(recipe).map(([k, v]) => [k, Array.isArray(v) ? Object.freeze([...v]) : v])),
+  ) as Readonly<Recipe>;
 
 /* Solve `recipe` for `job` (a JobContext) under `sync` ({cap, sync, level}, as for itemSyncIlvl) at character level
    `level`, with `session`'s gear. `choices`: what the player picked on the last result, set data, not saved:
@@ -202,18 +312,35 @@ const frozenRecipe = recipe =>
      [{stat}], or [] without it), synced (sync changes some piece of the pool), food (null with Food
      off, else {searched: the meal the search counted, best: the best meal for the goal on this gear, tagged: the meals
      with the best's result (allMeals order), shown: the meal the set has, picked: true when the player picked it})}. */
-export function runRecipe(job, sync, level, recipe, session, choices = {}, pins = null) {
+export function runRecipe(
+  job: JobContext,
+  sync: Sync,
+  level: number,
+  recipe: Recipe,
+  session: SolverSession,
+  choices: RecipeChoices = {},
+  pins: Pins | null = null,
+): RecipeResult {
   const pinned = resolvePins(job, sync, pins, session.gear(job));
-  const record = Object.freeze({
+  const record: RecipeRecord = Object.freeze({
     job: job.jobId,
     sync: Object.freeze({ ...sync }),
     level,
     recipe: frozenRecipe(recipe),
     ...(hasPins(pins)
-      ? { pins: Object.freeze({ pieces: Object.freeze(pins.pieces.map(p => Object.freeze({ ...p }))), meal: pins.meal ?? null }) }
+      ? {
+          pins: Object.freeze({
+            pieces: Object.freeze((pins as Pins).pieces.map(p => Object.freeze({ ...p }))),
+            meal: (pins as Pins).meal ?? null,
+          }),
+        }
       : {}),
   });
-  const fail = (status, r = null, askedValue = null) =>
+  const fail = (
+    status: RecipeFailure['status'],
+    r: (GcdFacts & { truncated?: boolean }) | null = null,
+    askedValue: number | null = null,
+  ): RecipeFailure =>
     Object.freeze({
       status,
       set: null,
@@ -240,8 +367,8 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
   const hastePct = hasteFor(job.jobId, level)?.pct ?? 0;
   const asked = askedGcd(job, recipe);
   const goal = { target: recipe.target, tiebreak: [recipe.tb, recipe.tb2], melds: Boolean(recipe.melds), fixed };
-  const failed = r => {
-    let status = 'noset';
+  const failed = (r: GcdFacts & { truncated?: boolean }): RecipeFailure => {
+    let status: RecipeFailure['status'] = 'noset';
     if (r.truncated) {
       status = 'infeasible';
     } else if (asked != null) {
@@ -253,7 +380,8 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
   // 2. the search. By tier: the tiers of the goal and tiebreaks first, counted with food, so meal and gear are chosen
   // together (rankByTier). Otherwise, with a Target GCD, gear and meal are chosen together (optimizeGcd); without
   // one, the gear first and the meal after (it never changes which gear wins)
-  let res, food;
+  let res: GcdSuccess | GcdFailure | TierRankSuccess | TierRankFailure | SolveResult;
+  let food: FoodChoice | null;
   const byTier = recipe.byTier !== false;
   if (byTier) {
     res = rankByTier(job, pool, sync, {
@@ -267,7 +395,7 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
     if (!res.ok) {
       return failed(res);
     }
-    food = res.food;
+    food = (res as TierRankSuccess).food;
   } else if (asked != null) {
     res = optimizeGcd(job, pool, sync, {
       ...goal,
@@ -280,7 +408,7 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
     if (!res.ok) {
       return failed(res);
     }
-    food = res.food;
+    food = (res as GcdSuccess).food;
   } else {
     res = optimize(job, pool, sync, { ...goal, nodeLimit: NODE_LIMIT });
     if (!res.ok) {
@@ -289,7 +417,7 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
     food = foodOn ? (picked ?? bestFood(job, foodChoices(job), res.totals, level, [recipe.target, recipe.tb, recipe.tb2])) : null;
   }
 
-  // 3. the piece each row shows: the easiest piece with the same result, or the player's pick (same-result.js),
+  // 3. the piece each row shows: the easiest piece with the same result, or the player's pick (same-result.ts),
   // checked against every piece of the pool as a candidate for the goal, unpruned, with the melds the optimizer would
   // give it (meld versions under a Target GCD)
   const speedMode = asked != null ? recipe.gcdMode : '';
@@ -314,14 +442,14 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
   // 4. the meal the Food row shows, chosen on the gear's totals: the best for the goal on this gear (the search's own,
   // or with a pick the one the search would have taken), the meals with its result, and the pick or else the last of
   // those (allMeals is oldest first: the highest item level)
-  let meals = null;
+  let meals: RecipeFood | null = null;
   if (food) {
     const gearTotals = evaluateSet(job, setFromPicks(picks), sync, level).gear;
     const keys = [recipe.target, recipe.tb, recipe.tb2].filter(Boolean);
     const all = allMeals(job);
     const best = picked ? bestFood(job, foodChoices(job), gearTotals, level, keys) : food;
-    const tagged = sameMeals(job, gearTotals, best, all, { level, haste: hastePct, goal: recipe.target }, keys);
-    meals = { searched: food, best, tagged, shown: picked ?? tagged.at(-1), picked: Boolean(picked) };
+    const tagged = sameMeals(job, gearTotals, best as FoodChoice, all, { level, haste: hastePct, goal: recipe.target }, keys);
+    meals = { searched: food, best, tagged, shown: picked ?? (tagged.at(-1) as FoodChoice), picked: Boolean(picked) };
   }
 
   return Object.freeze({
@@ -333,7 +461,7 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
       gcd: asked != null ? gcdFacts(res) : null,
       picks,
       options: same.map(r => r.options),
-      held: byTier ? res.held : [],
+      held: byTier ? (res as TierRankSuccess).held : [],
       synced: sync.sync || pool.some(i => itemSyncIlvl(i, sync) != null),
       food: meals,
     },

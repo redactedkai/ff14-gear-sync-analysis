@@ -7,8 +7,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { itemById } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { runRecipe } from '../../../../src/core/recipe.js';
-import { makeSession } from '../../../../src/core/session.js';
+import { runRecipe } from '../../../../src/core/recipe.ts';
+import { makeSession } from '../../../../src/core/session.ts';
 import { applyFill, fillPlan } from '../../../../src/ui/sheets/fill.js';
 import { appState } from '../../helpers/common.js';
 
