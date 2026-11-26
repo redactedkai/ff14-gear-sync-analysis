@@ -15,6 +15,7 @@ import { defineConfig } from 'playwright/test';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const snapshotFolder = process.env.GSA_VISUAL_SNAPSHOTS ? resolve(process.env.GSA_VISUAL_SNAPSHOTS) : resolve(here, '__screenshots__');
+// the HTML report goes beside the results folder, not inside it: Playwright clears the results folder before it writes the report
 const outputFolder = process.env.GSA_VISUAL_OUTPUT ? resolve(process.env.GSA_VISUAL_OUTPUT) : resolve(here, 'test-results');
 
 export default defineConfig({
@@ -26,7 +27,7 @@ export default defineConfig({
   retries: 0,
   workers: Number(process.env.GSA_VISUAL_WORKERS) || 4,
   timeout: 120_000,
-  reporter: [['list'], ['html', { open: 'never', outputFolder: resolve(outputFolder, 'report') }]],
+  reporter: [['list'], ['html', { open: 'never', outputFolder: `${outputFolder}-report` }]],
   expect: {
     toHaveScreenshot: {
       animations: 'disabled',

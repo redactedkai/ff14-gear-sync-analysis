@@ -52,7 +52,9 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: visual-diff
-          path: tests/visual/test-results/
+          path: |
+            tests/visual/test-results/
+            tests/visual/test-results-report/
           retention-days: 14
 
   update-baselines:
