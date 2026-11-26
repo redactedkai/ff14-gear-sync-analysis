@@ -610,12 +610,25 @@ The workloads live in `scripts/perf/workloads.mjs`, the budgets in `bench.mjs` a
 - **Empty pool:** the result is "ok" with no picks and all totals 0 (**verified** by test). The page shows its own message instead ("No gear to search") when the filters leave nothing.
 - **Missing slot types** are left out of the gear set.
 - **Truncated results** may not be optimal, so the page puts a note under them. In a single search, no real or hostile pool comes near the page's limit of 700,000 (the largest is 1,209 nodes); without the speed tables, only a speed range could reach it (section 5). Tier ranking runs several searches with minimums, and a few of its cases still stop early: 4 of 5,028 in the 2026-10-17 sweep, healers at level 100, cap 690, GCD 2.29 ([performance log, section 5.1](perf-log.md#51-tier-ranking-after-the-regain-cuts-the-trial-search-the-slot-order-and-band-reach)).
-- **Ties:** among gear sets with exactly the same score, the first one found wins: higher-ranked items first, then pool order. The slot order depends on the lists left after the filters (section 5), so which of several tied gear sets comes back can change with the settings; the score, and so the target and tiebreak totals, cannot. Tied gear sets can differ in the stats that are not ranked, and there is no tie rule yet (owner's decision; [tier-ranking.md, section 9](tier-ranking.md#9-known-limits)).
+- **Ties:** the ranked totals are fixed, the pieces are not; see [Ties](#ties) below.
 - **Meals of equal goal:** Target GCD picks the meal whose gear set scores most on the goal and tiebreaks, then the one that adds most in total. That last step uses whichever tied gear set each meal's search returned, so it is not the most any tied gear set could get with that meal. In 71 of 252,112 sweep runs the meal changed when the search order changed; the goal and tiebreaks were the same.
 - **A speed maximum never empties a slot.** If every candidate in a slot would break it, the result is "no feasible gear set", even though leaving that slot empty would satisfy it. For Target GCD this is the "none" answer.
 - **Scores too large to rank exactly** raise an error instead of returning a possibly wrong answer (section 3). Real gear stays far below that point.
 - **Relics with allocated substats** are left out of the search (section 7); a gear set that would use one, with the player's own allocation, is not found.
 - **Model assumptions** carry over from the stat model: synced stats follow the clamp rule in [math.md](../mechanics/math.md) (verified against the Wiki's item level 475 caps); melds follow [materia.md](../mechanics/materia.md), with every meld assumed to succeed. Items in the pool use their real stats, so the empirical substat shares do not affect the optimizer.
+
+### Ties
+
+Several gear sets can have exactly the same ranked totals: weapon damage, the target and the tiebreaks, with food and by tier when asked. The search returns one of them.
+
+- **Stable:** the ranked totals (and the GCD when one is asked). They are the same in every order of the pool and of the slots, because the score packs them exactly (section 3).
+- **Not stable:** the pieces, and with melds the stones, wherever two pieces tie. Among gear sets with exactly the same score the first one found wins: higher-ranked pieces first, then the order of the pool. The slot order depends on the lists left after the filters (section 5), so it can change with the settings too. Tied pieces can differ in every stat nobody ranked, in item level and in stones. There is no tie-break rule (owner's decision: one was considered and not made), so an Auto-fill's pieces are only comparable by their totals.
+- **Where the equal alternatives are listed:** each row's menu of pieces with the same result ([ui.md, "Which piece an Auto-fill suggests"](ui.md#which-piece-an-auto-fill-suggests), `same-result.js`). The row shows the piece with the lowest equip level, then the lowest item level; when two pieces are equal in both, the search's own pick stays, so it follows the order of the pool.
+- **Cases found** (`tests/unit/core/recipe.ties.test.js`, the pool in the database's order and reversed):
+  - Sage, cap 123, level 50, goal Mind, no tiebreak, plain search: hands, legs, earrings and both rings differ (Mind 356 either way; the pieces differ in Critical Hit, Determination, Spell Speed and Piety, which nobody ranked).
+  - Paladin, no sync, level 100, goal Strength, no tiebreak: the second ring is 51182 or 49576, with the same stats and item level 780 (Strength 5,980 either way).
+  - Bard, no sync, level 100, Critical Hit then Determination, melds: the hands are 51873 (Critical Hit stones) or 50870 (Determination stones), the second ring 51184 (Determination stones) or 49578 (Critical Hit stones), with the same totals (Critical Hit 3,139, Determination 1,850).
+- **If a tie-break is added,** that test must be tightened to equal pieces and stones in every order.
 
 ## Where this lives
 
@@ -641,7 +654,7 @@ The workloads live in `scripts/perf/workloads.mjs`, the budgets in `bench.mjs` a
 | Page timing marks (`fill`, `save`) | `src/ui/elements/set-page/fill-run.ts`, `fill-settings-edit.ts`, `src/main.js` |
 | Dated benchmark runs | `docs/engineering/perf-log.md` |
 | Stress-test scripts | `scripts/perf/` (`bench.mjs`, `split.mjs`, `adversarial.mjs`, `browser.mjs`, `db-parse.mjs`, `compare.mjs`, `memory.mjs`, `workloads.mjs`, `target-gcd-sweep.mjs`) |
-| Tests | `tests/unit/core/optimizer/index.test.js`, `tests/unit/core/optimizer/index.exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/core/optimizer/index.speed-limits.test.js`, `tests/unit/core/target-gcd.test.js`, `tests/unit/core/target-gcd.exhaustive.test.js`, `tests/unit/core/optimizer/index.stat-minimums.test.js`, `tests/unit/core/optimizer/regain.test.js` |
+| Tests | `tests/unit/core/optimizer/index.test.js`, `tests/unit/core/optimizer/index.exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/core/optimizer/index.speed-limits.test.js`, `tests/unit/core/target-gcd.test.js`, `tests/unit/core/target-gcd.exhaustive.test.js`, `tests/unit/core/optimizer/index.stat-minimums.test.js`, `tests/unit/core/optimizer/regain.test.js`, `tests/unit/core/recipe.ties.test.js` (ties, see Ties above) |
 
 Notes on the table:
 

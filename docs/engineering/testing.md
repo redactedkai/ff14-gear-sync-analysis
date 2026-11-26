@@ -21,7 +21,7 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | about 1,380 tests in 195 files, about 30 to 45 s |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | about 1,390 tests in 196 files, about 30 to 45 s |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/sweep/`) | 6 tests in 6 files, about 22 s on their own |
 | Generator tests (Python) | the data generators, on small test files | 128 tests in 10 files |
 | Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 162 tests in 37 files, in Chromium (about 12 s of test time) and also in Firefox and WebKit (about 30 s for the three) |
@@ -44,7 +44,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | --- | --- | ---: | ---: |
 | `model` | the game's number rules: item stats, sync, speed, tiers, food, materia | 22 | 0 |
 | `data` | the game data and job facts, and the pipeline that generates them (with the Python tests) | 11 | 0 |
-| `solver` | the search for the best gear set, in the core (with the long sweep) | 24 | 0 |
+| `solver` | the search for the best gear set, in the core (with the long sweep) | 25 | 0 |
 | `auto-fill` | Auto-fill on the page: settings, run, cancel, worker, suggestion | 12 | 17 |
 | `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 20 | 17 |
 | `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 21 | 12 |
@@ -107,7 +107,8 @@ Which file tests what? One line per file; the file itself says the rest.
 | core/optimizer/index.stat-minimums | minimums on any stat against the brute force (note 4) |
 | core/recipe | a recipe's solve (note 5) |
 | core/recipe.pins | a solve's pins: kept pieces and meal, the problems a pin cannot be kept for |
-| core/recipe.pool-order | Auto-fill with the job's gear in other orders (seeded shuffles): the ranked totals the same in every order, and the same pieces and stones where one set is best (ties among equal pieces are not asserted) |
+| core/recipe.pool-order | Auto-fill with the job's gear in other orders (seeded shuffles): the ranked totals the same in every order, and the same pieces and stones where one set is best (ties among equal pieces are not asserted here, but in core/recipe.ties) |
+| core/recipe.ties | Auto-fill's ties as they are: Sage, Paladin and Bard cases where the pool's order changes which equal pieces show, with the ranked totals the same in every order (tighten it if a fixed tie-break is added) |
 | core/recipe.real-gear | a set's Auto-fill on real gear against the core and the brute force (note 6) |
 | core/recipe.round-trip | Auto-fill twice, pinned whole or in half, and picked back, on random jobs and recipes |
 | core/same-result | other pieces with the same result: shared spare points, Unique rings, cloaks, the owner's level 50 case |

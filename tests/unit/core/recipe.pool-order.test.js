@@ -6,7 +6,8 @@
      in every order, not only the same totals.
    Where several sets tie on the ranked stats, the stats nobody ranked are free, so two orders may show different pieces
    (and a tie of equal pieces, like two rings with the same stats, item level and equip level, is broken by the pool's
-   order: same-result.js keeps "the optimizer's own pick on a tie"). That is not asserted here. */
+   order: same-result.js keeps "the optimizer's own pick on a tie"). That is not asserted here; recipe.ties.test.js
+   shows it on three real cases. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.js';

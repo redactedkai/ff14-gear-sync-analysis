@@ -86,7 +86,7 @@ The Total row's item level cell shows the set's average item level, a whole numb
 
 ### Which piece an Auto-fill suggests
 
-Roadmap A9. Under sync many pieces reach the same caps: for Sage at level 50, cap 123, with crafted and tomestone gear, every slot has 11 to 20 others. An Auto-fill suggests, for each row, the piece with the same result that is easiest to get: the lowest equip level, then the lowest item level, the search's own pick on a tie (`core/same-result.js`).
+Roadmap A9. Under sync many pieces reach the same caps: for Sage at level 50, cap 123, with crafted and tomestone gear, every slot has 11 to 20 others. An Auto-fill suggests, for each row, the piece with the same result that is easiest to get: the lowest equip level, then the lowest item level, the search's own pick on a tie, which follows the order of the pool ([optimizer.md, Ties](optimizer.md#ties); `core/same-result.js`).
 
 - **The same result:** the same main stat, and every substat at the same tier, counted with the set's meal. The tiers are tier ranking's (`rankTierOf`, [tier-ranking.md](tier-ranking.md)). The goal stat's raw points stay as well. Two tiers may drop a step:
   - speed holds its GCD (with haste) but its DoT/HoT tick scaling may drop a step (**owner's decision**, as for tier ranking);
