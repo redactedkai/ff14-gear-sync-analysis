@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { readStyles } from '../../../scripts/build/styles.mjs';
 import { readThemeTokens } from '../../e2e/lib/visual.mjs';
@@ -40,7 +41,7 @@ test('src/styles/*.css: every color outside the token blocks is a var(--token)',
 });
 
 test('the page HTML paints no literal color: no style attribute or fill/stroke/color attribute with one', () => {
-  const files = [join(new URL('.', SRC).pathname.slice(1), 'index.html')];
+  const files = [join(fileURLToPath(SRC), 'index.html')];
   const found = [];
   for (const file of files) {
     const html = readFileSync(file, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
@@ -74,7 +75,7 @@ function quotedColors(dir) {
 }
 
 test('the UI scripts hold no quoted color literal (a style set from script would ignore the theme)', () => {
-  assert.deepEqual(quotedColors(new URL('ui/', SRC).pathname.slice(1)), []);
+  assert.deepEqual(quotedColors(fileURLToPath(new URL('ui/', SRC))), []);
 });
 
 /* the scan reads .ts files too: a planted .ts stray with a quoted color is found, a clean one is not. */
