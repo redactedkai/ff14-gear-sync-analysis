@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { VIEWS } from '../../../scripts/shots/views.mjs';
 import { IMAGE_ENV, PINNED_IMAGE, hasBaselines, pinnedTag, plan } from '../../../scripts/visual.mjs';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..');
@@ -61,4 +62,18 @@ test('test:visual is its own script and is not part of check', () => {
   assert.equal(scripts['test:visual'], 'node scripts/visual.mjs');
   assert.equal(scripts.check.includes('visual'), false);
   assert.equal(scripts['check:all'].includes('visual'), false);
+});
+
+test('the view list: numbered names that stay unique, and the counts the docs and headers give', () => {
+  const names = Object.keys(VIEWS);
+  for (const name of names) {
+    assert.match(name, /^\d\d-[a-z0-9-]+$/, `view name ${name}`);
+  }
+  assert.equal(new Set(names.map(name => name.slice(0, 2))).size, names.length, 'two views share a number');
+  const testing = read('docs/engineering/testing.md');
+  assert.ok(testing.includes(`${names.length} views) at 1440 and 960 px wide`), `testing.md names ${names.length} views for the baselines`);
+  assert.ok(testing.includes(`${names.length * 2} images expected`), `testing.md names ${names.length * 2} baseline images`);
+  assert.ok(testing.includes(`${names.length * 4} shots for the ${names.length} views`), `testing.md names ${names.length * 4} shots`);
+  assert.ok(read('scripts/shots/shots.mjs').includes(`${names.length} views, ${names.length * 4} shots`), 'shots.mjs header count');
+  assert.ok(read('tests/visual/screens.spec.mjs').includes(`${names.length * 2} baselines`), 'screens.spec.mjs header count');
 });

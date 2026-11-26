@@ -1,5 +1,5 @@
 /* One screenshot per view of the page (the VIEWS of scripts/shots/views.mjs) at 1440 and 960 px wide, dark scheme, full
-   page: 48 baselines in `__screenshots__/`. The views, their saved states and their steps are shared with
+   page: 72 baselines in `__screenshots__/`. The views, their saved states and their steps are shared with
    `npm run shots`, so a new view there is a new baseline here. */
 
 import { pathToFileURL } from 'node:url';

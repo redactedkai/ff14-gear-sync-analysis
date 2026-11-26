@@ -5,7 +5,9 @@
 # - compare: on a push to dev or main and on pull requests, runs `npm run test:visual`. With no baselines in the folder it
 #   passes with a message. On a difference it fails and uploads the expected, actual and diff images and the report.
 # - update-baselines: by hand only (Run workflow). Makes new baselines in the same image and uploads them as an artifact.
-#   It never commits or pushes: download the artifact, put the images in tests/visual/__screenshots__/, commit them.
+#   It never commits or pushes. Run it on the branch (gh workflow run visual.yml --ref <branch> -f update-baselines=true),
+#   download the artifact (gh run download <run id> -n visual-baselines -D tests/visual/__screenshots__), look at the
+#   images and commit them on that branch. Make them again whenever a view, the page's look or the image changes.
 # Actions are pinned to full commit SHAs, with the release in the trailing comment.
 name: Visual
 
