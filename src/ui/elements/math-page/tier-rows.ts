@@ -93,7 +93,7 @@ function centerCurrent(area: HTMLElement, state: DrawnArea): boolean {
 }
 
 class TierRowsDirective extends Directive {
-  // what the area shows now; kept here, not in reactive state: it holds page elements and every row's HTML
+  // what the area shows now; kept here, not in the store: it holds page elements and every row's HTML
   private state: DrawnArea | null = null;
   private listening = false;
 

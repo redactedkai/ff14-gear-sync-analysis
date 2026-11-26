@@ -126,7 +126,7 @@ export function createAppStore(restored: unknown) {
   return adapter as typeof adapter & Record<(typeof PANEL_KEYS)[number], unknown>;
 }
 
-/* The old Sheets store over the new one: `{storage, now, makeId}` as createSheetStore took them. */
+/* A sheets store for a test: `createSheetStore({storage, now, makeId})` builds the app store, with the sheets actions bound to it. */
 export function createSheetStore(options: SheetsActionOptions = {}) {
   const storage = options.storage === undefined ? defaultStorage() : options.storage;
   const store: AppStore = createStore(restoreState(null) as RestoredState, storage ? readSheets(storage) : NO_SHEETS);

@@ -46,7 +46,7 @@ function staticFacts(job, item) {
 /* The picker's pieces for one slot, built once per `gear` array and slot (the sorting and the lines were most of the
    picker's view work, redone on every read of it): gear array (WeakMap, so a job's list can be dropped) -> slot ->
    {facts: staticFacts of each piece of the slot, by expansion newest first, each newest first}. The facts hold no state
-   of the set; piecePickerView adds it. Not reactive state (big data: CLAUDE.md). */
+   of the set; piecePickerView adds it. Kept out of the store (big data: CLAUDE.md). */
 const slotFactsCache = new WeakMap();
 function slotFacts(job, gear, slot) {
   let bySlot = slotFactsCache.get(gear);

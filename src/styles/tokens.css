@@ -36,7 +36,7 @@
   --cap-none-mark: #d32f2f;
   --tint: rgba(27, 42, 44, 0.22);
   /* the stacking scale: every z-index names one of these. Low to high; --z-dialog and --z-toast share a value on purpose
-     (today's order: the Fill settings popover and the notes were both 30 and the later one in the page wins). A native
+     (today's order: the Auto-fill settings popover and the notes were both 30 and the later one in the page wins). A native
      dialog is in the top layer and needs none; a library dialog, which is not, takes --z-dialog. */
   --z-row: 1;
   --z-bar: 2;

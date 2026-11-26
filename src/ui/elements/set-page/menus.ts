@@ -23,7 +23,7 @@ const MENU_MIN_PX = 160;
 const HEADER_SELECTOR = '.shead';
 const TABLE_SELECTOR = '.settable';
 
-/* The job's wearable pieces (items.js jobGear) for the piece picker, built once per job and kept out of reactive state
+/* The job's wearable pieces (items.js jobGear) for the piece picker, built once per job and kept out of the store
    (big data: CLAUDE.md). */
 const gearByJob = new Map<string, ReturnType<typeof jobGear>>();
 function gearOf(job: JobContext) {

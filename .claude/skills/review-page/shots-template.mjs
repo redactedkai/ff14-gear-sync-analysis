@@ -130,18 +130,6 @@ const VIEWS = {
     },
     clip: ['#m-help-pop'],
   },
-  W1: {
-    state: { ...SGE, cap: null, sync: false },
-    steps: async pg => {
-      // hold the bar on screen: the busy state without a search behind it
-      await pg.evaluate(() => {
-        const el = document.querySelector('#o-run').closest('[x-data="optimizer"]');
-        el._x_dataStack[0].busy = true;
-      });
-      await settle(pg);
-    },
-    clip: ['#o-goal', '#o-busy', '#o-cancel'],
-  },
 };
 
 const only = onlyArg ? new RegExp(onlyArg) : null;
