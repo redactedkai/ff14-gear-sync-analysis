@@ -94,6 +94,69 @@ test.describe('<gsa-sheet-page>', () => {
     }
   });
 
+  test('the Clan and Party bonus boxes are named, as tall as the Level box and keep their width; a bonus moves nothing', async ({
+    mount,
+    page,
+  }) => {
+    await page.setViewportSize({ width: 960, height: 700 });
+    try {
+      await mount<typeof Default>(STORY);
+      const clan = page.locator('#sh-clan');
+      const party = page.locator('#sh-party');
+      await expect(clan).toHaveAttribute('aria-label', 'Race and clan');
+      await expect(party).toHaveAttribute('aria-label', 'Party bonus');
+      const places = () =>
+        page.evaluate(() => {
+          const rect = (selector: string) => (document.querySelector(selector) as Element).getBoundingClientRect().toJSON();
+          return {
+            clan: rect('#sh-clan'),
+            party: rect('#sh-party'),
+            level: rect('#sh-level'),
+            table: rect('#sh-sets'),
+            note: rect('#sh-bonus-note'),
+            sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+          };
+        });
+      const none = await places();
+      expect(Math.abs(none.clan.height - none.level.height), 'the Clan box is as tall as the Level box (within 1 px)').toBeLessThanOrEqual(
+        1,
+      );
+      expect(
+        Math.abs(none.party.height - none.level.height),
+        'the Party bonus box is as tall as the Level box (within 1 px)',
+      ).toBeLessThanOrEqual(1);
+      expect(none.sideways).toBe(false);
+      await expect(page.locator('#sh-bonus-note')).toHaveCSS('visibility', 'hidden');
+
+      // every clan and every party entry: the boxes keep their width, and nothing else moves
+      const pick = async (button: string, value: string) => {
+        await page.locator(button).click();
+        await page.locator(`${button}-list [role="option"][data-value="${value}"]`).click();
+      };
+      for (const value of ['Highlander', 'Seeker of the Sun', 'Midlander']) {
+        await pick('#sh-clan', value);
+        expect((await places()).clan.width, `the Clan box keeps its width with ${value}`).toBe(none.clan.width);
+      }
+      for (const value of ['1', '3', '5']) {
+        await pick('#sh-party', value);
+        expect((await places()).party.width, `the Party bonus box keeps its width with ${value} roles`).toBe(none.party.width);
+      }
+      await expect(page.locator('#sh-bonus-note')).toHaveCSS('visibility', 'visible');
+      const bonus = await places();
+      expect([bonus.table, bonus.note, bonus.level, bonus.sideways], 'a bonus moved the table, the line under it or the Level box').toEqual(
+        [none.table, none.note, none.level, false],
+      );
+
+      // both back to none: the same places, the line hidden again
+      await pick('#sh-clan', '');
+      await pick('#sh-party', '0');
+      await expect(page.locator('#sh-bonus-note')).toHaveCSS('visibility', 'hidden');
+      expect(await places(), 'both back to none: everything is where it was').toEqual(none);
+    } finally {
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
+  });
+
   test('a click on any plain part of a gear set row opens that set once; its Edit button, its drag handle and a drag that selects text open nothing', async ({
     mount,
     page,

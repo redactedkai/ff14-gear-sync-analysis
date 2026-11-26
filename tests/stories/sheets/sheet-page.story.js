@@ -3,6 +3,7 @@
    action the element sends is appended to the `events` output as `action:kind:id` or `action:value`. */
 import { html } from 'lit';
 import '../../../src/ui/elements/sheets/sheet-page.ts';
+import '../../../src/ui/elements/shared/select.ts';
 import { recordEvents } from '../gallery/record.js';
 
 /* A gear set's row, shaped as views/sheet-sets.ts builds it (the two figures are the main stat and the GCD). */
@@ -61,13 +62,23 @@ export const Default = () => {
   const record = recordEvents('events');
   /* The page's wrapper: records the action, and answers an item level above what level 70 allows with the lowered cap. */
   const answer = event => {
-    const { action, kind, id, value, mode } = event.detail;
+    const { action, kind, id, value, mode, name } = event.detail;
+    if (action === 'clan' || action === 'party') {
+      // the Clan and Party bonus boxes: the page keeps the pick and shows the note under the table
+      const page = event.currentTarget;
+      page.clan = action === 'clan' ? name || null : page.clan;
+      page.partyRoles = action === 'party' ? Number(value) : page.partyRoles;
+      page.view = {
+        ...VIEW,
+        bonusNote: page.clan || page.partyRoles ? `${page.clan ?? 'No clan'}, ${page.partyRoles}% party bonus` : '',
+      };
+    }
     if (action === 'cap' && Number(value) > LOWERED_TO) {
       event.detail.result = { ok: true, lowered: { from: Number(value), to: LOWERED_TO, level: 70 } };
     } else if (action === 'cap' || action === 'level') {
       event.detail.result = { ok: true, lowered: null };
     }
-    record({ detail: [action, kind, id, value, mode].filter(part => part !== undefined).join(':') });
+    record({ detail: [action, kind, id, value ?? name, mode].filter(part => part !== undefined).join(':') });
   };
   return html`
     <gsa-sheet-page
