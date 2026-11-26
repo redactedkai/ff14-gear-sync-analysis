@@ -6,12 +6,12 @@ import '../../../src/ui/elements/sheets/sheet-page.ts';
 import { recordEvents } from '../gallery/record.js';
 
 /* A gear set's row, shaped as views/sheet-sets.ts builds it (the two figures are the main stat and the GCD). */
-const set = (id, name, mind, gcd) => ({
+const set = (id, name, mind, gcd, description = '') => ({
   id,
   href: `#/sheets/s_raid/sets/${id}`,
   name,
-  description: '',
-  descriptionLine: '',
+  description,
+  descriptionLine: description,
   originText: '0 pinned, 11 unpinned',
   figures: [
     { key: 'main', text: String(mind) },
@@ -39,7 +39,7 @@ export const VIEW = {
   columnKeys: ['main', 'gcd'],
   pointKeys: ['mind'],
   wideColumns: [false, false],
-  rows: [set('g_1', 'Set 1', 300, '2.50s'), set('g_2', 'Set 2', 400, '2.40s')],
+  rows: [set('g_1', 'Set 1', 300, '2.50s'), set('g_2', 'Set 2', 400, '2.40s', 'Week 1 note')],
   bonusNote: '',
   empty: false,
   emptyCard: { title: 'No gear sets yet', text: 'A gear set is a set of pieces.' },

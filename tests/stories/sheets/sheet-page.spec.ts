@@ -2,6 +2,7 @@
    note, text that is no item level is an error and sorting the gear sets goes by heading (back to the saved order on the third click), a
    set opens from its row and the Effects / Stat points switch tells the page, and axe. */
 import { expect, test } from '../fixtures.ts';
+import { clickAtPoint, clickAtRightEnd, dragAcross } from '../row-clicks.ts';
 import { LOWERED_TO, type Default } from './sheet-page.story.js';
 
 // The drag handles have no accessible name: a finding the page's own accessibility check lists as known (KNOWN_AXE in
@@ -88,6 +89,45 @@ test.describe('<gsa-sheet-page>', () => {
       await cap.blur();
       await expect(page.locator('#sh-cap-range')).toBeVisible();
       await expect(page.locator('.sheetfields .f-flag')).toBeHidden();
+    } finally {
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
+  });
+
+  test('a click on any plain part of a gear set row opens that set once; its Edit button, its drag handle and a drag that selects text open nothing', async ({
+    mount,
+    page,
+  }) => {
+    await page.setViewportSize({ width: 960, height: 700 });
+    try {
+      const component = await mount<typeof Default>(STORY);
+      const events = component.getByTestId('events');
+      const row = page.locator('#sh-sets tbody tr', { hasText: 'Set 2' });
+      const opens = async () => (JSON.parse((await events.textContent()) || '[]') as string[]).filter(event => event.startsWith('open:'));
+
+      // every plain part opens its row's set, once
+      const parts: [string, () => Promise<void>][] = [
+        ['a figure cell', () => row.locator('td').nth(1).click()],
+        ['the last figure cell', () => row.locator('td.n').last().click()],
+        ['the note line', () => row.locator('.setnotes').click()],
+        ['the origin line', () => row.locator('.sorigin').last().click()],
+        ['the empty end of the Edit / Copy / Delete line', () => clickAtRightEnd(page, row.locator('.rowacts'))],
+        ['the gap between the handle and the name', () => clickAtPoint(page, row.locator('td').first(), 31, 10)],
+      ];
+      let expected = 0;
+      for (const [where, click] of parts) {
+        await click();
+        expected++;
+        await expect.poll(async () => (await opens()).length, { message: where }).toBe(expected);
+        expect((await opens()).at(-1), where).toBe('open:set:g_2');
+      }
+
+      // what must not open it
+      await row.locator('.rowacts [data-action="edit"]').click();
+      await row.locator('.draghandle').click();
+      expect((await dragAcross(page, row.locator('.setnotes'))).length, 'the drag over the note selected some text').toBeGreaterThan(0);
+      await page.waitForTimeout(150); // a set that opens late would show by now (nothing signals a click that opens nothing)
+      expect(await opens(), 'the Edit button, the handle or the drag opened a set').toHaveLength(expected);
     } finally {
       await page.setViewportSize({ width: 1280, height: 720 });
     }

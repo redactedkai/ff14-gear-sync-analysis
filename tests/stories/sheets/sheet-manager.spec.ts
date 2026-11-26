@@ -1,6 +1,7 @@
 /* Stories of <gsa-sheet-manager>: a click anywhere on a row opens it but a click on the row's own button does not, the name link opens it
    with a plain click, Up and Down on a drag handle move the row and keep the focus on the handle, and axe. */
 import { expect, test } from '../fixtures.ts';
+import { clickAtRightEnd, dragAcross } from '../row-clicks.ts';
 import { NAMES, type Default } from './sheet-manager.story.js';
 
 // The drag handles have no accessible name: a finding the page's own accessibility check lists as known (KNOWN_AXE in
@@ -39,6 +40,48 @@ test.describe('<gsa-sheet-manager>', () => {
     await page.keyboard.press('ArrowUp');
     await expect(page.locator('#sh-list tbody tr').first()).toContainText('Raid');
     await expect(handles.first()).toBeFocused();
+  });
+
+  test('a click on any plain part of a sheet row opens that sheet once; its Edit button, its drag handle and a drag that selects text open nothing', async ({
+    mount,
+    page,
+  }) => {
+    await page.setViewportSize({ width: 960, height: 700 });
+    try {
+      const component = await mount<typeof Default>(STORY);
+      const events = component.getByTestId('events');
+      const row = rowOf(page, 'Crafting');
+      const seen = async () => JSON.parse((await events.textContent()) || '[]') as string[];
+      const opens = async () => (await seen()).filter(event => event.startsWith('open:'));
+
+      const parts: [string, () => Promise<void>][] = [
+        ['the job cell', () => row.locator('td').nth(1).click()],
+        ['a figure cell', () => row.locator('td').nth(3).click()],
+        ['the last cell', () => row.locator('td').last().click()],
+        ['the description line', () => row.locator('.sorigin').click()],
+        ['the empty end of the Open / Edit / Copy / Delete line', () => clickAtRightEnd(page, row.locator('.rowacts'))],
+        ['the Open button', () => row.locator('.rowacts [data-action="open"]').click()],
+      ];
+      let expected = 0;
+      for (const [where, click] of parts) {
+        await click();
+        expected++;
+        await expect.poll(async () => (await opens()).length, { message: where }).toBe(expected);
+        expect((await opens()).at(-1), where).toBe('open:sheet:s_crafting');
+      }
+
+      // the Edit button sends its own action and opens nothing; neither does the handle or a drag that selects text
+      await row.locator('.rowacts [data-action="edit"]').click();
+      await expect.poll(async () => (await seen()).includes('edit:sheet:s_crafting')).toBe(true);
+      await row.locator('.draghandle').click();
+      expect((await dragAcross(page, row.locator('.sorigin'))).length, 'the drag over the description selected some text').toBeGreaterThan(
+        0,
+      );
+      await page.waitForTimeout(150); // a sheet that opens late would show by now (nothing signals a click that opens nothing)
+      expect(await opens(), 'the Edit button, the handle or the drag opened a sheet').toHaveLength(expected);
+    } finally {
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
   });
 
   test('Enter on the name link of a row opens that sheet once, from the keyboard, and the link does not navigate', async ({
