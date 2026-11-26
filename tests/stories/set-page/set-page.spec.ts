@@ -4,6 +4,7 @@
 import { STEP_LIMIT_TEXT, failedText } from '../../../src/ui/views/set-suggestion.ts';
 import { expect, test } from '../fixtures.ts';
 import { FILL_ERROR_MESSAGE, HEAD_ROW, type Default, type FillFails } from './set-page.story.js';
+import { focusInside } from '../layers.ts';
 
 const STORY = 'set-page/set-page/Default';
 
@@ -16,6 +17,8 @@ test.describe('<gsa-set-page>', () => {
     await expect(page.locator('#sh-fill')).toBeVisible();
     await page.locator(`.same-btn[data-pick="${HEAD_ROW}"]`).click();
     await page.locator('.pick-menu .same-item[data-game-id]').nth(1).click();
+    // Zag gives the focus back to the piece button a frame after the pick; Discard comes after that, or it would take the focus off the Auto-fill button
+    await expect(page.locator(`.same-btn[data-pick="${HEAD_ROW}"]`)).toBeFocused();
     await expect(page.locator('#sh-apply')).toContainText('1 change');
     await expect(page.locator('#sh-fill')).toHaveCount(0);
     await expect(page.locator('#sh-figures')).toContainText('After');
@@ -53,6 +56,7 @@ test.describe('<gsa-set-page>', () => {
     await mount<typeof Default>(STORY);
     await page.locator('#sh-settings').click();
     await expect(page.locator('#sh-settings-dialog')).toBeVisible();
+    await focusInside(page.locator('#sh-settings-dialog')); // the popover takes the focus a frame after it opens, over the box focused here
     await page.locator('#s-target').focus();
     const goal = ['s-tb1', 's-tb2', 's-gcd'];
     for (const id of goal) {

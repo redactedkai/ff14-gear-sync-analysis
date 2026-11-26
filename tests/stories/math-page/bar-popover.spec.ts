@@ -1,6 +1,7 @@
 /* Stories of <gsa-bar-popover>: a chip's popover takes the focus to its field, hangs from the chip's right edge where it would
    run past the bar, and closes by Escape (the focus back on the chip), a press outside or Tab out; the modal help keeps Tab
    inside, closes on a press on its backdrop and by Escape; axe. */
+import { focusInside, layerArmed, layerPlaced } from '../layers.ts';
 import { test, expect } from '../fixtures.ts';
 import type { Default } from './bar-popover.story.js';
 import { expectForcedColoursLook, tapOutside } from '../look.ts';
@@ -21,6 +22,7 @@ test.describe('<gsa-bar-popover>', () => {
     await expect(popover).toBeVisible();
     await expect(page.locator('#story-level')).toBeFocused();
     expect(await axe()).toEqual([]);
+    await layerPlaced(popover);
     // its right edge is the chip's: it would run past the bar's right end from the chip's left edge
     const chipBox = await chip.boundingBox();
     const popoverBox = await popover.boundingBox();
@@ -32,11 +34,13 @@ test.describe('<gsa-bar-popover>', () => {
 
     await chip.click();
     await expect(popover).toBeVisible();
+    await layerArmed(page);
     await component.getByRole('textbox', { name: 'After the bar' }).click();
     await expect(popover).toBeHidden();
 
     await chip.click();
     await expect(page.locator('#story-level')).toBeFocused();
+    await layerArmed(page);
     await page.locator('#story-cap').focus();
     await page.keyboard.press('Tab');
     await expect(popover).toBeHidden();
@@ -60,6 +64,7 @@ test.describe('<gsa-bar-popover>', () => {
 
     await help.click();
     await expect(popover).toBeVisible();
+    await layerArmed(page);
     await page.mouse.click(5, 400);
     await expect(popover).toBeHidden();
   });
@@ -112,6 +117,7 @@ test.describe('<gsa-bar-popover> in forced colours', () => {
     await page.locator('#story-help').click();
     const help = page.locator('#story-help-pop');
     await expect(help).toBeVisible();
+    await focusInside(help); // the dialog takes the focus a frame after it opens, over any control the test focused before
     await expectForcedColoursLook(page, { panel: help, ring: help.getByRole('button', { name: 'a button' }) });
   });
 });
