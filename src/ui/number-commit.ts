@@ -4,14 +4,32 @@
 import { clamp } from '../core/clamp.ts';
 
 /* `value` rounded to `decimals` digits after the point (0: a whole number). */
-export function roundTo(value, decimals = 0) {
+export function roundTo(value: number, decimals = 0): number {
   const scale = 10 ** decimals;
   return Math.round(value * scale) / scale;
 }
 
 /* The text a box shows for `value` kept to `decimals` digits: no trailing zeros (2.5 shows "2.5", as the box always has). */
-export function formatNumber(value, decimals = 0) {
+export function formatNumber(value: number, decimals = 0): string {
   return String(roundTo(value, decimals));
+}
+
+/* The options of commit (below). `Empty` is the type of the value an emptied box commits (`empty`). */
+export interface CommitOptions<Empty extends number | string = never> {
+  min?: number;
+  max?: number;
+  decimals?: number;
+  snap?: boolean;
+  exact?: boolean;
+  empty?: Empty;
+  final?: boolean;
+}
+
+/* What commit returns for text it commits (below). */
+export interface Committed<Value> {
+  value: Value;
+  shown: string;
+  clamped: boolean;
 }
 
 /* What typed `text` commits: {value, shown, clamped}, or null for "commit nothing".
@@ -30,7 +48,10 @@ export function formatNumber(value, decimals = 0) {
    - empty: the value an emptied box commits; left out, an emptied box commits nothing (null).
    - final: the box is being left or Enter pressed, not typed into.
    Text that is no finite number commits nothing. */
-export function commit(text, { min = -Infinity, max = Infinity, decimals = 0, snap = true, exact = false, empty, final = false } = {}) {
+export function commit<Empty extends number | string = never>(
+  text: string,
+  { min = -Infinity, max = Infinity, decimals = 0, snap = true, exact = false, empty, final = false }: CommitOptions<Empty> = {},
+): Committed<number | Empty> | null {
   if (text === '') {
     return empty === undefined ? null : { value: empty, shown: '', clamped: false };
   }

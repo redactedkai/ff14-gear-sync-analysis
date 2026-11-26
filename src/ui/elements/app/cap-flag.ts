@@ -3,7 +3,7 @@
    are Remix's error-warning-line and alert-line. */
 import { html, nothing } from 'lit';
 
-/* What level-cap.js capFlag returns: `kind` is 'error', 'lowered' or '' (none), `short` the few words, `full` the whole sentence. */
+/* What level-cap.ts capFlag returns: `kind` is 'error', 'lowered' or '' (none), `short` the few words, `full` the whole sentence. */
 export interface CapFlag {
   kind: string;
   short: string;

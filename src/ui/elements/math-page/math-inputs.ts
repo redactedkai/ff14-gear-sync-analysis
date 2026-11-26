@@ -1,7 +1,7 @@
 /* What the math screen (`<gsa-math-screen>`, math-screen.ts) gives its child elements, and what it does with their edits, as plain
    functions of the app facade (the object of store/app-facade.ts) and no DOM, so Node tests run them. `mathSelection` says
    which parts of the store the inputs are made from: the screen renders again when it changes. */
-import { levelSyncCap, mathJobOwner, syncSettings } from '../../job-sync-panel.js';
+import { levelSyncCap, mathJobOwner, syncSettings } from '../../job-sync-panel.ts';
 import type { AppFacade } from '../../store/app-facade.ts';
 import type { AppState } from '../../store/app-state.ts';
 import type { ExamplePiece, GcdState, SyncPanel, SyncSettings, TiersState } from './math-bar-names.ts';

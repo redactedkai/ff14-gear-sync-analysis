@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { syncSettings } from '../../../../src/ui/job-sync-panel.js';
+import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { OFF_TEXT, explainerItemLevel, explainerView } from '../../../../src/ui/views/sync-explainer.js';
 import { pieceView } from '../../../../src/ui/views/piece.js';
 import { KEEP_LINE, pieceStatsView } from '../../../../src/ui/views/piece-stats.js';

@@ -7,7 +7,7 @@ import { allMeals } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { gearFromCounts, recipePool, runRecipe } from '../../../src/core/recipe.ts';
 import { makeSession } from '../../../src/core/session.ts';
-import { syncSettings } from '../../../src/ui/job-sync-panel.js';
+import { syncSettings } from '../../../src/ui/job-sync-panel.ts';
 import { itemRoutes } from '../../../src/core/items.ts';
 import { appState } from '../helpers/common.js';
 

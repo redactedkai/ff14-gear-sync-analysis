@@ -2,7 +2,7 @@
    count, Reset filters), the filters (Expansion, equip level, item level range, Gear categories), the page line and the table.
    The page root (`<gsa-app>`, app-root.ts) gives it its properties and takes the changes of the filters from `browse-edit`
    (the store's `editBrowse` action). The element reads no store.
-   - `panel`: the Job and sync panel of the browser's tab ({job, jobCtx, cap, sync, level}: job-sync-panel.js panelOf);
+   - `panel`: the Job and sync panel of the browser's tab ({job, jobCtx, cap, sync, level}: job-sync-panel.ts panelOf);
    - `browse`: the browser's filters and sort (the store's frozen `browse`);
    - `active`: the Gear browser is the open tab. The list is built, and the page drawn, only while it is: hidden, the element keeps
      what it shows and does no work.

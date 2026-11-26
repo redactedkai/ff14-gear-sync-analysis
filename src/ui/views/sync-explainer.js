@@ -9,8 +9,8 @@ import { makeJobContext } from '../../core/job-context.ts';
 import { buildPiece, capsFor, clampIlvl, syncStats } from '../../core/formulas.ts';
 import { mkItem } from '../../core/items.ts';
 import { bestMeld } from '../../core/meld.ts';
-import { meldSlotChoices, meldSlotsOf, shownSync } from '../job-sync-panel.js';
-import { LEVEL_TEXT, rangeOnly, rangeText } from '../level-cap.js';
+import { meldSlotChoices, meldSlotsOf, shownSync } from '../job-sync-panel.ts';
+import { LEVEL_TEXT, rangeOnly, rangeText } from '../level-cap.ts';
 import { OVERGEAR_BANDS, overgearChartSvg } from '../sync-charts.js';
 
 /* The item level range the slider and both charts cover, relative to the cap (item levels). */

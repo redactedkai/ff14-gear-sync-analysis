@@ -13,7 +13,7 @@ import {
   gearFromSummary,
   tabCountText,
 } from '../../../../../src/ui/elements/gear-browser/filter-menu-model.ts';
-import { DEFAULT_EXCLUDE } from '../../../../../src/ui/job-sync-panel.js';
+import { DEFAULT_EXCLUDE } from '../../../../../src/ui/job-sync-panel.ts';
 
 test('Gear categories button text: All, None, All but N up to five left out, then N of M', () => {
   const keys = ACTIVITIES.map(a => a.key);

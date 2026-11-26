@@ -78,7 +78,7 @@ if (isMainThread) {
   const { performance } = await import('node:perf_hooks');
   const { fullPool, job: ctx, rng, SYNCS } = await import('./workloads.mjs');
   const { withActivities } = await import(`${ROOT}src/core/items.ts`);
-  const { DEFAULT_EXCLUDE } = await import(`${ROOT}src/ui/job-sync-panel.js`);
+  const { DEFAULT_EXCLUDE } = await import(`${ROOT}src/ui/job-sync-panel.ts`);
   const { optimize, solve } = await import(`${ROOT}src/core/optimizer/index.ts`);
   const { gcdFor, hasteFor, speedForGcd } = await import(`${ROOT}src/core/speed.ts`);
   const { optimizeGcd } = await import(`${ROOT}src/core/target-gcd.ts`);

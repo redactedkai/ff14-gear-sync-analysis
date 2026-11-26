@@ -7,7 +7,7 @@ export const HQ_FONT_CLASS = 'hqfont';
 
 /* Loads the font through `fonts` (document.fonts) and adds HQ_FONT_CLASS to `root` (document.documentElement) when a
    face loaded. Returns the promise (always resolves); a missing font API, a failed or empty load changes nothing. */
-export function enableHqFont(fonts, root) {
+export function enableHqFont(fonts: Pick<FontFaceSet, 'load'>, root: Pick<Element, 'classList'>): Promise<void> {
   try {
     return Promise.resolve(fonts.load(`16px ${HQ_FONT_FAMILY}`, HQ_GLYPH)).then(
       loaded => {

@@ -16,7 +16,7 @@
    way: only the settings that differ from the defaults, in the order above, as text. */
 import { clamp } from '../../core/clamp.ts';
 import { ACTIVITIES, EXPANSIONS, HASTE } from '../../core/constants.ts';
-import { DEFAULT_EXCLUDE, meldSlotChoices } from '../job-sync-panel.js';
+import { DEFAULT_EXCLUDE, meldSlotChoices } from '../job-sync-panel.ts';
 import { DEFAULT_JOB } from '../../core/constants.ts';
 import { defaultBrowse, defaultSubs, restoreBrowseFields, restorePanel, restorePieceFields } from '../state.js';
 import { MAX_SPEED } from '../../core/tables.ts';

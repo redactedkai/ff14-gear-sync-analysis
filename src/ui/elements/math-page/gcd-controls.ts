@@ -10,7 +10,7 @@
      and Reset act at once. */
 import { LitElement, html } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
-import { LEVEL_TEXT } from '../../level-cap.js';
+import { LEVEL_TEXT } from '../../level-cap.ts';
 import { TYPING_DEBOUNCE_MS } from '../../number-field.js';
 import { GCD_LEVELS, HASTE_OPTIONS, HASTE_SIZER, gcdControlsView, gcdLevelTyped, gcdSpeedTyped } from '../../views/gcd.js';
 import { GCD_EDIT_EVENT, type GcdSettings } from './gcd-names.ts';

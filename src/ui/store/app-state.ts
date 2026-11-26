@@ -23,7 +23,7 @@
      two slices (a job change that clears Substat tiers' typed level) makes two `update` calls; they are one notification.
    - A selector that returns a new object each time (`panelOf`, `routeOf`) is read with `shallowEq`; one that returns a piece of
      the state (`currentSheet`, `setPageOf`) or a cached object (`jobCtxOf`) with `Object.is`.
-   - A typed number is not checked here: the number box does that (number-commit.js) before it calls an action. The actions
+   - A typed number is not checked here: the number box does that (number-commit.ts) before it calls an action. The actions
      that take a whole panel (`setPanel`) or a form (the sheet actions) check as they did.
    - Saving (autosave.ts) is one subscription to the store: it watches the `settings` revision, writes the JSON 150 ms after the last
      change (made when it is written, not at each change) and at 'pagehide', and writes once at the start to repair an older shape.
@@ -41,7 +41,7 @@ export interface Panel {
   level: number;
 }
 
-/* The tabs that have a Job and sync panel (job-sync-panel.js PANEL_GROUP): the Gear browser and How the math works. */
+/* The tabs that have a Job and sync panel (job-sync-panel.ts PANEL_GROUP): the Gear browser and How the math works. */
 export type PanelTab = 'browse' | 'math';
 
 /* The tabs that have a Job and sync panel, in the order `settings.panels` holds them. */

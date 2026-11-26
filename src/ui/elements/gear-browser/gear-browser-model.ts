@@ -4,7 +4,7 @@
    and sync panel (`panel`) and the browser's filters and sort (`browse`) by the page; this reads no store. */
 import type { makeJobContext } from '../../../core/job-context.ts';
 import { defaultBrowse } from '../../state.js';
-import { syncSettings } from '../../job-sync-panel.js';
+import { syncSettings } from '../../job-sync-panel.ts';
 import { browseFiltered, gearView } from '../../views/gear.js';
 import { viewCache } from '../../view-cache.ts';
 
@@ -25,7 +25,7 @@ export interface PageButton {
   current: boolean;
 }
 
-/* The Job and sync panel of the Gear browser (job-sync-panel.js panelOf): the job, its context and the sync settings. */
+/* The Job and sync panel of the Gear browser (job-sync-panel.ts panelOf): the job, its context and the sync settings. */
 export interface GearPanel {
   job: string | null;
   jobCtx: ReturnType<typeof makeJobContext>;

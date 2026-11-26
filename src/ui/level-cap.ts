@@ -2,7 +2,23 @@
    texts of the cap field's notes. Pure: no storage. */
 import { capCeiling } from '../core/sync-target.ts';
 import { MAX_REAL } from '../core/tables.ts';
-import { syncSettings } from './job-sync-panel.js';
+import { syncSettings } from './job-sync-panel.ts';
+
+/* The fields of a Job and sync panel (or a sheet's settings) that the cap rule reads: the item level cap (null: none), whether item
+   level sync is on, and the synced level (null or missing: the job's level cap). */
+export interface CapPanel {
+  cap: number | null;
+  sync: boolean;
+  level?: number | null;
+}
+
+/* A cap that limitCapToLevel lowered: the cap before and after, and the level that limited it (null: no level, the highest real
+   item level). */
+export interface LoweredCap {
+  from: number;
+  to: number;
+  level: number | null;
+}
 
 /* The cap follows the level: a cap above what the level allows (capCeiling, the best gear made for it) is lowered to it,
    whatever the job (a job at its own level cap included), while item level sync is on. Above it the cap changes nothing
@@ -10,22 +26,23 @@ import { syncSettings } from './job-sync-panel.js';
    Called when the level settles, when a cap is entered, when sync is switched on, and on restore.
    `panel`: {cap, sync, level}, changed in place (a copy of a panel's fields, or a sheet's settings: the store is told after).
    Returns {from, to, level} when it lowered the cap (the note under the field), else null. */
-export function limitCapToLevel(panel) {
+export function limitCapToLevel(panel: CapPanel): LoweredCap | null {
   if (!syncSettings(panel).sync) {
     return null;
   }
   const top = panel.level == null ? MAX_REAL : capCeiling(panel.level);
-  if (panel.cap <= top) {
+  // the switch is on, so syncSettings found a cap: `panel.cap` is a number from here
+  if ((panel.cap as number) <= top) {
     return null;
   }
-  const lowered = { from: panel.cap, to: top, level: panel.level ?? null };
+  const lowered = { from: panel.cap as number, to: top, level: panel.level ?? null };
   panel.cap = top;
   return lowered;
 }
 
 /* The note under a cap field after limitCapToLevel lowered it (`lowered` its {from, to, level}, or null: ''), on the Job
    and sync panel and on a sheet's page and forms: "Lowered to 135, max for level 50." */
-export function capLoweredText(lowered) {
+export function capLoweredText(lowered: LoweredCap | null): string {
   if (!lowered) {
     return '';
   }
@@ -39,7 +56,19 @@ export function capLoweredText(lowered) {
    none), `missing` whether that error is the missing cap (CAP_MISSING_TEXT) rather than CAP_TYPED_BAD_TEXT, `note` the lowered
    note (capLoweredText, '' for none), `lowered` its {to}, `range` the range text ("1-795"). An error wins over the lowered
    note. */
-export function capFlag({ error, missing = false, note, lowered, range }) {
+export function capFlag({
+  error,
+  missing = false,
+  note,
+  lowered,
+  range,
+}: {
+  error: string;
+  missing?: boolean;
+  note: string;
+  lowered: Pick<LoweredCap, 'to'> | null;
+  range: string;
+}): { kind: 'error' | 'lowered' | ''; short: string; full: string } {
   if (error) {
     return { kind: 'error', short: missing ? CAP_MISSING_FLAG : rangeOnly(range), full: error };
   }
@@ -50,12 +79,12 @@ export function capFlag({ error, missing = false, note, lowered, range }) {
 }
 
 /* A number field's range in its label line, from 1 to `max`: "1–100" for a level, "1–795" for an item level. */
-export function rangeText(max) {
+export function rangeText(max: number): string {
   return `1–${max}`;
 }
 
 /* The few words of an error flag for text that is no value of the field: its range and "only" ("1–795 only", "1–100 only"). */
-export function rangeOnly(range) {
+export function rangeOnly(range: string): string {
   return `${range} only`;
 }
 
@@ -73,19 +102,19 @@ export const CAP_TYPED_BAD_TEXT = `Enter a whole item level from 1 to ${MAX_REAL
    is the highest level the tab takes). Templates and tests read these. */
 export const LEVEL_TEXT = Object.freeze({
   range: rangeText,
-  typedBad: max => `Enter a whole level from 1 to ${max}`,
+  typedBad: (max: number) => `Enter a whole level from 1 to ${max}`,
 });
 
 /* Text typed in a level field is no level: empty, not a whole number (letters, 12.5), or outside 1 to `max`, the job's level cap
    (0, -5 and 101 at Paladin's 100 are bad; 100 is a level). The cap field's counterpart is capTextBad. */
-export function levelTextBad(text, max) {
+export function levelTextBad(text: string, max: number): boolean {
   const value = Number(text);
   return !(text !== '' && Number.isInteger(value) && value >= 1 && value <= max);
 }
 
 /* Text typed in a cap field is no cap: not empty and not a whole number from 1. A whole number above the highest real
    item level is a cap (limitCapToLevel lowers it). The Job and sync panel and a sheet's page. */
-export function capTextBad(text) {
+export function capTextBad(text: string): boolean {
   const value = Number(text);
   return text !== '' && !(Number.isInteger(value) && value >= 1);
 }

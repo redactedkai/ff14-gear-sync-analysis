@@ -6,7 +6,7 @@ import { HASTE, jobById } from '../../core/constants.ts';
 import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor, recastMult } from '../../core/speed.ts';
 import { levelParams } from '../../core/level-params.ts';
 import { MAX_SPEED } from '../../core/tables.ts';
-import { commit } from '../number-commit.js';
+import { commit } from '../number-commit.ts';
 import { speedStepChartSvg } from '../sync-charts.js';
 
 /* The levels the tab covers: every level of the game, whatever the job (its own setting). */

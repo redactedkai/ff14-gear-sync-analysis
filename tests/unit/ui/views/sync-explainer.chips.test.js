@@ -21,7 +21,7 @@ import {
   widestNumber,
 } from '../../../../src/ui/views/sync-explainer.js';
 import { SLOT_SIZER } from '../../../../src/ui/views/piece.js';
-import { syncSettings } from '../../../../src/ui/job-sync-panel.js';
+import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { JOBS } from '../../../../src/core/constants.ts';
 import { MAX_LEVEL, MAX_REAL } from '../../../../src/core/tables.ts';

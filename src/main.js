@@ -12,7 +12,7 @@ import { focusScreenHeading, isPlacingScroll } from './ui/router/focus.js';
 import { readScrollPositions, tabStorage, writeScrollPositions } from './ui/router/scroll-storage.js';
 import { installUnloadGuard } from './ui/router/unload-guard.js';
 import { overlays } from './ui/overlays.js';
-import { enableHqFont } from './ui/hq-font.js';
+import { enableHqFont } from './ui/hq-font.ts';
 // the Lit elements (each registers itself on import): the page's root, which draws the others
 import './ui/elements/gear-browser/expansion-menu.ts';
 import './ui/elements/gear-browser/gear-browser.ts';

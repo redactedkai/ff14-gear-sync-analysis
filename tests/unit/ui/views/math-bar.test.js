@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { syncSettings } from '../../../../src/ui/job-sync-panel.js';
+import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { MATH_TAB_LABEL } from '../../../../src/ui/router/routes.js';
 import { MATH_TABS } from '../../../../src/ui/state.js';
 import { MATH_SUB_TABS, ilvlEdit, ilvlFill, mathBarView, slotEdit, subsEdit } from '../../../../src/ui/views/math-bar.js';

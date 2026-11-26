@@ -13,9 +13,9 @@ import {
   loadSaved,
   save,
 } from '../../../src/ui/state.js';
-import { limitCapToLevel } from '../../../src/ui/level-cap.js';
-import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.js';
-import { STORE_KEY } from '../../../src/ui/store-key.js';
+import { limitCapToLevel } from '../../../src/ui/level-cap.ts';
+import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.ts';
+import { STORE_KEY } from '../../../src/ui/store-key.ts';
 import { browseFiltered } from '../../../src/ui/views/gear.js';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { DEFAULT_JOB, JOBS } from '../../../src/core/constants.ts';
@@ -179,7 +179,7 @@ test('Piece stats fields: a bad item level, slot or substat list falls back; rep
   expectFieldDefault('piece.ilvl', 'abc', null);
   expectFieldDefault('piece.ilvl', null, null);
   expectFieldDefault('piece.ilvl', 900, MAX_REAL); // an older save's number is kept, held to the real item levels
-  assert.equal(D.piece.slots, null); // null: the slot's usual total (meldSlotsOf in job-sync-panel.js)
+  assert.equal(D.piece.slots, null); // null: the slot's usual total (meldSlotsOf in job-sync-panel.ts)
   expectFieldDefault('piece.slots', 4, null); // no piece has 4 slots in all
   expectFieldDefault('piece.slots', 6, null);
   expectFieldDefault('piece.slots', 'two', null);

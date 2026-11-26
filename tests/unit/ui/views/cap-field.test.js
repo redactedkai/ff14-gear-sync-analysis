@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../src/core/tables.ts';
-import { CAP_MISSING_TEXT, CAP_TYPED_BAD_TEXT, LEVEL_TEXT, capLoweredText, rangeOnly } from '../../../../src/ui/level-cap.js';
+import { CAP_MISSING_TEXT, CAP_TYPED_BAD_TEXT, LEVEL_TEXT, capLoweredText, rangeOnly } from '../../../../src/ui/level-cap.ts';
 import { capFieldView, levelFieldView } from '../../../../src/ui/views/cap-field.js';
 
 const NO_FLAG = { kind: '', short: '', full: '' };

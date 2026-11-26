@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ENTRY_FILE, STYLES_DIR } from './styles.mjs';
-import { STORE_KEY } from '../../src/ui/store-key.js';
+import { STORE_KEY } from '../../src/ui/store-key.ts';
 import { UNLOAD_GUARD_OFF_KEY } from '../../src/ui/router/unload-guard.js';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -196,7 +196,7 @@ export function buildMarks({ branch, commit }) {
 }
 
 /* The "failed to start" script (src/startup-failure.js) as the page inlines it: the saved-data key and the dev flag's key written
-   over its markers (src/ui/store-key.js and src/ui/router/unload-guard.js, the places the keys are spelled), minified to ES5. Throws if the result would end the
+   over its markers (src/ui/store-key.ts and src/ui/router/unload-guard.js, the places the keys are spelled), minified to ES5. Throws if the result would end the
    inline script early or is not ES5. The page puts it first in <head> (writePage, the STARTUP marker). */
 export function startupScript() {
   const source = readFileSync(join(SRC, 'startup-failure.js'), 'utf8');

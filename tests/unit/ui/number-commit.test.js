@@ -1,8 +1,8 @@
-/* The number-box rule (src/ui/number-commit.js), as a table written from docs/engineering/architecture.md "Number
+/* The number-box rule (src/ui/number-commit.ts), as a table written from docs/engineering/architecture.md "Number
    inputs": what typed text commits and what the box shows, for each kind of box. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { commit, formatNumber, roundTo } from '../../../src/ui/number-commit.js';
+import { commit, formatNumber, roundTo } from '../../../src/ui/number-commit.ts';
 
 /* [box, options, text, expected]: expected is null (nothing committed) or [value, shown, clamped]. */
 const TABLE = [

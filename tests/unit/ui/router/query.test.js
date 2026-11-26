@@ -16,7 +16,7 @@ import {
 } from '../../../../src/ui/router/query.js';
 import { capCeiling } from '../../../../src/core/sync-target.ts';
 import { MAX_SPEED } from '../../../../src/core/tables.ts';
-import { DEFAULT_EXCLUDE } from '../../../../src/ui/job-sync-panel.js';
+import { DEFAULT_EXCLUDE } from '../../../../src/ui/job-sync-panel.ts';
 import { defaultBrowse, defaultSubs } from '../../../../src/ui/state.js';
 import { GCD_LEVELS } from '../../../../src/ui/views/gcd.js';
 

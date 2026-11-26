@@ -12,7 +12,7 @@
 import { LitElement, html, nothing } from 'lit';
 import { live } from 'lit/directives/live.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { drawInSteps } from '../../draw-in-steps.js';
+import { drawInSteps } from '../../draw-in-steps.ts';
 import { ROWS_PER_STEP } from '../../views/limit-rows.js';
 import { createFilterPopover } from '../gear-browser/filter-popover.ts';
 import {

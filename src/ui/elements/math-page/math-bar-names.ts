@@ -21,12 +21,8 @@ export interface ExamplePiece {
   slots: number | null;
 }
 
-/* The sync settings of the math tab (job-sync-panel.js syncSettings). */
-export interface SyncSettings {
-  cap: number | null;
-  sync: boolean;
-  level: number | null;
-}
+/* The sync settings of the math tab (job-sync-panel.ts syncSettings). */
+export type { SyncSettings } from '../../job-sync-panel.ts';
 
 /* The panel the Sync settings popover edits (the math tab's own): its stored cap and level (null for none) and the IL Sync switch. */
 export interface SyncPanel {

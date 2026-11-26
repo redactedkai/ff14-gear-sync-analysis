@@ -2,7 +2,7 @@
    tests/visual/ (the baselines CI compares). Each view is a saved state to open the page with and the clicks that lead to
    what it shows. */
 
-import { STORE_KEY } from '../../src/ui/store-key.js';
+import { STORE_KEY } from '../../src/ui/store-key.ts';
 
 // time for the page to redraw after a click or a state change, before the next step
 export const SETTLE_MS = 450;

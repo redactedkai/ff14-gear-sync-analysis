@@ -6,7 +6,7 @@ import { IL, MAX_REAL } from '../../../../src/core/tables.ts';
 import { capsFor } from '../../../../src/core/formulas.ts';
 import { meldInfo, mkItem } from '../../../../src/core/items.ts';
 import { gcdFor } from '../../../../src/core/speed.ts';
-import { meldSlotChoices, meldSlotsOf } from '../../../../src/ui/job-sync-panel.js';
+import { meldSlotChoices, meldSlotsOf } from '../../../../src/ui/job-sync-panel.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { explainerOffText } from '../../../../src/ui/views/sync-explainer.js';
 import { SLOT_PERMILLE, appState, hasNumber, hasParts, labelled, roundHalfUp } from '../../helpers/common.js';

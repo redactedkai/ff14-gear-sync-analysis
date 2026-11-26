@@ -19,7 +19,7 @@
 import { LitElement, type PropertyValues, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { MAX_REAL } from '../../../core/tables.ts';
-import { capTextBad, limitCapToLevel } from '../../level-cap.js';
+import { capTextBad, limitCapToLevel } from '../../level-cap.ts';
 import { TYPING_DEBOUNCE_MS, flashLowered, numberBox } from '../../number-field.js';
 import { capFieldView } from '../../views/cap-field.js';
 import { shownNumber } from '../shared/number-box.ts';
@@ -137,7 +137,7 @@ export class GsaCapField extends LitElement {
     }
   }
 
-  /* Lowers the cap to what the level allows (level-cap.js limitCapToLevel), keeping what it lowered for the note. A second lowering
+  /* Lowers the cap to what the level allows (level-cap.ts limitCapToLevel), keeping what it lowered for the note. A second lowering
      (the up arrow at the limit) is a new object: the note stays and the box flashes again. */
   private lowerCap(): void {
     const lowered = limitCapToLevel({ cap: this.value, sync: this.syncOn, level: this.level }) as LoweredCap | null;

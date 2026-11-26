@@ -2,7 +2,7 @@
    views of the picker and the materia menu. The picker, the materia menu and the Food menu are Lit elements; the page names the button
    they hang under and gives them their view. Part of the page's session (session.ts). */
 import { jobGear } from '../../../core/items.ts';
-import { drawInSteps } from '../../draw-in-steps.js';
+import { drawInSteps } from '../../draw-in-steps.ts';
 import { FIRST_ROWS, limitRows, ROWS_PER_STEP } from '../../views/limit-rows.js';
 import { piecePickerView } from '../../views/piece-menu.js';
 import { materiaMenuView } from '../../views/stone-menu.js';

@@ -6,7 +6,7 @@ import { isMainThread, parentPort } from 'node:worker_threads';
 import { allocatedRelic, allowedActivities, browseItems, poolItemFromRow, routesAllow, withActivities } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { optimize } from '../../../src/core/optimizer/index.ts';
-import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.js';
+import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.ts';
 import { statBase } from '../../../src/core/base-stats.ts';
 import { runRecipe } from '../../../src/core/recipe.ts';
 import { makeSession } from '../../../src/core/session.ts';

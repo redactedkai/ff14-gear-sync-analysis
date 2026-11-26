@@ -1,7 +1,7 @@
 // How the math works: the bar. Each of Stat Allocation and Substat tiers has its own Job box (GCD Scaling none), the Sync settings chip
 // and its popover, the three layouts of the controls row with their dividers, one height for every box, and sub-tabs that stay put.
 
-import { LEVEL_TEXT, rangeOnly } from '../../../../src/ui/level-cap.js';
+import { LEVEL_TEXT, rangeOnly } from '../../../../src/ui/level-cap.ts';
 import { SYNC_CHIP_TEXT } from '../../../../src/ui/views/sync-explainer.js';
 import { check, expect, poll } from '../../lib/expect.mjs';
 import { afterFrames, hasHScroll, setJob, setNumber, showMath, showTab, waitReady, waitSaved } from '../../lib/nav.mjs';

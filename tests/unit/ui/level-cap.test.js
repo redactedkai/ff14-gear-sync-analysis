@@ -1,4 +1,4 @@
-/* The cap follows the level (src/ui/level-cap.js): the rule that lowers a cap and the note under the cap field. */
+/* The cap follows the level (src/ui/level-cap.ts): the rule that lowers a cap and the note under the cap field. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultState } from '../../../src/ui/state.js';
@@ -9,7 +9,7 @@ import {
   capFlag,
   capLoweredText,
   limitCapToLevel,
-} from '../../../src/ui/level-cap.js';
+} from '../../../src/ui/level-cap.ts';
 import { MAX_REAL } from '../../../src/core/tables.ts';
 
 /* The cap follows the synced level (owner's decision, 2026-10-18): a cap above the best gear made for the level

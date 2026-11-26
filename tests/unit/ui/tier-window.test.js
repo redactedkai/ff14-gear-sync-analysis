@@ -1,9 +1,9 @@
-/* The window of rows a Substat tiers card draws (src/ui/tier-window.js): which rows show for a scroll position, which are
+/* The window of rows a Substat tiers card draws (src/ui/tier-window.ts): which rows show for a scroll position, which are
    drawn, when to draw again and where to scroll to center a row. Sizes are those of the page's cards: rows 31 px, the area
    492 px (27 px of column names and 15 rows). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { OVERSCAN_ROWS, rowsInView, rowsToDraw, scrollTopToCenter, viewLeavesDrawn } from '../../../src/ui/tier-window.js';
+import { OVERSCAN_ROWS, rowsInView, rowsToDraw, scrollTopToCenter, viewLeavesDrawn } from '../../../src/ui/tier-window.ts';
 
 const ROW = 31;
 const AREA = 492;

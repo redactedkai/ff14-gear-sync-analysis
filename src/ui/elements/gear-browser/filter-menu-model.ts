@@ -4,7 +4,7 @@
    `exclude` is the list of ACTIVITIES keys left out (in ACTIVITIES order), `expOff` the EXPANSIONS short names switched off. */
 import { ACTIVITIES, EXPANSIONS } from '../../../core/constants.ts';
 import { CURRENT_TOMES, MAX_LEVEL } from '../../../core/tables.ts';
-import { DEFAULT_EXCLUDE } from '../../job-sync-panel.js';
+import { DEFAULT_EXCLUDE } from '../../job-sync-panel.ts';
 import { fmtInt } from '../../text.ts';
 
 /* The events the elements send, `detail` being the patch for the filter's settings: `categories-change` {exclude} or {market}

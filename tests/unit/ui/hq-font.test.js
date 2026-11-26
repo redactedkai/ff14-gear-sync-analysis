@@ -1,7 +1,7 @@
-/* The HQ mark's font loader (src/ui/hq-font.js): the class is added only when a face loaded. */
+/* The HQ mark's font loader (src/ui/hq-font.ts): the class is added only when a face loaded. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { enableHqFont, HQ_FONT_CLASS, HQ_GLYPH } from '../../../src/ui/hq-font.js';
+import { enableHqFont, HQ_FONT_CLASS, HQ_GLYPH } from '../../../src/ui/hq-font.ts';
 
 const rootWithClasses = () => {
   const added = [];

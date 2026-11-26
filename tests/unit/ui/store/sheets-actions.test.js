@@ -349,7 +349,7 @@ test('leaving a set page asks its leave guard first; other screens never ask', (
   assert.deepEqual([store.screen, store.setId], ['sheet', null], 'the held move, run once answered');
 });
 
-/* The sheet's cap follows its level as on the Job and sync panel (level-cap.js limitCapToLevel; owner's report, 2026-11-10).
+/* The sheet's cap follows its level as on the Job and sync panel (level-cap.ts limitCapToLevel; owner's report, 2026-11-10).
    Level 70 allows item level 405 at most (its weapons), level 50 allows 135. Each change returns what it lowered. */
 test('the cap follows the level: lowered when typed, when the level changes, when sync is switched on', () => {
   const store = makeStore();

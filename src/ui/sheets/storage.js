@@ -28,7 +28,7 @@ import { SLOT_TYPES, jobById } from '../../core/constants.ts';
 import { PARTY_ROLES_MAX, isClan } from '../../core/clan-bonus.ts';
 import { makeJobContext } from '../../core/job-context.ts';
 import { currentStatKey } from '../../core/stat-keys.ts';
-import { STORE_KEY } from '../store-key.js';
+import { STORE_KEY } from '../store-key.ts';
 
 /* The index's key, and the prefix of a sheet record's key (the sheet's id follows it). */
 export const SHEETS_KEY = `${STORE_KEY}:sheets`;

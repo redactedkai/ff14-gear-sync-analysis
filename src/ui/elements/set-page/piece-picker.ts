@@ -5,7 +5,7 @@
    - the set page gives it properties: `menu` (the picker, see `PiecePicker`, or null), `anchor` (the row's
      button it hangs under, or null) and `query` (the search text), and listens for its events (piece-picker-names.ts); the element
      never reads a store. The page builds the picker and cuts its list to the rows drawn so far: a long list is drawn in steps (a
-     window of rows first, then more each frame while the menu stays open: views/limit-rows.js, ui/draw-in-steps.js), so the menu
+     window of rows first, then more each frame while the menu stays open: views/limit-rows.js, ui/draw-in-steps.ts), so the menu
      appears at once and no task is long;
    - an `anchor` opens the menu under that button (another button moves it); no anchor closes it. The buttons are not part of the
      element, so the popover has no trigger of its own: it is placed by `getAnchorElement`, and a press on the anchor itself is not

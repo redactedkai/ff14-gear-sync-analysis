@@ -1,11 +1,11 @@
 /* Level sync on the page's views (src/ui/views/): the Piece stats panels, the gear browser and a set's Auto-fill under a
-   synced level, and a cap far above it held to the level (shownSync, src/ui/job-sync-panel.js). Which pieces level sync
+   synced level, and a cap far above it held to the level (shownSync, src/ui/job-sync-panel.ts). Which pieces level sync
    reaches is checked in core/sync-target.test.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { MAX_REAL } from '../../../../src/core/tables.ts';
-import { shownSync, syncSettings } from '../../../../src/ui/job-sync-panel.js';
+import { shownSync, syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { appState } from '../../helpers/common.js';
 import { exhaustive, gamePool } from '../../helpers/exhaustive.js';
 import { explainerViewOf, gearViewOf, makeApp, pieceViewOf, solveOf } from '../../helpers/views.js';

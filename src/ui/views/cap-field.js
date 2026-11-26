@@ -1,7 +1,7 @@
 /* What an item level field and a level field show: the error, the note after the page lowered the cap, and the flag in the label line
    (the elements <gsa-cap-field> and <gsa-level-field>). Pure view builders: no DOM, so Node can load and test them. The rules
-   and texts are level-cap.js's. */
-import { CAP_MISSING_TEXT, CAP_TYPED_BAD_TEXT, LEVEL_TEXT, capFlag, capLoweredText, rangeText } from '../level-cap.js';
+   and texts are level-cap.ts's. */
+import { CAP_MISSING_TEXT, CAP_TYPED_BAD_TEXT, LEVEL_TEXT, capFlag, capLoweredText, rangeText } from '../level-cap.ts';
 
 /* What the item level field shows. `syncOn`: item level sync is on (nothing is asked of the field while it is off); `value`: the stored
    cap (null: none); `typedBad`: the box holds text that is no whole item level (the store keeps its last cap); `lowered`: the cap the

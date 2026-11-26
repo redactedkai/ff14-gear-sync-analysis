@@ -2,7 +2,7 @@
    the table), the chart of the same slot at every item level, and the step-by-step table; while no sync applies, the sentence that
    says so in place of the two panels. A child of <gsa-math-screen> (docs/engineering/architecture.md section 3):
    - its parent gives it the tab's settings: `job` (Stat Allocation's job id), `sync` (the sync settings,
-     job-sync-panel.js syncSettings), `piece` (the example piece) and `switchOn` (the IL Sync switch); the element reads no store
+     job-sync-panel.ts syncSettings), `piece` (the example piece) and `switchOn` (the IL Sync switch); the element reads no store
      and sends no event (the controls that edit the piece are the math bar's);
    - the chart is drawn at its box's width (an `ElementWidthController`), so its text keeps the page's size; the markup comes from
      `overgearChartSvg` (sync-charts.js), whose texts are escaped there (`escapeXml`), and is drawn with `unsafeSVG`;
@@ -12,7 +12,7 @@ import { LitElement, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { unsafeSVG } from 'lit/directives/unsafe-svg.js';
 import { makeJobContext } from '../../../core/job-context.ts';
-import { meldSlotsOf } from '../../job-sync-panel.js';
+import { meldSlotsOf } from '../../job-sync-panel.ts';
 import { pieceStatsView } from '../../views/piece-stats.js';
 import { viewCache } from '../../view-cache.ts';
 import { ElementWidthController } from '../shared/element-width.ts';

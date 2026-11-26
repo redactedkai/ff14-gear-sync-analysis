@@ -5,8 +5,8 @@
 import { numberBox } from '../../number-field.js';
 import { clone, messageOf } from '../../text.ts';
 import { gearFilter } from '../../../core/items.ts';
-import { rankChoices, rankSwapNote, withRank } from '../../ranks.js';
-import { TARGET_GCD_RANGE } from '../../job-sync-panel.js';
+import { rankChoices, rankSwapNote, withRank } from '../../ranks.ts';
+import { TARGET_GCD_RANGE } from '../../job-sync-panel.ts';
 import { isCancelled, solverRequest } from '../../solver.js';
 import { fillRecipe } from '../../sheets/fill-settings.js';
 import { evaluateInSheet } from '../../views/set-totals.js';
@@ -105,7 +105,7 @@ export class PageFillSettings {
     });
   }
 
-  /* Maximize (0), Tiebreak 1 or Tiebreak 2 set to `value` (ranks.js withRank: a stat held by another swaps). */
+  /* Maximize (0), Tiebreak 1 or Tiebreak 2 set to `value` (ranks.ts withRank: a stat held by another swaps). */
   setGoal(rank: number, value: string): void {
     const { job } = this.session;
     let note = '';
@@ -113,7 +113,7 @@ export class PageFillSettings {
       const goal = settings.goal;
       const before = [goal.target, goal.tb, goal.tb2];
       const after = withRank(before, rank, value, job.stats);
-      note = rankSwapNote(before, rank, value, after, (stat: StatKey) => job.label[stat]);
+      note = rankSwapNote(before, rank, value, after, (stat: string) => job.label[stat as StatKey]);
       [goal.target, goal.tb, goal.tb2] = after.map((stat: string | null) => stat ?? '');
     });
     this.rankNote = note;

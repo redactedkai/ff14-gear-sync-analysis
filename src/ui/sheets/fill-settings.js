@@ -1,8 +1,8 @@
 /* A set's Auto-fill settings (the settings popover behind the gear button of a set page): the defaults, the settings a set uses
    now, the recipe they make for the solver, and the goal as one line. Takes plain data and returns plain data; pure: no
    store. The data format is in docs/engineering/sheets.md, "Saved data". */
-import { uniqueRanks } from '../ranks.js';
-import { DEFAULT_EXCLUDE } from '../job-sync-panel.js';
+import { uniqueRanks } from '../ranks.ts';
+import { DEFAULT_EXCLUDE } from '../job-sync-panel.ts';
 
 /* A set's Auto-fill settings at their defaults for `job` (a JobContext): the main stat with no tiebreaks, materia on, food
    on, any GCD (exactly, when one is typed), spare points to tiebreaks on; every expansion, the default "Gear categories"

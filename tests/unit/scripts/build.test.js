@@ -220,7 +220,7 @@ test('build: the solver worker loads from the posted data texts and answers like
 });
 
 /* The "failed to start" script (src/startup-failure.js): first in <head> of the built page, before the big <style>, as one
-   classic script that cannot end early, with the saved-data key written once (src/ui/store-key.js). */
+   classic script that cannot end early, with the saved-data key written once (src/ui/store-key.ts). */
 test('built page: the startup script is first in head, before the style, and holds no closing script tag', async () => {
   const { readFile } = await import('node:fs/promises');
   const html = await readFile(new URL('../../../dist/index.html', import.meta.url), 'utf8');
@@ -236,7 +236,7 @@ test('built page: the startup script is first in head, before the style, and hol
 });
 
 test('startupScript: the key comes from STORE_KEY, the code is ES5 with no literal color and no leftover marker', async () => {
-  const { STORE_KEY } = await import('../../../src/ui/store-key.js');
+  const { STORE_KEY } = await import('../../../src/ui/store-key.ts');
   const code = startupScript();
   const { UNLOAD_GUARD_OFF_KEY } = await import('../../../src/ui/router/unload-guard.js');
   assert.ok(code.includes(JSON.stringify(STORE_KEY)));

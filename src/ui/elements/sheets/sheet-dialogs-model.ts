@@ -24,7 +24,7 @@ export interface FocusTarget {
   focus(): void;
 }
 
-/* The cap the form lowered (level-cap.js limitCapToLevel): {from, to, level}. */
+/* The cap the form lowered (level-cap.ts limitCapToLevel): {from, to, level}. */
 export interface LoweredCap {
   from: number;
   to: number;

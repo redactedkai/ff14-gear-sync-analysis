@@ -5,7 +5,7 @@
 import { recipePool, runRecipe } from '../../../src/core/recipe.ts';
 import { makeSession } from '../../../src/core/session.ts';
 import { evaluateSet } from '../../../src/core/set.ts';
-import { syncSettings } from '../../../src/ui/job-sync-panel.js';
+import { syncSettings } from '../../../src/ui/job-sync-panel.ts';
 import { gearView } from '../../../src/ui/views/gear.js';
 import { pieceView } from '../../../src/ui/views/piece.js';
 import { searchCount } from '../../../src/ui/solve.js';

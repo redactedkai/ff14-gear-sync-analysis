@@ -2,7 +2,7 @@
    `store.update('<slice>/<name>', ...)` (store.ts).
    What each slice holds: app-state.ts. */
 import { makeJobContext } from '../../core/job-context.ts';
-import { holdLevelSyncCap } from '../job-sync-panel.js';
+import { holdLevelSyncCap } from '../job-sync-panel.ts';
 import { MATH_TABS, TABS, resetForJob, restoreState } from '../state.js';
 import { PANEL_KEYS, PANEL_TABS, panelFields, settingsOf } from './app-state.ts';
 import type { AppState, AppStore, Panel, PanelTab, RestoredState, ScreenState } from './app-state.ts';
@@ -36,7 +36,7 @@ function resetSettingsForJob(state: AppState, tab: PanelTab, job: JobContext, fr
   }
 }
 
-/* While the math tab is open and its IL Sync is off, its panel holds level sync's item level as its cap (job-sync-panel.js
+/* While the math tab is open and its IL Sync is off, its panel holds level sync's item level as its cap (job-sync-panel.ts
    holdLevelSyncCap). */
 function followLevelSyncIn(state: AppState): void {
   if (state.screen.tab === 'math') {

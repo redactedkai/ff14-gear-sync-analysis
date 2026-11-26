@@ -1,10 +1,10 @@
 /* The math bar's Stat Allocation controls: what the Slot menu, the Substats & materia chip and its three menus, and the Gear item
    level slider show, and the edits they make (the page's own rules, for the <gsa-math-bar> element). Pure view builder: no DOM,
    so Node can load and test it. */
-import { rankChoices } from '../ranks.js';
+import { rankChoices } from '../ranks.ts';
 import { MATH_TAB_LABEL } from '../router/routes.js';
 import { MATH_TABS } from '../state.js';
-import { meldSlotChoices, meldSlotsOf } from '../job-sync-panel.js';
+import { meldSlotChoices, meldSlotsOf } from '../job-sync-panel.ts';
 import { slotGroups, withSub } from './piece.js';
 import { NO_SUBSTAT_LABEL, explainerItemLevel, pieceChipView } from './sync-explainer.js';
 

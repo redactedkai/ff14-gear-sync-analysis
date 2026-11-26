@@ -13,7 +13,7 @@
      stored level again, and so does `clearTyped()`. */
 import { LitElement, type PropertyValues, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
-import { levelTextBad } from '../../level-cap.js';
+import { levelTextBad } from '../../level-cap.ts';
 import { numberBox } from '../../number-field.js';
 import { levelFieldView } from '../../views/cap-field.js';
 import { shownNumber } from '../shared/number-box.ts';

@@ -10,7 +10,7 @@ import { statBase } from '../../core/base-stats.ts';
 import { levelParams } from '../../core/level-params.ts';
 import { MAX_SPEED } from '../../core/tables.ts';
 import { fmtInt } from '../text.ts';
-import { commit } from '../number-commit.js';
+import { commit } from '../number-commit.ts';
 import { deepFreeze } from '../view-cache.ts';
 
 /* The rows kept for the cards last shown, by the key of what they depend on (rowsOf): the job, substat and level change

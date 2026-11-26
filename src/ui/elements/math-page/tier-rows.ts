@@ -1,6 +1,6 @@
 /* The rows of a Substat tiers card's scroll area, as a Lit directive on the scroll element (`<div ${tierRows(card, typedCount, shown)}>`).
    A card has up to some 650 rows, too many to keep in the page, so the directive draws only the window around the rows in
-   view (src/ui/tier-window.js says which) and pads the rest, and draws another window as the area scrolls: one set of
+   view (src/ui/tier-window.ts says which) and pads the rest, and draws another window as the area scrolls: one set of
    `.lrow` elements per window, written as one string, with nothing rebuilt per scroll event. Lit does not manage the area's
    children (the template gives the element no content), so the directive owns them.
    - New rows (the first time, a new job or level; their `rowsKey` differs): the table's shell and the rows around the value's
@@ -10,7 +10,7 @@
    - An area hidden (no height: its sub-tab is not open) waits; it is centered when `shown` is true and it has a height. */
 import { Directive, PartType, directive, type ElementPart, type PartInfo } from 'lit/directive.js';
 import { nothing } from 'lit';
-import { rowsInView, rowsToDraw, scrollTopToCenter, viewLeavesDrawn } from '../../tier-window.js';
+import { rowsInView, rowsToDraw, scrollTopToCenter, viewLeavesDrawn } from '../../tier-window.ts';
 
 /* The parts of a card (src/ui/views/tiers.js tiersView) the rows are drawn from. */
 export interface TierRowsSource {

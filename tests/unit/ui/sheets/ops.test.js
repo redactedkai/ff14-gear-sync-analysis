@@ -132,7 +132,7 @@ test('moveItem: one row to another place; out of range changes nothing', () => {
   assert.deepEqual(moveItem(['a', 'b'], 0, 5), ['a', 'b']);
 });
 
-/* A sheet's level and cap follow the Job and sync panel's rule (level-cap.js limitCapToLevel; owner's report, 2026-11-10:
+/* A sheet's level and cap follow the Job and sync panel's rule (level-cap.ts limitCapToLevel; owner's report, 2026-11-10:
    the sheet page took a cap above what its level allows). Level 70: the best gear made for it is item level 405 (the
    level 70 weapons, 5 above the level's 400); level 50: 135. */
 test('sheetSettings: the cap is lowered to what the level allows, as on the Job and sync panel', () => {

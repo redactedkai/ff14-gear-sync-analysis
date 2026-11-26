@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { startupScript } from '../../scripts/build/build.mjs';
-import { STORE_KEY } from '../../src/ui/store-key.js';
+import { STORE_KEY } from '../../src/ui/store-key.ts';
 import { UNLOAD_GUARD_OFF_KEY } from '../../src/ui/router/unload-guard.js';
 
 /* A page stand-in: elements are plain objects that keep their children and text. `keys` are the localStorage keys. The script's

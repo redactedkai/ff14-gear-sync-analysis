@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { HASTE, JOBS } from '../../../../src/core/constants.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { syncSettings } from '../../../../src/ui/job-sync-panel.js';
+import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { gcdView } from '../../../../src/ui/views/gcd.js';
 import { explainerItemLevel, explainerView } from '../../../../src/ui/views/sync-explainer.js';
 import { tierValues, tiersView } from '../../../../src/ui/views/tiers.js';

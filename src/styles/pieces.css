@@ -52,7 +52,7 @@ details.panel:not([open]) {
 }
 /* The HQ mark: the Lodestone symbol font's HQ glyph (U+E03C), loaded from a community mirror
    (ewwwin/ffxiv-symbol-fonts) pinned to one commit and served by jsDelivr, which sends CORS headers, so it loads from file://. The mark is plain "(HQ)" by default;
-   ui/hq-font.js adds html.hqfont once the font has loaded and the glyph replaces the text, so a slow, blocked or
+   ui/hq-font.ts adds html.hqfont once the font has loaded and the glyph replaces the text, so a slow, blocked or
    offline load never shows a missing-character box. */
 @font-face {
   font-family: FFXIV_Lodestone_SSF;

@@ -15,7 +15,7 @@
    slow device cannot raise a false alarm. After the check the listeners are removed: a later error is not a startup failure. docs/engineering/architecture.md, "Startup failure". */
 (function () {
   // The settings key; the sheets' keys are this plus a colon and more. The build writes the value of
-  // src/ui/store-key.js over the marker, so the key is written once.
+  // src/ui/store-key.ts over the marker, so the key is written once.
   var PREFIX = '@STORE_KEY@';
   // The dev flag that turns the reload guard off (src/ui/router/unload-guard.js) is in that family but is not saved data: a person
   // never sets it, and a reset leaves it. The build writes its key over the marker too.

@@ -1,6 +1,6 @@
 /* The page's one pattern for number boxes (numberBox) and the flash of a lowered cap field: DOM code,
    used by the elements only. */
-import { commit, roundTo } from './number-commit.js';
+import { commit, roundTo } from './number-commit.ts';
 
 /* How long a typed number waits before it is committed: typing "123" commits once, not 1, 12 and 123, so the views
    (and the optimizer) do not recompute for the numbers on the way. */

@@ -10,7 +10,7 @@ import { makeJobContext } from '../../core/job-context.ts';
 import { remapStatKey } from '../../core/stat-keys.ts';
 import { DATA_SOURCE, MAX_REAL } from '../../core/tables.ts';
 import { clone } from '../text.ts';
-import { limitCapToLevel } from '../level-cap.js';
+import { limitCapToLevel } from '../level-cap.ts';
 import { SET_ROW_SLOTS, SHEET_VERSION } from './storage.js';
 
 /* The most characters the name box of a sheet or a gear set takes (its `maxlength`; the owner accepted 60). Only the text boxes limit the
@@ -98,10 +98,10 @@ export function capFor(value, fallback) {
 
 /* A sheet's level and item level sync for job `jobId` as the page keeps them, from `fields` ({level, sync: {on, cap}},
    as typed or as saved): the level held to 1..the job's level cap (levelFor), then the cap a whole number from 1,
-   lowered to what that level allows while sync is on, by the Job and sync panel's rule (level-cap.js limitCapToLevel, the
+   lowered to what that level allows while sync is on, by the Job and sync panel's rule (level-cap.ts limitCapToLevel, the
    one copy of it), and held to the highest real item level. `fallback` ({level, cap}) stands in for a field with no
    number: by default the job's level cap and NEW_SHEET_CAP. Returns {level, sync: {on, cap}, lowered: limitCapToLevel's
-   {from, to, level} when it lowered the cap (the note: level-cap.js capLoweredText), else null}. */
+   {from, to, level} when it lowered the cap (the note: level-cap.ts capLoweredText), else null}. */
 export function sheetSettings(jobId, { level, sync }, fallback = {}) {
   const jobCtx = makeJobContext(jobId);
   const settings = {

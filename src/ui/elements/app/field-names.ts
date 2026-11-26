@@ -10,7 +10,7 @@ export const LOWERED_CHANGE_EVENT = 'lowered-change';
 /* The box holds text that is no value of the field, or stopped to: `detail` is a boolean. */
 export const TYPED_BAD_EVENT = 'typed-bad-change';
 
-/* The cap the page last lowered to what the level allows (level-cap.js limitCapToLevel): the cap it was, the cap it is, and the level
+/* The cap the page last lowered to what the level allows (level-cap.ts limitCapToLevel): the cap it was, the cap it is, and the level
    (null: no level, the highest real item level). */
 export interface LoweredCap {
   from: number;

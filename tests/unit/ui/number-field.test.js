@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TYPING_DEBOUNCE_MS, numberBox } from '../../../src/ui/number-field.js';
-import { TARGET_GCD_RANGE } from '../../../src/ui/job-sync-panel.js';
+import { TARGET_GCD_RANGE } from '../../../src/ui/job-sync-panel.ts';
 
 /* A box bound to one value: {field, value(), leave(text)}; leave types `text` and leaves the box. */
 function box(start, lo, hi, options) {

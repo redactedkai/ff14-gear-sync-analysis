@@ -2,7 +2,7 @@
    Auto-fill, a waiting Auto-fill result), the browser asks before the page goes away (a `beforeunload` listener). The question
    itself is the browser's: a page cannot set its text. Pure: the caller passes the window-like `target`, the
    function that says whether work is held, and the storage that may hold the dev flag. */
-import { STORE_KEY } from '../store-key.js';
+import { STORE_KEY } from '../store-key.ts';
 
 /* The dev flag's localStorage key (in the STORE_KEY family): the value '1' turns the guard off. The smoke test sets it before
    every page start (tests/e2e/lib/init-scripts.mjs), so its many reloads are not held; the step that checks the guard sets

@@ -15,7 +15,7 @@ The breadcrumb reads `Sheets / <sheet> / <set>`. The page opens on the Sheets ta
 
 ## Saved data
 
-The sheets are in `localStorage`, beside the page's settings object (`ilvl-stat-lab-v4`, `src/ui/store-key.js`). Two more keys are conveniences, not saved data: the reload guard's dev flag and the tab's scroll positions (`sessionStorage`), described in [architecture.md](architecture.md) under "Saved sheets". The sheets' keys:
+The sheets are in `localStorage`, beside the page's settings object (`ilvl-stat-lab-v4`, `src/ui/store-key.ts`). Two more keys are conveniences, not saved data: the reload guard's dev flag and the tab's scroll positions (`sessionStorage`), described in [architecture.md](architecture.md) under "Saved sheets". The sheets' keys:
 
 | Key | Holds |
 |---|---|

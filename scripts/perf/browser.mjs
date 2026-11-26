@@ -26,9 +26,9 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 import { makeJobContext } from '../../src/core/job-context.ts';
-import { DEFAULT_EXCLUDE } from '../../src/ui/job-sync-panel.js';
+import { DEFAULT_EXCLUDE } from '../../src/ui/job-sync-panel.ts';
 import { SET_ROW_SLOTS } from '../../src/ui/sheets/storage.js';
-import { STORE_KEY } from '../../src/ui/store-key.js';
+import { STORE_KEY } from '../../src/ui/store-key.ts';
 import { listOption, numberOption, option } from './args.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');

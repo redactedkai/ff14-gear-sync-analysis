@@ -6,14 +6,14 @@ import { makeJobContext } from '../core/job-context.ts';
 import { currentStatKey } from '../core/stat-keys.ts';
 import { MAX_REAL } from '../core/tables.ts';
 import { ANY_SLOT_KEY } from './elements/gear-browser/slot-menu-names.ts';
-import { DEFAULT_EXCLUDE, PANEL_GROUP, holdLevelSyncCap, meldSlotChoices } from './job-sync-panel.js';
-import { limitCapToLevel } from './level-cap.js';
-import { STORE_KEY } from './store-key.js';
+import { DEFAULT_EXCLUDE, PANEL_GROUP, holdLevelSyncCap, meldSlotChoices } from './job-sync-panel.ts';
+import { limitCapToLevel } from './level-cap.ts';
+import { STORE_KEY } from './store-key.ts';
 
 /* Defaults favour no player's setup: level 100 (the level cap), no sync cap and sync off. */
 const DEFAULT_LEVEL = 100;
 
-/* The Job and sync panel's saved fields, which each reference tab holds for itself (job-sync-panel.js PANEL_GROUP). */
+/* The Job and sync panel's saved fields, which each reference tab holds for itself (job-sync-panel.ts PANEL_GROUP). */
 const PANEL_KEYS = ['job', 'cap', 'sync', 'level'];
 
 /* One tab's Job and sync strip at its defaults: {job (DEFAULT_JOB, Paladin: a tab always has a job), cap (null: none),
@@ -57,7 +57,7 @@ export function cutText(text, max) {
 
 /* The page's tabs (`tab`; the first is the one a bare address opens) and the math tab's sub-tabs (`mathTab`). Neither is
    saved: the address names the open tab and math view (ui/router/). A saved `tab` or `mathTab` of an older save is
-   ignored. The Sheets tab has no Job and sync panel (each sheet holds its own job, level and sync; job-sync-panel.js PANEL_GROUP lists no group
+   ignored. The Sheets tab has no Job and sync panel (each sheet holds its own job, level and sync; job-sync-panel.ts PANEL_GROUP lists no group
    for it). */
 export const TABS = ['sheets', 'browse', 'math'];
 export const MATH_TABS = ['piece', 'gcd', 'tiers'];

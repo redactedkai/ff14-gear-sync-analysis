@@ -1,9 +1,9 @@
-/* A level box's rules (src/ui/level-cap.js): which typed text is no level, and the texts of its range and its error.
+/* A level box's rules (src/ui/level-cap.ts): which typed text is no level, and the texts of its range and its error.
    The caps are real jobs': Paladin 100, Blue Mage 80, Beastmaster 50. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import { LEVEL_TEXT, capFlag, levelTextBad, rangeOnly, rangeText } from '../../../src/ui/level-cap.js';
+import { LEVEL_TEXT, capFlag, levelTextBad, rangeOnly, rangeText } from '../../../src/ui/level-cap.ts';
 
 const maxLevelOf = jobId => makeJobContext(jobId).maxLevel;
 

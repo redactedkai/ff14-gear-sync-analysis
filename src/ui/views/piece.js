@@ -5,8 +5,8 @@ import { makeJobContext } from '../../core/job-context.ts';
 import { capDerivation, clampIlvl, isOffhand, statDerivation } from '../../core/formulas.ts';
 import { MAX_REAL } from '../../core/tables.ts';
 import { statEffectKinds } from '../../core/tiers.ts';
-import { shownSync } from '../job-sync-panel.js';
-import { withRank } from '../ranks.js';
+import { shownSync } from '../job-sync-panel.ts';
+import { withRank } from '../ranks.ts';
 
 /* The Slot menu's choices for `job` (a JobContext): the job's slots that share a budget share, each group one choice, in
    slot order: [{value (the group's first slot, what the piece's slot is set to), label ("Head / Hands / Feet"; "Accessories" for the four accessories), slots}].
@@ -103,7 +103,7 @@ function budgetSlices(job, slot) {
   }));
 }
 
-/* The step-by-step section of Piece stats for `job` (a JobContext) under `sync` ({cap, sync, level}: ui/job-sync-panel.js
+/* The step-by-step section of Piece stats for `job` (a JobContext) under `sync` ({cap, sync, level}: ui/job-sync-panel.ts
    syncSettings), for Piece stats' piece (`piece`: {ilvl, slot, subs}, the store's `piece`) at item level `ilvl` (the
    explainer's chosen one, explainerItemLevel; null: the piece's own, else the highest): a summary, the slot slices of
    the budget, and per stat the piece's value and, under sync, the ceiling (the same slot at the synced item level),
@@ -200,7 +200,7 @@ export function pieceView(job, sync, piece, ilvl) {
 }
 
 /* Piece stats substat ranks after choosing `value` (or '' for none) at rank `i`: the shared rule of ranked dropdowns
-   (ui/ranks.js withRank), on two ranks. Rank 1 is never empty; rank 2 may be. */
+   (ui/ranks.ts withRank), on two ranks. Rank 1 is never empty; rank 2 may be. */
 export function withSub(subs, i, value, substats) {
   const two = subs.slice(0, 2);
   while (two.length < 2) {
