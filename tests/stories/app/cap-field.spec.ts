@@ -46,6 +46,70 @@ test.describe('<gsa-cap-field>', () => {
     await expect(page.locator('#cap-lowered')).toContainText(String(CAP_AT_LEVEL_40));
   });
 
+  test('the up arrow at the limit lowers the cap again each press, and the note stays shown instead of hiding and showing', async ({
+    mount,
+    page,
+  }) => {
+    const component = await mount<typeof Default>(STORY);
+    const cap = page.locator('#cap');
+    await page.getByRole('button', { name: 'Lower the level' }).click();
+    await expect(cap).toHaveValue(String(CAP_AT_LEVEL_40));
+    const note = page.locator('#cap-lowered');
+    await expect(note).toContainText(String(CAP_AT_LEVEL_40));
+    // counts every time the note is hidden (the page's panel jumped when it was)
+    await note.evaluate(element => {
+      (window as unknown as { noteHidden: number }).noteHidden = 0;
+      new MutationObserver(() => {
+        if ((element as HTMLElement).style.display === 'none') {
+          (window as unknown as { noteHidden: number }).noteHidden++;
+        }
+      }).observe(element, { attributes: true, attributeFilter: ['style'] });
+    });
+    await cap.focus();
+    for (let press = 0; press < 5; press++) {
+      await page.keyboard.press('ArrowUp');
+      // two frames: the step, the lowering again and the new draw have happened
+      await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done))));
+    }
+    await expect(cap).toHaveValue(String(CAP_AT_LEVEL_40));
+    await expect(note).toContainText(String(CAP_AT_LEVEL_40));
+    expect(await page.evaluate(() => (window as unknown as { noteHidden: number }).noteHidden), 'the note hid and showed again').toBe(0);
+    // each press stepped to 44 and was lowered to 43 again: the page was told of both
+    await expect(component.getByTestId('events')).toHaveText(
+      `[${CAP_AT_LEVEL_40}${`,${CAP_AT_LEVEL_40 + 1},${CAP_AT_LEVEL_40}`.repeat(5)}]`,
+    );
+  });
+
+  test('the field keeps its line in every state: text that is no cap, a valid cap and a lowered cap', async ({ mount, page }) => {
+    await mount<typeof Default>(STORY);
+    const cap = page.locator('#cap');
+    // what the line is made of: the label's height and the box's height and left edge
+    const shape = () =>
+      page.evaluate(() => {
+        const label = document.querySelector('label[for=cap]') as HTMLElement;
+        const input = document.querySelector('#cap') as HTMLElement;
+        const labelBox = label.getBoundingClientRect();
+        const inputBox = input.getBoundingClientRect();
+        return {
+          labelHeight: labelBox.height,
+          inputTop: inputBox.top,
+          inputLeft: inputBox.left,
+          inputWidth: inputBox.width,
+          inputHeight: inputBox.height,
+        };
+      });
+    const valid = await shape();
+    await cap.fill('0');
+    await expect(page.locator('#cap-error')).toBeVisible();
+    expect(await shape(), 'text that is no cap moved the line').toEqual(valid);
+    await cap.fill('300');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#cap-error')).toBeHidden();
+    await page.getByRole('button', { name: 'Lower the level' }).click();
+    await expect(page.locator('#cap-lowered')).toContainText(String(CAP_AT_LEVEL_40));
+    expect(await shape(), 'a lowered cap moved the line').toEqual(valid);
+  });
+
   test('has no axe violations', async ({ mount, axe }) => {
     await mount<typeof Default>(STORY);
     expect(await axe()).toEqual([]);

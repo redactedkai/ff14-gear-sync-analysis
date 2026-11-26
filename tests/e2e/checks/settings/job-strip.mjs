@@ -1,6 +1,6 @@
 // Settings panel: the job strip under the tabs.
 
-import { DEBOUNCE_SETTLE_MS, NARROW } from '../../lib/constants.mjs';
+import { NARROW } from '../../lib/constants.mjs';
 import { check, expect } from '../../lib/expect.mjs';
 import { afterFrames, hasHScroll, pickJob, setCap, setJob, setNumber, showTab } from '../../lib/nav.mjs';
 import { SHARED_SETUP } from '../../lib/setup.mjs';
@@ -133,21 +133,6 @@ export async function checkJobStrip(pg) {
   await setNumber(pg, '#level', SHARED_SETUP.level);
   await setCap(pg, SHARED_SETUP.cap); // back to the shared setup
 
-  // a lowered-cap note stays on one line and the sync toggle stays where it was
-  await setNumber(pg, '#level', '60');
-  // the page checks the cap against the new level TYPING_DEBOUNCE_MS (300 ms) later and replaces the lowered-cap note with
-  // what that check lowered (nothing here); nothing on the page shows when it has run, so let it run before the cap is typed
-  await pg.waitForTimeout(DEBOUNCE_SETTLE_MS);
-  const toggleBefore = await pg.locator('#sync').boundingBox();
-  await setCap(pg, '400');
-  await expect(pg.locator('#cap-lowered')).toBeVisible();
-  const noteBox = await pg.locator('#cap-lowered').boundingBox();
-  check(noteBox.height < 25, `the lowered-cap note is ${noteBox.height} px tall: it wraps to two lines`);
-  const toggleAfter = await pg.locator('#sync').boundingBox();
-  check(
-    Math.abs(toggleAfter.x - toggleBefore.x) < 0.5,
-    `the sync toggle moved ${toggleAfter.x - toggleBefore.x} px sideways when the lowered-cap note showed`,
-  );
   // the cap first: the level change starts the page's 300 ms timer that lowers a cap above the level's limit (135 at level
   // 50), which overwrote the 123 typed between the fill and the change under load; 123 is under the limit, so it stays
   await setCap(pg, SHARED_SETUP.cap);

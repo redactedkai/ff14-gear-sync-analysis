@@ -1,5 +1,6 @@
 /* Stories of <gsa-job-strip> with its two fields: a typed item level commits, a level that allows less lowers the cap with its note, flag
-   and gold border (the field follows the level), text that is no item level is an error, and axe. */
+   and gold border (the field follows the level; the error for text that is no item level is cap-field.spec's), the strip not moving
+   when the cap is lowered, and axe. */
 import { expect, test } from '../fixtures.ts';
 import type { Default } from './job-strip.story.js';
 import { partShows } from '../look.ts';
@@ -9,10 +10,7 @@ const STORY = 'app/job-strip/Default';
 const CAP_AT_LEVEL_40 = 43;
 
 test.describe('<gsa-job-strip>', () => {
-  test('a typed item level commits, a lower level lowers it with a note, and text that is no item level is an error', async ({
-    mount,
-    page,
-  }) => {
+  test('a typed item level commits and a lower level lowers it with a note', async ({ mount, page }) => {
     const component = await mount<typeof Default>(STORY);
     const events = component.getByTestId('events');
     const cap = page.locator('#cap');
@@ -28,12 +26,34 @@ test.describe('<gsa-job-strip>', () => {
     await expect(cap).toHaveClass(/lowered/);
     await expect(page.locator('#cap-range')).toBeHidden();
     await expect(page.locator('.f-flag.lowered')).toBeVisible();
+  });
 
-    // text that is no whole item level: the error shows at once and the stored cap stays
-    await cap.fill('0');
-    await expect(page.locator('#cap-error')).toBeVisible();
-    await expect(cap).toHaveAttribute('aria-invalid', 'true');
-    await expect(events).not.toContainText('cap:0');
+  test('a lowered cap keeps the strip as it was: the cap line is one line and the IL Sync switch and Reset stay in place', async ({
+    mount,
+    page,
+  }) => {
+    await mount<typeof Default>(STORY);
+    const placeOf = () =>
+      page.evaluate(() => {
+        const box = (selector: string) => {
+          const rect = (document.querySelector(selector) as Element).getBoundingClientRect();
+          return [rect.left, rect.top, rect.width, rect.height];
+        };
+        const label = document.querySelector('label[for=cap]') as HTMLElement;
+        return {
+          capLabelLines: label.getBoundingClientRect().height / Number.parseFloat(getComputedStyle(label).lineHeight),
+          cap: box('#cap'),
+          neighbours: ['#level', '#sync', '#reset'].map(box),
+        };
+      });
+    const before = await placeOf();
+    expect(before.capLabelLines, 'the cap label is one line').toBeLessThan(2);
+    await page.locator('#level').fill('40');
+    await expect(page.locator('#cap-lowered')).toContainText(String(CAP_AT_LEVEL_40));
+    const after = await placeOf();
+    expect(after.capLabelLines, 'the lowered flag keeps the label on one line').toBeLessThan(2);
+    expect(after.cap, 'the cap box moved').toEqual(before.cap);
+    expect(after.neighbours, 'a box beside the cap moved').toEqual(before.neighbours);
   });
 
   test('has no axe violations', async ({ mount, axe }) => {

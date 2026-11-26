@@ -69,25 +69,17 @@ export async function checkSheets(pg) {
   await expect(pg.locator('#sh-no-sets')).toBeVisible();
   await expect(pg.locator('#sh-level')).toHaveValue('50');
 
-  // Edit name and description; an emptied name is refused, the box stays as typed and the saved name is unchanged
+  // Edit name and description (an emptied name is refused: unit sheets/dialogs)
   await pg.click('#sh-edit');
-  await pg.fill('#sh-dlg-name', '  ');
-  await pg.click('#sh-dlg-ok');
-  await expect(pg.locator('#sh-dlg-name-err')).toBeVisible();
-  await expect(pg.locator('#sh-dlg-name')).toHaveValue('  ');
   await pg.fill('#sh-dlg-name', 'Heal T1');
   await pg.keyboard.press('Enter');
   await expect(pg.locator('#sh-sheet .crumbhere')).toHaveText('Heal T1');
 
-  // level and item level sync change at once, no question; a cap above what the level allows is lowered with the
-  // Job and sync panel's note (level 70: item level 405, its weapons), and the note goes with a cap the level allows
+  // level and item level sync change at once, with no question (the cap that follows the level is checkSheetCap's)
   await setNumber(pg, '#sh-level', '70');
-  await setNumber(pg, '#sh-cap', '500');
-  await expect(pg.locator('#sh-cap')).toHaveValue('405');
-  await expect(pg.locator('#sh-cap-lowered')).toHaveTextParts([405, 70]);
-  await pg.screenshot({ path: shot('sheet-cap-lowered.png') });
   await setNumber(pg, '#sh-cap', '300');
-  await expect(pg.locator('#sh-cap-lowered')).toBeHidden();
+  await expect(pg.locator('#sh-cap')).toHaveValue('300');
+  await pg.screenshot({ path: shot('sheet-settings.png') });
 
   // New set opens the set page with the sheet's settings as a read-only line
   await pg.click('#sh-new-set-first');

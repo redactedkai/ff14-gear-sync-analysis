@@ -8,6 +8,7 @@ import {
   CAP_TYPED_BAD_TEXT,
   capFlag,
   capLoweredText,
+  capTextBad,
   limitCapToLevel,
 } from '../../../src/ui/level-cap.ts';
 import { MAX_REAL } from '../../../src/core/tables.ts';
@@ -75,4 +76,15 @@ test('capFlag: an error wins over a lowered note; a lowered cap says its top; no
   assert.deepEqual(capFlag({ error: '', note: '', lowered: null, range }), { kind: '', short: '', full: '' });
   // a note with nothing lowered behind it (another sheet's, sync off) shows no flag
   assert.equal(capFlag({ error: '', note: '', lowered, range }).kind, '');
+});
+
+/* Text typed in a cap field is no cap unless it is empty (the field asks for one) or a whole number from 1; a number above the
+   highest real item level is a cap (limitCapToLevel lowers it). */
+test('capTextBad: empty text is asked for, not bad; 0, a negative number, a decimal and words are bad; any whole number from 1 is a cap', () => {
+  for (const text of ['', '1', '123', '795', '999', '100000']) {
+    assert.equal(capTextBad(text), false, `'${text}'`);
+  }
+  for (const text of ['0', '-3', '1.5', '0.5', '12.0.1', 'abc', '1e1x', ' x']) {
+    assert.equal(capTextBad(text), true, `'${text}'`);
+  }
 });

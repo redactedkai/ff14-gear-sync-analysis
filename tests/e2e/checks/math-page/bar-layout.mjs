@@ -123,9 +123,10 @@ export async function checkSyncChip(pg) {
   await setUpShared(pg);
 }
 
-/** Stat Allocation's Level box (in the Sync settings popover) flags text that is no level as the Synced IL box flags a bad item
- * level: a red flag in the label line with the range and "only", the sentence as the box's name for a screen reader, the chip red; the
- * stored level stays as it was; a good level clears it (and is stored as typed); leaving the popover drops the text. */
+/** Stat Allocation's Level box (in the Sync settings popover) on the real page: a level above the job's cap is flagged (a red flag
+ * in the label line with the range and "only", the sentence as the box's name for a screen reader, the chip red), an empty box too,
+ * and the stored level stays as it was; a good level clears it (and is stored as typed); leaving the popover drops the text. The
+ * other bad texts and the box's rules are `level-cap.level-text`'s and `tests/stories/app/level-field.spec.ts`'s. */
 export async function checkLevelBox(pg) {
   await pg.setViewportSize(DEFAULT_WINDOW);
   await showMath(pg, 'piece');
@@ -137,7 +138,7 @@ export async function checkLevelBox(pg) {
   check(max > 0, 'the Level range does not end in the job level cap');
   await expect(pg.locator('#p-level-range')).toHaveText(LEVEL_TEXT.range(max));
   await expect(flag).toBeHidden();
-  for (const text of ['0', String(max + 1), '-5', '12.5']) {
+  for (const text of [String(max + 1)]) {
     await pg.fill('#p-level', text);
     await expect(flag).toBeVisible();
     await expect(flag).toContainText(rangeOnly(LEVEL_TEXT.range(max)));
@@ -156,8 +157,6 @@ export async function checkLevelBox(pg) {
   await expect(pg.locator('#p-level')).toHaveAttribute('aria-invalid', 'false');
   await expect(pg.locator('#p-sync-chip.error')).toHaveCount(0);
   check((await storedLevel()) === 60, `a level of 60 is stored as ${await storedLevel()}`);
-  await pg.fill('#p-cap', '0');
-  await expect(pg.locator('.sync-cap .f-flag')).toContainText('only');
   // leaving the popover with bad text in the box drops it: the box shows the stored level again
   await pg.fill('#p-level', '0');
   await expect(flag).toBeVisible();
