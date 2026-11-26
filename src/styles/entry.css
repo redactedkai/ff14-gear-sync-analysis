@@ -10,7 +10,7 @@
 @import "./layout.css" layer(components.layout); /* panels, the settings panel, fields, tabs */
 @import "./pieces.css" layer(components.pieces); /* small shared pieces, tables, popovers and ? buttons */
 @import "./menus.css" layer(components.menus); /* dropdown menus */
-@import "./fill-settings.css" layer(components.menus); /* the Fill settings dialog of a set page */
+@import "./fill-settings.css" layer(components.menus); /* the Auto-fill settings popover of a set page */
 @import "./gear-browser.css" layer(views.gear-browser); /* the Job and sync strip, the Gear browser */
 @import "./math-bar.css" layer(views.math); /* How the math works: the bar, charts and legends */
 @import "./math-piece-stats.css" layer(views.math); /* Piece stats */
@@ -19,5 +19,5 @@
 @import "./math-controls.css" layer(views.math); /* Stat Allocation's controls row: Piece chip, Sync chip, Gear item level, Job menu */
 @import "./footer.css" layer(views.footer); /* footer and the dev build marks */
 @import "./sheets.css" layer(views.sheets); /* the Sheets tab: manager, a sheet's page, the frame of a set page, dialogs */
-@import "./set-page.css" layer(views.set-page); /* a set page: header, gear table, menus, Fill settings */
+@import "./set-page.css" layer(views.set-page); /* a set page: header, gear table, menus, Auto-fill settings */
 @import "./fallbacks.css" layer(fallbacks); /* last-layer overrides */

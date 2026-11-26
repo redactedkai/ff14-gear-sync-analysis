@@ -1,4 +1,4 @@
-/* ==== Fill settings (a set page's dialog): Gear to search, then Goal under a rule ==== */
+/* ==== Auto-fill settings (a set page's popover): Gear to search, then Goal under a rule ==== */
 .part {
   display: flex;
   flex-direction: column;

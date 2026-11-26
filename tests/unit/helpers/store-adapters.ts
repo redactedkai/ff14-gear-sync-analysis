@@ -27,8 +27,8 @@ import type { LeaveGuard, SheetsActionOptions } from '../../../src/ui/store/shee
 /* The saved sheets of a page with no storage: none. */
 const NO_SHEETS = { available: false, sheets: [], unreadable: [], indexProblem: null };
 
-/* The old store's `piece` or `browse` group: the tab's panel fields and its own fields in one object, over the two places the
-   new state holds them. */
+/* A saved `piece` or `browse` group: the tab's panel fields and its own fields in one object, over the two places the
+   state holds them. */
 function mergedGroup(panel: Record<string, unknown>, own: Record<string, unknown>): Record<string, unknown> {
   const holder = (key: string | symbol) => (typeof key === 'string' && (PANEL_KEYS as readonly string[]).includes(key) ? panel : own);
   return new Proxy(own, {

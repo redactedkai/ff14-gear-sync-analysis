@@ -26,7 +26,7 @@ npm run build     # builds dist/index.html
 
 Open `dist/index.html` in a browser. For development, `npm run dev` rebuilds on every change and serves the page locally.
 
-The page opens on **Sheets**: make a sheet for a job, level and item level sync, add gear sets to it, and press **Auto-fill** on a set to find the gear that maximizes a chosen stat. Sheets are saved in the browser. On the other tabs, pick your job from the icons at the top, then set the synced level, and turn on item level sync with a cap if you want one. A fresh page starts with no job, level 100 and sync off; **Reset to defaults** gets back there. Your settings are saved in the browser, so they come back on the next visit. Switching jobs keeps the job-specific settings the new job can use (the browser's slot and sort, Piece stats' substats) and resets the rest.
+The page opens on **Sheets**: make a sheet for a job, level and item level sync, add gear sets to it, and press **Auto-fill** on a set to find the gear that maximizes a chosen stat. Sheets are saved in the browser. On the other tabs, pick your job from the icons at the top, then set the synced level, and turn on item level sync with a cap if you want one. A fresh page starts with Paladin, level 100 and sync off; **Reset to defaults** gets back there. Your settings are saved in the browser, so they come back on the next visit. Switching jobs keeps the job-specific settings the new job can use (the browser's slot and sort, Piece stats' substats) and resets the rest.
 
 The page has two working tabs, **Sheets** and **Gear browser**, and a reference tab, **How the math works**. What each one shows: [docs/engineering/ui.md, section 1](docs/engineering/ui.md#1-the-tabs).
 

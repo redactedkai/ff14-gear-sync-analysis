@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 440" role="img" aria-labelledby="t d">
   <title id="t">What happens after typing 123 into a number field</title>
-  <desc id="d">A timeline in milliseconds. The user types 1, 12 and 123 into the sync cap field of the Job and sync panel, 100 ms apart as an example. The field commits 300 ms after the last keystroke, so 1 and 12 are never committed and only 123 reaches the store; Enter or leaving the field would commit at once. When the store changes, Settings and How the math works recompute at once, and so does the Gear browser while its tab is open. A set's Fill on the Sheets tab does not run; only the Fill button runs it. The saved state is written to browser storage 150 ms after the last change. The field's wait and the save's restart on every change. A box in a set's Fill settings commits the same way and then asks for its Gear to search count at once.</desc>
+  <desc id="d">A timeline in milliseconds. The user types 1, 12 and 123 into the sync cap field of the Job and sync panel, 100 ms apart as an example. The field commits 300 ms after the last keystroke, so 1 and 12 are never committed and only 123 reaches the store; Enter or leaving the field would commit at once. When the store changes, Settings and How the math works recompute at once, and so does the Gear browser while its tab is open. A set's Auto-fill on the Sheets tab does not run; only the Auto-fill button runs it. The saved state is written to browser storage 150 ms after the last change. The field's wait and the save's restart on every change. A box in a set's Auto-fill settings commits the same way and then asks for its Gear to search count at once.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .fg { fill: #1b2a2c; }
@@ -66,9 +66,9 @@
   <circle class="accent" cx="560" cy="210" r="4"/>
   <text class="fg s" x="570" y="214">at once</text>
 
-  <!-- Lane 5: a set's Fill (Sheets tab) -->
-  <text class="fg l" x="20" y="264">Sheets tab, a set's Fill</text>
-  <text class="muted s" x="570" y="264">not run (Fill only)</text>
+  <!-- Lane 5: a set's Auto-fill (Sheets tab) -->
+  <text class="fg l" x="20" y="264">Sheets tab, a set's Auto-fill</text>
+  <text class="muted s" x="570" y="264">not run (Auto-fill only)</text>
 
   <!-- Lane 6: save -->
   <text class="fg l" x="20" y="314">Saved to browser storage</text>
@@ -89,5 +89,5 @@
 
   <text class="muted s" x="20" y="384">Keystrokes 100 ms apart, as an example. Enter or leaving the field commits at once.</text>
   <text class="muted s" x="20" y="404">The field and the save wait out a burst of changes: their timers restart on every change.</text>
-  <text class="muted s" x="20" y="424">A box in a set's Fill settings commits the same way, then asks for its Gear to search count at once.</text>
+  <text class="muted s" x="20" y="424">A box in a set's Auto-fill settings commits the same way, then asks for its Gear to search count at once.</text>
 </svg>

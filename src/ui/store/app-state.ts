@@ -12,9 +12,8 @@
        math      the GCD sub-tab's settings and the level typed on Substat tiers. Not saved.
        sheets    the Sheets tab: the saved sheets as loaded, the screen it shows (manager, sheet, gear set), the notes, the lock.
        setPages  one entry per gear set page that is open: its draft, its suggestion and its Auto-fill status.
-   - A tab's panel is held once, in `settings.panels`. The old store's top-level job, cap, sync and level (a copy of the open
-     tab's panel, swapped by showTab) are gone: read `panelOf(state, tab)`. `persisted` puts each panel back into its tab's group,
-     so the saved JSON is the old store's, key for key.
+   - A tab's panel is held once, in `settings.panels`; there is no top-level copy of the open tab's panel, and showTab only changes
+     `screen`. Read `panelOf(state, tab)`. `persisted` puts each panel back into its tab's group (the saved JSON's shape).
    - Big data stays out of the state or goes in by reference and frozen: the item database is a module constant, and a suggestion
      is the frozen object the solver returned. A sheet is plain data that an action replaces, never edits in place.
    - What is saved, what the screens show and what a user can do are separate: `persisted` is a selector, not a field.
@@ -28,7 +27,7 @@
      that take a whole panel (`setPanel`) or a form (the sheet actions) check as they did.
    - Saving (autosave.ts) is one subscription to the store: it watches the `settings` revision, writes the JSON 150 ms after the last
      change (made when it is written, not at each change) and at 'pagehide', and writes once at the start to repair an older shape.
-   - Kept from the old store, odd as they are: opening a tab that is already open still applies a math sub-tab; a job change
+   - Behaviours kept on purpose, odd as they are: opening a tab that is already open still applies a math sub-tab; a job change
      on the Sheets tab, which has no panel, does nothing; `openTab` counts requests so only the newest shows. */
 import { makeJobContext } from '../../core/job-context.js';
 import { syncSettings } from '../job-sync-panel.js';
@@ -223,7 +222,7 @@ export function panelFields(source: Panel): Panel {
   return { job: source.job, cap: source.cap, sync: source.sync, level: source.level };
 }
 
-/* `group` (the old store's piece or browse group, panel fields and own fields together) without the panel fields. */
+/* `group` (a saved piece or browse group, panel fields and own fields together) without the panel fields. */
 function ownFields<Own>(group: Own & Panel): Own {
   const { job: _job, cap: _cap, sync: _sync, level: _level, ...own } = group;
   return own as unknown as Own;
@@ -332,7 +331,7 @@ export function syncSettingsOf(state: AppState, tab: string) {
   return syncSettings(panelOf(state, tab));
 }
 
-/* The saved fields, as the old store's persisted() gave them: each tab's panel inside its group (piece for the math tab), then
+/* The saved fields: each tab's panel inside its group (piece for the math tab), then
    Substat tiers' job. A new object that shares the arrays inside with the state; nothing is written to the state. */
 export function persisted(state: AppState) {
   const { sheetFigures, piece, browse, tiers, panels } = state.settings;

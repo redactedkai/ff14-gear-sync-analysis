@@ -17,7 +17,7 @@ import { makeJobContext } from '../core/job-context.js';
 import { makeSession } from '../core/session.js';
 import { gearToSearchView, solveView } from './solve.js';
 
-/** A solver request from a component's inputs: `kind` 'solve' (an Auto-fill's answer) or 'gearToSearch' (the line under Gear
+/** A solver request from an element's inputs: `kind` 'solve' (an Auto-fill's answer) or 'gearToSearch' (the line under Gear
    to search); `inputs` {job: a JobContext, sync (job-sync-panel.js syncSettings), level, recipe (sheets/fill-settings.js
    fillRecipe)}; options: `key` (a string or number) names the caller, so that workerSolver keeps its requests apart
    from other callers' (a gear set's id); `pins` (sheets/fill.js fillPlan's {pieces, meal}) the slots an Auto-fill keeps, sent
@@ -87,7 +87,7 @@ export function isCancelled(error) {
 
 /* A solver that runs on the page's thread; the tests use it, and the page falls back to it when the worker cannot
    start. Returns {blocksPage: true, request(request) → reply, cancel(kind) → false}: the
-   handler runs at once, inside request(), so there is never a request to stop; blocksPage tells the component to paint
+   handler runs at once, inside request(), so there is never a request to stop; blocksPage tells the caller to paint
    its progress bar before asking. */
 export function inProcessSolver(session = makeSession()) {
   const handle = makeSolverHandler(session);

@@ -93,7 +93,7 @@ Grouped by area. Within an area the rows are in build order (the owner's order);
   - `tsc --noEmit` is `npm run typecheck`, the second step of `npm run check` (after lint). esbuild strips types and checks none; Node's type stripping runs the `.ts` unit tests (no enums, imports with the `.ts` extension, `erasableSyntaxOnly`).
   - Lit properties are declared with `static properties` and constructor defaults, not decorators; `useDefineForClassFields` is off.
   - A `.js` file is renamed to `.ts` when it is touched.
-- **A99.** `src/ui/test-data.js` (marked TEMPORARY) and the 60 KB `src/ui/test-sheets.json` are imported by `src/ui/elements/app/app-root-model.ts` with no build condition, and `build.mjs` adds the test data button, so the data is in the `dev` page and probably in the `main` build too (inferred; `main` was not built). The generator its comment names is in the gitignored scratchpad, so the JSON cannot be rebuilt from the repo. Kept on purpose for now; settle it before a release: build it only for `dev`, or remove the button, the module and the JSON.
+- **A99.** `src/ui/test-data.js` (marked TEMPORARY) and the 60 KB `src/ui/test-sheets.json` are imported by `src/ui/elements/app/app-root-model.ts` with no build condition, and the page root (`app-root.ts`) draws the test data button for a build with marks, so the data is in the `dev` page and probably in the `main` build too (inferred; `main` was not built). The generator its comment names is in the gitignored scratchpad, so the JSON cannot be rebuilt from the repo. Kept on purpose for now; settle it before a release: build it only for `dev`, or remove the button, the module and the JSON.
 
 ### Game accuracy (in-game recordings)
 

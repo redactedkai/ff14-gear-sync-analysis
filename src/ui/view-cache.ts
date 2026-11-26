@@ -1,11 +1,11 @@
-/* How a component keeps its derived view (architecture.md, section 3): a cache keyed by the view's inputs, and the freeze
+/* How an element keeps its derived view (architecture.md, section 3): a cache keyed by the view's inputs, and the freeze
    that keeps a view from being changed. Pure: no DOM. */
 import { clone } from './text.ts';
 
-/* The page's one way for a component to build a view (architecture.md, section 3): a getter reads the view's inputs
+/* The page's one way for an element to build a view (architecture.md, section 3): a getter reads the view's inputs
    from the store (or an element's properties) and asks this cache for the view of their
    key. A new key builds the view (a pure view builder in src/ui/views); the same key returns the last one, so a
-   template that reads the view many times a render builds it once. Kept in the component's closure, not in the store. Returns {get(key, build): the view for `key` (a string), last(): the last view built, or null}. */
+   template that reads the view many times a render builds it once. Kept in the element's closure, not in the store. Returns {get(key, build): the view for `key` (a string), last(): the last view built, or null}. */
 export function viewCache<View>() {
   let key: string | null = null;
   let view: View | null = null;

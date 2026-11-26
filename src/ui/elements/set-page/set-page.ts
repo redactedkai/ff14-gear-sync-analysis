@@ -203,7 +203,7 @@ export class GsaSetPage extends LitElement {
   }
 
   /* TODO: after a click on a sheet name, a set name or a breadcrumb the focus ends on the page body, because the link is gone with its
-     screen (as before the refactor). Moving the focus to the new screen's heading, as Back and Forward do, would remove this. */
+     screen. Moving the focus to the new screen's heading, as Back and Forward do, would remove this. */
   /* A breadcrumb link: 'sheets' the manager, 'sheet' the open sheet's page. Only a plain click moves inside the page; any other click is
      left to the browser. */
   private goCrumb(to: 'sheets' | 'sheet', event: MouseEvent): void {

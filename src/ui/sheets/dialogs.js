@@ -10,7 +10,7 @@ export function shownName(dialog) {
   return dialog.kind === 'new' && !dialog.nameTyped ? defaultSheetName(dialog) : dialog.name;
 }
 
-/* The store's answer to the main button of `dialog` (its fields as the component holds them; Delete: `what` 'sheet',
+/* The store's answer to the main button of `dialog` (its fields as `SheetDialogs` holds them; Delete: `what` 'sheet',
    'set' or 'unreadable', and `id`). Returns the store's {ok, error, field?}. */
 function runStoreCall(store, dialog) {
   switch (dialog.kind) {

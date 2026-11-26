@@ -54,7 +54,7 @@ function screenAfterOpening(screen: ScreenState, tabName: string): { tab: string
 }
 
 /* Whether every field of `fields` already holds the value it is given in `target` (the same value by `Object.is`: a new array or
-   object counts as a change, as it did when the old store was assigned to). An edit that changes nothing must not count, or
+   object counts as a change). An edit that changes nothing must not count, or
    the page draws again for it: a chart redrawn between a press and a release loses the click. */
 function holdsAll(target: object, fields: object): boolean {
   const held = target as Record<string, unknown>;

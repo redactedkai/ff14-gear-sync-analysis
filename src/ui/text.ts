@@ -1,4 +1,4 @@
-/* Small text and data helpers the views and the components share: pure, no DOM. */
+/* Small text and data helpers the views and the elements share: pure, no DOM. */
 
 /* A whole number with en-US thousands separators ("1,234"), whatever the browser's locale: in a German browser
    "1.234" would read like a decimal next to GCDs such as "2.48s". The Defense row formats the same way. One formatter

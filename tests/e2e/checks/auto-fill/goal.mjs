@@ -151,7 +151,7 @@ export async function checkFillGoal(pg) {
   await setNumber(pg, '#s-gcd', '');
   await expectSavedFill(pg, DIALOG_SHEET, 'any GCD', f => f.goal.gcd === '');
 
-  // 6. a waiting result has no gear on the bar, so the settings cannot change under it (the component's own drop of a result
+  // 6. a waiting result has no gear on the bar, so the settings cannot change under it (the page's own drop of a result
   // on a settings change is tested in ui/elements/set-page/fill-settings-edit)
   await runFill(pg);
   await expect(pg.locator('#sh-settings')).toHaveCount(0);

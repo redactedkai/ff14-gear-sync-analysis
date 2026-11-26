@@ -1,5 +1,5 @@
-/* The Sheets tab's actions on the store: the saved sheets and the screen it shows, with the rules of the old Sheets store
-   kept as they were; the rules and the saved shapes are docs/engineering/sheets.md.
+/* The Sheets tab's actions on the store: the saved sheets and the screen it shows; the rules and the saved shapes are
+   docs/engineering/sheets.md.
 
    Screens: 'sheets' (the sheet manager), 'sheet' (one sheet's page: sheetId) and 'set' (one gear set's page: sheetId and setId).
    Which sheet or set is open is screen state, never saved; the page always opens at the manager.

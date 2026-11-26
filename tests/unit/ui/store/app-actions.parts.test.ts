@@ -62,8 +62,7 @@ const GETTERS: Record<string, (page: PageStore) => unknown> = {
 
 /* One case of an app action: `saved` the state to start from (settings that differ from the defaults, so the action has something to
    change); `setup` calls that make the state the action starts from; `run` the calls of the action; `replaced` the parts that may
-   count without their contents differing (the action puts a new object or array there, which counts, as it did when the old store was
-   assigned to; or it changes the part and puts it back). */
+   count without their contents differing (the action puts a new object or array there, which counts; or it changes the part and puts it back). */
 interface Case {
   saved: object;
   setup?: (page: PageStore) => void;

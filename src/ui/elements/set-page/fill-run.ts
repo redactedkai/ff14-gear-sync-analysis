@@ -24,7 +24,7 @@ function frozenSuggestion(suggested: Suggestion['suggested'], declined: Suggesti
 /* The page's Auto-fill (`session.fill`): running it, Cancel, the suggestion with its Take boxes, Apply and Discard. */
 export class PageFill {
   private readonly session: PageSession;
-  // TODO: the two fields below stay here, as the component's fields were: an answer sets one and the run's end saves it in the same
+  // TODO: the two fields below stay here: an answer sets one and the run's end saves it in the same
   // task. They would go into the page's entry in the store if an Auto-fill could end in a later task than its answer.
   // the tie list of an Auto-fill with nothing to change, saved when the Auto-fill ends (finishFill, endFill)
   private bestMealsAfterFill: string[] | null;

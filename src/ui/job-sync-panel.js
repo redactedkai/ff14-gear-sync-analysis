@@ -1,6 +1,6 @@
 /* The page's settings as the core and the views take them: plain values read from the store's fields, so a view never
    needs the store itself (a sheet hands in its own). Pure: no import of another UI module, so state.js,
-   level-cap.js, the views and the components can all use it without an import going back up. */
+   level-cap.js, the views and the elements can all use it without an import going back up. */
 import { ACTIVITIES } from '../core/constants.js';
 import { capCeiling, levelSyncIlvl } from '../core/sync-target.js';
 import { makeJobContext } from '../core/job-context.js';
@@ -59,8 +59,8 @@ export function mathJobOwner(mathTab) {
 }
 
 /* The Job and sync panel of `tab` ('browse', 'math' or 'tiers'), whether or not that tab is open: {job (id or null),
-   jobCtx, cap, sync, level}. `app` is the store or a state shaped like it. The open tab's is the top-level copy (what the
-   panel edits); another tab's is its saved group. A component reads its own tab's panel here, so a hidden tab never
+   jobCtx, cap, sync, level}. `app` is the store or a state shaped like it. The open tab's is read from the facade's
+   job, cap, sync and level (what the panel edits); another tab's is its saved group. An element reads its own tab's panel here, so a hidden tab never
    works with the open tab's job. 'tiers' has only a job (`app.tiers.job`): no cap, IL Sync off, and its level is the job's
    level cap (the Level box of Substat tiers holds a typed level on top, app.tiers.level). */
 export function panelOf(app, tab) {

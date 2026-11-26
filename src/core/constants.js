@@ -173,8 +173,7 @@ export const JOBS = Object.freeze(
 );
 /* The job of id `id` (a JOBS entry), or undefined for an unknown id. */
 export const jobById = id => JOBS.find(j => j.id === id);
-/* The job context used to render (hidden) job-dependent parts before a job is chosen, and the fallback for an unknown
-   id in makeJobContext. The page itself starts with no job. */
+/* The job a fresh page starts with (Paladin, the first of JOBS) and the fallback for an unknown id in makeJobContext. */
 export const DEFAULT_JOB = JOBS[0].id;
 /* The jobs with a shield, by weapon mode (makeJobContext's weaponMode). Both lists come from the item database (job mask
    and slot code: 1H weapon, shield, 2H weapon); tests/unit/core/job-context.weapon-mode.test.js derives them again from
