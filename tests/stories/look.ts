@@ -2,6 +2,7 @@
    browser's own strings, so a test compares an element's colour with the token the page's stylesheet names for it (the dark scheme
    is the config's, so the tokens resolve to the dark values). */
 import { expect, type Locator, type Page } from 'playwright/test';
+import { layerArmed, layerPlaced } from './layers.ts';
 
 /* The colour a token such as `--gold` resolves to on the page, as the computed `rgb(...)` string of an element painted with it. */
 export async function tokenColor(page: Page, token: string): Promise<string> {
@@ -18,6 +19,15 @@ export async function tokenColor(page: Page, token: string): Promise<string> {
 /* One computed style property (camelCase, e.g. `backgroundColor`) of the element the locator names. */
 export async function styleOf(locator: Locator, property: string): Promise<string> {
   return locator.evaluate((element, name) => getComputedStyle(element)[name as keyof CSSStyleDeclaration] as string, property);
+}
+
+/* Waits until the element, its `::before` and `::after` and what is inside it have finished their CSS transitions and animations
+   (a switch's knob sliding, a track fading). A transition starts at the first frame after the change, so a style read right after
+   a click still returns the old value on a runner that answers faster than a frame. */
+export async function settled(locator: Locator): Promise<void> {
+  await locator.evaluate(async element => {
+    await Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => undefined)));
+  });
 }
 
 /* The computed properties that still tell one element from another when the system forces its colours (the page's colours, tints
@@ -89,6 +99,7 @@ export async function expectForcedColoursLook(
   page: Page,
   { panel, chosen, plain, ring, lit = false }: { panel: Locator; chosen?: Locator; plain?: Locator; ring: Locator; lit?: boolean },
 ): Promise<void> {
+  await layerPlaced(panel);
   expect(await hasEdge(panel), 'the open layer has an edge').toBe(true);
   if (chosen && plain) {
     expect(await marksOf(chosen), 'the chosen row is marked apart from a plain row').not.toBe(await marksOf(plain));
@@ -103,7 +114,8 @@ export async function expectForcedColoursLook(
 }
 
 /* A tap on the empty corner of the window, far from every story's controls: a press outside whatever is open (a tap on a named
-   control could land under the open layer). */
+   control could land under the open layer). It waits first until Zag watches for a press outside (`layerArmed`). */
 export async function tapOutside(page: Page): Promise<void> {
+  await layerArmed(page); // Zag watches for a press outside a frame after the layer opens
   await page.touchscreen.tap(1240, 690);
 }

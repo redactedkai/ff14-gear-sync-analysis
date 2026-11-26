@@ -24,6 +24,8 @@ type Fixtures = {
   /** Runs axe-core on the mounted story (the gallery's #root, so page-level rules such as one main landmark
    *  do not apply) and returns the violations as "rule: targets". */
   axe: () => Promise<string[]>;
+  /** Delays the page's animation frames when STORIES_FRAME_DELAY_MS is set; does nothing otherwise. */
+  frameDelay: undefined;
 };
 
 /* Playwright's `test` with two extra fixtures, `consoleLog` and `axe`; a page error or console error fails the test. */
@@ -43,6 +45,25 @@ export const test = base.extend<Fixtures>({
       if (errors.length && !testInfo.annotations.some(annotation => annotation.type === ALLOW_PAGE_ERROR)) {
         throw new Error(`the page reported an error: ${errors[0].slice(0, 300)}`);
       }
+    },
+    { auto: true },
+  ],
+  frameDelay: [
+    async ({ page }, use) => {
+      // STORIES_FRAME_DELAY_MS=40 makes every animation frame of the page 40 ms late, as on a slow runner (see testing.md)
+      const delayMs = Number(process.env.STORIES_FRAME_DELAY_MS || 0);
+      if (delayMs > 0) {
+        await page.addInitScript(ms => {
+          // a page reused by several tests of a worker has the script once per test: wrap the frame call once
+          if ('frameDelayed' in window) {
+            return;
+          }
+          Object.assign(window, { frameDelayed: true });
+          const nativeFrame = window.requestAnimationFrame.bind(window);
+          window.requestAnimationFrame = callback => window.setTimeout(() => nativeFrame(callback), ms);
+        }, delayMs);
+      }
+      await use(undefined);
     },
     { auto: true },
   ],
