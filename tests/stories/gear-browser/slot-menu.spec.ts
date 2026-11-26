@@ -12,6 +12,7 @@ import {
   type Default,
   type LowOnPage,
 } from './slot-menu.story.js';
+import { layerArmed, layerPlaced } from '../layers.ts';
 import { ANY_SLOT_KEY, ANY_SLOT_LABEL, slotButtonName } from '../../../src/ui/elements/gear-browser/slot-menu-names.ts';
 
 const STORY = 'gear-browser/slot-menu/Default';
@@ -69,6 +70,7 @@ test.describe('<gsa-slot-menu>', () => {
     const menu = page.locator('#b-slots');
     await component.getByRole('button', { name: slotButtonName(ANY_SLOT_LABEL) }).click();
     const empty = menu.getByRole('menuitemradio', { name: /^Off-hand/ });
+    await layerPlaced(menu);
     await expect(empty).toHaveAttribute('aria-disabled', 'true');
     await empty.click({ force: true });
     await expect(menu, 'a click on a slot with no match leaves the menu open').toBeVisible();
@@ -151,7 +153,7 @@ test.describe('<gsa-slot-menu>', () => {
     const menu = page.locator('#b-slots');
     await expect(menu).toBeVisible();
     const layerZIndex = () => menu.evaluate(element => getComputedStyle(element.parentElement as Element).zIndex);
-    expect(Number(await layerZIndex())).toBeGreaterThan(1);
+    await expect.poll(async () => Number(await layerZIndex()), { message: 'the layer is placed above the page' }).toBeGreaterThan(1);
     await menu.getByRole('menuitemradio', { name: /^Head/ }).hover();
     await expect(menu.getByRole('menuitemradio', { name: /^Head/ })).toHaveAttribute('data-highlighted', '');
     await menu.getByRole('menuitemradio', { name: /^Ring/ }).hover();
@@ -250,6 +252,7 @@ test.describe('<gsa-slot-menu>', () => {
     const component = await mount<typeof Default>(STORY);
     await component.getByRole('button', { name: slotButtonName(ANY_SLOT_LABEL) }).click();
     const rows = page.locator('#b-slots').getByRole('menuitemradio');
+    await layerPlaced(page.locator('#b-slots'));
     const from = await rows.first().boundingBox();
     const to = await rows.last().boundingBox();
     if (!from || !to) {
@@ -322,6 +325,7 @@ test.describe('<gsa-slot-menu>', () => {
     await component.getByRole('button', { name: slotButtonName(ANY_SLOT_LABEL) }).focus();
     await page.keyboard.press('ArrowDown');
     await expect(page.locator('#b-slots')).toBeFocused();
+    await layerArmed(page); // Zag watches for the focus leaving the menu a frame after the opening
     await page.evaluate(() => (document.querySelector('input') as HTMLInputElement).focus());
     await expect(page.locator('#b-slots')).toBeHidden();
     await expect(component.getByRole('textbox', { name: SEARCH_LABEL })).toBeFocused();
@@ -504,6 +508,7 @@ test.describe('<gsa-slot-menu>', () => {
         const component = await mount<typeof LowOnPage>('gear-browser/slot-menu/LowOnPage');
         await component.getByRole('button', { name: slotButtonName(ANY_SLOT_LABEL) }).click();
         await expect(page.locator('#b-slots')).toBeVisible();
+        await layerPlaced(page.locator('#b-slots'));
         const centre = await page.locator('#b-slots').evaluate(list => {
           const box = list.getBoundingClientRect();
           return { x: box.left + box.width / 2, y: (Math.max(box.top, 0) + Math.min(box.bottom, innerHeight)) / 2 };
