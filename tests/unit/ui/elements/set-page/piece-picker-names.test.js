@@ -1,16 +1,9 @@
 /* The piece picker's click rule (src/ui/elements/set-page/piece-picker-names.ts pieceKeyOfClick): the rows carry their gameId
-   (data-game-id) and one handler on the list reads which row was clicked; and the page's template listens to the element's events
-   by name. The rows here are stand-ins for the buttons the element draws. */
+   (data-game-id) and one handler on the list reads which row was clicked. The rows here are stand-ins for the buttons the element
+   draws. The set page's wiring of the picker's events is checked by the smoke step checkPickMenu. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import {
-  PICKER_CLOSE_EVENT,
-  PICKER_QUERY_EVENT,
-  PICKER_SHOWN_EVENT,
-  PIECE_PICK_EVENT,
-  pieceKeyOfClick,
-} from '../../../../../src/ui/elements/set-page/piece-picker-names.ts';
+import { pieceKeyOfClick } from '../../../../../src/ui/elements/set-page/piece-picker-names.ts';
 
 /* A click on `clicked` (or on nothing in a row: clicked null), as the target the list's handler gets. */
 const clickOn = clicked => ({ closest: selector => (selector === '.same-item' ? clicked : null) });
@@ -28,12 +21,4 @@ test('piece picker click: a disabled row (a Unique ring in the other ring row), 
   assert.equal(pieceKeyOfClick(clickOn(row({ gameId: 49579, disabled: true }))), undefined);
   assert.equal(pieceKeyOfClick(clickOn(null)), undefined);
   assert.equal(pieceKeyOfClick(clickOn(row({}))), undefined);
-});
-
-/* The page's wiring reads the events by name (the template cannot import the constants): if this fails, rename them together. */
-test("the set page's template listens to the piece picker's events by their names", () => {
-  const template = readFileSync(new URL('../../../../../src/ui/elements/set-page/set-page.ts', import.meta.url), 'utf-8');
-  for (const name of [PICKER_SHOWN_EVENT, PICKER_CLOSE_EVENT, PICKER_QUERY_EVENT, PIECE_PICK_EVENT]) {
-    assert.ok(template.includes(`@${name}=`), name);
-  }
 });
