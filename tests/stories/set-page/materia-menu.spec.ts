@@ -2,6 +2,7 @@
    and closes it with the focus back on the chip, Escape and a press outside close it; axe. */
 import { test, expect } from '../fixtures.ts';
 import type { Default } from './materia-menu.story.js';
+import { tapOutside } from '../look.ts';
 
 const STORY = 'set-page/materia-menu/Default';
 
@@ -40,5 +41,30 @@ test.describe('<gsa-materia-menu>', () => {
     await expect(menu).toBeVisible();
     await component.getByRole('textbox', { name: 'After the chips' }).click();
     await expect(menu).toBeHidden();
+  });
+});
+
+test.describe('<gsa-materia-menu> with touch', () => {
+  test.use({ hasTouch: true });
+
+  // Playwright's Firefox cannot close a touch-enabled context cleanly while other workers run (see slot-menu.spec.ts); the tap
+  // fix concerns WebKit, and Chromium covers the rest.
+  test.skip(({ browserName }) => browserName === 'firefox', 'a touch context cannot be closed reliably in Firefox under parallel workers');
+
+  test('a tap on the chip opens the menu, a tap on a stone picks it, a tap outside closes it', async ({ mount, page }) => {
+    const component = await mount<typeof Default>(STORY);
+    const menu = page.locator('.matpop');
+    const chip = component.getByRole('button', { name: 'crit +36' });
+    await chip.tap();
+    await expect(menu).toBeVisible();
+    await menu.locator('button[data-stone="det:12"]').tap();
+    await expect(menu).toBeHidden();
+    await expect(component.getByTestId('events')).toHaveText('["det:12"]');
+
+    await chip.tap();
+    await expect(menu).toBeVisible();
+    await tapOutside(page);
+    await expect(menu).toBeHidden();
+    await expect(component.getByTestId('events')).toHaveText('["det:12"]');
   });
 });

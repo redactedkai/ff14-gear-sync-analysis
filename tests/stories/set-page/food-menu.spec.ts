@@ -2,6 +2,7 @@
    pick, Escape and Tab out close it with the focus where the keyboard model puts it, a quick close leaves no error, and axe. */
 import { test, expect } from '../fixtures.ts';
 import { BUTTON_ID, MENU_ID, type Default } from './food-menu.story.js';
+import { tapOutside } from '../look.ts';
 
 const STORY = 'set-page/food-menu/Default';
 
@@ -67,5 +68,29 @@ test.describe('<gsa-food-menu>', () => {
     await page.locator(`#${BUTTON_ID}`).click();
     await expect(page.locator(`#${MENU_ID}`)).toBeVisible();
     expect(await axe(), 'open').toEqual([]);
+  });
+});
+
+test.describe('<gsa-food-menu> with touch', () => {
+  test.use({ hasTouch: true });
+
+  // Playwright's Firefox cannot close a touch-enabled context cleanly while other workers run (see slot-menu.spec.ts); the tap
+  // fix concerns WebKit, and Chromium covers the rest.
+  test.skip(({ browserName }) => browserName === 'firefox', 'a touch context cannot be closed reliably in Firefox under parallel workers');
+
+  test('a tap on the button opens the menu, a tap on a meal picks it, a tap outside closes it', async ({ mount, page }) => {
+    const component = await mount<typeof Default>(STORY);
+    const menu = page.locator(`#${MENU_ID}`);
+    await page.locator(`#${BUTTON_ID}`).tap();
+    await expect(menu).toBeVisible();
+    await menu.locator('.same-item[data-meal]').filter({ hasText: 'Caramel Popcorn' }).tap();
+    await expect(menu).toBeHidden();
+    await expect(component.getByTestId('events')).toHaveText('["popcorn"]');
+
+    await page.locator(`#${BUTTON_ID}`).tap();
+    await expect(menu).toBeVisible();
+    await tapOutside(page);
+    await expect(menu).toBeHidden();
+    await expect(component.getByTestId('events')).toHaveText('["popcorn"]');
   });
 });

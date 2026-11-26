@@ -4,6 +4,7 @@
 import { RANK_NOTE_ID } from '../../../src/ui/elements/set-page/rank-note.ts';
 import { expect, test } from '../fixtures.ts';
 import { GEAR_ID, POPOVER_ID, type Default } from './settings-popover.story.js';
+import { tapOutside } from '../look.ts';
 
 const STORY = 'set-page/settings-popover/Default';
 const CLOSE_X = `#${POPOVER_ID} [data-part="close-trigger"]`;
@@ -123,5 +124,27 @@ test.describe('<gsa-settings-popover>', () => {
     );
     expect(place).toEqual({ underBar: 6, leftOnBar: 0, fitsBar: true, menuInside: true, sideways: false });
     expect(await axe(), 'open').toEqual([]);
+  });
+});
+
+test.describe('<gsa-settings-popover> with touch', () => {
+  test.use({ hasTouch: true });
+
+  // Playwright's Firefox cannot close a touch-enabled context cleanly while other workers run (see slot-menu.spec.ts); the tap
+  // fix concerns WebKit, and Chromium covers the rest.
+  test.skip(({ browserName }) => browserName === 'firefox', 'a touch context cannot be closed reliably in Firefox under parallel workers');
+
+  test('a tap on the gear opens the popover, a tap on the X closes it, a tap outside closes it', async ({ mount, page }) => {
+    await mount<typeof Default>(STORY);
+    const popover = page.locator(`#${POPOVER_ID}`);
+    await page.locator(`#${GEAR_ID}`).tap();
+    await expect(popover).toBeVisible();
+    await page.locator(CLOSE_X).tap();
+    await expect(popover).toBeHidden();
+
+    await page.locator(`#${GEAR_ID}`).tap();
+    await expect(popover).toBeVisible();
+    await tapOutside(page);
+    await expect(popover).toBeHidden();
   });
 });

@@ -3,6 +3,7 @@
    on the button), a Unique piece worn elsewhere cannot be picked, Escape and a press outside close it; axe. */
 import { test, expect } from '../fixtures.ts';
 import { PIECE_COUNT, TAKEN_PIECE, type Default } from './piece-picker.story.js';
+import { tapOutside } from '../look.ts';
 
 const STORY = 'set-page/piece-picker/Default';
 
@@ -73,5 +74,30 @@ test.describe('<gsa-piece-picker>', () => {
     await expect(menu).toBeVisible();
     await component.getByRole('textbox', { name: 'After the buttons' }).click();
     await expect(menu).toBeHidden();
+  });
+});
+
+test.describe('<gsa-piece-picker> with touch', () => {
+  test.use({ hasTouch: true });
+
+  // Playwright's Firefox cannot close a touch-enabled context cleanly while other workers run (see slot-menu.spec.ts); the tap
+  // fix concerns WebKit, and Chromium covers the rest.
+  test.skip(({ browserName }) => browserName === 'firefox', 'a touch context cannot be closed reliably in Firefox under parallel workers');
+
+  test('a tap on the button opens the menu, a tap on a piece picks it, a tap outside closes it', async ({ mount, page }) => {
+    const component = await mount<typeof Default>(STORY);
+    const menu = page.locator('.pick-menu');
+    const button = component.getByRole('button', { name: 'Head piece' });
+    await button.tap();
+    await expect(menu).toBeVisible();
+    await menu.locator('.same-item[data-game-id]').filter({ hasText: 'Piece 5' }).first().tap();
+    await expect(menu).toBeHidden();
+    await expect(component.getByTestId('events')).toHaveText('[1005]');
+
+    await button.tap();
+    await expect(menu).toBeVisible();
+    await tapOutside(page);
+    await expect(menu).toBeHidden();
+    await expect(component.getByTestId('events')).toHaveText('[1005]');
   });
 });

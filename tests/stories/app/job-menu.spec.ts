@@ -3,6 +3,7 @@
    the focus on the button, Tab closes it and moves on, a click on an icon picks, all 23 jobs are there, and axe. */
 import { test, expect } from '../fixtures.ts';
 import { START_JOB, START_JOB_NAME, type Default } from './job-menu.story.js';
+import { tapOutside } from '../look.ts';
 
 const STORY = 'app/job-menu/Default';
 const JOB_COUNT = 23;
@@ -86,6 +87,13 @@ test.describe('<gsa-job-menu> with touch', () => {
     await page.locator('#job-menu-btn').tap();
     await expect(page.locator('#job-menu')).toBeVisible();
     await page.locator('#job-menu [data-job-id="WAR"]').tap();
+    await expect(page.locator('#job-menu')).toBeHidden();
+    await expect(component.getByTestId('events')).toHaveText('["WAR"]');
+
+    // a tap outside closes the open menu without a pick
+    await page.locator('#job-menu-btn').tap();
+    await expect(page.locator('#job-menu')).toBeVisible();
+    await tapOutside(page);
     await expect(page.locator('#job-menu')).toBeHidden();
     await expect(component.getByTestId('events')).toHaveText('["WAR"]');
   });

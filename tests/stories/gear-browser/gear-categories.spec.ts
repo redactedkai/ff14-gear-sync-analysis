@@ -4,6 +4,7 @@
    of the menu (texts, counts, All / None / Default) in Chromium. */
 import { test, expect } from '../fixtures.ts';
 import type { Default } from './gear-categories.story.js';
+import { tapOutside } from '../look.ts';
 
 const STORY = 'gear-browser/gear-categories/Default';
 const MENU = '#b-from-menu';
@@ -71,5 +72,29 @@ test.describe('<gsa-gear-categories>', () => {
     });
     expect(fit).toEqual({ inside: true, sideways: false, menuScrolls: false });
     expect(await axe(), 'open').toEqual([]);
+  });
+});
+
+test.describe('<gsa-gear-categories> with touch', () => {
+  test.use({ hasTouch: true });
+
+  // Playwright's Firefox cannot close a touch-enabled context cleanly while other workers run (see slot-menu.spec.ts); the tap
+  // fix concerns WebKit, and Chromium covers the rest.
+  test.skip(({ browserName }) => browserName === 'firefox', 'a touch context cannot be closed reliably in Firefox under parallel workers');
+
+  test('a tap on the button opens the menu, a tap on a box ticks it, a tap outside closes it', async ({ mount, page }) => {
+    const component = await mount<typeof Default>(STORY);
+    const menu = page.locator(MENU);
+    await page.locator('#b-from').tap();
+    await expect(menu).toBeVisible();
+    const boxes = menu.locator('input[data-activity]:visible');
+    const first = boxes.first();
+    const before = await first.isChecked();
+    await first.tap();
+    await expect(first).toBeChecked({ checked: !before });
+    await expect(component.getByTestId('events')).not.toHaveText('');
+    await expect(menu).toBeVisible();
+    await tapOutside(page);
+    await expect(menu).toBeHidden();
   });
 });

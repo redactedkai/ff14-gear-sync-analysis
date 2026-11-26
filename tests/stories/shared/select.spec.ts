@@ -2,6 +2,7 @@
    focus moves on, a press outside closes), the groups, and axe. */
 import { expect, test } from '../fixtures.ts';
 import { BUTTON_ID, NONE_LABEL, SELECT_LABEL, type Default } from './select.story.js';
+import { tapOutside } from '../look.ts';
 
 const STORY = 'shared/select/Default';
 
@@ -106,5 +107,29 @@ test.describe('<gsa-select>', () => {
     await page.getByRole('button', { name: 'Before' }).click();
     await expect(list).toBeHidden();
     await expect(component.getByTestId('events')).toHaveText('["Midlander"]');
+  });
+});
+
+test.describe('<gsa-select> with touch', () => {
+  test.use({ hasTouch: true });
+
+  // Playwright's Firefox cannot close a touch-enabled context cleanly while other workers run (see slot-menu.spec.ts); the tap
+  // fix concerns WebKit, and Chromium covers the rest.
+  test.skip(({ browserName }) => browserName === 'firefox', 'a touch context cannot be closed reliably in Firefox under parallel workers');
+
+  test('a tap on the button opens the list, a tap on an option picks it, a tap outside closes it', async ({ mount, page }) => {
+    const component = await mount<typeof Default>(STORY);
+    const list = page.locator(`#${BUTTON_ID}-list`);
+    await page.locator(`#${BUTTON_ID}`).tap();
+    await expect(list).toBeVisible();
+    await list.getByRole('option', { name: 'Wildwood' }).tap();
+    await expect(list).toBeHidden();
+    await expect(component.getByTestId('events')).toHaveText('["Wildwood"]');
+
+    await page.locator(`#${BUTTON_ID}`).tap();
+    await expect(list).toBeVisible();
+    await tapOutside(page);
+    await expect(list).toBeHidden();
+    await expect(component.getByTestId('events')).toHaveText('["Wildwood"]');
   });
 });

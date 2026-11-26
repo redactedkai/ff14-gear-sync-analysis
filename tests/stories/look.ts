@@ -19,3 +19,9 @@ export async function tokenColor(page: Page, token: string): Promise<string> {
 export async function styleOf(locator: Locator, property: string): Promise<string> {
   return locator.evaluate((element, name) => getComputedStyle(element)[name as keyof CSSStyleDeclaration] as string, property);
 }
+
+/* A tap on the empty corner of the window, far from every story's controls: a press outside whatever is open (a tap on a named
+   control could land under the open layer). */
+export async function tapOutside(page: Page): Promise<void> {
+  await page.touchscreen.tap(1240, 690);
+}

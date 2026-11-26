@@ -2,6 +2,7 @@
    by Escape (the focus back on its "?") or a press outside; axe. */
 import { test, expect } from '../fixtures.ts';
 import type { Default } from './stat-note.story.js';
+import { tapOutside } from '../look.ts';
 
 const STORY = 'math-page/stat-note/Default';
 
@@ -47,6 +48,25 @@ test.describe('<gsa-stat-note>', () => {
     await crit.click();
     await expect(note).toBeVisible();
     await component.getByRole('textbox', { name: 'After the buttons' }).click();
+    await expect(note).toBeHidden();
+  });
+});
+
+test.describe('<gsa-stat-note> with touch', () => {
+  test.use({ hasTouch: true });
+
+  // Playwright's Firefox cannot close a touch-enabled context cleanly while other workers run (see slot-menu.spec.ts); the tap
+  // fix concerns WebKit, and Chromium covers the rest.
+  test.skip(({ browserName }) => browserName === 'firefox', 'a touch context cannot be closed reliably in Firefox under parallel workers');
+
+  test('a tap on a "?" opens the note, a tap on another "?" moves it, a tap outside closes it', async ({ mount, page }) => {
+    const component = await mount<typeof Default>(STORY);
+    const note = page.locator('#t-pop');
+    await component.getByRole('button', { name: /Critical Hit/ }).tap();
+    await expect(page.getByRole('dialog', { name: 'Critical Hit' })).toBeVisible();
+    await component.getByRole('button', { name: /Determination/ }).tap();
+    await expect(page.getByRole('dialog', { name: 'Determination' })).toBeVisible();
+    await tapOutside(page);
     await expect(note).toBeHidden();
   });
 });

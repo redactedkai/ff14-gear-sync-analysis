@@ -3,6 +3,7 @@
    inside, closes on a press on its backdrop and by Escape; axe. */
 import { test, expect } from '../fixtures.ts';
 import type { Default } from './bar-popover.story.js';
+import { tapOutside } from '../look.ts';
 
 const STORY = 'math-page/bar-popover/Default';
 
@@ -61,5 +62,31 @@ test.describe('<gsa-bar-popover>', () => {
     await expect(popover).toBeVisible();
     await page.mouse.click(5, 400);
     await expect(popover).toBeHidden();
+  });
+});
+
+test.describe('<gsa-bar-popover> with touch', () => {
+  test.use({ hasTouch: true });
+
+  // Playwright's Firefox cannot close a touch-enabled context cleanly while other workers run (see slot-menu.spec.ts); the tap
+  // fix concerns WebKit, and Chromium covers the rest.
+  test.skip(({ browserName }) => browserName === 'firefox', 'a touch context cannot be closed reliably in Firefox under parallel workers');
+
+  test('a tap on the chip opens its popover and a tap outside closes it; a tap on the help opens the modal help and a tap outside closes it', async ({
+    mount,
+    page,
+  }) => {
+    await mount<typeof Default>(STORY);
+    const popover = page.locator('#story-chip-pop');
+    await page.locator('#story-chip').tap();
+    await expect(popover).toBeVisible();
+    await tapOutside(page);
+    await expect(popover).toBeHidden();
+
+    const help = page.locator('#story-help-pop');
+    await page.locator('#story-help').tap();
+    await expect(help).toBeVisible();
+    await tapOutside(page);
+    await expect(help).toBeHidden();
   });
 });

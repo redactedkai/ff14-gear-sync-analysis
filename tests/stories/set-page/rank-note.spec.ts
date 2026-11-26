@@ -3,7 +3,7 @@
    focus back on the "?"), a press outside and the focus leaving it close it; the look of the "?" and the note in the dark scheme; axe. */
 import { RANK_NOTE_BUTTON_ID, RANK_NOTE_ID, RANK_NOTE_NAME, RANK_NOTE_TEXT } from '../../../src/ui/elements/set-page/rank-note.ts';
 import { expect, test } from '../fixtures.ts';
-import { styleOf, tokenColor } from '../look.ts';
+import { styleOf, tapOutside, tokenColor } from '../look.ts';
 import type { Default, InSettings } from './rank-note.story.js';
 
 const STORY = 'set-page/rank-note/Default';
@@ -155,5 +155,27 @@ test.describe('<gsa-rank-note>', () => {
       [NOTE, '.setpop'],
     );
     expect(zIndexes.noteZ).toBeGreaterThan(zIndexes.layerZ);
+  });
+});
+
+test.describe('<gsa-rank-note> with touch', () => {
+  test.use({ hasTouch: true });
+
+  // Playwright's Firefox cannot close a touch-enabled context cleanly while other workers run (see slot-menu.spec.ts); the tap
+  // fix concerns WebKit, and Chromium covers the rest.
+  test.skip(({ browserName }) => browserName === 'firefox', 'a touch context cannot be closed reliably in Firefox under parallel workers');
+
+  test('a tap on the "?" opens the note, a tap on it again closes it, a tap outside closes it', async ({ mount, page }) => {
+    await mount<typeof Default>(STORY);
+    const note = page.locator(NOTE);
+    await page.locator(BUTTON).tap();
+    await expect(note).toBeVisible();
+    await page.locator(BUTTON).tap();
+    await expect(note).toBeHidden();
+
+    await page.locator(BUTTON).tap();
+    await expect(note).toBeVisible();
+    await tapOutside(page);
+    await expect(note).toBeHidden();
   });
 });

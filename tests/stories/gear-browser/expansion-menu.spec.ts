@@ -6,6 +6,7 @@ import { EXPANSIONS } from '../../../src/core/constants.js';
 import { EXPANSION_LABEL, expansionSummary } from '../../../src/ui/elements/gear-browser/filter-menu-model.ts';
 import { expect, test } from '../fixtures.ts';
 import type { Default } from './expansion-menu.story.js';
+import { tapOutside } from '../look.ts';
 
 const STORY = 'gear-browser/expansion-menu/Default';
 const BUTTON = '#b-exp';
@@ -127,5 +128,27 @@ test.describe('<gsa-expansion-menu>', () => {
     await expect(menu).toBeVisible();
     await page.getByRole('button', { name: 'Before' }).click();
     await expect(menu).toBeHidden();
+  });
+});
+
+test.describe('<gsa-expansion-menu> with touch', () => {
+  test.use({ hasTouch: true });
+
+  // Playwright's Firefox cannot close a touch-enabled context cleanly while other workers run (see slot-menu.spec.ts); the tap
+  // fix concerns WebKit, and Chromium covers the rest.
+  test.skip(({ browserName }) => browserName === 'firefox', 'a touch context cannot be closed reliably in Firefox under parallel workers');
+
+  test('a tap on the button opens the panel, a tap on a box ticks it, a tap outside closes it', async ({ mount, page }) => {
+    const component = await mount<typeof Default>(STORY);
+    const menu = page.locator(MENU);
+    await page.locator(BUTTON).tap();
+    await expect(menu).toBeVisible();
+    await page.locator(box(SHORTS[2])).tap();
+    await expect(page.locator(box(SHORTS[2]))).not.toBeChecked();
+    await expect(component.getByTestId('events')).toHaveText(JSON.stringify([[SHORTS[2]]]));
+    await expect(menu).toBeVisible();
+    await tapOutside(page);
+    await expect(menu).toBeHidden();
+    await expect(component.getByTestId('events')).toHaveText(JSON.stringify([[SHORTS[2]]]));
   });
 });
