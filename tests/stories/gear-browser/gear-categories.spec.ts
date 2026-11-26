@@ -34,6 +34,7 @@ test.describe('<gsa-gear-categories>', () => {
       expect(await focusedId(), `the focus after ${key}`).toBe(TAB_IDS[expected]);
     }
     await page.keyboard.press('Home');
+    await expect(page.locator(`#${TAB_IDS[0]}`)).toBeFocused(); // the Tab below starts from the first tab, once the focus has moved there
     await page.keyboard.press('Tab');
     expect(await page.evaluate(() => (document.activeElement as HTMLElement).dataset.activity)).toBeTruthy();
   });
