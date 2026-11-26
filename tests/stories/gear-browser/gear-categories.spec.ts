@@ -4,7 +4,7 @@
    of the menu (texts, counts, All / None / Default) in Chromium. */
 import { test, expect } from '../fixtures.ts';
 import type { Default } from './gear-categories.story.js';
-import { tapOutside } from '../look.ts';
+import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'gear-browser/gear-categories/Default';
 const MENU = '#b-from-menu';
@@ -96,5 +96,24 @@ test.describe('<gsa-gear-categories> with touch', () => {
     await expect(menu).toBeVisible();
     await tapOutside(page);
     await expect(menu).toBeHidden();
+  });
+});
+
+test.describe('<gsa-gear-categories> in forced colours', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit does not force colours');
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+  });
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'none' });
+  });
+
+  test('the open menu has an edge and a focused box has a ring', async ({ mount, page }) => {
+    await mount<typeof Default>(STORY);
+    await page.locator('#b-from').click();
+    const menu = page.locator(MENU);
+    await expect(menu).toBeVisible();
+    const boxes = menu.locator('input[data-activity]:visible');
+    await expectForcedColoursLook(page, { panel: menu, ring: boxes.nth(1) });
   });
 });

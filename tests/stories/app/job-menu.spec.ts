@@ -3,7 +3,7 @@
    the focus on the button, Tab closes it and moves on, a click on an icon picks, all 23 jobs are there, and axe. */
 import { test, expect } from '../fixtures.ts';
 import { START_JOB, START_JOB_NAME, type Default } from './job-menu.story.js';
-import { tapOutside } from '../look.ts';
+import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'app/job-menu/Default';
 const JOB_COUNT = 23;
@@ -96,5 +96,32 @@ test.describe('<gsa-job-menu> with touch', () => {
     await tapOutside(page);
     await expect(page.locator('#job-menu')).toBeHidden();
     await expect(component.getByTestId('events')).toHaveText('["WAR"]');
+  });
+});
+
+test.describe('<gsa-job-menu> in forced colours', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit does not force colours');
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+  });
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'none' });
+  });
+
+  test('the open menu has an edge, the chosen job is marked apart from the others, and the lit job has a ring', async ({ mount, page }) => {
+    await mount<typeof Default>(STORY);
+    const menu = page.locator('#job-menu');
+    await page.locator('#job-menu-btn').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(menu).toBeVisible();
+    await page.keyboard.press('ArrowLeft'); // the light moves off the chosen job
+    await expect(menu.locator('[data-highlighted]')).not.toHaveAttribute('aria-checked', 'true');
+    await expectForcedColoursLook(page, {
+      panel: menu,
+      chosen: menu.locator('[aria-checked="true"]'),
+      plain: menu.locator('[aria-checked="false"]:not([data-highlighted])').first(),
+      ring: menu.locator('[data-highlighted]'),
+      lit: true,
+    });
   });
 });

@@ -2,7 +2,7 @@
    pick, Escape and Tab out close it with the focus where the keyboard model puts it, a quick close leaves no error, and axe. */
 import { test, expect } from '../fixtures.ts';
 import { BUTTON_ID, MENU_ID, type Default } from './food-menu.story.js';
-import { tapOutside } from '../look.ts';
+import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'set-page/food-menu/Default';
 
@@ -92,5 +92,32 @@ test.describe('<gsa-food-menu> with touch', () => {
     await tapOutside(page);
     await expect(menu).toBeHidden();
     await expect(component.getByTestId('events')).toHaveText('["popcorn"]');
+  });
+});
+
+test.describe('<gsa-food-menu> in forced colours', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit does not force colours');
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+  });
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'none' });
+  });
+
+  test('the open menu has an edge, the held meal is marked apart from the others, and a focused meal has a ring', async ({
+    mount,
+    page,
+  }) => {
+    await mount<typeof Default>(STORY);
+    const menu = page.locator(`#${MENU_ID}`);
+    await page.locator(`#${BUTTON_ID}`).click();
+    await expect(menu).toBeVisible();
+    const meals = menu.locator('.same-item[data-meal]:not([data-meal=""])');
+    await expectForcedColoursLook(page, {
+      panel: menu,
+      chosen: meals.and(page.locator('.on')),
+      plain: meals.and(page.locator(':not(.on)')).first(),
+      ring: meals.first(),
+    });
   });
 });

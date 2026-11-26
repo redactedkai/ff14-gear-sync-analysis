@@ -2,7 +2,7 @@
    and closes it with the focus back on the chip, Escape and a press outside close it; axe. */
 import { test, expect } from '../fixtures.ts';
 import type { Default } from './materia-menu.story.js';
-import { tapOutside } from '../look.ts';
+import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'set-page/materia-menu/Default';
 
@@ -66,5 +66,25 @@ test.describe('<gsa-materia-menu> with touch', () => {
     await tapOutside(page);
     await expect(menu).toBeHidden();
     await expect(component.getByTestId('events')).toHaveText('["det:12"]');
+  });
+});
+
+test.describe('<gsa-materia-menu> in forced colours', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit does not force colours');
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+  });
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'none' });
+  });
+
+  // The worn stone has no mark of its own in forced colours (no rule in menus.css: its look is a tint), so only the menu's edge
+  // and the focus ring are checked here.
+  test('the open menu has an edge and a focused stone has a ring', async ({ mount, page }) => {
+    const component = await mount<typeof Default>(STORY);
+    await component.getByRole('button', { name: 'crit +36' }).click();
+    const menu = page.locator('.matpop');
+    await expect(menu).toBeVisible();
+    await expectForcedColoursLook(page, { panel: menu, ring: menu.locator('button[data-stone="det:12"]') });
   });
 });

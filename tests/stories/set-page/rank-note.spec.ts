@@ -3,7 +3,7 @@
    focus back on the "?"), a press outside and the focus leaving it close it; the look of the "?" and the note in the dark scheme; axe. */
 import { RANK_NOTE_BUTTON_ID, RANK_NOTE_ID, RANK_NOTE_NAME, RANK_NOTE_TEXT } from '../../../src/ui/elements/set-page/rank-note.ts';
 import { expect, test } from '../fixtures.ts';
-import { styleOf, tapOutside, tokenColor } from '../look.ts';
+import { expectForcedColoursLook, styleOf, tapOutside, tokenColor } from '../look.ts';
 import type { Default, InSettings } from './rank-note.story.js';
 
 const STORY = 'set-page/rank-note/Default';
@@ -177,5 +177,23 @@ test.describe('<gsa-rank-note> with touch', () => {
     await expect(note).toBeVisible();
     await tapOutside(page);
     await expect(note).toBeHidden();
+  });
+});
+
+test.describe('<gsa-rank-note> in forced colours', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit does not force colours');
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+  });
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'none' });
+  });
+
+  test('the open note has an edge, and the "?" has a ring', async ({ mount, page }) => {
+    await mount<typeof Default>(STORY);
+    await page.locator(BUTTON).click();
+    const note = page.locator(NOTE);
+    await expect(note).toBeVisible();
+    await expectForcedColoursLook(page, { panel: note, ring: page.locator(BUTTON) });
   });
 });

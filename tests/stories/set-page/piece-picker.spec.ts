@@ -3,7 +3,7 @@
    on the button), a Unique piece worn elsewhere cannot be picked, Escape and a press outside close it; axe. */
 import { test, expect } from '../fixtures.ts';
 import { PIECE_COUNT, TAKEN_PIECE, type Default } from './piece-picker.story.js';
-import { tapOutside } from '../look.ts';
+import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'set-page/piece-picker/Default';
 
@@ -99,5 +99,32 @@ test.describe('<gsa-piece-picker> with touch', () => {
     await tapOutside(page);
     await expect(menu).toBeHidden();
     await expect(component.getByTestId('events')).toHaveText('[1005]');
+  });
+});
+
+test.describe('<gsa-piece-picker> in forced colours', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit does not force colours');
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+  });
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'none' });
+  });
+
+  test('the open menu has an edge, the worn piece is marked apart from the others, and a focused piece has a ring', async ({
+    mount,
+    page,
+  }) => {
+    const component = await mount<typeof Default>(STORY);
+    await component.getByRole('button', { name: 'Head piece' }).click();
+    const menu = page.locator('.pick-menu');
+    await expect(menu).toBeVisible();
+    const pieces = menu.locator('.same-item[data-game-id]');
+    await expectForcedColoursLook(page, {
+      panel: menu,
+      chosen: pieces.and(page.locator('.on')).first(),
+      plain: pieces.and(page.locator(':not(.on)')).first(),
+      ring: pieces.first(),
+    });
   });
 });

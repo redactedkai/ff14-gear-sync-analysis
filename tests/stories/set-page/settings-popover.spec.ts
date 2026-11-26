@@ -4,7 +4,7 @@
 import { RANK_NOTE_ID } from '../../../src/ui/elements/set-page/rank-note.ts';
 import { expect, test } from '../fixtures.ts';
 import { GEAR_ID, POPOVER_ID, type Default } from './settings-popover.story.js';
-import { tapOutside } from '../look.ts';
+import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'set-page/settings-popover/Default';
 const CLOSE_X = `#${POPOVER_ID} [data-part="close-trigger"]`;
@@ -146,5 +146,23 @@ test.describe('<gsa-settings-popover> with touch', () => {
     await expect(popover).toBeVisible();
     await tapOutside(page);
     await expect(popover).toBeHidden();
+  });
+});
+
+test.describe('<gsa-settings-popover> in forced colours', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit does not force colours');
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+  });
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'none' });
+  });
+
+  test('the open popover has an edge, and a focused field has a ring', async ({ mount, page }) => {
+    await mount<typeof Default>(STORY);
+    await page.locator(`#${GEAR_ID}`).click();
+    const popover = page.locator(`#${POPOVER_ID}`);
+    await expect(popover).toBeVisible();
+    await expectForcedColoursLook(page, { panel: popover, ring: page.locator('#s-min') });
   });
 });

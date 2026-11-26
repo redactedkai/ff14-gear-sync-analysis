@@ -6,7 +6,7 @@ import { EXPANSIONS } from '../../../src/core/constants.js';
 import { EXPANSION_LABEL, expansionSummary } from '../../../src/ui/elements/gear-browser/filter-menu-model.ts';
 import { expect, test } from '../fixtures.ts';
 import type { Default } from './expansion-menu.story.js';
-import { tapOutside } from '../look.ts';
+import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'gear-browser/expansion-menu/Default';
 const BUTTON = '#b-exp';
@@ -150,5 +150,22 @@ test.describe('<gsa-expansion-menu> with touch', () => {
     await tapOutside(page);
     await expect(menu).toBeHidden();
     await expect(component.getByTestId('events')).toHaveText(JSON.stringify([[SHORTS[2]]]));
+  });
+});
+
+test.describe('<gsa-expansion-menu> in forced colours', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit does not force colours');
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+  });
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'none' });
+  });
+
+  test('the open panel has an edge and a focused box has a ring', async ({ mount, page }) => {
+    await mount<typeof Default>(STORY);
+    await page.locator(BUTTON).click();
+    await expect(page.locator(MENU)).toBeVisible();
+    await expectForcedColoursLook(page, { panel: page.locator(MENU), ring: page.locator(box(SHORTS[1])) });
   });
 });

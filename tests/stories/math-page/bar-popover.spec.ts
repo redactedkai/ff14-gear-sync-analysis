@@ -3,7 +3,7 @@
    inside, closes on a press on its backdrop and by Escape; axe. */
 import { test, expect } from '../fixtures.ts';
 import type { Default } from './bar-popover.story.js';
-import { tapOutside } from '../look.ts';
+import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'math-page/bar-popover/Default';
 
@@ -88,5 +88,30 @@ test.describe('<gsa-bar-popover> with touch', () => {
     await expect(help).toBeVisible();
     await tapOutside(page);
     await expect(help).toBeHidden();
+  });
+});
+
+test.describe('<gsa-bar-popover> in forced colours', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit does not force colours');
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+  });
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'none' });
+  });
+
+  test('the open chip popover and the modal help have an edge, and a focused field has a ring', async ({ mount, page }) => {
+    await mount<typeof Default>(STORY);
+    await page.locator('#story-chip').click();
+    const popover = page.locator('#story-chip-pop');
+    await expect(popover).toBeVisible();
+    await expectForcedColoursLook(page, { panel: popover, ring: page.locator('#story-cap') });
+    await page.keyboard.press('Escape');
+    await expect(popover).toBeHidden();
+
+    await page.locator('#story-help').click();
+    const help = page.locator('#story-help-pop');
+    await expect(help).toBeVisible();
+    await expectForcedColoursLook(page, { panel: help, ring: help.getByRole('button', { name: 'a button' }) });
   });
 });

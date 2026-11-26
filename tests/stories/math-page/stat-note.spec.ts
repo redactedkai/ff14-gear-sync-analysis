@@ -2,7 +2,7 @@
    by Escape (the focus back on its "?") or a press outside; axe. */
 import { test, expect } from '../fixtures.ts';
 import type { Default } from './stat-note.story.js';
-import { tapOutside } from '../look.ts';
+import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'math-page/stat-note/Default';
 
@@ -68,5 +68,23 @@ test.describe('<gsa-stat-note> with touch', () => {
     await expect(page.getByRole('dialog', { name: 'Determination' })).toBeVisible();
     await tapOutside(page);
     await expect(note).toBeHidden();
+  });
+});
+
+test.describe('<gsa-stat-note> in forced colours', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit does not force colours');
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+  });
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'none' });
+  });
+
+  test('the open note has an edge', async ({ mount, page }) => {
+    const component = await mount<typeof Default>(STORY);
+    await component.getByRole('button', { name: /Critical Hit/ }).click();
+    const note = page.locator('#t-pop');
+    await expect(note).toBeVisible();
+    await expectForcedColoursLook(page, { panel: note, ring: component.getByRole('button', { name: /Determination/ }) });
   });
 });

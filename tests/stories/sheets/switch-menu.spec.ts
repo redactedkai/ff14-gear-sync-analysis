@@ -2,7 +2,7 @@
    Escape closes it with the focus on the caret, Tab walks its rows and closes it past either end, a plain click on a row is a pick, and axe. */
 import { test, expect } from '../fixtures.ts';
 import { BUTTON_NAME, MENU_NAME, type Default } from './switch-menu.story.js';
-import { tapOutside } from '../look.ts';
+import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'sheets/switch-menu/Default';
 
@@ -100,5 +100,28 @@ test.describe('<gsa-switch-menu> with touch', () => {
     await tapOutside(page);
     await expect(list).toBeHidden();
     await expect(component.getByTestId('events')).toHaveText('["item:s3"]');
+  });
+});
+
+test.describe('<gsa-switch-menu> in forced colours', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit does not force colours');
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+  });
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'none' });
+  });
+
+  test('the open list has an edge, the open set is marked apart from the others, and a focused row has a ring', async ({ mount, page }) => {
+    const component = await mount<typeof Default>(STORY);
+    await component.getByRole('button', { name: BUTTON_NAME }).click();
+    const list = page.locator('#sh-set-menu');
+    await expect(list).toBeVisible();
+    await expectForcedColoursLook(page, {
+      panel: list,
+      chosen: list.getByRole('link', { name: 'Dungeons' }),
+      plain: list.getByRole('link', { name: 'Raid' }),
+      ring: list.getByRole('link', { name: 'Raid' }),
+    });
   });
 });

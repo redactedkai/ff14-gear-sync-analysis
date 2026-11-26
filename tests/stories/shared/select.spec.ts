@@ -2,7 +2,7 @@
    focus moves on, a press outside closes), the groups, and axe. */
 import { expect, test } from '../fixtures.ts';
 import { BUTTON_ID, NONE_LABEL, SELECT_LABEL, type Default } from './select.story.js';
-import { tapOutside } from '../look.ts';
+import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'shared/select/Default';
 
@@ -131,5 +131,35 @@ test.describe('<gsa-select> with touch', () => {
     await tapOutside(page);
     await expect(list).toBeHidden();
     await expect(component.getByTestId('events')).toHaveText('["Wildwood"]');
+  });
+});
+
+test.describe('<gsa-select> in forced colours', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit does not force colours');
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+  });
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'none' });
+  });
+
+  test('the open list has an edge, the chosen option is marked apart from the others, and the lit option has a ring', async ({
+    mount,
+    page,
+  }) => {
+    await mount<typeof Default>(STORY);
+    const list = page.locator(`#${BUTTON_ID}-list`);
+    await page.locator(`#${BUTTON_ID}`).click();
+    await expect(list).toBeVisible();
+    await page.keyboard.press('ArrowDown'); // the light moves off the chosen option
+    const options = list.getByRole('option');
+    await expect(options.and(page.locator('[data-highlighted]'))).not.toHaveAttribute('aria-selected', 'true');
+    await expectForcedColoursLook(page, {
+      panel: list,
+      chosen: options.and(page.locator('[aria-selected="true"]')),
+      plain: options.and(page.locator(':not([aria-selected="true"])')).first(),
+      ring: options.and(page.locator('[data-highlighted]')),
+      lit: true,
+    });
   });
 });
