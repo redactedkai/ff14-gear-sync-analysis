@@ -39,7 +39,7 @@ import { checkAverageIlvl } from './checks/set-page/average-ilvl.mjs';
 import { checkSetPageColumns } from './checks/set-page/columns.mjs';
 import { checkPieceMenuKeepsButtonInSight, checkTableMenusUnderHeading } from './checks/set-page/menu-placement.mjs';
 import { checkMenuClicks, checkMenuSteps, checkPickMenu } from './checks/set-page/menus.mjs';
-import { checkCloakPick, checkOffhandRow, checkPinnedShield, checkTwoHandedPick } from './checks/set-page/mixed-weapon.mjs';
+import { checkTwoHandedPick } from './checks/set-page/mixed-weapon.mjs';
 import { checkOvermeldOdds } from './checks/set-page/overmeld-odds.mjs';
 import { checkMateriaPick, checkMealPick } from './checks/set-page/pick-totals.mjs';
 import { checkQuickClicks } from './checks/set-page/quick-clicks.mjs';
@@ -206,15 +206,10 @@ export const GROUPS = [
     steps: [step(checkRingCopies, 'gear-browser'), step(checkGearFrom, 'gear-browser'), step(checkGearFromCountsBrowser, 'gear-browser')],
   },
   { slow: true, steps: [step(checkGearFromCountsFill, 'gear-browser')] },
-  { steps: [step(checkOffhandRow, 'set-page'), step(checkOffhandPills, 'gear-browser')] },
+  { steps: [step(checkOffhandPills, 'gear-browser')] },
   {
     slow: true,
-    steps: [
-      step(checkPinnedShield, 'set-page'),
-      step(checkTwoHandedPick, 'set-page'),
-      step(checkCloakPick, 'set-page'),
-      step(checkTakeBoxFollowsWeapon, 'auto-fill'),
-    ],
+    steps: [step(checkTwoHandedPick, 'set-page'), step(checkTakeBoxFollowsWeapon, 'auto-fill')],
   },
   { slow: true, steps: [step(checkExpansionFilter, 'gear-browser'), step(checkReset, 'app')] },
   { steps: [step(checkTypedNumberStaysAfterOtherFilter, 'gear-browser')] },

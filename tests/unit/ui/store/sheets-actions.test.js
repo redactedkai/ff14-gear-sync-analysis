@@ -392,3 +392,26 @@ test('a saved sheet whose level or cap is out of range is repaired as it is read
   store.reload();
   assert.deepEqual(read('s_cap'), [70, { on: true, cap: 405 }], 'read again');
 });
+
+/* A White Mage set's pinned shield (Tidal Wave Buckler) stays in the saved set through a change of the sheet's level, down to 50 and
+   back to 100: the Off-hand row is used at every level (the page's step used to read the saved record after the change). */
+test('a change of the sheet level keeps the pinned shield of a White Mage set', () => {
+  const TIDAL_WAVE_WAND = 7818;
+  const TIDAL_WAVE_BUCKLER = 7823;
+  const store = makeStore();
+  store.createSheet({ ...FIELDS, job: 'WHM', name: 'White' });
+  const set = store.newSet();
+  const pieces = sageSet().pieces.map((row, i) => {
+    if (i === 0) {
+      return piece('weapon', TIDAL_WAVE_WAND);
+    }
+    return i === 1 ? piece('offhand', TIDAL_WAVE_BUCKLER) : { slot: row.slot };
+  });
+  store.updateSet(set.id, { pieces, pinned: { pieces: [1], meal: false } });
+  for (const level of [50, 100]) {
+    store.setLevel(level);
+    assert.equal(store.currentSheet.level, level);
+    const kept = store.currentSheet.sets[0];
+    assert.deepEqual([kept.pieces[1].gameId, kept.pinned.pieces], [TIDAL_WAVE_BUCKLER, [1]], `level ${level}`);
+  }
+});
