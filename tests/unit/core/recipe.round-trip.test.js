@@ -12,6 +12,7 @@ import { evaluateSet } from '../../../src/core/set.js';
 import { syncSettings } from '../../../src/ui/job-sync-panel.js';
 import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.js';
 import { rng } from '../helpers/common.js';
+import { rankedOf, setKey } from '../helpers/recipe-sets.js';
 
 const CASES = 22;
 const SYNCS = [
@@ -27,23 +28,6 @@ const SYNCS = [
 function totalsOf(job, set, sync, level) {
   const evaluated = evaluateSet(job, set, sync, level);
   return JSON.stringify([evaluated.gear, evaluated.withFood, evaluated.tiers.map(tier => tier?.spare)]);
-}
-/* A set's pieces (slot, game id, stones) and meal as text: two equal texts are the same set. */
-const setKey = set =>
-  JSON.stringify([
-    set.pieces.map(piece => [piece.slot, piece.gameId ?? null, (piece.stones ?? []).map(stone => stone && `${stone.stat}${stone.grade}`)]),
-    set.meal ?? null,
-  ]);
-/* What the search ranks, as text; the rest of a result is free to tie: the ranked stats with food (by tier: each ranked
-   stat's tier effect, then the goal's points), and the GCD when one was asked. */
-function rankedOf(job, set, sync, level, recipe) {
-  const evaluated = evaluateSet(job, set, sync, level);
-  const keys = [recipe.target, recipe.tb, recipe.tb2].filter(Boolean);
-  const tierOf = key => evaluated.tiers[job.stats.indexOf(key)];
-  const body = recipe.byTier
-    ? [keys.map(key => tierOf(key)?.effect ?? null), evaluated.withFood[recipe.target]]
-    : keys.map(key => evaluated.withFood[key]);
-  return JSON.stringify([body, recipe.gcd ? evaluated.gcd.gcd : null]);
 }
 /* Pins for runRecipe: the given set rows with their stones, and the meal. */
 const pinsOf = (rows, meal) => ({ pieces: rows.map(row => ({ slot: row.slot, gameId: row.gameId, stones: row.stones ?? [] })), meal });

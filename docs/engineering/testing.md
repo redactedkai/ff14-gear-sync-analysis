@@ -21,7 +21,7 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | about 1,380 tests in 193 files, about 30 to 45 s |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | about 1,380 tests in 194 files, about 30 to 45 s |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/sweep/`) | 6 tests in 6 files, about 22 s on their own |
 | Generator tests (Python) | the data generators, on small test files | 128 tests in 10 files |
 | Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 139 tests in 37 files, in Chromium (about 12 s of test time) and also in Firefox and WebKit (about 30 s for the three) |
@@ -44,7 +44,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | --- | --- | ---: | ---: |
 | `model` | the game's number rules: item stats, sync, speed, tiers, food, materia | 22 | 0 |
 | `data` | the game data and job facts, and the pipeline that generates them (with the Python tests) | 11 | 0 |
-| `solver` | the search for the best gear set, in the core (with the long sweep) | 23 | 0 |
+| `solver` | the search for the best gear set, in the core (with the long sweep) | 24 | 0 |
 | `auto-fill` | Auto-fill on the page: settings, run, cancel, worker, suggestion | 12 | 17 |
 | `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 20 | 17 |
 | `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 21 | 12 |
@@ -107,6 +107,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | core/optimizer/index.stat-minimums | minimums on any stat against the brute force (note 4) |
 | core/recipe | a recipe's solve (note 5) |
 | core/recipe.pins | a solve's pins: kept pieces and meal, the problems a pin cannot be kept for |
+| core/recipe.pool-order | Auto-fill with the job's gear in other orders (seeded shuffles): the ranked totals the same in every order, and the same pieces and stones where one set is best (ties among equal pieces are not asserted) |
 | core/recipe.real-gear | a set's Auto-fill on real gear against the core and the brute force (note 6) |
 | core/recipe.round-trip | Auto-fill twice, pinned whole or in half, and picked back, on random jobs and recipes |
 | core/same-result | other pieces with the same result: shared spare points, Unique rings, cloaks, the owner's level 50 case |
@@ -288,6 +289,7 @@ Notes:
   - saved sheets of real items for the Sheets tests (`sheet-fixtures.js`);
   - a set page's session bound to a real store with a stand-in for its element and solver stand-ins (`set-page-bind.js`);
   - pin lists for the pinned search tests (`pins.js`);
+  - a set and what a search ranks as text, and a seeded shuffle of a pool, for the tests that compare Auto-fill's sets (`recipe-sets.js`);
   - the stat model's check against real items and the Wiki's item level 475 caps (`model-validation.js`: `bandAccuracy`, `wikiChecks`, `MODEL_MIN_ILVL`, for `core/formulas.model-accuracy` and `core/formulas.stat-factor`);
   - an exact best-item-per-slot solver (`exact-solver.js`, with `lexCompare`) and a damager of saved data for the fuzz tests (`fuzz.js`);
   - 14 optimizer results as the page showed them before `evaluateSet` (`optimizer-view-sets.json`, for `core/set`).

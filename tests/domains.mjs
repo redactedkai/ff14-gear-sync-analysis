@@ -49,7 +49,7 @@ export const DOMAINS = {
     ],
     tests: [
       'tests/sweep/**',
-      'tests/unit/helpers/{exact-solver,exhaustive,pins,tier-reference}.js',
+      'tests/unit/helpers/{exact-solver,exhaustive,pins,recipe-sets,tier-reference}.js',
       'tests/unit/helpers/optimizer-view-sets.json',
     ],
   },
