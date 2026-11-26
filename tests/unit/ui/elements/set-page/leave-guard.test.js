@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { runningLeaveText } from '../../../../../src/ui/elements/set-page/leave-guard.ts';
 import { FILL_CANCELLED_TEXT, RESULT_DISCARDED_TEXT } from '../../../../../src/ui/views/set-page.js';
 import { overlays } from '../../../../../src/ui/overlays.js';
-import { inProcessSolver } from '../../../../../src/ui/solver.js';
+import { inProcessSolver } from '../../../../../src/ui/solver.ts';
 import { unsettledKind } from '../../../../../src/ui/store/app-state.ts';
 import { bind, heldSolver, tick, twoToFill } from '../../../helpers/set-page-bind.js';
 import { SAGE_IDS } from '../../../helpers/sheet-fixtures.js';

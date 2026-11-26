@@ -18,7 +18,7 @@ import {
 } from '../../../../src/ui/sheets/storage.ts';
 import { newGearSet } from '../../../../src/ui/sheets/ops.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
-import { makeSolverHandler, solverRequest } from '../../../../src/ui/solver.js';
+import { makeSolverHandler, solverRequest } from '../../../../src/ui/solver.ts';
 import { applyFill } from '../../../../src/ui/sheets/fill.ts';
 import { defaultFillSettings, fillRecipe } from '../../../../src/ui/sheets/fill-settings.ts';
 import { localDate } from '../../../../src/ui/views/sheet-text.ts';

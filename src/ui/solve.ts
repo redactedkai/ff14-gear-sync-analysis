@@ -1,4 +1,4 @@
-/* What the page's solver (ui/solver.js) answers for a set page's Auto-fill: the solve's answer, and the Auto-fill settings' Gear
+/* What the page's solver (ui/solver.ts) answers for a set page's Auto-fill: the solve's answer, and the Auto-fill settings' Gear
    to search line. The solve is core/recipe.ts runRecipe; a set page puts its plain set on the set's rows
    (sheets/fill.ts applyFill). Every builder takes plain inputs: the job (a JobContext), the sync settings ({cap, sync,
    level}: ui/job-sync-panel.ts syncSettings), the character level, the recipe (sheets/fill-settings.ts fillRecipe) and a solver
@@ -7,10 +7,20 @@
 import { gcdRange, gearFromCounts, recipePool, runRecipe } from '../core/recipe.ts';
 import { fmtInt } from './text.ts';
 import { badPinMessages } from './sheets/fill.ts';
+import type { PinProblem, Pins, Recipe } from '../core/recipe.ts';
+import type { SolverSession } from '../core/session.ts';
+import type { GearSet, JobContext, PoolItem, Sync } from '../core/types.ts';
+
+/* What solveView answers (below): a set, the pins that cannot be kept, an error, or the reason no set was found. */
+export type SolveAnswer =
+  | { kind: 'ok'; set: GearSet; bestMeals: string[] | null; recipe: Recipe; truncated: boolean }
+  | { kind: 'badpin'; messages: string[]; badPins: PinProblem[] }
+  | { kind: 'error'; message: string }
+  | { kind: 'excluded' | 'noset' | 'nogcd' | 'infeasible'; truncated: boolean };
 
 /* {searched, left}: how many pieces of `gear` (a session's gear for `job`) the recipe searches, and how many its
    filters under Gear to search leave out, for its heading. */
-export function searchCount(job, recipe, gear) {
+export function searchCount(job: JobContext, recipe: Recipe, gear: readonly PoolItem[]): { searched: number; left: number } {
   const searched = recipePool(job, recipe, gear).length;
   return { searched, left: gear.length - searched };
 }
@@ -20,7 +30,7 @@ export function searchCount(job, recipe, gear) {
    was found), haste ("Increase Attack Speed 15%", or null for a job with no always-on haste), off ("Off: goal is
    speed" while the target is the speed stat, else null), full (the whole sentence: "Target GCD (2.12 to 1.83 with Increase
    Attack Speed 15%)", "Target GCD (off: the target is speed)")}. The wording lives here only; the template displays the parts. */
-function gcdLabel(job, recipe, { top, fastest, haste }) {
+function gcdLabel(job: JobContext, recipe: Recipe, { top, fastest, haste }: ReturnType<typeof gcdRange>) {
   const name = 'Target GCD';
   if (recipe.target === job.speedKey) {
     return { name, range: '', haste: null, off: 'Off: goal is speed', full: `${name} (off: the target is speed)` };
@@ -35,7 +45,7 @@ function gcdLabel(job, recipe, { top, fastest, haste }) {
    searched (the number of pieces searched: 0 turns the Auto-fill button off), fromCounts ({box key: pieces}, how many pieces each "Gear categories" box holds under the other filters: gearFromCounts), gcdLabel (the Target
    GCD field's label parts, gcdLabel's, with the best meal when Food is on: one search for the most speed, run every time; 20 to
    100 ms)}. */
-export function gearToSearchView(job, sync, level, recipe, session) {
+export function gearToSearchView(job: JobContext, sync: Sync, level: number, recipe: Recipe, session: SolverSession) {
   const gear = session.gear(job);
   const count = searchCount(job, recipe, gear);
   return {
@@ -55,7 +65,14 @@ export function gearToSearchView(job, sync, level, recipe, session) {
    - 'badpin' (a pin cannot be kept): {messages (badPinMessages: one plain line per problem), badPins (runRecipe's
      found.badPins)};
    - the other kinds ('excluded', 'noset', 'nogcd', 'infeasible'): {truncated}. */
-export function solveView(job, sync, level, recipe, session, pins = null) {
+export function solveView(
+  job: JobContext,
+  sync: Sync,
+  level: number,
+  recipe: Recipe,
+  session: SolverSession,
+  pins: Pins | null = null,
+): SolveAnswer {
   try {
     const run = runRecipe(job, sync, level, recipe, session, {}, pins);
     if (run.status === 'badpin') {
@@ -67,6 +84,6 @@ export function solveView(job, sync, level, recipe, session, pins = null) {
     }
     return { kind: run.status, truncated: Boolean(run.found?.truncated) };
   } catch (e) {
-    return { kind: 'error', message: e?.message || String(e) };
+    return { kind: 'error', message: (e as Error | undefined)?.message || String(e) };
   }
 }

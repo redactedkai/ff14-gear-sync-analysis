@@ -47,7 +47,7 @@ import './ui/elements/set-page/piece-picker.ts';
 import './ui/elements/set-page/rank-note.ts';
 import './ui/elements/set-page/set-page.ts';
 import './ui/elements/set-page/settings-popover.ts';
-import { inProcessSolver, workerSolver } from './ui/solver.js';
+import { inProcessSolver, workerSolver } from './ui/solver.ts';
 import { WORKER_DATA, WORKER_SOURCE } from 'solver-worker:bundle';
 
 enableHqFont(document.fonts, document.documentElement);
@@ -108,7 +108,7 @@ addEventListener(
   { passive: true },
 );
 
-/* The page's Web Worker for the searches (ui/solver.js workerSolver), made on the solver's first request: a set page
+/* The page's Web Worker for the searches (ui/solver.ts workerSolver), made on the solver's first request: a set page
    asks for its Auto-fill settings' Gear to search line as it opens, so the worker starts with the first set page. Started
    from a Blob URL of its bundle (the page is one file, also opened from file://), then handed the data files' texts,
    which it parses on its own thread. Cancel starts a new one (workerSolver cancel), from the same URL; it is never

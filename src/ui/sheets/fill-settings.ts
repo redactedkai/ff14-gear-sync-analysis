@@ -3,6 +3,8 @@
    store. The data format is in docs/engineering/sheets.md, "Saved data". */
 import { uniqueRanks } from '../ranks.ts';
 import { DEFAULT_EXCLUDE } from '../job-sync-panel.ts';
+import type { Recipe } from '../../core/recipe.ts';
+import type { GcdMode } from '../../core/speed.ts';
 import type { JobContext, StatKey } from '../../core/types.ts';
 import type { FillGoal, FillSettings, SavedGearSet } from './saved-types.ts';
 
@@ -43,16 +45,16 @@ export function fillSettingsOf(job: JobContext, gearSet: Pick<SavedGearSet, 'fil
 
 /* The recipe core/recipe.ts runRecipe takes (its fields flat: the goal's, then Gear to search's), from Auto-fill settings
    ({goal, searchCriteria}: fillSettingsOf). */
-export function fillRecipe(settings: FillSettings) {
+export function fillRecipe(settings: FillSettings): Recipe {
   const { goal, searchCriteria } = settings;
   return {
-    target: goal.target,
-    tb: goal.tb,
-    tb2: goal.tb2,
+    target: goal.target as StatKey, // the goal holds stat keys; saved text is checked on read
+    tb: goal.tb as StatKey | '',
+    tb2: goal.tb2 as StatKey | '',
     melds: goal.melds,
     food: goal.food,
     gcd: goal.gcd,
-    gcdMode: goal.gcdMode,
+    gcdMode: goal.gcdMode as GcdMode,
     byTier: goal.byTier,
     expOff: [...searchCriteria.expOff],
     exclude: [...searchCriteria.exclude],

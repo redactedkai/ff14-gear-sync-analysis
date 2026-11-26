@@ -12,7 +12,7 @@ import {
   RESULT_DISCARDED_TEXT,
 } from '../../../../../src/ui/views/set-page.js';
 import { LOCKED_TEXT } from '../../../../../src/ui/sheets/store-shared.ts';
-import { inProcessSolver } from '../../../../../src/ui/solver.js';
+import { inProcessSolver } from '../../../../../src/ui/solver.ts';
 import { makeSession } from '../../../../../src/core/session.ts';
 import { bind, heldSolver, lateSolver, refusingSolver, tick, twoToFill } from '../../../helpers/set-page-bind.js';
 import { hasNumber } from '../../../helpers/common.js';

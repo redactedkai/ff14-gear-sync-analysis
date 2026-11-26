@@ -1,5 +1,5 @@
 /* The optimizer's worker bundle, built as the page builds it and run in Node with a stand-in `self`, against the page
-   thread's solver (ui/solver.js inProcessSolver) on one request after another, as a set page sends them: Auto-fill with pins,
+   thread's solver (ui/solver.ts inProcessSolver) on one request after another, as a set page sends them: Auto-fill with pins,
    melds, tier ranking and a Target GCD, two jobs, a goal that ties, and the Gear to search line. The replies must be equal
    whole, which includes the chosen pieces (game ids), their stones and the meal, not only the totals. The first request of
    build.test.js covers the loading from the posted data texts. */
@@ -10,7 +10,7 @@ import { esbuildOptions, SRC } from '../../../scripts/build/build.mjs';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { syncSettings } from '../../../src/ui/job-sync-panel.ts';
 import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.ts';
-import { inProcessSolver, solverRequest } from '../../../src/ui/solver.js';
+import { inProcessSolver, solverRequest } from '../../../src/ui/solver.ts';
 
 /* The worker's bundle as the page gets it: {WORKER_DATA, WORKER_SOURCE} from the `solver-worker:bundle` module. */
 async function workerBundle() {

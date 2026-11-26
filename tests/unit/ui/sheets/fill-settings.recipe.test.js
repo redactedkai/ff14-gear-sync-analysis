@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
-import { solverRequest } from '../../../../src/ui/solver.js';
+import { solverRequest } from '../../../../src/ui/solver.ts';
 import { defaultFillSettings, fillRecipe, fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.ts';
 import { sageSet } from '../../helpers/sheet-fixtures.js';
 

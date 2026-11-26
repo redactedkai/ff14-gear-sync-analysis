@@ -191,7 +191,7 @@ const CANCEL_SHEET = {
   ],
 };
 
-/** Cancel stops a running Auto-fill (ui/solver.js workerSolver cancel): the worker holding the search is ended, the result never
+/** Cancel stops a running Auto-fill (ui/solver.ts workerSolver cancel): the worker holding the search is ended, the result never
  * lands, the set is left as it was, one solver worker remains, and the next Auto-fill is answered by the new worker with the
  * numbers the core finds. Auto-fill and Cancel are clicked in one task, so no reply can arrive between them whatever the
  * machine's speed (a worker answers in a later task); the data (every box under Gear categories, three goal stats, a Target GCD,

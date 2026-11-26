@@ -650,7 +650,7 @@ Several gear sets can have exactly the same ranked totals: weapon damage, the ta
 | A result's rows, totals, tiers, defense and GCD (the gear set it shows) | `src/core/set.ts` (`setFromPicks`, `evaluateSet`), called by `runRecipe` in `src/core/recipe.ts` and by a set page's views (`src/ui/views/set-totals.js`, `meal-menu.js`) |
 | Other pieces with the same result (A9) | `src/core/same-result.ts` (`resultOf`, `sameOutcome`, `sameResult`), called by `runRecipe`; the unpruned candidates are `buildCandidates` with pruning off |
 | The Food row's menu | `allMeals` in `src/core/food.ts`; `src/ui/views/meal-menu.js` (`mealMenu`, `mealsPassing`, `mealPillOff`, `mealEmptyReason`, `sortMeals`, `mealList`) and `setMealMenuView` in `src/ui/views/set-meal-menu.js`; its search, pills and sort in `src/ui/elements/set-page/food-menu-model.ts` (`FoodMenuModel`) |
-| Page use: the job's gear, Gear categories, node limit, the solve, result | `src/core/recipe.ts`, `src/core/session.ts`, `src/core/items.ts`, `src/ui/solve.js`, `src/ui/sheets/fill.ts`, `src/ui/elements/gear-browser/filter-menu-model.ts` (functions in note 2 below the table) |
+| Page use: the job's gear, Gear categories, node limit, the solve, result | `src/core/recipe.ts`, `src/core/session.ts`, `src/core/items.ts`, `src/ui/solve.ts`, `src/ui/sheets/fill.ts`, `src/ui/elements/gear-browser/filter-menu-model.ts` (functions in note 2 below the table) |
 | Page timing marks (`fill`, `save`) | `src/ui/elements/set-page/fill-run.ts`, `fill-settings-edit.ts`, `src/main.js` |
 | Dated benchmark runs | `docs/engineering/perf-log.md` |
 | Stress-test scripts | `scripts/perf/` (`bench.mjs`, `split.mjs`, `adversarial.mjs`, `browser.mjs`, `db-parse.mjs`, `compare.mjs`, `memory.mjs`, `workloads.mjs`, `target-gcd-sweep.mjs`) |
@@ -666,7 +666,7 @@ Notes on the table:
 2. **Page use:**
    - `src/core/recipe.ts`: `runRecipe`, `recipePool`, `gearFromCounts`, `NODE_LIMIT`;
    - `src/core/session.ts`: `makeSession`; `src/core/items.ts`: `jobGear`;
-   - the views `solveView` (with an Auto-fill's `pins` and its `badpin` answer) and `gearToSearchView` in `src/ui/solve.js`;
+   - the views `solveView` (with an Auto-fill's `pins` and its `badpin` answer) and `gearToSearchView` in `src/ui/solve.ts`;
    - a saved set's pins, count and result mapping in `src/ui/sheets/fill.ts`;
    - the filter `withActivities` and relics with allocated substats `allocatedRelic` in `src/core/items.ts`;
    - the menu `<gsa-gear-categories>` in `src/ui/elements/gear-browser/` (its data in `filter-menu-model.ts`).

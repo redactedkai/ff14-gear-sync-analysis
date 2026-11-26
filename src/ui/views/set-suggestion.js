@@ -24,7 +24,7 @@ function changedRowsOf(job, saved, suggested) {
 }
 
 /* The suggestion of an Auto-fill answer for `saved`: `result` is an ok solve's plain `set` (core/set.ts: pieces per active slot,
-   and the meal), put on the set's open rows by applyFill; `bestMeals` the answer's tied best meals (solve.js, null
+   and the meal), put on the set's open rows by applyFill; `bestMeals` the answer's tied best meals (solve.ts, null
    with Food off). Returns {pieces, meal, bestMeals}, the set as Auto-fill would leave it and the meals to tag "best for goal"
    if it is applied whole. */
 export function suggestionOf(sheet, saved, result, bestMeals = null) {
@@ -195,7 +195,7 @@ export function failedText(message) {
 /* The line after an Auto-fill that stopped at its step limit ('infeasible') before finding a set. It gives no advice. */
 export const STEP_LIMIT_TEXT = 'Auto-fill stopped at its step limit before finding a set.';
 
-/* What a set page shows for an Auto-fill's answer that is not a suggestion, by the answer's kind (solve.js solveView): a
+/* What a set page shows for an Auto-fill's answer that is not a suggestion, by the answer's kind (solve.ts solveView): a
    plain line. 'badpin' is fillAnswerView's. Two kinds have no line of their own because the page cannot reach them: 'excluded'
    (no piece to search: the Auto-fill button is off, and a press before the first count lands waits for it) and 'noset' (without
    a Target GCD the search always finds a set); a kind not named here gets the generic line below. */
@@ -231,7 +231,7 @@ function emptySlotNote(job, saved, shown) {
 }
 
 /* The answer of an Auto-fill for `saved` (the GearSet as saved when Auto-fill was pressed), `answer` being the solver's reply
-   (solve.js solveView: {kind, ...}). Returns one of:
+   (solve.ts solveView: {kind, ...}). Returns one of:
    - {kind: 'suggestion', suggested ({pieces, meal, bestMeals}: suggestionOf)}, for suggestionView;
    - {kind: 'badpin', messages (one plain line per problem that names no row, badPinMessages'), pinnedRows (the pins that
      stay), droppedRows (the rows whose pin is dropped), mealDropped (the meal's pin is dropped), droppedText (unpinnedText:

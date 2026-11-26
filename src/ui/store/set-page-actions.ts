@@ -16,7 +16,7 @@
 import { emptySetPage } from './app-state.ts';
 import type { AppStore, GearSet, GearToSearch, SetPageState, Suggestion } from './app-state.ts';
 
-/* What the solver answers to a Gear to search request (ui/solve.js): the line, the count and the box counts, and the Target GCD
+/* What the solver answers to a Gear to search request (ui/solve.ts): the line, the count and the box counts, and the Target GCD
    label. */
 export interface GearToSearchAnswer {
   countText: string;

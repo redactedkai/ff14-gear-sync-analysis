@@ -10,7 +10,7 @@
    Auto-fill settings are saved as soon as they change. While an Auto-fill runs, `sheets.busy` locks every edit on the Sheets tab
    (sheets.md, "The edit lock"); Cancel stays.
 
-   `ports`: {store, sheets (the store's Sheets facade, ui/store/sheets-facade.ts), solver (ui/solver.js's), maxReal (the highest real
+   `ports`: {store, sheets (the store's Sheets facade, ui/store/sheets-facade.ts), solver (ui/solver.ts's), maxReal (the highest real
    item level)}. `host`, what the session needs of the element it serves: {isConnected, query(selector) (an element of the page, or
    null), afterDraw(callback) (runs `callback` once the page has drawn the change just made, unless the page is gone by then),
    requestUpdate() (the page draws again: called after a change of what the parts keep, as the open menu), dialogOpen (a dialog of the

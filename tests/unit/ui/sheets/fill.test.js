@@ -8,10 +8,10 @@ import { jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { runRecipe } from '../../../../src/core/recipe.ts';
 import { makeSession } from '../../../../src/core/session.ts';
-import { makeSolverHandler, solverRequest } from '../../../../src/ui/solver.js';
+import { makeSolverHandler, solverRequest } from '../../../../src/ui/solver.ts';
 import { PINS_CONFLICT_TEXT, applyFill, badPinMessages, dropBadPins, fillPlan, unpinnedText } from '../../../../src/ui/sheets/fill.ts';
 import { MEAL_ROW_LABEL } from '../../../../src/ui/sheets/saved-set.ts';
-import { solveView } from '../../../../src/ui/solve.js';
+import { solveView } from '../../../../src/ui/solve.ts';
 import { appState, hasNumber, piece } from '../../helpers/common.js';
 
 const sge = makeJobContext('SGE');

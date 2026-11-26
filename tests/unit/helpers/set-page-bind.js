@@ -3,7 +3,7 @@
    replies). */
 import { saveSheet } from '../../../src/ui/sheets/storage.ts';
 import { PageSession } from '../../../src/ui/elements/set-page/session.ts';
-import { inProcessSolver } from '../../../src/ui/solver.js';
+import { inProcessSolver } from '../../../src/ui/solver.ts';
 import { placePiece } from '../../../src/ui/sheets/set-edits.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { fillButtonView, noPiecesFlag, setPageViews } from '../../../src/ui/views/set-page.js';

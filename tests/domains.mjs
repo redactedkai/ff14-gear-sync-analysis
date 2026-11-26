@@ -63,7 +63,7 @@ export const DOMAINS = {
   'auto-fill': {
     title: 'Auto-fill on the page: settings, run, cancel, worker, suggestion',
     src: [
-      'src/ui/{solve,solver,solver-worker}.js',
+      'src/ui/{solve,solver,solver-worker}.ts',
       'src/ui/sheets/{fill,fill-settings}.ts',
       'src/ui/elements/set-page/{fill-run,fill-settings-edit}.ts',
       'src/ui/views/set-suggestion.js',

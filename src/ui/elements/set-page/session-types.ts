@@ -1,34 +1,15 @@
 /* The shapes the set page's session and its five parts share (session.ts, menus.ts, edits.ts, fill-run.ts, fill-settings-edit.ts,
-   leave-guard.ts): what the element gives the session (`ports`, `host`), the solver as the page asks it, the job, and the Auto-fill
+   leave-guard.ts): what the element gives the session (`ports`, `host`), the job, and the Auto-fill
    settings. The views the page draws are in set-page-types.ts; the store's state in ui/store/app-state.ts. */
 import type { makeJobContext } from '../../../core/job-context.ts';
-import type { AppStore, GearSet, Suggestion } from '../../store/app-state.ts';
+import type { Solver } from '../../solver.ts';
+import type { AppStore, Suggestion } from '../../store/app-state.ts';
 import type { SheetsFacade } from '../../store/sheets-facade.ts';
 
 /* The job's names, stats and keys (core/job-context.ts makeJobContext). */
 export type JobContext = ReturnType<typeof makeJobContext>;
 
-/* A request to the solver (ui/solver.js solverRequest): `kind` 'solve' (an Auto-fill) or 'gearToSearch' (the count line); the job's
-   id, the sync settings, the level and the recipe are plain data; `key` names the caller (a gear set's id); `pins` the slots an
-   Auto-fill keeps. */
-export interface SolverRequest {
-  kind: string;
-  jobId: string;
-  sync: unknown;
-  level: unknown;
-  recipe: unknown;
-  key?: string | number;
-  pins?: unknown;
-}
-
-/* The solver as the page asks it (ui/solver.js inProcessSolver, workerSolver): `blocksPage` is true when a solve holds the page's
-   thread (so the page paints "Solving…" first); `request` answers with the handler's `result` (its shape depends on the kind: `Result`)
-   and the time it took (ms); `cancel` stops the request of a kind and key, and says whether it did. */
-export interface Solver {
-  blocksPage: boolean;
-  request<Result = unknown>(request: SolverRequest): Promise<{ result: Result; ms: number }>;
-  cancel(kind: string, key?: string | number): boolean;
-}
+export type { Solver, SolverRequest } from '../../solver.ts'; // the solver as the page asks it (inProcessSolver, workerSolver)
 
 /* What the page needs of the rest of the page: the store (to follow), its Sheets facade (to read and to act), the solver for Auto-fill
    and Gear to search, and the highest real item level (the Auto-fill settings' item level range). */

@@ -8,7 +8,7 @@ import { evaluateSet } from '../../../src/core/set.ts';
 import { syncSettings } from '../../../src/ui/job-sync-panel.ts';
 import { gearView } from '../../../src/ui/views/gear.js';
 import { pieceView } from '../../../src/ui/views/piece.ts';
-import { searchCount } from '../../../src/ui/solve.js';
+import { searchCount } from '../../../src/ui/solve.ts';
 import { explainerItemLevel, explainerView, meldKeys } from '../../../src/ui/views/sync-explainer.ts';
 import { appState } from './common.js';
 import { gamePool } from './exhaustive.js';
@@ -40,7 +40,7 @@ export function solveOf(app, gear, choices = {}, pins = null) {
 }
 /* The pool the solve searches for `app` (core/recipe.ts recipePool), from `gear` or the job's own. */
 export const poolOf = (app, gear) => recipePool(app.jobCtx, app.recipe, gear ?? gearOf(app.jobCtx));
-/* {searched, left} under Gear to search (solve.js searchCount). */
+/* {searched, left} under Gear to search (solve.ts searchCount). */
 export const countOf = (app, gear) => searchCount(app.jobCtx, app.recipe, gear ?? gearOf(app.jobCtx));
 
 /* A store-shaped state object, as the page's state holds it, with a set's recipe; sync on at cap 123 unless `patch`

@@ -1,6 +1,6 @@
 /* Partial fill for a saved gear set: which slots the optimizer must keep (the pinned ones), the button's label, and how a
    solve's result goes back onto the set's rows. Pure view helpers over plain data: no store, so Node can test
-   them. The solve itself is core/recipe.ts runRecipe (its `pins`), reached through ui/solver.js.
+   them. The solve itself is core/recipe.ts runRecipe (its `pins`), reached through ui/solver.ts.
 
    A gear set here is the saved shape (docs/engineering/sheets.md, "Saved data"): `pieces` 12 rows in SLOT_TYPES order
    with 'ring' twice, each {slot, gameId, stones} or {slot} when empty; `meal` an allMeals key or null; `pinned`
@@ -18,7 +18,7 @@ import { joinNames, oneOrMany, plural } from '../text.ts';
 import { usedRows } from './saved-set.ts';
 import type { GearSet as CoreGearSet, JobContext, SetPiece, SlotType, Stone } from '../../core/types.ts';
 import type { Pins } from '../../core/recipe.ts';
-import type { SavedGearSet, SavedRow } from './saved-types.ts';
+import type { SavedGearSet } from './saved-types.ts';
 
 /* The meal of `gearSet` that Auto-fill keeps: its meal while the meal is pinned and there is one, else null. */
 function pinnedMealOf(gearSet: Pick<SavedGearSet, 'pinned' | 'meal'>): string | null {

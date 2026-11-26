@@ -212,7 +212,7 @@ See [validation.md, section 1](mechanics/validation.md#1-sources-of-truth).
 
 **Smoke test.** The browser test of the built page (`npm run test:smoke`): known numbers on screen, no JavaScript errors, no stray "undefined", "NaN" or "null" text, no sideways scroll at 960 px. See [testing.md, section 2](engineering/testing.md#smoke-test).
 
-**Solver, worker.** What runs the optimizer's searches for the page (`src/ui/solver.js`). It runs in one of two places:
+**Solver, worker.** What runs the optimizer's searches for the page (`src/ui/solver.ts`). It runs in one of two places:
 - On the page, a Web Worker: a second thread started from a script inside the page, so a long search does not freeze the page.
 - On the page's own thread, when the browser will not start the worker, and in the unit tests.
 

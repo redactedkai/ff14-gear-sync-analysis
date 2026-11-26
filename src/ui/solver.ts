@@ -1,4 +1,4 @@
-/* The page's solver: what runs a set page's Auto-fill (solve.js solveView) and the line under its Auto-fill settings' Gear
+/* The page's solver: what runs a set page's Auto-fill (solve.ts solveView) and the line under its Auto-fill settings' Gear
    to search (gearToSearchView), on the page's thread or in a Web Worker. Under a Target GCD with tier ranking a search
    can take seconds; in the worker the page stays responsive meanwhile.
 
@@ -12,10 +12,63 @@
    when there is one, so the page's thread never builds the job's gear and only one copy of it is held.
 
    Pure module: no DOM and no Worker, so Node can test it. The page's worker is made in main.js (a Blob URL of the
-   worker bundle, scripts/build/build.mjs solverWorker); its entry is ui/solver-worker.js. */
+   worker bundle, scripts/build/build.mjs solverWorker); its entry is ui/solver-worker.ts. */
 import { makeJobContext } from '../core/job-context.ts';
 import { makeSession } from '../core/session.ts';
-import { gearToSearchView, solveView } from './solve.js';
+import { gearToSearchView, solveView } from './solve.ts';
+import type { SolveAnswer } from './solve.ts';
+import type { Pins, Recipe } from '../core/recipe.ts';
+import type { SolverSession } from '../core/session.ts';
+import type { JobContext } from '../core/types.ts';
+import type { SyncSettings } from './job-sync-panel.ts';
+
+/* The two things the solver is asked: a set page's Auto-fill ('solve') and the line under its Gear to search ('gearToSearch'). */
+export type SolverKind = 'solve' | 'gearToSearch';
+
+/* A request to the solver (solverRequest): plain data, so it can be posted to a worker. `key` names the caller (a gear set's id); `pins`
+   the slots an Auto-fill keeps. */
+export interface SolverRequest {
+  kind: SolverKind;
+  jobId: string;
+  sync: SyncSettings;
+  level: number;
+  recipe: Recipe;
+  key?: string | number;
+  pins?: Pins | null;
+}
+
+/* A solver's reply: the handler's result and how long it took (ms). */
+export interface SolverReply<Result> {
+  result: Result;
+  ms: number;
+}
+
+/* The solver as the page asks it: `blocksPage` is true when a solve holds the page's thread (so the page paints "Solving…" first);
+   `request` answers with the handler's `result` (its shape depends on the kind: `Result`) and the time it took; `cancel` stops the
+   request of a kind and key, and says whether it did. */
+export interface Solver {
+  blocksPage: boolean;
+  request<Result = unknown>(request: SolverRequest): Promise<SolverReply<Result>>;
+  cancel(kind: SolverKind, key?: string | number): boolean;
+}
+
+/* What a handler answers: the result of the kind of request, or the message of the error it threw. */
+export type HandlerAnswer = { result: SolveAnswer | ReturnType<typeof gearToSearchView>; ms: number } | { error: string };
+
+/* A request waiting for the worker or in it: its id, its caller's key, the request and the callers that await its reply. */
+interface Entry {
+  id: number;
+  key: string | number | null;
+  request: SolverRequest;
+  callers: { resolve: (reply: SolverReply<unknown>) => void; reject: (error: unknown) => void }[];
+  timer?: ReturnType<typeof setTimeout>;
+}
+
+/* The requests of one kind: the one in the worker and the ones waiting, by caller key. */
+interface Lane {
+  flight: Entry | null;
+  waiting: Map<string | number | null, Entry>;
+}
 
 /** A solver request from an element's inputs: `kind` 'solve' (an Auto-fill's answer) or 'gearToSearch' (the line under Gear
    to search); `inputs` {job: a JobContext, sync (job-sync-panel.ts syncSettings), level, recipe (sheets/fill-settings.ts
@@ -23,13 +76,13 @@ import { gearToSearchView, solveView } from './solve.js';
    from other callers' (a gear set's id); `pins` (sheets/fill.ts fillPlan's {pieces, meal}) the slots an Auto-fill keeps, sent
    only when there are some. The JobContext goes as its id, rebuilt by the handler (makeJobContext is cached and pure).
    The other inputs must be plain data (no Proxy objects, no functions), or posting them to
-   the worker throws.
-   @param {string} kind
-   @param {{ job: { jobId: string }, sync: unknown, level: unknown, recipe: unknown }} inputs
-   @param {{ key?: string | number, pins?: unknown }} [options]
-   @returns {import('./elements/set-page/session-types.ts').SolverRequest} */
-export function solverRequest(kind, { job, sync, level, recipe }, { key, pins = null } = {}) {
-  const request = { kind, jobId: job.jobId, sync, level, recipe };
+   the worker throws. */
+export function solverRequest(
+  kind: SolverKind,
+  { job, sync, level, recipe }: { job: Pick<JobContext, 'jobId'>; sync: SyncSettings; level: number; recipe: Recipe },
+  { key, pins = null }: { key?: string | number; pins?: Pins | null } = {},
+): SolverRequest {
+  const request: SolverRequest = { kind, jobId: job.jobId, sync, level, recipe };
   if (pins) {
     request.pins = pins;
   }
@@ -43,7 +96,7 @@ export function solverRequest(kind, { job, sync, level, recipe }, { key, pins = 
    handle(request) → {result, ms}, or {error: message} when the view builder throws (solveView catches its own errors
    and answers with them, so in practice only gearToSearchView can). Synchronous: the worker runs it on each message,
    the in-process solver on the page's thread. */
-export function makeSolverHandler(session = makeSession()) {
+export function makeSolverHandler(session: SolverSession = makeSession()): (request: SolverRequest) => HandlerAnswer {
   return request => {
     const t0 = performance.now();
     const { kind, jobId, sync, level, recipe, pins } = request;
@@ -53,14 +106,14 @@ export function makeSolverHandler(session = makeSession()) {
         kind === 'solve' ? solveView(job, sync, level, recipe, session, pins ?? null) : gearToSearchView(job, sync, level, recipe, session);
       return { result, ms: performance.now() - t0 };
     } catch (e) {
-      return { error: e?.message || String(e) };
+      return { error: (e as Error | undefined)?.message || String(e) };
     }
   };
 }
 
 /* A handler's answer ({result, ms} or {error}) as a solver's reply: a Promise of {result, ms}, rejected on an error. */
-function settle(answer) {
-  return 'error' in answer ? Promise.reject(new Error(answer.error)) : Promise.resolve({ result: answer.result, ms: answer.ms });
+function settle<Result>(answer: HandlerAnswer): Promise<SolverReply<Result>> {
+  return 'error' in answer ? Promise.reject(new Error(answer.error)) : Promise.resolve({ result: answer.result as Result, ms: answer.ms });
 }
 
 /* The error a cancelled request's reply is rejected with (workerSolver cancel): `cancelled` marks it, so the caller can
@@ -76,20 +129,20 @@ function cancelledError() {
 const SOLVER_TIMEOUT_MS = 60_000;
 
 /* The error of a request stopped by SOLVER_TIMEOUT_MS; its message ends the page's "The search failed: ..." line. */
-function timedOutError(ms) {
+function timedOutError(ms: number): Error {
   return new Error(`no answer after ${ms / 1000} s`);
 }
 
 /* Whether a solver reply was rejected because its request was cancelled (true), not because it failed. */
-export function isCancelled(error) {
-  return error?.cancelled === true;
+export function isCancelled(error: unknown): boolean {
+  return (error as { cancelled?: boolean } | null | undefined)?.cancelled === true;
 }
 
 /* A solver that runs on the page's thread; the tests use it, and the page falls back to it when the worker cannot
    start. Returns {blocksPage: true, request(request) → reply, cancel(kind) → false}: the
    handler runs at once, inside request(), so there is never a request to stop; blocksPage tells the caller to paint
    its progress bar before asking. */
-export function inProcessSolver(session = makeSession()) {
+export function inProcessSolver(session: SolverSession = makeSession()): Solver {
   const handle = makeSolverHandler(session);
   return { blocksPage: true, request: request => settle(handle(request)), cancel: () => false };
 }
@@ -124,17 +177,24 @@ export function inProcessSolver(session = makeSession()) {
    A request still in the worker after `timeoutMs` (SOLVER_TIMEOUT_MS) is stopped the same way, its callers rejected
    with an error saying so (not a cancelled one: the page shows it as a failed search); only the callers of the
    timed-out request's key are rejected, other keys' waiting requests are asked of the new worker. */
-export function workerSolver(createWorker, fallback = inProcessSolver, { timeoutMs = SOLVER_TIMEOUT_MS } = {}) {
-  let worker = null;
-  let backup = null; // the fallback solver, once the worker failed
+export function workerSolver(
+  createWorker: () => Worker,
+  fallback: () => Solver = inProcessSolver,
+  { timeoutMs = SOLVER_TIMEOUT_MS }: { timeoutMs?: number } = {},
+): Solver {
+  let worker: Worker | null = null;
+  let backup: Solver | null = null; // the fallback solver, once the worker failed
   let nextId = 0;
   // per kind: the request in the worker (`flight`) and the ones waiting (`waiting`: one per caller key, in the order they
   // were asked), each {id, key, request, callers: [{resolve, reject}]}
-  const lanes = { solve: { flight: null, waiting: new Map() }, gearToSearch: { flight: null, waiting: new Map() } };
-  let lastGearToSearch = null; // the last Gear to search request asked for: asked again of a restarted worker
+  const lanes: Record<SolverKind, Lane> = {
+    solve: { flight: null, waiting: new Map() },
+    gearToSearch: { flight: null, waiting: new Map() },
+  };
+  let lastGearToSearch: SolverRequest | null = null; // the last Gear to search request asked for: asked again of a restarted worker
 
   // a reply (a Promise) handed to every caller of a request
-  const answer = (callers, reply) =>
+  const answer = (callers: Entry['callers'], reply: Promise<SolverReply<unknown>>) =>
     reply.then(
       value => {
         for (const c of callers) {
@@ -150,8 +210,8 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
 
   // a lane's requests not yet answered, emptied from it: one entry per caller key, each the newest request of that key
   // with the callers of all that key's requests (requests without a key count as one key); [] if none
-  const takePending = lane => {
-    const byKey = new Map();
+  const takePending = (lane: Lane): Entry[] => {
+    const byKey = new Map<string | number | null, Entry>();
     for (const entry of [lane.flight, ...lane.waiting.values()]) {
       if (!entry) {
         continue;
@@ -193,13 +253,13 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
 
   // 2. a request to the worker: post it, or answer its callers with the error if it cannot be posted (not plain data)
   // and post the next one waiting. The key stays on the page: the worker is sent the request without it.
-  const post = (lane, entry) => {
+  const post = (lane: Lane, entry: Entry) => {
     lane.flight = entry;
     entry.timer = setTimeout(() => restart(entry.request.kind, timedOutError(timeoutMs), entry.key), timeoutMs);
     entry.timer?.unref?.(); // in Node (the tests), a pending timer does not keep the process running
     try {
       const { key, ...message } = entry.request;
-      worker.postMessage({ id: entry.id, ...message });
+      (worker as Worker).postMessage({ id: entry.id, ...message });
     } catch (error) {
       clearTimeout(entry.timer);
       lane.flight = null;
@@ -209,7 +269,7 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
   };
 
   // the oldest request waiting in a lane, posted (none waiting: nothing happens)
-  const postNext = lane => {
+  const postNext = (lane: Lane) => {
     const next = lane.waiting.values().next().value;
     if (!next) {
       return;
@@ -220,7 +280,7 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
 
   // a request of a lane: posted if the worker is free; otherwise it waits, replacing the request already waiting with
   // the same key, whose callers then get the newer one's reply (a request with another key is not touched)
-  const enqueue = (lane, entry) => {
+  const enqueue = (lane: Lane, entry: Entry) => {
     if (!lane.flight) {
       post(lane, entry);
       return;
@@ -231,12 +291,12 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
   };
 
   // 3. a reply from the worker: to the callers of the request with its id; then the next waiting request of that kind
-  const onReply = ({ data }) => {
+  const onReply = ({ data }: MessageEvent<{ id: number } & HandlerAnswer>) => {
     const lane = Object.values(lanes).find(l => l.flight?.id === data.id);
     if (!lane) {
       return;
     }
-    const { callers, timer } = lane.flight;
+    const { callers, timer } = lane.flight as Entry;
     clearTimeout(timer);
     lane.flight = null;
     answer(callers, settle(data));
@@ -254,7 +314,7 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
     worker.onmessage = onReply;
     // it could not load or it crashed ('error'), or a reply could not be read on the page ('messageerror', which
     // carries no id, so that request would never be answered): the page's thread answers instead
-    worker.onerror = worker.onmessageerror = event => {
+    worker.onerror = worker.onmessageerror = (event: Event) => {
       event?.preventDefault?.(); // handled: not reported as an uncaught error of the page
       fallBack();
     };
@@ -264,7 +324,7 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
   // above). With a `key` only that key's requests of `kind` are rejected with `error`, and the other keys' requests of
   // the kind are asked again; without one all of the kind's are rejected. A key whose request only waits is taken out
   // of the queue and rejected, and the worker is left as it is.
-  const restart = (kind, error, key) => {
+  const restart = (kind: SolverKind, error: unknown, key?: string | number | null) => {
     const lane = lanes[kind];
     if (!worker || !lane) {
       return false;
@@ -285,7 +345,7 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
     }
     const stopped = takePending(lane);
     stopWorker();
-    const kept = [];
+    const kept: Entry[] = [];
     for (const pending of stopped) {
       if (key === undefined || pending.key === key) {
         for (const caller of pending.callers) {
@@ -327,8 +387,8 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
     get blocksPage() {
       return Boolean(backup);
     },
-    cancel: (kind, key) => restart(kind, cancelledError(), key === undefined ? undefined : (key ?? null)),
-    request(request) {
+    cancel: (kind: SolverKind, key?: string | number) => restart(kind, cancelledError(), key === undefined ? undefined : (key ?? null)),
+    request<Result = unknown>(request: SolverRequest): Promise<SolverReply<Result>> {
       if (!worker && !backup) {
         start();
       }
@@ -338,12 +398,17 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
       if (request.kind === 'gearToSearch') {
         lastGearToSearch = request;
       }
-      return new Promise((resolve, reject) => {
+      return new Promise<SolverReply<Result>>((resolve, reject) => {
         const lane = lanes[request.kind];
         if (!lane) {
           throw new Error(`unknown solver request kind: ${request.kind}`);
         }
-        enqueue(lane, { id: ++nextId, key: request.key ?? null, request, callers: [{ resolve, reject }] });
+        enqueue(lane, {
+          id: ++nextId,
+          key: request.key ?? null,
+          request,
+          callers: [{ resolve: resolve as (reply: SolverReply<unknown>) => void, reject }],
+        });
       });
     },
   };

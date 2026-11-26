@@ -2,11 +2,11 @@
    edits refused while a result waits, the Gear to search line (with a failing or late solver) and the goal menus. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { inProcessSolver } from '../../../../../src/ui/solver.js';
+import { inProcessSolver } from '../../../../../src/ui/solver.ts';
 import { fillRecipe } from '../../../../../src/ui/sheets/fill-settings.ts';
 import { evaluateInSheet } from '../../../../../src/ui/views/set-totals.js';
 import { makeSession } from '../../../../../src/core/session.ts';
-import { gearToSearchView } from '../../../../../src/ui/solve.js';
+import { gearToSearchView } from '../../../../../src/ui/solve.ts';
 import { makeJobContext } from '../../../../../src/core/job-context.ts';
 import { bind, lateSolver, refusingSolver, tick, twoToFill } from '../../../helpers/set-page-bind.js';
 import { sageSet } from '../../../helpers/sheet-fixtures.js';

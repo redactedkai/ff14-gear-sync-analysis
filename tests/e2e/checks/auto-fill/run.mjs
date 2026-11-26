@@ -8,7 +8,7 @@ import { checkTotals } from '../../lib/shared-checks.mjs';
 import { openSet, seedSheet } from '../../lib/sheets.mjs';
 import { pickOption } from '../../lib/select.mjs';
 
-/** A set page's Auto-fill when its worker cannot run (ui/solver.js workerSolver's fallback, main.js): the search runs on the
+/** A set page's Auto-fill when its worker cannot run (ui/solver.ts workerSolver's fallback, main.js): the search runs on the
  * page's thread with the core's numbers and its result can be applied; the Gear to search line and a changed goal are
  * answered too (a settings change searches again); Cancel right after Auto-fill drops the search; the next Auto-fill works; and no
  * worker is left running. The group's page errors are the runner's. */

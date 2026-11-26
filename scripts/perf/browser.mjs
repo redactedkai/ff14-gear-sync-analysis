@@ -10,7 +10,7 @@ row empty and unpinned, each set's Auto-fill settings with another goal (FILL_TA
   2. warm: in that page, each set in turn: Auto-fill, wait for its result, Discard; times each search and the time from the
      press to the result shown.
   3. memory: 100 more Fills over the sets, JS heap before and after (with garbage collection). The page's heap only:
-     the solver's Web Worker (src/ui/solver.js) has its own, not counted.
+     the solver's Web Worker (src/ui/solver.ts) has its own, not counted.
 Long tasks (the main thread blocked over 50 ms) are reported over the whole page, opening it included, and from the
 first Auto-fill to the memory step (the searches and drawing their results; the search itself runs in the worker).
 Chrome's CPU throttle slows the page's main thread; the worker's search is slowed much less, so its times at 4x and 6x

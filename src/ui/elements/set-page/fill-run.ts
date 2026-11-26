@@ -5,7 +5,7 @@
 import { overlays } from '../../overlays.js';
 import { clone, messageOf } from '../../text.ts';
 import { frozenCopy } from '../../view-cache.ts';
-import { isCancelled, solverRequest } from '../../solver.js';
+import { isCancelled, solverRequest } from '../../solver.ts';
 import { fillPlan } from '../../sheets/fill.ts';
 import { fillRecipe } from '../../sheets/fill-settings.ts';
 import { appliedFields, failedText, fillAnswerView, suggestionView } from '../../views/set-suggestion.js';
@@ -122,7 +122,7 @@ export class PageFill {
     return this.session.pageState.fillId === id;
   }
 
-  /* The solver's answer (`result`, solve.js solveView's) to search `id`. */
+  /* The solver's answer (`result`, solve.ts solveView's) to search `id`. */
   finishFill(id: number, result: unknown): void {
     const { session } = this;
     const answer = fillAnswerView(session.sheet, session.saved, result) as FillAnswer;
@@ -175,7 +175,7 @@ export class PageFill {
     this.pinsAfterFill = null;
   }
 
-  /* Cancel: the Auto-fill stops (the worker is replaced, ui/solver.js), the set stays as it is. */
+  /* Cancel: the Auto-fill stops (the worker is replaced, ui/solver.ts), the set stays as it is. */
   cancelFill(): void {
     const { session } = this;
     if (!session.running) {

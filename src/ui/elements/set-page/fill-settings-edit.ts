@@ -7,7 +7,7 @@ import { clone, messageOf } from '../../text.ts';
 import { gearFilter } from '../../../core/items.ts';
 import { rankChoices, rankSwapNote, withRank } from '../../ranks.ts';
 import { TARGET_GCD_RANGE } from '../../job-sync-panel.ts';
-import { isCancelled, solverRequest } from '../../solver.js';
+import { isCancelled, solverRequest } from '../../solver.ts';
 import { fillRecipe } from '../../sheets/fill-settings.ts';
 import { evaluateInSheet } from '../../views/set-totals.js';
 import type { StatKey } from '../../../core/types.ts';

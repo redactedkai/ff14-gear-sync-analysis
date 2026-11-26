@@ -147,7 +147,7 @@ export type FillStatus = 'idle' | 'running' | 'waiting' | 'failed' | 'cancelled'
 /* A gear set's Auto-fill settings' answer from the solver (the Gear to search line): countText ("searching 1,939 of 1,999
    pieces", or "count failed: ..."), searched (how many pieces Gear to search leaves in the pool; null until the first count has
    landed), fromCounts (the pieces per "Gear categories" box, {box key: count}; null while they are not known), fromCountsFor (the
-   job and filters they were counted under, as text) and gcdLabel (the Target GCD label's parts, ui/solve.js gcdLabel). Frozen. */
+   job and filters they were counted under, as text) and gcdLabel (the Target GCD label's parts, ui/solve.ts gcdLabel). Frozen. */
 export interface GearToSearch {
   countText: string;
   searched: number | null;

@@ -414,7 +414,7 @@ test('the Off-hand row is covered by the weapon the Weapon row shows', () => {
   assert.equal(offhand.blockedBy, weapon.item.name);
 });
 
-test('stat totals too large to rank exactly: the solve throws (solve.js answers with the message)', () => {
+test('stat totals too large to rank exactly: the solve throws (solve.ts answers with the message)', () => {
   const app = makeApp('SGE');
   const pool = ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring'].map(t =>
     mkItem(t, t, 130, { sps: 9e5, mind: 9e5, vit: 9e5 }),

@@ -1,4 +1,4 @@
-/* The page's solver (src/ui/solver.js): the request handler as a plain function (what the worker runs on each
+/* The page's solver (src/ui/solver.ts): the request handler as a plain function (what the worker runs on each
    message), its requests and replies passing a structured clone (what postMessage does), the worker solver's ids,
    one request per kind in the worker with the newest waiting, and its fallback to the page's thread. A fake worker
    stands in for the browser's: it answers when the test says so. */
@@ -6,8 +6,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeSession } from '../../../src/core/session.ts';
 import { evaluateSet } from '../../../src/core/set.ts';
-import { inProcessSolver, isCancelled, makeSolverHandler, solverRequest, workerSolver } from '../../../src/ui/solver.js';
-import { gearToSearchView, solveView } from '../../../src/ui/solve.js';
+import { inProcessSolver, isCancelled, makeSolverHandler, solverRequest, workerSolver } from '../../../src/ui/solver.ts';
+import { gearToSearchView, solveView } from '../../../src/ui/solve.ts';
 import { inputsOf, makeApp } from '../helpers/views.js';
 
 /* Sage at item level 123, a set's Auto-fill settings with Food on. */

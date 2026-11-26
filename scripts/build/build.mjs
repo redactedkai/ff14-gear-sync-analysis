@@ -64,7 +64,7 @@ function workerData(names) {
 }
 
 /* esbuild plugin: the module `solver-worker:bundle` (imported by main.js) is the optimizer's Web Worker (audit 16 R8),
-   bundled by its own esbuild build from src/ui/solver-worker.js. It exports
+   bundled by its own esbuild build from src/ui/solver-worker.ts. It exports
    - WORKER_SOURCE: the worker's code as a string, started by the page from a Blob URL (the page stays one file that
      opens from file://). The bundle is wrapped in the worker's first message handler: that message carries the data
      texts, which the bundle's data modules read while it loads (workerData).
@@ -79,7 +79,7 @@ export const solverWorker = {
       // 1. the worker's own bundle, its data modules reading the posted texts
       const names = [];
       const result = await esbuild.build({
-        entryPoints: [join(SRC, 'ui', 'solver-worker.js')],
+        entryPoints: [join(SRC, 'ui', 'solver-worker.ts')],
         bundle: true,
         format: 'iife',
         target: BROWSER_TARGETS,
