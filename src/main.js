@@ -155,7 +155,26 @@ Object.defineProperties(debugHook, {
 });
 Object.defineProperty(window, 'gsaDebug', { value: Object.freeze(debugHook), enumerable: true });
 
-// the start marker the startup check reads (src/startup-failure.js): set once the root element has drawn the page for the first time
-root.updateComplete.then(() => {
-  document.documentElement.dataset.started = '';
-});
+/* The start marker the startup check reads (src/startup-failure.js): set once the root element and every element drawn inside it
+   (the screens, even in a hidden tab, and what they draw at once) have drawn for the first time.
+   A draw that throws rejects its element's `updateComplete`. The page reports that error itself with `reportError`, which tells the
+   window's `error` listeners at once: the browser's own `unhandledrejection` event comes in a task of its own, which WebKit runs
+   after the startup check's timer (Chromium and Firefox run it before), so the check would call the page started. A failed first draw
+   sets no marker. */
+async function drawnFirstTime(rootElement) {
+  const seen = new Set();
+  for (let pending = [rootElement]; pending.length > 0; ) {
+    for (const element of pending) {
+      seen.add(element);
+    }
+    await Promise.all(pending.map(element => element.updateComplete));
+    // an element drawn by those draws is new: wait for it too (an element without `updateComplete` is not a Lit element)
+    pending = [...rootElement.querySelectorAll('*')].filter(element => element.updateComplete && !seen.has(element));
+  }
+}
+drawnFirstTime(root).then(
+  () => {
+    document.documentElement.dataset.started = '';
+  },
+  error => reportError(error),
+);

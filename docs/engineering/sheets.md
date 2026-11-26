@@ -126,7 +126,7 @@ Nothing proposed is saved until Apply.
 - A **manual draft**: a piece, stone or meal chosen by hand. The set page shows Now and After and counts the changes; Apply saves them, Discard drops them. Auto-fill is off during a draft. A piece that covers other slots (a 2H weapon the Off-hand, a cloak the Head) picked over held pieces in those rows also empties them in the draft, so Discard brings both back; a piece for a covered row is refused and its control is disabled. A saved set that holds both is left as saved, with no note; an Auto-fill Apply never leaves both (the search takes a 1H weapon beside a pinned shield and leaves the Off-hand empty beside a 2H weapon; a pinned 2H weapon with a pinned shield is a pin conflict; when a suggestion is taken in part, a covered Off-hand's Take box follows the weapon's and is dimmed and disabled, `views/set-suggestion.js` `takeStateOf`).
 - A **Auto-fill suggestion**: the set as Auto-fill would leave it. Each changed row and the meal have a Take box; Apply saves what is taken, Discard drops it all.
 
-The draft's count and the suggestion's count go by the same row comparison (`sameRow`). Leaving the set page with a draft, a running Auto-fill or a waiting result asks first (Keep editing or Discard and leave; for a result, Keep reviewing). A tab link that leaves the Sheets tab asks the same question (`components/page.js` `goTab`).
+The draft's count and the suggestion's count go by the same row comparison (`sameRow`). Leaving the set page with a draft, a running Auto-fill or a waiting result asks first (Keep editing or Discard and leave; for a result, Keep reviewing). A tab link that leaves the Sheets tab asks the same question (`AppRootModel.goTab`, `src/ui/elements/app/app-root-model.ts`).
 
 ## The edit lock
 

@@ -9,8 +9,8 @@
      its panel, filters and whether its tab is open, and its `browse-edit` events edit the store;
    - the three tabs' sections show by their `hidden` (the open tab's, from the store), so every screen keeps what it drew while another
      tab is open. `.wrap` (the page's column) and `.tab-loading` (a tab is opening) are classes of this element itself;
-   - main.js sets `data-started` on <html> once the element's first draw is done (startup-failure.js reads it), so a draw that throws
-     is a failed start: the error is not caught here. */
+   - main.js sets `data-started` on <html> once the element's first draw and its screens' first draws are done (startup-failure.js reads
+     it), so a draw that throws is a failed start: the error is not caught here (main.js reports it). */
 import { LitElement, type TemplateResult, html, nothing } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { styleMap } from 'lit/directives/style-map.js';

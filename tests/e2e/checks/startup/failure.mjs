@@ -134,6 +134,39 @@ export async function checkStartupFailures(pg) {
       await watched.close();
     }
 
+    // WebKit tells the page of an unhandled rejection in a task after the startup check's timer (Chromium and Firefox do it before
+    // the page has loaded): the init script hands `unhandledrejection` listeners the event only after the page has loaded and two
+    // timer turns have passed, and a listener the page removes by then gets nothing. A screen's failed first draw is a rejection
+    // of the element's `updateComplete`, so the message must come from the page's own report of it (main.js), not from the event.
+    const late = await openPage(pg, () => {
+      const addListener = window.addEventListener.bind(window);
+      const removeListener = window.removeEventListener.bind(window);
+      const delivering = new Map();
+      window.addEventListener = (type, listener, options) => {
+        if (type !== 'unhandledrejection') {
+          addListener(type, listener, options);
+          return;
+        }
+        const afterCheck = event => {
+          const deliver = () => setTimeout(() => setTimeout(() => listener(event), 0), 0);
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', deliver);
+          } else {
+            deliver();
+          }
+        };
+        delivering.set(listener, afterCheck);
+        addListener(type, afterCheck, options);
+      };
+      window.removeEventListener = (type, listener, options) => removeListener(type, delivering.get(listener) ?? listener, options);
+    });
+    try {
+      const got = await failedStart(late.page, partUrl);
+      check(got.error.includes('sheetsMissing'), `a screen's draw error, the rejection event late: '${got.error}'`);
+    } finally {
+      await late.close();
+    }
+
     const cuts = {
       'inside the style': cut(html => html.indexOf('<style>') + 1000),
       "inside the app's script": cut(html => html.length - 300),
