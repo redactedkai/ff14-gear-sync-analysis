@@ -50,6 +50,17 @@ test.describe('<gsa-sheet-page>', () => {
     await expect(events).toContainText('figures:points');
   });
 
+  test('Enter on the name link of a gear set opens that set once, from the keyboard', async ({ mount, page }) => {
+    const component = await mount<typeof Default>(STORY);
+    const events = component.getByTestId('events');
+    const start = page.url();
+    const link = page.locator('#sh-sets tbody tr', { hasText: 'Set 2' }).locator('a.sname');
+    await link.focus();
+    await page.keyboard.press('Enter');
+    await expect(events).toHaveText('["open:set:g_2"]');
+    expect(page.url(), 'the row opens through the page, the link does not navigate').toBe(start);
+  });
+
   test('has no axe violations', async ({ mount, axe }) => {
     await mount<typeof Default>(STORY);
     expect(withoutHandleName(await axe())).toEqual([]);

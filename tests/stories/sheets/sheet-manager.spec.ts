@@ -41,6 +41,20 @@ test.describe('<gsa-sheet-manager>', () => {
     await expect(handles.first()).toBeFocused();
   });
 
+  test('Enter on the name link of a row opens that sheet once, from the keyboard, and the link does not navigate', async ({
+    mount,
+    page,
+  }) => {
+    const component = await mount<typeof Default>(STORY);
+    const events = component.getByTestId('events');
+    const start = page.url();
+    const link = rowOf(page, 'Crafting').getByRole('link', { name: 'Crafting' });
+    await link.focus();
+    await page.keyboard.press('Enter');
+    await expect(events).toHaveText('["open:sheet:s_crafting"]');
+    expect(page.url(), 'the row opens through the page, the link does not navigate').toBe(start);
+  });
+
   test('has no axe violations, with sheets and on the not found screen', async ({ mount, axe }) => {
     await mount<typeof Default>(STORY);
     expect(withoutHandleName(await axe())).toEqual([]);

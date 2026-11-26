@@ -46,6 +46,26 @@ test.describe('<gsa-set-page>', () => {
     await expect(page.getByRole('button', { name: 'Auto-fill settings' })).toBeFocused();
   });
 
+  test('in the Auto-fill settings Tab goes through the Goal boxes in the order drawn, and back with Shift+Tab, with the popover kept open', async ({
+    mount,
+    page,
+  }) => {
+    await mount<typeof Default>(STORY);
+    await page.locator('#sh-settings').click();
+    await expect(page.locator('#sh-settings-dialog')).toBeVisible();
+    await page.locator('#s-target').focus();
+    const goal = ['s-tb1', 's-tb2', 's-gcd'];
+    for (const id of goal) {
+      await page.keyboard.press('Tab');
+      await expect(page.locator(`#${id}`), `Tab to ${id}`).toBeFocused();
+    }
+    for (const id of ['s-tb2', 's-tb1', 's-target']) {
+      await page.keyboard.press('Shift+Tab');
+      await expect(page.locator(`#${id}`), `Shift+Tab to ${id}`).toBeFocused();
+    }
+    await expect(page.locator('#sh-settings-dialog')).toBeVisible();
+  });
+
   for (const [failure, expected] of [
     ['rejects', failedText(FILL_ERROR_MESSAGE)],
     ['error', failedText(FILL_ERROR_MESSAGE)],
