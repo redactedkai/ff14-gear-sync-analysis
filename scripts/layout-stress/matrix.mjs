@@ -72,18 +72,6 @@ export function parseWindow(key) {
   return { width, height };
 }
 
-/* The widths of the sweep's coarse pass: from `from` to `to` (inclusive) every `step` px, and `to` itself when the step skips it. */
-export function coarseWidths(from = SWEEP_FROM, to = SWEEP_TO, step = SWEEP_STEP) {
-  const widths = [];
-  for (let width = from; width <= to; width += step) {
-    widths.push(width);
-  }
-  if (widths.at(-1) !== to) {
-    widths.push(to);
-  }
-  return widths;
-}
-
 /* The text and font setups: `id`, a `label`, `blockFonts` (the request for Google Fonts is refused, so the page's fallback
    stack shows) and `css` (a style the tool adds after the page's own, forcing the setup). A text size scales the page's root
    font size and the body's 15 px, as a browser's "larger text" setting would. */

@@ -8,7 +8,6 @@ import {
   SCREENS,
   buildMatrix,
   chooseSetups,
-  coarseWidths,
   parseWindow,
   setupFor,
   windowsForSetup,
@@ -52,13 +51,6 @@ test('the matrix has every screen at every scale and checks a window two setups 
   for (const key of windows.keys()) {
     assert.ok(parseWindow(key).width >= 945, key);
   }
-});
-
-test('the coarse widths run from the first to the last, ending on the last when the step skips it', () => {
-  assert.deepEqual(coarseWidths(960, 1040, 40), [960, 1000, 1040]);
-  assert.deepEqual(coarseWidths(960, 1050, 40), [960, 1000, 1040, 1050]);
-  assert.equal(coarseWidths().at(0), 960);
-  assert.equal(coarseWidths().at(-1), 2560);
 });
 
 test('the quick windows are valid window keys, and the setups are the page fonts alone unless all are asked for', () => {
