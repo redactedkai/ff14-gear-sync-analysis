@@ -16,7 +16,7 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { capsFor } from '../../../src/core/formulas.ts';
 import { genericItems, rowStats } from '../../../src/core/items.ts';
 import { ROW } from '../../../src/core/constants.ts';
-import { optimize } from '../../../src/core/optimizer/index.js';
+import { optimize } from '../../../src/core/optimizer/index.ts';
 import { gcdFor } from '../../../src/core/speed.ts';
 import { IL, ITEMS } from '../../../src/core/tables.ts';
 import { SLOT_PERMILLE, roundHalfUp } from '../helpers/common.js';

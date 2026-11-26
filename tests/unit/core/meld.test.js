@@ -8,7 +8,7 @@ import { browseItems, meldInfo, mkItem, poolItemFromRow } from '../../../src/cor
 import { MATERIA } from '../../../src/core/tables.ts';
 import { bestMeld, meldSlots, meldText, meldVersions, slotGrades, stoneValues } from '../../../src/core/meld.ts';
 import { meldCaps } from '../../../src/core/piece.ts';
-import { optimize } from '../../../src/core/optimizer/index.js';
+import { optimize } from '../../../src/core/optimizer/index.ts';
 import { piece } from '../helpers/common.js';
 
 const sge = makeJobContext('SGE');

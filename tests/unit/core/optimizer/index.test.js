@@ -4,9 +4,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { optimize } from '../../../../src/core/optimizer/index.js';
-import { pruneDominated, makeScorer } from '../../../../src/core/optimizer/candidates.js';
-import { suffixBounds } from '../../../../src/core/optimizer/search.js';
+import { optimize } from '../../../../src/core/optimizer/index.ts';
+import { pruneDominated, makeScorer } from '../../../../src/core/optimizer/candidates.ts';
+import { suffixBounds } from '../../../../src/core/optimizer/search.ts';
 import { optimizeGcd } from '../../../../src/core/target-gcd.js';
 import { rankByTier } from '../../../../src/core/tier-rank.js';
 import { exhaustive, gamePool, loadoutCount } from '../../helpers/exhaustive.js';

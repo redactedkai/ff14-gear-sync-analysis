@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { mkItem, slotInfo, meldInfo } from '../../../../src/core/items.ts';
-import { fixedCandidate, optimize, prepare, solve } from '../../../../src/core/optimizer/index.js';
+import { fixedCandidate, optimize, prepare, solve } from '../../../../src/core/optimizer/index.ts';
 import { exhaustive, gamePool, loadoutCount, smallPool } from '../../helpers/exhaustive.js';
 import { pickPins, pinsCoexist, pinsOf } from '../../helpers/pins.js';
 import { checkPinned } from '../../helpers/tier-reference.js';

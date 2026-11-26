@@ -1,4 +1,4 @@
-/* The search's building blocks (src/core/optimizer/search.js) on their own, on small synthetic lists checked by brute
+/* The search's building blocks (src/core/optimizer/search.ts) on their own, on small synthetic lists checked by brute
    force: the limit tables, their smallest over several limits, the Lagrangian bound and reduced-cost fixing, the slot
    order, and the memo's dominance front. The whole search is checked against the exhaustive reference elsewhere
    (optimizer-exhaustive, stat-minimums, target-gcd-exhaustive). */
@@ -11,7 +11,7 @@ import {
   limitTables,
   makeMemo,
   shortListsFirst,
-} from '../../../../src/core/optimizer/search.js';
+} from '../../../../src/core/optimizer/search.ts';
 import { rng } from '../../helpers/common.js';
 
 let nextId = 0;

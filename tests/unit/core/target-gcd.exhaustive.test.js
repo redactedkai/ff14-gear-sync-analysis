@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { foodChoices } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import { optimize, prepare, solve } from '../../../src/core/optimizer/index.js';
+import { optimize, prepare, solve } from '../../../src/core/optimizer/index.ts';
 import { gcdFor, gcdTierAt, hasteFor } from '../../../src/core/speed.ts';
 import { optimizeGcd } from '../../../src/core/target-gcd.js';
 import { exhaustive, foodAdd, gamePool, smallPool, WINDOWS } from '../helpers/exhaustive.js';
@@ -116,7 +116,7 @@ test('2H weapons, shields and blocked slots with a speed band match exhaustive s
   assert.ok(runs >= 40, `${runs} runs`);
 });
 
-/* The speed tables for blocked slots (search.js) are built only after LAZY_TABLES nodes, which these small pools never
+/* The speed tables for blocked slots (search.ts) are built only after LAZY_TABLES nodes, which these small pools never
    reach; lazyTables 0 builds them from the first node, so a two-handed weapon's search reads the table with the off-hand
    empty and a hooded body's the one with the head empty. White Mage's shields stop at item level 100, so its pools come
    from 38 to 55 (staves and wands with shields); every pool has a piece for each slot, so a blocked slot is in the

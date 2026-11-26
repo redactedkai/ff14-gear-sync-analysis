@@ -9,7 +9,7 @@ import { statBase } from '../../../src/core/base-stats.ts';
 import { allMeals, bestFood, foodChoices } from '../../../src/core/food.ts';
 import { allocatedRelic, browseItems, itemRoutes, mkItem, poolItemFromRow, poolKey, withActivities } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import { optimize } from '../../../src/core/optimizer/index.js';
+import { optimize } from '../../../src/core/optimizer/index.ts';
 import { sameMeals } from '../../../src/core/same-result.js';
 import { gcdFor, hasteFor } from '../../../src/core/speed.ts';
 import { optimizeGcd } from '../../../src/core/target-gcd.js';

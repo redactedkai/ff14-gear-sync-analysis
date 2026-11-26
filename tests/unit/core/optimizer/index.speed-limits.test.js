@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { browseItems, poolItemFromRow } from '../../../../src/core/items.ts';
-import { optimize } from '../../../../src/core/optimizer/index.js';
+import { optimize } from '../../../../src/core/optimizer/index.ts';
 import { exhaustive, gamePool, loadoutCount } from '../../helpers/exhaustive.js';
 
 const war = makeJobContext('WAR');

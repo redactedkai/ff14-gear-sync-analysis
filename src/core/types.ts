@@ -193,3 +193,97 @@ export interface GearSet {
   readonly pieces: readonly SetPiece[];
   readonly meal: string | null;
 }
+
+/* A candidate's effective stats: after sync and melds, by stat key; weapon damage under 'wd' when the job ranks it; and, in
+   a search with regain cuts, the cuts' synthetic stats ('regain0', ...). Not every key is present: a missing one reads 0. */
+export type Eff = Record<string, number>;
+
+/* One piece as the optimizer sees it (buildCandidates in optimizer/candidates.js; the fields are explained there). The
+   searches read it, and a result shows it. `score` and `sum` are set by buildCandidates after the candidate is made. */
+export interface Candidate {
+  item: PoolItem;
+  eff: Eff;
+  copies: number;
+  blocks: readonly SlotType[];
+  meld: Meld | null;
+  score: number;
+  sum: number;
+  /* every meld version of the piece, this one among them (itemVersions only) */
+  versions?: Candidate[];
+  /* true on a pinned piece (fixedCandidate) */
+  fixed?: boolean;
+  /* the candidate a regain cut copy stands for (regain.js) */
+  original?: Candidate;
+}
+
+/* A limit on a stat's total over the whole loadout (optimizer/search.js): a minimum (null or 0 for none) and a maximum
+   (null for none). `cut` marks a regain cut's synthetic stat. */
+export interface Limit {
+  stat: string;
+  min: number | null;
+  max: number | null;
+  cut?: boolean;
+}
+
+/* A maximum an earlier search proved (optimizer/regain.js): under its speed rule ('band' for a maximum too, 'min' for a
+   minimum only, null for none) and minimums on `minStats`, no loadout has more than `most` points of `stat`. */
+export interface Proven {
+  stat: string;
+  most: number;
+  minStats: readonly string[];
+  speed: 'band' | 'min' | null;
+}
+
+/* A worn piece of an optimizer result: its slot type, the pool item, its effective stats and melds; `pinned` on a pinned piece. */
+export interface FilledPick {
+  type: SlotType;
+  item: PoolItem;
+  eff: Eff;
+  meld?: Meld | null;
+  pinned?: boolean;
+}
+/* An empty slot of an optimizer result: the item that leaves it empty (a cloak for the head), if any. */
+export interface EmptyPick {
+  type: SlotType;
+  item: null;
+  blockedBy?: PoolItem | null;
+  eff?: undefined;
+  meld?: undefined;
+  pinned?: undefined;
+}
+/* One slot of an optimizer result (solve in optimizer/index.js), in the character panel's order. */
+export type SlotPick = FilledPick | EmptyPick;
+
+/* One slot of a search's loadout (optimizer/search.js): its candidate (null for an empty slot), the candidate's rank in its
+   slot's list (-1 for an empty slot or a seed's piece), and, on a slot a chosen piece leaves empty, the piece that does. */
+export interface SlotEntry {
+  cand: Candidate | null;
+  rank: number;
+  blockedBy?: Candidate | { item: PoolItem };
+}
+
+/* An optimizer result that found a loadout (solve in optimizer/index.js; the fields are explained there): the picks in the
+   character panel's order, the gear totals over the dimensions, and what the search did. */
+export interface SolveSuccess {
+  ok: true;
+  picks: SlotPick[];
+  totals: Eff;
+  truncated: boolean;
+  nodes: number;
+  noMeldData: number;
+  method: 'trial' | 'fronts' | 'search';
+  kept: number;
+  frontSizes?: number[];
+}
+/* An optimizer result with no feasible loadout. */
+export interface SolveFailure {
+  ok: false;
+  truncated: boolean;
+  nodes: number;
+  noMeldData: number;
+  method: 'trial' | 'fronts' | 'search';
+  kept: number;
+  frontSizes?: number[];
+}
+/* What solve and optimize return. */
+export type SolveResult = SolveSuccess | SolveFailure;

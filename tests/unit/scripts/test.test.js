@@ -52,7 +52,7 @@ test('changed files: git status lines give the new path of a rename, untracked f
 test('changed files: a source file, a unit test, a smoke check and a build setting each map to their domain', () => {
   const domainsOf = path => domainsOfChange({ path }).domains;
   assert.deepEqual(domainsOf('src/ui/views/gcd.js'), ['math-page']);
-  assert.deepEqual(domainsOf('src/core/optimizer/index.js'), ['solver']);
+  assert.deepEqual(domainsOf('src/core/optimizer/index.ts'), ['solver']);
   assert.deepEqual(domainsOf('scripts/data/regen.py'), ['data']);
   assert.deepEqual(domainsOf('tests/unit/ui/views/set-rows.test.js'), ['set-page']);
   assert.deepEqual(domainsOf('tests/e2e/checks/auto-fill/focus.mjs'), ['auto-fill']);

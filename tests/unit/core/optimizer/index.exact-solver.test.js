@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { JOBS, SLOT_TYPES } from '../../../../src/core/constants.ts';
 import { jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { optimize } from '../../../../src/core/optimizer/index.js';
+import { optimize } from '../../../../src/core/optimizer/index.ts';
 import { rng } from '../../helpers/common.js';
 import { lexCompare, solveExact } from '../../helpers/exact-solver.js';
 

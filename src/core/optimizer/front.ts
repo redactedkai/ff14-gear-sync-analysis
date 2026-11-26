@@ -1,5 +1,5 @@
 /* Optimizer: an exact search by Pareto fronts, for loadouts with limits whose candidate lists are short (after the
-   search's filters: dropShortfalls and reduced-cost fixing in search.js). It builds, from the last slot back, every
+   search's filters: dropShortfalls and reduced-cost fixing in search.ts). It builds, from the last slot back, every
    partial loadout of the slots from i on that no other one beats, and at slot 0 takes the best that meets every limit.
    Where branch and bound must prove that nothing beats the best set found (often the hard part: Dark Knight at level
    90, exactly 2.30, Critical Hit > Determination > Direct Hit, ran 450,000 nodes for a set it had from the start), the
@@ -10,14 +10,43 @@
    same speed: then the one with at least the score and at least every other limited total (a total past its minimum
    counts as the minimum, and so does speed past its minimum when it has no maximum: nothing before it can tell them
    apart; for a total with a maximum only, at most) beats the other, since every way to finish the beaten one finishes
-   the other with no less score and no broken limit. A regain cut's total (search.js, regain.js) is not compared: any
+   the other with no less score and no broken limit. A regain cut's total (search.ts, regain.ts) is not compared: any
    way to finish the beaten one into a loadout meeting the real limits finishes the other into one too, and such a
    loadout always meets the cut. Entries that cannot beat `known` even with the most the earlier slots can add, or
    cannot reach a minimum, go too (Morin and Marsten's bounded dynamic programming). The rules for empty slots are the
    search's: a slot is empty when a chosen piece blocks it (checked on the whole loadout), when it has no candidates,
    or, for the second ring, when no ring has a copy left; the two ring slots are filled together, as a pair (the same
    item twice only with 2 copies). */
-import { blockableTypes, positionMask, slotPositions } from './slot-index.js';
+import type { Candidate, Limit, SlotEntry } from '../types.ts';
+import { blockableTypes, positionMask, slotPositions, type SearchSlot } from './slot-index.ts';
+
+/* One way to fill a stage's slots (frontSearch): the candidates for its positions (null for an empty one), and, once the
+   stage is set up, their score, their total of each limited stat (`vals`) and the slots they block (a position mask).
+   `unfilled`: no candidate there; `emptyBit`: the slot left empty because a chosen piece blocks it. */
+interface Choice {
+  cands: (Candidate | null)[];
+  unfilled?: boolean;
+  emptyBit?: number;
+  score: number;
+  vals: Float64Array;
+  blocks: number;
+}
+/* A partial loadout of the slots from a stage on: its score, limited totals, the slots it leaves empty and the slots its
+   pieces block, and how it was made (the choice of this stage on `next`). */
+interface Entry {
+  score: number;
+  vals: Float64Array;
+  empty: number;
+  blocked: number;
+  choice: Choice | null;
+  next: Entry | null;
+}
+/* What frontSearch returns: the best loadout (null when nothing beats `known`), the entries made, and the front's size after each stage. */
+export interface FrontResult {
+  best: { slots: SlotEntry[]; score: number } | null;
+  entries: number;
+  sizes: number[];
+}
 
 /* The most entries one slot's front may hold, and the most extensions it may try over all slots (front x choices), before
    frontSearch gives up (the caller then searches as before). */
@@ -27,7 +56,7 @@ const FRONT_TRIES = 1000000;
 const FRONT_COMPARES = 30000000;
 
 /**
- * @param slotList  slot sequence (search.js), rings twice in a row, blockable slots after every slot that blocks them
+ * @param slotList  slot sequence (search.ts), rings twice in a row, blockable slots after every slot that blocks them
  * @param posList   candidate list per slot
  * @param limits    [{stat, min, max}] as branchAndBound's
  * @param known     the score to beat (a set already in hand), or -Infinity
@@ -35,12 +64,17 @@ const FRONT_COMPARES = 30000000;
  *          front's size after each stage, last slot first; or null when a front grew too large (FRONT_MOST, FRONT_TRIES,
  *          FRONT_COMPARES) or a limit other than the first band is a band too
  */
-export function frontSearch(slotList, posList, limits, known = -Infinity) {
+export function frontSearch(
+  slotList: readonly SearchSlot[],
+  posList: readonly (readonly Candidate[])[],
+  limits: readonly Limit[],
+  known = -Infinity,
+): FrontResult | null {
   const n = slotList.length;
   const nL = limits.length;
   // each candidate's blocked slots, and every slot some candidate can block, as position masks
   const positions = slotPositions(slotList);
-  const blocksOf = new Map();
+  const blocksOf = new Map<Candidate, number>();
   for (const list of posList) {
     for (const cand of list) {
       if (!blocksOf.has(cand)) {
@@ -54,12 +88,12 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
     if (l.max != null) {
       return Infinity;
     }
-    return l.min > 0 ? l.min : 0;
+    return (l.min as number) > 0 ? (l.min as number) : 0;
   });
   // how entries compare on each limit: a band (speed's, exactK) only between equal totals; a maximum only, less is
   // better; a regain cut not at all (entries past its maximum go, and no loadout meeting the real limits breaks it:
-  // regain.js), the rest more is better. A second band is not supported: the caller then searches
-  const isBand = limits.map(l => l.max != null && l.min > 0);
+  // regain.ts), the rest more is better. A second band is not supported: the caller then searches
+  const isBand = limits.map(l => l.max != null && (l.min as number) > 0);
   const exactK = isBand.indexOf(true);
   if (isBand.lastIndexOf(true) !== exactK) {
     return null;
@@ -73,7 +107,7 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
 
   // stages from the last slot back: one per slot, the two ring slots as one; each stage's choices as
   // {score, vals, blocks, slots: [{cand} per position]}
-  const stages = [];
+  const stages: { from: number; choices: Choice[] }[] = [];
   for (let i = n - 1; i >= 0; i--) {
     if (slotList[i] === 'ring' && i > 0 && slotList[i - 1] === 'ring') {
       // the pairs alone would pass FRONT_TRIES (and building millions of them overflowed the stack below: Scholar at
@@ -87,12 +121,12 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
       continue;
     }
     const list = posList[i];
-    const choices = list.map(a => ({ cands: [a] }));
+    const choices = list.map(a => ({ cands: [a] }) as Choice);
     if (!list.length) {
-      choices.push({ cands: [null], unfilled: true });
+      choices.push({ cands: [null], unfilled: true } as Choice);
     }
     if (blockable & (1 << i)) {
-      choices.push({ cands: [null], emptyBit: 1 << i });
+      choices.push({ cands: [null], emptyBit: 1 << i } as Choice);
     }
     stages.push({ from: i, choices });
   }
@@ -109,7 +143,7 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
         for (let k = 0; k < nL; k++) {
           c.vals[k] += a.eff[limits[k].stat] || 0;
         }
-        c.blocks |= blocksOf.get(a);
+        c.blocks |= blocksOf.get(a) as number;
       }
     }
   }
@@ -139,10 +173,10 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
     before[s] = acc;
   }
 
-  let front = [{ score: 0, vals: new Float64Array(nL), empty: 0, blocked: 0, choice: null, next: null }];
+  let front: Entry[] | null = [{ score: 0, vals: new Float64Array(nL), empty: 0, blocked: 0, choice: null, next: null }];
   let entries = 0,
     tries = 0;
-  const sizes = [];
+  const sizes: number[] = [];
   const work = { compares: 0 }; // entry comparisons in paretoFilter, over all stages
   stages.forEach((st, s) => {
     if (!front) {
@@ -154,7 +188,7 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
       return;
     }
     const room = before[s];
-    const out = [];
+    const out: Entry[] = [];
     for (const e of front) {
       for (const c of st.choices) {
         const score = e.score + c.score;
@@ -168,7 +202,7 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
           const l = limits[k];
           if (l.max != null && total > l.max) {
             ok = false;
-          } else if (l.min > 0 && total + room.vals[k] < l.min) {
+          } else if ((l.min as number) > 0 && total + room.vals[k] < (l.min as number)) {
             ok = false;
           }
           vals[k] = Math.min(capOf[k], total);
@@ -195,7 +229,7 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
     if (e.empty !== (e.blocked & blockable)) {
       continue;
     }
-    if (limits.some((l, k) => l.min > 0 && e.vals[k] < Math.min(capOf[k], l.min))) {
+    if (limits.some((l, k) => (l.min as number) > 0 && e.vals[k] < Math.min(capOf[k], l.min as number))) {
       continue;
     }
     if (e.score > known && (!best || e.score > best.score)) {
@@ -207,9 +241,9 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
   }
 
   // back to slots: follow the entries, each stage's choice filling its positions
-  const slots = new Array(n).fill(null);
-  const chosen = [];
-  for (let e = best, s = stages.length - 1; e?.choice; e = e.next, s--) {
+  const slots: SlotEntry[] = new Array(n).fill(null);
+  const chosen: Candidate[] = [];
+  for (let e: Entry | null = best, s = stages.length - 1; e?.choice; e = e.next, s--) {
     const st = stages[s];
     e.choice.cands.forEach((a, j) => {
       slots[st.from + j] = a ? { cand: a, rank: -1 } : { cand: null, rank: -1 };
@@ -223,7 +257,7 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
     if (slot.cand) {
       return;
     }
-    const by = chosen.find(a => blocksOf.get(a) & (1 << i));
+    const by = chosen.find(a => (blocksOf.get(a) as number) & (1 << i));
     if (by) {
       slot.blockedBy = by;
     }
@@ -234,8 +268,8 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
 /* The legal ring pairs from one list, as the search makes them: two candidates, the second not before the first in the
    list, the same item twice only with 2 copies; a lone ring with the second slot empty only when no pair exists; both
    empty only when the list is. */
-function ringChoices(list) {
-  const pairs = [];
+function ringChoices(list: readonly Candidate[]): Choice[] {
+  const pairs: Choice[] = [];
   for (let x = 0; x < list.length; x++) {
     for (let y = x; y < list.length; y++) {
       const a = list[x],
@@ -243,16 +277,16 @@ function ringChoices(list) {
       if (a.item === b.item && a.copies < 2) {
         continue;
       }
-      pairs.push({ cands: [a, b] });
+      pairs.push({ cands: [a, b] } as Choice);
     }
   }
   if (pairs.length) {
     return pairs;
   }
   if (list.length) {
-    return list.map(a => ({ cands: [a, null] }));
+    return list.map(a => ({ cands: [a, null] }) as Choice);
   }
-  return [{ cands: [null, null] }];
+  return [{ cands: [null, null] } as Choice];
 }
 
 /* The entries no other one beats: same empty and blocked slots (and the same speed under a band, limit `exactK`), at
@@ -264,13 +298,13 @@ function ringChoices(list) {
    FRONT_COMPARES (Black Mage at level 90, item level 660, 2.32 or faster, Critical Hit > Determination > Direct Hit,
    food off: 21 s in this loop before the front gave up on its size, then a 25,000-node search). Null too as soon as
    more than FRONT_MOST are kept. */
-function paretoFilter(entries, exactK, compare, work) {
+function paretoFilter(entries: Entry[], exactK: number, compare: readonly number[], work: { compares: number }): Entry[] | null {
   entries.sort((x, y) => y.score - x.score);
   // the compared totals of an entry, each turned so that more is better
   const compared = compare.flatMap((sign, k) => (sign ? [k] : []));
-  const comparedValue = (e, j) => (j < compared.length ? compare[compared[j]] * e.vals[compared[j]] : 0);
-  const groups = new Map();
-  const kept = [];
+  const comparedValue = (e: Entry, j: number) => (j < compared.length ? compare[compared[j]] * e.vals[compared[j]] : 0);
+  const groups = new Map<string, { stairs: { x: number; y: number }[]; values: number[][] }>();
+  const kept: Entry[] = [];
   for (const e of entries) {
     const key = `${e.empty}|${e.blocked}|${exactK >= 0 ? e.vals[exactK] : ''}`;
     let group = groups.get(key);
@@ -307,7 +341,7 @@ function paretoFilter(entries, exactK, compare, work) {
    y >= the new y (some kept point beats it); otherwise puts the new point in, dropping the points after it that it
    beats (x below it and y <= its y: a run from where it goes), and returns false. One total: y is 0 for every point;
    none: x and y are 0, and the first point beats every later one. */
-function beatenOnStairs(stairs, x, y) {
+function beatenOnStairs(stairs: { x: number; y: number }[], x: number, y: number): boolean {
   // first index with a smaller x
   let lo = 0,
     hi = stairs.length;

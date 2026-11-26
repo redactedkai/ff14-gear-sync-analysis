@@ -18,9 +18,12 @@
    put stones, or a whole piece, against the held keys: the room (most - held) is usually less than one stone. Its
    origin and measured gain: tier-ranking.md, section 4.4. */
 
+import type { Candidate, Limit, Proven } from '../types.ts';
+import type { SearchSlot } from './slot-index.ts';
+
 /* The most `proof.stat` piece `piece` gains by a swap for one of `swaps` that keeps every stat in proof.minStats and,
    under a speed minimum only, its speed (swapsFor already keeps the same speed under a band). 0 when no swap gains. */
-function regainOf(piece, proof, swaps, speedKey) {
+function regainOf(piece: Candidate, proof: Proven, swaps: readonly Candidate[], speedKey: string): number {
   const speedMinimum = proof.speed === 'min';
   const own = piece.eff[proof.stat] || 0;
   let regain = 0;
@@ -48,7 +51,14 @@ function regainOf(piece, proof, swaps, speedKey) {
    Rings: the two ring slots must not end up holding one Unique ring twice, so a ring may only become another meld
    version of itself (piece.versions, which also holds the versions pruning dropped) or a ring with 2 copies. Any two
    such swaps together stay legal. Other slots each hold a different item, so any piece of the list will do. */
-function swapsFor(piece, fullList, isRing, buckets, sameSpeed, speedKey) {
+function swapsFor(
+  piece: Candidate,
+  fullList: readonly Candidate[],
+  isRing: boolean,
+  buckets: Map<string, Candidate[]>,
+  sameSpeed: boolean,
+  speedKey: string,
+): Candidate[] {
   const speed = piece.eff[speedKey] || 0;
   const blocks = piece.blocks.join();
   const key = `${blocks}|${sameSpeed ? speed : ''}`;
@@ -81,9 +91,25 @@ function swapsFor(piece, fullList, isRing, buckets, sameSpeed, speedKey) {
  *          is past a cut's room dropped; dims and limits with the synthetic stats and their maxima ({stat, min: null,
  *          max: most - held, cut: true}) added. The inputs unchanged when no proof applies.
  */
-export function addRegainCuts({ slotList, posList, fullLists, dims, limits, proven, speedKey }) {
+export function addRegainCuts({
+  slotList,
+  posList,
+  fullLists,
+  dims,
+  limits,
+  proven,
+  speedKey,
+}: {
+  slotList: readonly SearchSlot[];
+  posList: Candidate[][];
+  fullLists: readonly (readonly Candidate[])[];
+  dims: string[];
+  limits: Limit[];
+  proven: readonly Proven[];
+  speedKey: string;
+}): { posList: Candidate[][]; dims: string[]; limits: Limit[] } {
   // the room each proof leaves; a proof whose most is below this search's minimum on it (no loadout then) is not used
-  const cuts = [];
+  const cuts: (Proven & { key: string; room: number })[] = [];
   proven.forEach((proof, j) => {
     const held = limits.find(l => l.stat === proof.stat)?.min || 0;
     if (proof.most - held >= 0) {
@@ -96,14 +122,14 @@ export function addRegainCuts({ slotList, posList, fullLists, dims, limits, prov
   const sameSpeed = cuts.some(c => c.speed === 'band');
 
   // each list once (the ring slots share theirs): every candidate with its regain per cut, those past a room dropped
-  const done = new Map();
+  const done = new Map<Candidate[], Candidate[]>();
   const cutLists = posList.map((list, i) => {
     if (done.has(list)) {
-      return done.get(list);
+      return done.get(list) as Candidate[];
     }
     const isRing = slotList[i] === 'ring';
-    const buckets = new Map();
-    const kept = [];
+    const buckets = new Map<string, Candidate[]>();
+    const kept: Candidate[] = [];
     for (const piece of list) {
       const swaps = swapsFor(piece, fullLists[i], isRing, buckets, sameSpeed, speedKey);
       const eff = { ...piece.eff };

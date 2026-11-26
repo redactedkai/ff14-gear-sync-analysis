@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { allMeals, bestFood, foodBonus, foodChoices, gearNeeded, mealRank, withFood } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { mkItem } from '../../../src/core/items.ts';
-import { optimize } from '../../../src/core/optimizer/index.js';
+import { optimize } from '../../../src/core/optimizer/index.ts';
 import { FOODS } from '../../../src/core/tables.ts';
 import { rngInt } from '../helpers/common.js';
 

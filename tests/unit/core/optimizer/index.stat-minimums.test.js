@@ -6,11 +6,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { optimize, prepare, seedStart, solve } from '../../../../src/core/optimizer/index.js';
-import { branchAndBound, dropShortfalls, improveStart } from '../../../../src/core/optimizer/search.js';
-import { frontSearch } from '../../../../src/core/optimizer/front.js';
+import { optimize, prepare, seedStart, solve } from '../../../../src/core/optimizer/index.ts';
+import { branchAndBound, dropShortfalls, improveStart } from '../../../../src/core/optimizer/search.ts';
+import { frontSearch } from '../../../../src/core/optimizer/front.ts';
 import { slotInfo } from '../../../../src/core/items.ts';
-import { pruneForLimits } from '../../../../src/core/optimizer/candidates.js';
+import { pruneForLimits } from '../../../../src/core/optimizer/candidates.ts';
 import { gcdTierAt } from '../../../../src/core/speed.ts';
 import { exhaustive, smallPool } from '../../helpers/exhaustive.js';
 import { rng } from '../../helpers/common.js';
@@ -193,7 +193,7 @@ test('a seed gives the same totals; a seed that is already the best comes back',
 /* The filters before the search (shortfalls, the Lagrangian bound against a seed) and the Pareto fronts, on tight
    cases: bigger pools, a minimum within 5 points of the most the pool reaches and a narrow speed band, against the
    plain search (none of them) on the same candidates. The run also checks that they did something: pieces dropped,
-   and some searches settled in one pass. Since the trial search before the fronts (search.js TRIAL_NODES), most of
+   and some searches settled in one pass. Since the trial search before the fronts (search.ts TRIAL_NODES), most of
    these small cases are settled by it (method 'trial') and never build fronts, so both count. */
 test('tight minimums with a seed: the filters, the trial search and fronts give the plain search totals', () => {
   const rand = rng(5),
@@ -251,7 +251,7 @@ test('a seed that breaks a limit is ignored', () => {
   assert.ok(r.ok && r.totals.det >= det);
 });
 
-/* improveStart (search.js) makes the seed better one swap at a time before the search. Its set must stay a legal
+/* improveStart (search.ts) makes the seed better one swap at a time before the search. Its set must stay a legal
    loadout meeting every limit (each slot a candidate of its list or the seed's own piece, copies kept, a slot empty
    exactly when a chosen piece blocks it) with a score no lower than the seed's; and the search from it must still give
    the plain search's totals. Seeds are the best sets for another stat, usually far from this objective's best (as in
@@ -344,7 +344,7 @@ test('frontSearch gives up on too many ring pairs or too much filtering, without
   assert.ok(performance.now() - t < 30000, `${Math.round(performance.now() - t)} ms`);
 });
 
-/* The fronts on their own (most searches are settled by the trial search before them, search.js TRIAL_NODES), against the
+/* The fronts on their own (most searches are settled by the trial search before them, search.ts TRIAL_NODES), against the
    plain search on the same candidates, for each way paretoFilter compares entries: a speed band with one or two
    minimums (the staircase: at most two compared totals), a speed minimum with two more (each kept entry compared), and
    a speed maximum alone with a minimum (less speed is better). */

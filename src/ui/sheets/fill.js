@@ -98,7 +98,7 @@ export function applyFill(job, gearSet, result) {
 }
 
 /* The line shown when the pinned pieces cannot be worn together. The page does not list the causes (two copies of a Unique
-   piece, more than two rings, two in one slot, or one covering the slot of another); core/optimizer/candidates.js
+   piece, more than two rings, two in one slot, or one covering the slot of another); core/optimizer/candidates.ts
    (buildCandidates) and core/recipe.js explain them where the search throws. */
 export const PINS_CONFLICT_TEXT = 'The pinned pieces cannot be worn together.';
 

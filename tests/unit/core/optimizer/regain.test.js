@@ -1,12 +1,12 @@
-/* Regain cuts (src/core/optimizer/regain.js), as tier ranking uses them: a first search proves the most of one key
+/* Regain cuts (src/core/optimizer/regain.ts), as tier ranking uses them: a first search proves the most of one key
    under a speed rule; a second search holds that key a few points below its most and maximizes another, with the
    proof. On small real pools, with melds (where the cuts work: a stone moved off the held key is a regain), against the
    exhaustive reference (helpers/exhaustive.js), which shares no code with the cuts. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { optimize, prepare, solve } from '../../../../src/core/optimizer/index.js';
-import { addRegainCuts } from '../../../../src/core/optimizer/regain.js';
+import { optimize, prepare, solve } from '../../../../src/core/optimizer/index.ts';
+import { addRegainCuts } from '../../../../src/core/optimizer/regain.ts';
 import { exhaustive, smallPool } from '../../helpers/exhaustive.js';
 import { rng } from '../../helpers/common.js';
 

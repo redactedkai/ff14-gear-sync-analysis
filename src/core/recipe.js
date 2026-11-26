@@ -19,8 +19,8 @@
    `pins`; pinProblems). A set's pinned rows are pins, the other rows are what the solve fills. */
 import { allMeals, bestFood, foodChoices } from './food.ts';
 import { activityCounts, allocatedRelic, filterGear, gearFilter, itemRoutes, poolItemById, wearable, withActivities } from './items.ts';
-import { buildCandidates, fixedCandidate, optimize, pinProblem } from './optimizer/index.js';
-import { realSlotType } from './optimizer/slot-index.js';
+import { buildCandidates, fixedCandidate, optimize, pinProblem } from './optimizer/index.ts';
+import { realSlotType } from './optimizer/slot-index.ts';
 import { itemSyncIlvl } from './piece.ts';
 import { sameMeals, sameResult } from './same-result.js';
 import { evaluateSet, setFromPicks } from './set.ts';

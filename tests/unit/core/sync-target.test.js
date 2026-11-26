@@ -9,7 +9,7 @@ import { JOBS } from '../../../src/core/constants.ts';
 import { capCeiling, levelSyncIlvl, syncTarget } from '../../../src/core/sync-target.ts';
 import { capsFor } from '../../../src/core/formulas.ts';
 import { browseItems, dbStats, kindFactors, parseRow, poolItemFromRow } from '../../../src/core/items.ts';
-import { optimize } from '../../../src/core/optimizer/index.js';
+import { optimize } from '../../../src/core/optimizer/index.ts';
 import { effStats, itemSyncIlvl } from '../../../src/core/piece.ts';
 import { exhaustive, gamePool, loadoutCount } from '../helpers/exhaustive.js';
 import { SLOT_PERMILLE, roundHalfUp } from '../helpers/common.js';

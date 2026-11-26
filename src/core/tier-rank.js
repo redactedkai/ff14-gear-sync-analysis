@@ -15,7 +15,7 @@
    - Each stage that finishes proves the most of its key under its limits; every later search of the meal gets that
      proof (solve's `proven`) and cuts by it (optimizer/regain.js). */
 import { gearNeeded, mealsFor, mealTotals, pickMeal } from './food.ts';
-import { prepare, solve } from './optimizer/index.js';
+import { prepare, solve } from './optimizer/index.ts';
 import { speedForGcd } from './speed.ts';
 import { fastestGcd, foodFields, gearBand, goalSettings } from './target-gcd.js';
 import { rankTierOf, tierStart } from './tiers.ts';

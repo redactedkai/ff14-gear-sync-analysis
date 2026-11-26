@@ -1,15 +1,15 @@
-/* Where one optimize() run spends its time: a replica of buildCandidates (src/core/optimizer/candidates.js) with a timer
+/* Where one optimize() run spends its time: a replica of buildCandidates (src/core/optimizer/candidates.ts) with a timer
    per phase, then the real search. A drift guard checks the replica's candidate lists equal the real ones on every run,
-   so a change to candidates.js that the replica misses fails loudly instead of timing the wrong code.
+   so a change to candidates.ts that the replica misses fails loudly instead of timing the wrong code.
    node scripts/perf/split.mjs [--job SGE] [--sync "cap 660"] [--target <the job's speed key> --tb crit,det] [--melds] [--repeats 20] */
 import { performance } from 'node:perf_hooks';
 import { SLOT_TYPES } from '../../src/core/constants.ts';
 import { WD_KEY, weaponDamage } from '../../src/core/damage-defense.ts';
 import { slotInfo } from '../../src/core/items.ts';
 import { bestMeld } from '../../src/core/meld.ts';
-import { buildCandidates, makeScorer, pruneDominated, rankedKeys, vectorDims } from '../../src/core/optimizer/candidates.js';
+import { buildCandidates, makeScorer, pruneDominated, rankedKeys, vectorDims } from '../../src/core/optimizer/candidates.ts';
 import { effStats, itemSyncIlvl } from '../../src/core/piece.ts';
-import { branchAndBound } from '../../src/core/optimizer/search.js';
+import { branchAndBound } from '../../src/core/optimizer/search.ts';
 import { NODE_LIMIT } from '../../src/core/recipe.js';
 import { flag, listOption, numberOption, option } from './args.mjs';
 import { fullPool, job as ctx, SYNCS } from './workloads.mjs';

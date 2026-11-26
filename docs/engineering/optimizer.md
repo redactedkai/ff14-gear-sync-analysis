@@ -16,7 +16,7 @@ What happens when the user presses Auto-fill on a set page, step by step (each s
 4. **Search the rest.** Fill one slot at a time, shortest list first, best pieces first. At each partly filled gear set, a quick upper bound says how much the empty slots could still add; when even that cannot beat the best full gear set found so far, the whole branch is skipped (branch and bound, section 5). When the search ends, the best gear set found is the best there is, unless the search stopped at its node limit, which the page reports.
 5. **Options on top.** A Target GCD turns into a range the speed stat must stay in (sections 2 and 5); "Spare points to tiebreaks" runs one such search per ranked stat ([tier-ranking.md](tier-ranking.md)).
 
-The code is in `src/core/optimizer/`: `index.js` (`optimize`, the entry point), `candidates.js` (the stats, melds, scores and dominance of steps 1 to 3) and `search.js` (the branch and bound). A piece's stats under sync come from `src/core/piece.ts`, shared with the rest of the page. The page builds the pool itself (section 7), and runs the search in a Web Worker, so the page stays responsive during a long one ([architecture.md, section 9](architecture.md#9-the-optimizers-worker)). [glossary.md](../glossary.md#project-terms) defines the search words (candidate, dominance, incumbent, fathom, node limit).
+The code is in `src/core/optimizer/`: `index.ts` (`optimize`, the entry point), `candidates.ts` (the stats, melds, scores and dominance of steps 1 to 3) and `search.ts` (the branch and bound). A piece's stats under sync come from `src/core/piece.ts`, shared with the rest of the page. The page builds the pool itself (section 7), and runs the search in a Web Worker, so the page stays responsive during a long one ([architecture.md, section 9](architecture.md#9-the-optimizers-worker)). [glossary.md](../glossary.md#project-terms) defines the search words (candidate, dominance, incumbent, fathom, node limit).
 
 How to read the rest: section 1 is the game background and the problem in plain words, section 2 the formulation. Sections 3 to 5 are the algorithm, in the order it runs. Section 6 adds melds, section 7 is how the page uses the engine (its controls and menus are in [ui.md](ui.md)), and sections 8 and 9 are the evidence, timings and limits.
 
@@ -127,9 +127,9 @@ Standard references for these problems are Kellerer, Pferschy and Pisinger (2004
 
 The brute-force reference in the tests copies both rules, so each also has a direct test on a two-item pool (the "policy: ..." tests in the exhaustive test file). Changing one means changing the engine, the reference and those tests together.
 
-**Pinned pieces.** A set can keep pieces and search the rest (`fixed` in `prepare`, `src/core/optimizer/candidates.js` and `index.js`). A pinned piece is one candidate with one meld, the stones it was pinned with (`fixedCandidate`, the same `applyStones` the set's own evaluation uses). The search does not fill its slot: that slot has no list, a pool piece that would cover it is left out, and a slot the pinned piece covers is empty.
+**Pinned pieces.** A set can keep pieces and search the rest (`fixed` in `prepare`, `src/core/optimizer/candidates.ts` and `index.ts`). A pinned piece is one candidate with one meld, the stones it was pinned with (`fixedCandidate`, the same `applyStones` the set's own evaluation uses). The search does not fill its slot: that slot has no list, a pool piece that would cover it is left out, and a slot the pinned piece covers is empty.
 
-With one ring pinned, the other ring is a slot of its own (`FREE_RING` in `slot-index.js`: the search knows only two ring slots as a pair). Its pieces have their copies less the pinned ring's, so a pinned Unique ring is no choice for it. With both pinned there is none. The same Unique ring pinned on both ring rows cannot be worn (`pinProblem`, the copy count the search keeps).
+With one ring pinned, the other ring is a slot of its own (`FREE_RING` in `slot-index.ts`: the search knows only two ring slots as a pair). Its pieces have their copies less the pinned ring's, so a pinned Unique ring is no choice for it. With both pinned there is none. The same Unique ring pinned on both ring rows cannot be worn (`pinProblem`, the copy count the search keeps).
 
 `solve` adds the pinned pieces' points to the totals and takes them off every limit (a speed minimum or band, a stat minimum, a seed, a proven maximum). So a pinned speed stone counts toward a Target GCD, and the searches are the ones of the remaining slots.
 
@@ -186,7 +186,7 @@ $$
 W_2 = 1, \qquad W_1 = R_2 + 1, \qquad W_0 = R_1 W_1 + R_2 + 1 = (R_1 + 1)(R_2 + 1).
 $$
 
-In general $W_q = 1 + \sum_{q' > q} R_{q'} W_{q'}$. With fewer keys, the missing ones are dropped (one key gives $W_0 = 1$). With weapon damage first (section 1) there are up to four keys, weapon damage as $k_0$ and the target and tiebreaks after it; the rule is the same. Only the weapon slot carries weapon damage, so $R_0$ is the spread of the pool's weapons, and the weights above it barely grow. Four keys is the limit (`MAX_KEYS` in `candidates.js`): `makeScorer` throws on a fifth rather than drop it, because a fifth key would push the score past $2^{53}$; more keys belong in tier ranking.
+In general $W_q = 1 + \sum_{q' > q} R_{q'} W_{q'}$. With fewer keys, the missing ones are dropped (one key gives $W_0 = 1$). With weapon damage first (section 1) there are up to four keys, weapon damage as $k_0$ and the target and tiebreaks after it; the rule is the same. Only the weapon slot carries weapon damage, so $R_0$ is the spread of the pool's weapons, and the weights above it barely grow. Four keys is the limit (`MAX_KEYS` in `candidates.ts`): `makeScorer` throws on a fifth rather than drop it, because a fifth key would push the score past $2^{53}$; more keys belong in tier ranking.
 
 **Why this is lexicographic.** Take two gear sets that first differ at key $q$, by at least 1 (stats are integers). The keys below $q$ can change the score difference by at most $\sum_{q' > q} R_{q'} W_{q'} = W_q - 1$. So the score difference is at least $W_q - (W_q - 1) = 1 > 0$, and the gear set that is better on key $q$ always scores higher.
 
@@ -635,14 +635,14 @@ Several gear sets can have exactly the same ranked totals: weapon damage, the ta
 | Concept | File |
 | --- | --- |
 | A piece under sync: its synced item level, effective stats, caps, whether it keeps its melds | `src/core/piece.ts` (`itemSyncIlvl`, `effStats`, `itemCaps`, `meldCaps`, `keepsMelds`) |
-| Item vectors, score weights, dominance pruning, candidate lists; weapon damage as the first key | `src/core/optimizer/candidates.js` (`makeScorer`, `rankedKeys`, `pruneDominated`, `pruneForLimits`, `buildCandidates`) |
+| Item vectors, score weights, dominance pruning, candidate lists; weapon damage as the first key | `src/core/optimizer/candidates.ts` (`makeScorer`, `rankedKeys`, `pruneDominated`, `pruneForLimits`, `buildCandidates`) |
 | A weapon's weapon damage after sync | `src/core/damage-defense.ts` (`weaponDamage`) |
 | Best melds of a piece; meld versions under a speed range | `src/core/meld.ts` (`bestMeld`, `meldVersions`) |
-| Bounds, limit tables, filters before the search, slot order and depth-first branch and bound | `src/core/optimizer/search.js` (`branchAndBound` runs them; functions and constants in note 1 below the table) |
-| Regain cuts (tier ranking) | `src/core/optimizer/regain.js` (`addRegainCuts`) |
-| Pareto fronts (tier ranking's searches) | `src/core/optimizer/front.js` (`frontSearch`) |
-| Slot positions and blocked-slot masks | `src/core/optimizer/slot-index.js` (`slotPositions`, `positionMask`, `blockableTypes`, `typeMask`) |
-| Entry points: candidates once, search many times; which stats may get a minimum | `src/core/optimizer/index.js` (`prepare` with `minStats`, `solve`, `optimize`) |
+| Bounds, limit tables, filters before the search, slot order and depth-first branch and bound | `src/core/optimizer/search.ts` (`branchAndBound` runs them; functions and constants in note 1 below the table) |
+| Regain cuts (tier ranking) | `src/core/optimizer/regain.ts` (`addRegainCuts`) |
+| Pareto fronts (tier ranking's searches) | `src/core/optimizer/front.ts` (`frontSearch`) |
+| Slot positions and blocked-slot masks | `src/core/optimizer/slot-index.ts` (`slotPositions`, `positionMask`, `blockableTypes`, `typeMask`) |
+| Entry points: candidates once, search many times; which stats may get a minimum | `src/core/optimizer/index.ts` (`prepare` with `minStats`, `solve`, `optimize`) |
 | Target GCD: GCD to speed band, meals, haste | `src/core/target-gcd.js` (`optimizeGcd`, `goalSettings`); `src/core/speed.ts` (`speedForGcd`, `hasteFor`); the meal choice `pickMeal` in `src/core/food.ts` |
 | Which slots a job uses | `src/core/job-context.ts` (`activeSlotTypes` in `makeJobContext`) |
 | Sync clamp | `src/core/formulas.ts` (`syncStats`) |
@@ -658,7 +658,7 @@ Several gear sets can have exactly the same ranked totals: weapon damage, the ta
 
 Notes on the table:
 
-1. **`search.js`:**
+1. **`search.ts`:**
    - before the search: `suffixBounds`, `limitTables`, `dropShortfalls`, `improveStart`, `lagrangeBound`, `fixByReducedCost`, `shortListsFirst`;
    - built for the search: `combinedLimitBound` (the smallest of the limit tables), `childGroups` (speed groups), `bandReachTables`, `makeMemo` (state dominance);
    - the search: `prepareSearch` (the filters and slot order), `newSearch` (its one state object), `dfs`, `tryGroups`, `tryInOrder`, `tryChild`; `branchAndBound` runs them;

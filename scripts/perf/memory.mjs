@@ -2,7 +2,7 @@
    the O-full sweep; a dropped pool is freed (the per-item cap cache is a WeakMap).
    node --expose-gc scripts/perf/memory.mjs [--jobs SGE,WAR] */
 import { meldCacheStats } from '../../src/core/meld.ts';
-import { optimize } from '../../src/core/optimizer/index.js';
+import { optimize } from '../../src/core/optimizer/index.ts';
 import { listOption } from './args.mjs';
 import { fullPool, JOB_IDS, job as ctx, objectivesFull, SYNCS } from './workloads.mjs';
 

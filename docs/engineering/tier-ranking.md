@@ -418,10 +418,10 @@ The remaining time is mostly building the candidate lists (meld versions and dom
 | The stages, holds, meals and seeds; each stage's proven maximum | `src/core/tier-rank.js` (`rankByTier`, `provenMost`) |
 | Tier per stat for ranking, tier start | `src/core/tiers.ts` (`rankTierOf`, `tierStart`) |
 | A speed band per meal | `src/core/target-gcd.js` (`gearBand`) |
-| Minimums on any stat, seeds | `src/core/optimizer/index.js` (`prepare`, `solve`) |
-| Pruning with limits; meld versions built once per ranking | `src/core/optimizer/candidates.js` (`pruneForLimits`, `itemVersions` with `versionCache`) |
-| Shortfall filter, Lagrangian bound, reduced-cost fixing, slot order, trial search, the search | `src/core/optimizer/search.js` (`dropShortfalls`, `improveStart`, `lagrangeBound`, `fixByReducedCost`, `shortListsFirst`, all run by `prepareSearch`; `TRIAL_NODES`, `branchAndBound`) |
-| Regain cuts | `src/core/optimizer/regain.js` (`addRegainCuts`) |
-| Pareto fronts, the staircase dominance | `src/core/optimizer/front.js` (`frontSearch`, `paretoFilter`, `beatenOnStairs`) |
+| Minimums on any stat, seeds | `src/core/optimizer/index.ts` (`prepare`, `solve`) |
+| Pruning with limits; meld versions built once per ranking | `src/core/optimizer/candidates.ts` (`pruneForLimits`, `itemVersions` with `versionCache`) |
+| Shortfall filter, Lagrangian bound, reduced-cost fixing, slot order, trial search, the search | `src/core/optimizer/search.ts` (`dropShortfalls`, `improveStart`, `lagrangeBound`, `fixByReducedCost`, `shortListsFirst`, all run by `prepareSearch`; `TRIAL_NODES`, `branchAndBound`) |
+| Regain cuts | `src/core/optimizer/regain.ts` (`addRegainCuts`) |
+| Pareto fronts, the staircase dominance | `src/core/optimizer/front.ts` (`frontSearch`, `paretoFilter`, `beatenOnStairs`) |
 | The page: switch, Solving… and Cancel | `src/core/recipe.js` (`runRecipe`), `src/ui/sheets/fill-settings.js` (`fillRecipe`), `src/ui/solve.js` (`solveView`), `src/ui/elements/set-page/fill-run.ts` (`fill`), `src/ui/elements/set-page/set-page.ts` (`#s-by-tier`, `#sh-cancel`) |
 | Tests | `tests/unit/core/tier-rank.test.js` (reference in `tests/unit/helpers/tier-reference.js`; 360 more cases in `tests/sweep/`, `npm run test:full`), `tests/unit/core/optimizer/index.stat-minimums.test.js`, `tests/unit/core/optimizer/regain.test.js` |

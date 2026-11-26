@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { browseItems, mkItem, poolItemById } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { meldText } from '../../../src/core/meld.ts';
-import { optimize } from '../../../src/core/optimizer/index.js';
+import { optimize } from '../../../src/core/optimizer/index.ts';
 import { evaluateSet, makeSet, setFromPicks } from '../../../src/core/set.ts';
 import CASES from '../helpers/optimizer-view-sets.json' with { type: 'json' };
 

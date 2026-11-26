@@ -7,9 +7,9 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { optimize } from '../../src/core/optimizer/index.js';
+import { optimize } from '../../src/core/optimizer/index.ts';
 import { NODE_LIMIT } from '../../src/core/recipe.js';
-import { buildCandidates, pruneDominated, vectorDims } from '../../src/core/optimizer/candidates.js';
+import { buildCandidates, pruneDominated, vectorDims } from '../../src/core/optimizer/candidates.ts';
 import { flag, option } from './args.mjs';
 import { fullPool, JOB_IDS, job as ctx, objectivesLite, SYNCS } from './workloads.mjs';
 
@@ -24,7 +24,7 @@ if (sha(`${base}/src/data/items.json`) !== sha('src/data/items.json')) {
 
 const imp = p => import(pathToFileURL(resolve(base, 'src', p)).href);
 const B = {
-  optimize: (await imp('core/optimizer/index.js')).optimize,
+  optimize: (await imp('core/optimizer/index.ts')).optimize,
   ctx: (await imp('core/job-context.ts')).makeJobContext,
 };
 const nodesMayDiffer = flag('nodes-may-differ');

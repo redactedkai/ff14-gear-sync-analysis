@@ -7,7 +7,7 @@ import { browseItems, kindFactors, poolItemById, rowStats, slotInfo, slotLabel }
 import { evaluateSet } from '../../../src/core/set.ts';
 import { ROW } from '../../../src/core/constants.ts';
 import { predictRaw, syncStats } from '../../../src/core/formulas.ts';
-import { optimize } from '../../../src/core/optimizer/index.js';
+import { optimize } from '../../../src/core/optimizer/index.ts';
 import { effStats } from '../../../src/core/piece.ts';
 import { exhaustive, gamePool, loadoutCount } from '../helpers/exhaustive.js';
 import { itemRow } from '../helpers/common.js';

@@ -251,7 +251,7 @@ export function domainsOfSource(file) {
 }
 
 // The src/ file a unit test mirrors, or null: tests/unit/ui/views/gcd.test.js gives src/ui/views/gcd.js; a `.concern` is
-// dropped; `index` is a real file in a folder (core/optimizer/index.pinned gives src/core/optimizer/index.js).
+// dropped; `index` is a real file in a folder (core/optimizer/index.pinned gives src/core/optimizer/index.ts).
 export function mirroredModule(testFile, sourceFiles) {
   const parts = testFile.match(/^tests\/unit\/(.+)\/([^/.]+)(?:\.[^/]+)?\.test\.(?:js|ts)$/);
   if (!parts) {

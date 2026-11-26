@@ -8,7 +8,7 @@ import { JOBS } from '../../../../src/core/constants.ts';
 import { GEAR_GROUPS } from '../../../../src/core/gear-groups.ts';
 import { jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { optimize } from '../../../../src/core/optimizer/index.js';
+import { optimize } from '../../../../src/core/optimizer/index.ts';
 import { rng } from '../../helpers/common.js';
 import { lexCompare } from '../../helpers/exact-solver.js';
 

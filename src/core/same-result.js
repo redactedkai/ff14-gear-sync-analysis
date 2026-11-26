@@ -16,7 +16,7 @@
 import { WD_KEY } from './damage-defense.ts';
 import { foodBonus, withFood } from './food.ts';
 import { equipLevel, slotInfo } from './items.ts';
-import { vectorDims } from './optimizer/index.js';
+import { vectorDims } from './optimizer/index.ts';
 import { rankTierOf } from './tiers.ts';
 
 /* What a set does, from gear totals ({stat key: points}, and weapon damage under WD_KEY) with the meal's bonus:

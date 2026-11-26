@@ -29,7 +29,7 @@ import { statBase } from '../../src/core/base-stats.ts';
 import { allMeals, foodBonus } from '../../src/core/food.ts';
 import { browseItems, equipLevel, poolItemFromRow } from '../../src/core/items.ts';
 import { makeJobContext } from '../../src/core/job-context.ts';
-import { optimize } from '../../src/core/optimizer/index.js';
+import { optimize } from '../../src/core/optimizer/index.ts';
 import { capCeiling } from '../../src/core/sync-target.ts';
 import { MAX_LEVEL } from '../../src/core/tables.ts';
 import ITEM_FORMAT from '../../src/core/item-format.json' with { type: 'json' };
