@@ -5,7 +5,7 @@ import '../../../src/ui/elements/gear-browser/slot-menu.ts';
 import '../shared/layer-elements.ts';
 import { APP_MENU_LABEL } from '../shared/layer-elements.story.js';
 import { ANY_SLOT_KEY, ANY_SLOT_LABEL } from '../../../src/ui/elements/gear-browser/slot-menu-names.ts';
-import { overlays } from '../../../src/ui/overlays.js';
+import { overlays } from '../../../src/ui/overlays.ts';
 import { recordEvents } from '../gallery/record.js';
 
 /* The accessible names the stories and their specs share, written once: the search box beside the button and the page menu. */

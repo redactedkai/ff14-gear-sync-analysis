@@ -5,7 +5,7 @@
      element sends `food-open` (whether the menu is open: the page builds `menu` only while it is, since it is a big list) and
      `meal-pick` (the key of the meal picked, or null for No food); it never reads a store;
    - the menu holds a search box, the stat pills, the "Best for goal" switch (while some meal is tagged), a Sort row (while a pill is on)
-     and the list of meals by expansion (food-menu-model.ts has the state; views/meal-menu.js the filters). The list is drawn in steps
+     and the list of meals by expansion (food-menu-model.ts has the state; views/meal-menu.ts the filters). The list is drawn in steps
      (a window of rows first, the rest one step per frame while the menu stays open: views/limit-rows.ts);
    - opened, the search box takes the focus and the list scrolls to the meal the row shows;
    - inside the Auto-fill settings popover the menu is a child layer of it (filter-popover.ts). */
@@ -22,6 +22,7 @@ import {
   FoodMenuModel,
   MEAL_PICK_EVENT,
   type MealMenuData,
+  type MealListView,
   type MealRow,
   mealKeyOfClick,
 } from './food-menu-model.ts';
@@ -213,7 +214,7 @@ export class GsaFoodMenu extends LitElement {
       </div>`;
   }
 
-  private renderSort(sorts: { key: string; label: string }[]) {
+  private renderSort(sorts: MealListView['sorts']) {
     const model = this.model;
     if (sorts.length === 0) {
       return nothing;

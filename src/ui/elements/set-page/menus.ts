@@ -5,13 +5,13 @@ import type { StatKey } from '../../../core/types.ts';
 import { jobGear } from '../../../core/items.ts';
 import { drawInSteps } from '../../draw-in-steps.ts';
 import { FIRST_ROWS, limitRows, ROWS_PER_STEP } from '../../views/limit-rows.ts';
-import { piecePickerView } from '../../views/piece-menu.js';
-import { materiaMenuView } from '../../views/stone-menu.js';
+import { piecePickerView } from '../../views/piece-menu.ts';
+import { materiaMenuView } from '../../views/stone-menu.ts';
 import type { SwitchPick } from '../sheets/switch-menu.ts';
 import type { PageSession } from './session.ts';
 import type { JobContext } from './session-types.ts';
 
-/* The piece picker's view as the views build it (views/piece-menu.js piecePickerView), whole or cut to the rows drawn so far. */
+/* The piece picker's view as the views build it (views/piece-menu.ts piecePickerView), whole or cut to the rows drawn so far. */
 type PickerView = ReturnType<typeof piecePickerView>;
 
 /* A menu's gap to the window's bottom edge and to the pinned header (px). */

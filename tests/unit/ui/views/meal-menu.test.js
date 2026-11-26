@@ -1,4 +1,4 @@
-/* The Food row's menu of a set page (src/ui/views/meal-menu.js): its meals by expansion and what each adds on the set's
+/* The Food row's menu of a set page (src/ui/views/meal-menu.ts): its meals by expansion and what each adds on the set's
    gear, the pills, search, stat line and sort, and the empty list's advice. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -15,9 +15,9 @@ import {
   mealPillOff,
   mealsPassing,
   sortMeals,
-} from '../../../../src/ui/views/meal-menu.js';
-import { setMealMenuView } from '../../../../src/ui/views/set-meal-menu.js';
-import { evaluateInSheet } from '../../../../src/ui/views/set-totals.js';
+} from '../../../../src/ui/views/meal-menu.ts';
+import { setMealMenuView } from '../../../../src/ui/views/set-meal-menu.ts';
+import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
 import { sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 import { makeApp, solveOf } from '../../helpers/views.js';
 

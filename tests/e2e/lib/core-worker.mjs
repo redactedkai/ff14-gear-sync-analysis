@@ -54,7 +54,7 @@ export function coreFiltered(jobId, sync, target, f) {
   return { all, searched: pool.length, on };
 }
 
-// A set's default Auto-fill settings as a recipe (ui/views/set-page.js defaultFillSettings, typed in here): the main stat, no
+// A set's default Auto-fill settings as a recipe (ui/views/set-page.ts defaultFillSettings, typed in here): the main stat, no
 // tiebreak, materia on, food on, any GCD, spare points to tiebreaks on, every expansion, the default "Gear categories" boxes
 // and the market board, no item level range, the equip level filter at the level cap.
 const DEFAULT_RECIPE = {

@@ -24,7 +24,7 @@ const piece = number => ({
 });
 const PIECES = Array.from({ length: PIECE_COUNT }, (_, index) => piece(index + 1));
 
-/* The picker for the search `query`, as views/piece-menu.js builds it: every piece whose name has the text, by expansion. */
+/* The picker for the search `query`, as views/piece-menu.ts builds it: every piece whose name has the text, by expansion. */
 function pickerFor(query) {
   const text = query.trim().toLowerCase();
   const shown = PIECES.filter(item => item.name.toLowerCase().includes(text));

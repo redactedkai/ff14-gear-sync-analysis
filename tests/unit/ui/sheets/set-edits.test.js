@@ -2,7 +2,7 @@
    pin. Expected values come from the items' published facts (slots, Unique rings, materia grades), not from the code. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { piecePickerView } from '../../../../src/ui/views/piece-menu.js';
+import { piecePickerView } from '../../../../src/ui/views/piece-menu.ts';
 import { jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { placePiece, withMeal, withPin, withStone, withoutStone } from '../../../../src/ui/sheets/set-edits.ts';

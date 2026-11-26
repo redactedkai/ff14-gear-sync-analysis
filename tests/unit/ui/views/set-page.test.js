@@ -1,4 +1,4 @@
-/* The view a set page draws (src/ui/views/set-page.js) over a real sheet store: built once per change, however often it is read;
+/* The view a set page draws (src/ui/views/set-page.ts) over a real sheet store: built once per change, however often it is read;
    the Food menu only when read. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

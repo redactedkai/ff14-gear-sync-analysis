@@ -3,7 +3,8 @@
    settings. The views the page draws are in set-page-types.ts; the store's state in ui/store/app-state.ts. */
 import type { makeJobContext } from '../../../core/job-context.ts';
 import type { Solver } from '../../solver.ts';
-import type { AppStore, Suggestion } from '../../store/app-state.ts';
+import type { AppStore } from '../../store/app-state.ts';
+import type { Declined, SuggestedSet } from '../../views/set-suggestion.ts';
 import type { SheetsFacade } from '../../store/sheets-facade.ts';
 
 /* The job's names, stats and keys (core/job-context.ts makeJobContext). */
@@ -42,17 +43,14 @@ export interface SelectOption {
 /* One row of a gear set's pieces, the pins of a gear set, and a gear set as the set page reads it (sheets/saved-types.ts). */
 export type { SavedRow as GearRow, GearPins, SavedGearSet as PageGearSet } from '../../sheets/saved-types.ts';
 
-/* What the page makes of the solver's reply to an Auto-fill (views/set-suggestion.js fillAnswerView): a `suggestion` to show; a
+/* What the page makes of the solver's reply to an Auto-fill (views/set-suggestion.ts fillAnswerView): a `suggestion` to show; a
    `badpin` (pins the set cannot keep: the lines to say, the rows that stay pinned and the ones dropped, whether the meal's pin is
    dropped, and the line naming what was unpinned); or a `failed` answer with its line. */
-export type FillAnswer =
-  | { kind: 'suggestion'; suggested: Suggestion['suggested'] }
-  | {
-      kind: 'badpin';
-      messages: string[];
-      pinnedRows: number[];
-      droppedRows: number[];
-      mealDropped: boolean;
-      droppedText: string;
-    }
-  | { kind: 'failed'; text: string };
+export type { FillAnswer } from '../../views/set-suggestion.ts';
+
+/* The Auto-fill result waiting for Apply or Discard as the page reads it: the store's `suggestion` with `suggested` as
+   views/set-suggestion.ts suggestionOf makes it and `declined` the Take boxes switched off. */
+export interface PageSuggestion {
+  readonly suggested: SuggestedSet;
+  readonly declined: Declined;
+}

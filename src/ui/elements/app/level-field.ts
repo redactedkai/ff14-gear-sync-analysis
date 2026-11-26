@@ -14,7 +14,7 @@
 import { LitElement, type PropertyValues, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { levelTextBad } from '../../level-cap.ts';
-import { numberBox } from '../../number-field.js';
+import { numberBox } from '../../number-field.ts';
 import { levelFieldView } from '../../views/cap-field.ts';
 import { shownNumber } from '../shared/number-box.ts';
 import { capFlagTemplate } from './cap-flag.ts';
@@ -73,7 +73,7 @@ export class GsaLevelField extends LitElement {
     this.box = this.makeBox();
   }
 
-  /* The number box (number-field.js) from 1 to the job's level cap. */
+  /* The number box (number-field.ts) from 1 to the job's level cap. */
   private makeBox() {
     return numberBox(
       () => this.value,

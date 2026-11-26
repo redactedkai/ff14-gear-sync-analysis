@@ -1,6 +1,6 @@
-/* An Auto-fill suggestion on a set page (src/ui/views/set-suggestion.js): the rows an Auto-fill's answer changes with their Take
+/* An Auto-fill suggestion on a set page (src/ui/views/set-suggestion.ts): the rows an Auto-fill's answer changes with their Take
    boxes, the set as taken, the Now and After header, the Apply text, the table rows with the Take boxes
-   (set-rows.js), and the answers that are no suggestion (bad pins, no set). Real Sage pieces: the saved set is the
+   (set-rows.ts), and the answers that are no suggestion (bad pins, no set). Real Sage pieces: the saved set is the
    fixture's crafted item level 115 set; the "answer" swaps the bracelet for the Ironworks Bracelet of Healing (item
    level 120), changes the head's stones and adds a meal. */
 import { test } from 'node:test';
@@ -10,8 +10,8 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { defaultFillSettings } from '../../../../src/ui/sheets/fill-settings.ts';
 import { unpinnedText } from '../../../../src/ui/sheets/fill.ts';
 import { MEAL_ROW_LABEL } from '../../../../src/ui/sheets/saved-set.ts';
-import { evaluateInSheet, setFigures } from '../../../../src/ui/views/set-totals.js';
-import { setRowsView } from '../../../../src/ui/views/set-rows.js';
+import { evaluateInSheet, setFigures } from '../../../../src/ui/views/set-totals.ts';
+import { setRowsView } from '../../../../src/ui/views/set-rows.ts';
 import {
   STEP_LIMIT_TEXT,
   SUGGESTION_LEAVE_TEXT,
@@ -20,7 +20,7 @@ import {
   suggestionOf,
   suggestionView,
   takenSet,
-} from '../../../../src/ui/views/set-suggestion.js';
+} from '../../../../src/ui/views/set-suggestion.ts';
 import { hasNumber } from '../../helpers/common.js';
 import { SAGE_IDS, piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 

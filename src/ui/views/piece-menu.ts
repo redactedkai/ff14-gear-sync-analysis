@@ -5,9 +5,11 @@ import { allocatedRelic, categoryOf, equipLevel, expansionOf, meldInfo, searchMa
 import { meldSlots } from '../../core/meld.ts';
 import { plural } from '../text.ts';
 import { uniqueTaken } from '../sheets/set-edits.ts';
+import type { JobContext, PoolItem, SlotType } from '../../core/types.ts';
+import type { SavedGearSet, SavedRow } from '../sheets/saved-types.ts';
 
 /* "2 slots" or "2+3 slots" (guaranteed + overmeld), "no materia slots", for a picker line. */
-function slotsText(item) {
+function slotsText(item: PoolItem): string {
   const info = meldInfo(item);
   if (!info?.slots) {
     return 'no materia slots';
@@ -17,7 +19,7 @@ function slotsText(item) {
 }
 
 /* What a piece's line in the picker shows apart from the set: the same for every open of the picker. */
-function staticFacts(job, item) {
+function staticFacts(job: JobContext, item: PoolItem) {
   const lvl = equipLevel(item) ?? 0;
   const subs = job.substats.filter(s => item.stats[s]).map(s => `${job.short[s]} ${item.stats[s]}`);
   let statLine = subs.join(' · ');
@@ -43,12 +45,15 @@ function staticFacts(job, item) {
   };
 }
 
+/* What a piece's line in the picker shows apart from the set (staticFacts). */
+type PieceFact = ReturnType<typeof staticFacts>;
+
 /* The picker's pieces for one slot, built once per `gear` array and slot (the sorting and the lines were most of the
    picker's view work, redone on every read of it): gear array (WeakMap, so a job's list can be dropped) -> slot ->
    {facts: staticFacts of each piece of the slot, by expansion newest first, each newest first}. The facts hold no state
    of the set; piecePickerView adds it. Kept out of the store (big data: CLAUDE.md). */
-const slotFactsCache = new WeakMap();
-function slotFacts(job, gear, slot) {
+const slotFactsCache = new WeakMap<readonly PoolItem[], Map<SlotType, PieceFact[]>>();
+function slotFacts(job: JobContext, gear: readonly PoolItem[], slot: SlotType): PieceFact[] {
   let bySlot = slotFactsCache.get(gear);
   if (!bySlot) {
     bySlot = new Map();
@@ -61,12 +66,12 @@ function slotFacts(job, gear, slot) {
       .sort((a, b) => b.lvl - a.lvl || b.ilvl - a.ilvl || a.name.localeCompare(b.name));
     bySlot.set(slot, facts);
   }
-  return bySlot.get(slot);
+  return bySlot.get(slot) as PieceFact[];
 }
 
 /* The note after a piece's name for a Unique piece: '' for one that is not, else whether the other ring row holds it
    (`taken`). */
-function uniqueTextOf(fact, taken) {
+function uniqueTextOf(fact: Pick<PieceFact, 'unique'>, taken: boolean): string {
   if (!fact.unique) {
     return '';
   }
@@ -75,7 +80,7 @@ function uniqueTextOf(fact, taken) {
 
 /* The line under the picker's list when no piece shows: '' while some do, else why none does (the search matches none,
    or the job has no piece for the slot). */
-function emptyTextOf(matching, forSlot, query, slotName) {
+function emptyTextOf(matching: readonly unknown[], forSlot: readonly unknown[], query: string, slotName: string): string {
   if (matching.length) {
     return '';
   }
@@ -88,7 +93,7 @@ function emptyTextOf(matching, forSlot, query, slotName) {
 /* The set's part of a piece's line in the picker of row `index`: taken (a Unique ring worn in the other ring row), on (the
    row holds it), and what the template shows of them: onClass (the row's class while it is on), uniqueText (the Unique
    note, '' for a piece that is not), so the template decides nothing per row. */
-function setFacts(fact, row, job, gearSet, index) {
+function setFacts(fact: PieceFact, row: SavedRow, job: JobContext, gearSet: SavedGearSet, index: number) {
   const taken = fact.unique && uniqueTaken(job, gearSet, index, fact.key);
   return {
     taken,
@@ -104,7 +109,7 @@ function setFacts(fact, row, job, gearSet, index) {
    (gameId), name, hq, category, unique, taken (a Unique ring in the other ring row), line ("CRT 306 · DET 214 · 2
    slots"), levels ("640, lvl 90"), on}]}], count (the pieces the search leaves), emptyText (the
    search leaves nothing, or '' ), footText ("412 pieces")}. */
-export function piecePickerView(job, gear, gearSet, index, query) {
+export function piecePickerView(job: JobContext, gear: readonly PoolItem[], gearSet: SavedGearSet, index: number, query: string) {
   const row = gearSet.pieces[index];
   const forSlot = slotFacts(job, gear, row.slot);
   const matching = forSlot.filter(fact => searchMatches(fact.search, query));

@@ -64,8 +64,8 @@ A **piece row** is `{ slot, gameId, stones }`; an empty row is `{ slot }`. The g
 
 **`bestMeals`** is a hint the page shows ("best for goal" on the Food row and the Food menu, [ui.md](ui.md#the-food-rows-menu)).
 
-- Saved: Apply on an Auto-fill result saves it (`views/set-suggestion.js` `appliedFields`: `found.food.tagged` of `core/recipe.ts` `runRecipe`, null with Food off) only when nothing is declined. A declined Take box means the set is not as Auto-fill made it.
-- Kept: it stays whichever meal the set holds (`views/meal-menu.js` `mealBestKeys`). Pin changes keep it. Copy set keeps it, and Copy sheet keeps it only for the same job, level and sync. An Apply on a manual draft of the meal or the pins alone keeps it.
+- Saved: Apply on an Auto-fill result saves it (`views/set-suggestion.ts` `appliedFields`: `found.food.tagged` of `core/recipe.ts` `runRecipe`, null with Food off) only when nothing is declined. A declined Take box means the set is not as Auto-fill made it.
+- Kept: it stays whichever meal the set holds (`views/meal-menu.ts` `mealBestKeys`). Pin changes keep it. Copy set keeps it, and Copy sheet keeps it only for the same job, level and sync. An Apply on a manual draft of the meal or the pins alone keeps it.
 - Dropped (set to null): by Apply on a manual draft that changes a piece or a stone, by any change of the set's Auto-fill settings, and by a change of the sheet's level or sync.
 - An Auto-fill with nothing to change saves it as soon as the Auto-fill ends. Apply is off, so nothing else is saved (`elements/set-page/fill-run.ts` `endFill`).
 - Reading: it is not checked when read. A damaged value is read as none and dropped (`sheets/ops.ts` `repairSheet`); a record from before the field has none.
@@ -97,7 +97,7 @@ The Gear browser and How the math works each keep their own Job and sync panel a
 
 ## A sheet's clan and party bonus
 
-The settings row of the sheet page has two more boxes, "Race / Clan" and "Party bonus", at its right end. They are saved with the sheet and change the totals of all its gear sets (the main stat and Vitality: `core/clan-bonus.ts`; the totals are `views/set-totals.js`). They are display only: Auto-fill and the optimizer never read them, so a change leaves each set's `bestMeals` as it is (a change of level or sync drops them).
+The settings row of the sheet page has two more boxes, "Race / Clan" and "Party bonus", at its right end. They are saved with the sheet and change the totals of all its gear sets (the main stat and Vitality: `core/clan-bonus.ts`; the totals are `views/set-totals.ts`). They are display only: Auto-fill and the optimizer never read them, so a change leaves each set's `bestMeals` as it is (a change of level or sync drops them).
 
 - `store.setClan(name)` and `store.setPartyRoles(value)` (both through `editBonus`) save the open sheet like any setting: refused while an Auto-fill runs (`LOCKED_TEXT`), nothing written when the value is the one held, a failed save keeps the edit in memory. A clan that is not a clan's name is no clan; party roles are held to a whole number 0 to 5.
 - Copy sheet copies both, whatever job the copy is for: they belong to the player, not the job.
@@ -123,7 +123,7 @@ A pinned row or meal is one Auto-fill keeps. A piece or stone chosen by hand is 
 
 Nothing proposed is saved until Apply.
 
-- A **manual draft**: a piece, stone or meal chosen by hand. The set page shows Now and After and counts the changes; Apply saves them, Discard drops them. Auto-fill is off during a draft. A piece that covers other slots (a 2H weapon the Off-hand, a cloak the Head) picked over held pieces in those rows also empties them in the draft, so Discard brings both back; a piece for a covered row is refused and its control is disabled. A saved set that holds both is left as saved, with no note; an Auto-fill Apply never leaves both (the search takes a 1H weapon beside a pinned shield and leaves the Off-hand empty beside a 2H weapon; a pinned 2H weapon with a pinned shield is a pin conflict; when a suggestion is taken in part, a covered Off-hand's Take box follows the weapon's and is dimmed and disabled, `views/set-suggestion.js` `takeStateOf`).
+- A **manual draft**: a piece, stone or meal chosen by hand. The set page shows Now and After and counts the changes; Apply saves them, Discard drops them. Auto-fill is off during a draft. A piece that covers other slots (a 2H weapon the Off-hand, a cloak the Head) picked over held pieces in those rows also empties them in the draft, so Discard brings both back; a piece for a covered row is refused and its control is disabled. A saved set that holds both is left as saved, with no note; an Auto-fill Apply never leaves both (the search takes a 1H weapon beside a pinned shield and leaves the Off-hand empty beside a 2H weapon; a pinned 2H weapon with a pinned shield is a pin conflict; when a suggestion is taken in part, a covered Off-hand's Take box follows the weapon's and is dimmed and disabled, `views/set-suggestion.ts` `takeStateOf`).
 - A **Auto-fill suggestion**: the set as Auto-fill would leave it. Each changed row and the meal have a Take box; Apply saves what is taken, Discard drops it all.
 
 The draft's count and the suggestion's count go by the same row comparison (`sameRow`). Leaving the set page with a draft, a running Auto-fill or a waiting result asks first (Keep editing or Discard and leave; for a result, Keep reviewing). A tab link that leaves the Sheets tab asks the same question (`AppRootModel.goTab`, `src/ui/elements/app/app-root-model.ts`).

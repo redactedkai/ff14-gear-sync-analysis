@@ -15,6 +15,7 @@
      grades" or "Best grades only"); the element closes itself on a pick and on Remove;
    - the open layer is registered with the page's overlay manager (the bridge), so opening another menu closes it, a change of
      screen closes it, and one Escape closes one layer. */
+import type { materiaMenuView } from '../../views/stone-menu.ts';
 import * as popover from '@zag-js/popover';
 import { LitElement, html, nothing } from 'lit';
 import { createOverlayBridge } from '../shared/overlay-bridge.ts';
@@ -34,33 +35,12 @@ const FIRST_GRADE_SELECTOR = '.matgrid button:not(:disabled)';
 /* The width of the stat-name column of a grade grid, in px (the grade columns share the rest). */
 const STAT_COLUMN_PX = 36;
 
+/* The materia menu's view, as `materiaMenuView` in src/ui/views/stone-menu.ts builds it (its comment names every field). */
+export type MateriaMenu = ReturnType<typeof materiaMenuView>;
+
 /* One cell of a grade grid: `ok` false when the slot cannot take the grade, `on` the stone in the slot, `fit` 'none' when the
    stat is at the piece's cap and 'part' when only part of the stone fits. */
-export interface MateriaCell {
-  grade: number;
-  text: string;
-  ok: boolean;
-  on: boolean;
-  fit: string;
-}
-
-/* The materia menu's view, as `materiaMenuView` in src/ui/views/stone-menu.js builds it (its comment names every field). */
-export interface MateriaMenu {
-  title: string;
-  bands: {
-    key: number;
-    columns: { grade: number; roman: string; ok: boolean; odds: string }[];
-    rows: { stat: string; short: string; cells: MateriaCell[] }[];
-  }[];
-  columns: number;
-  hasStone: boolean;
-  canRemove: boolean;
-  removeNote: string;
-  allText: string;
-  highNote: string;
-  showOdds: boolean;
-  nqNote: string;
-}
+export type MateriaCell = MateriaMenu['bands'][number]['rows'][number]['cells'][number];
 
 /* The Zag popover of `host`: its props and the attributes of each part, and the tie to the page's overlay manager. */
 function makeZag(host: GsaMateriaMenu) {

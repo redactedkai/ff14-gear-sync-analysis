@@ -9,7 +9,7 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { ITEMS } from '../../../../src/core/tables.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { defaultBrowse } from '../../../../src/ui/state.ts';
-import { gearView } from '../../../../src/ui/views/gear.js';
+import { gearView } from '../../../../src/ui/views/gear.ts';
 import { rng } from '../../helpers/common.js';
 
 const CASES = 250;

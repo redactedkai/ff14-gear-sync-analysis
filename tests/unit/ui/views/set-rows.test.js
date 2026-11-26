@@ -1,4 +1,4 @@
-/* A saved set's table (src/ui/views/set-rows.js): the rows the job uses, the pieces' facts, materia chips, cap marks, rank
+/* A saved set's table (src/ui/views/set-rows.ts): the rows the job uses, the pieces' facts, materia chips, cap marks, rank
    badges, pin flags, the Food row and the empty states. Real items (see helpers/sheet-fixtures.js); the stats are
    compared with the raw item data and the materia values. */
 import { test } from 'node:test';
@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 import { allMeals } from '../../../../src/core/food.ts';
 import { poolItemById } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { pieceName, rankBadges, setRowsView } from '../../../../src/ui/views/set-rows.js';
-import { evaluateInSheet } from '../../../../src/ui/views/set-totals.js';
+import { pieceName, rankBadges, setRowsView } from '../../../../src/ui/views/set-rows.ts';
+import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
 import { SAGE_IDS, piece, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.js';
 
 const sage = makeJobContext('SGE');

@@ -6,12 +6,15 @@ import { fillPlan } from '../sheets/fill.ts';
 import { fillSettingsOf, goalText } from '../sheets/fill-settings.ts';
 import { holdsPiece } from '../sheets/saved-set.ts';
 import { deepFreeze, viewCache } from '../view-cache.ts';
-import { draftView, samePieces } from './set-draft.js';
-import { mealBestKeys } from './meal-menu.js';
-import { setMealMenuView } from './set-meal-menu.js';
-import { setRowsView } from './set-rows.js';
-import { suggestionView } from './set-suggestion.js';
-import { bonusNote, evaluateInSheet, figureColumns, setFigures, setTotalsView } from './set-totals.js';
+import { draftView, samePieces } from './set-draft.ts';
+import { mealBestKeys } from './meal-menu.ts';
+import { setMealMenuView } from './set-meal-menu.ts';
+import { setRowsView } from './set-rows.ts';
+import { suggestionView } from './set-suggestion.ts';
+import { bonusNote, evaluateInSheet, figureColumns, setFigures, setTotalsView } from './set-totals.ts';
+import type { PageSuggestion } from '../elements/set-page/session-types.ts';
+import type { SavedGearSet, SavedSheet } from '../sheets/saved-types.ts';
+import type { HeaderRow } from './set-draft.ts';
 
 /* The line shown after a click on the table while an Auto-fill result waits. */
 export const LOCKED_TABLE_TEXT = 'Pieces and stones can be changed after Apply or Discard.';
@@ -31,21 +34,21 @@ export const NO_PIECES_SHORT = 'No pieces to search';
 /* A number per object, for a cache key that names a draft or a suggestion without serializing it (0 for none). Both are
    replaced on every change, never changed in place (the edits in sheets/set-edits.ts and setTake return new objects),
    so the same object always holds the same set. */
-const objectNumbers = new WeakMap();
+const objectNumbers = new WeakMap<object, number>();
 let nextObjectNumber = 1;
-function objectNumber(value) {
+function objectNumber(value: object | null | undefined): number {
   if (value == null) {
     return 0;
   }
   if (!objectNumbers.has(value)) {
     objectNumbers.set(value, nextObjectNumber++);
   }
-  return objectNumbers.get(value);
+  return objectNumbers.get(value) as number;
 }
 
 /* The set page view's cache key: the sheet store's change counter, the saved set's id, the draft and the suggestion.
    The view is read by about 70 bindings of the page on each change, so the key is made without serializing. */
-function viewKey(rev, saved, draft, suggestion) {
+function viewKey(rev: number, saved: Pick<SavedGearSet, 'id'>, draft: object | null, suggestion: object | null): string {
   return `${rev}|${saved.id}|${objectNumber(draft)}|${objectNumber(suggestion)}`;
 }
 
@@ -55,7 +58,12 @@ function viewKey(rev, saved, draft, suggestion) {
    saved set: {label, disabled, count}), goalLine ("MND › CRT", '' while the set has no goal), apply {text, disabled} in a draft or a
    suggestion (null at rest), leaveText, draft ({count} in a draft), suggest ({total, taken, appliedNote, emptyNote} with a
    suggestion), bonusNote}. `mealSource` is what the Food menu is built from (setMealMenuView): {context, shown, bestKeys}. */
-export function buildSetPageView(sheet, saved, draft, suggestion) {
+export function buildSetPageView(
+  sheet: SavedSheet,
+  saved: SavedGearSet,
+  draft: Readonly<SavedGearSet> | null,
+  suggestion: PageSuggestion | null,
+) {
   const job = makeJobContext(sheet.job);
   const plan = fillPlan(job, saved);
   // the goal Auto-fill would use: the set's own Auto-fill settings, or the defaults while it has none (the goal line and the
@@ -63,17 +71,17 @@ export function buildSetPageView(sheet, saved, draft, suggestion) {
   const goal = fillSettingsOf(job, saved).goal;
 
   // 1. the set shown and how it differs from the saved one
-  let mode = 'rest';
-  let shown = saved;
+  let mode: 'rest' | 'draft' | 'suggestion' = 'rest';
+  let shown: SavedGearSet = saved;
   // the meals tagged "best for goal": the saved list; a draft that changes only the meal or the pins keeps it, one that
   // changes a piece or a stone does not (nor does a suggestion)
   let bestKeys = mealBestKeys(saved);
-  let options = { goal, bestKeys };
-  let headRows;
-  let apply = null;
+  let options: Parameters<typeof setRowsView>[2] = { goal, bestKeys };
+  let headRows: HeaderRow[] | undefined;
+  let apply: { text: string; disabled: boolean } | null = null;
   let leaveText = '';
-  let suggest = null;
-  let draftView_ = null;
+  let suggest: ReturnType<typeof suggestionView> | null = null;
+  let draftView_: ReturnType<typeof draftView> | null = null;
   if (suggestion) {
     mode = 'suggestion';
     suggest = suggestionView(sheet, saved, suggestion.suggested, suggestion.declined);
@@ -127,17 +135,27 @@ export function buildSetPageView(sheet, saved, draft, suggestion) {
   return { view, mealSource: { context, shown, bestKeys } };
 }
 
+/* What buildSetPageView returns: the page's view, and what the Food menu is built from. */
+export type SetPageView = ReturnType<typeof buildSetPageView>['view'];
+type MealSource = ReturnType<typeof buildSetPageView>['mealSource'];
+
 /* The views of one set page, each kept until its inputs change (the page reads them at every draw; the Food menu only while it is
    open). Returns {view(rev, sheet, saved, draft, suggestion): the page's frozen view, mealMenu(): the Food menu of the set the last
    view shows (setMealMenuView), built when read and kept until the view changes}. Built once per change of the sheets' revision
    `rev`, the saved set, the draft or the suggestion. */
 export function setPageViews() {
-  const pageCache = viewCache();
-  const mealCache = viewCache();
-  let mealSource = null;
-  let viewNow = null;
+  const pageCache = viewCache<SetPageView>();
+  const mealCache = viewCache<ReturnType<typeof setMealMenuView>, SetPageView | null>();
+  let mealSource: MealSource | null = null;
+  let viewNow: SetPageView | null = null;
   return {
-    view(rev, sheet, saved, draft, suggestion) {
+    view(
+      rev: number,
+      sheet: SavedSheet,
+      saved: SavedGearSet,
+      draft: Readonly<SavedGearSet> | null,
+      suggestion: PageSuggestion | null,
+    ): SetPageView {
       viewNow = pageCache.get(viewKey(rev, saved, draft, suggestion), () => {
         const built = buildSetPageView(sheet, saved, draft, suggestion);
         mealSource = built.mealSource;
@@ -146,7 +164,11 @@ export function setPageViews() {
       return viewNow;
     },
     mealMenu() {
-      return mealCache.get(viewNow, () => deepFreeze(setMealMenuView(mealSource.context, mealSource.shown, mealSource.bestKeys)));
+      return mealCache.get(viewNow, () =>
+        deepFreeze(
+          setMealMenuView((mealSource as MealSource).context, (mealSource as MealSource).shown, (mealSource as MealSource).bestKeys),
+        ),
+      );
     },
   };
 }
@@ -155,7 +177,10 @@ export function setPageViews() {
    Auto-fill runs anywhere on the Sheets tab), searchedCount (how many pieces Gear to search leaves, null until counted)}. Off in a
    draft, while an Auto-fill runs, with every slot pinned, and when Gear to search leaves no piece in the pool (the title then says so;
    null otherwise). */
-export function fillButtonView(view, { draft, busy, searchedCount }) {
+export function fillButtonView(
+  view: Pick<SetPageView, 'plan'>,
+  { draft, busy, searchedCount }: { draft: unknown; busy: boolean; searchedCount: number | null },
+) {
   const noPieces = searchedCount === 0;
   return {
     text: view.plan.label,
@@ -166,6 +191,6 @@ export function fillButtonView(view, { draft, busy, searchedCount }) {
 
 /* The chip beside the gear button, {short, full}: its few words and its sentence (tooltip, spoken text); null while the pool holds a
    piece or its count has not landed. The same condition as the Auto-fill button's title. */
-export function noPiecesFlag(searchedCount) {
+export function noPiecesFlag(searchedCount: number | null): { short: string; full: string } | null {
   return searchedCount === 0 ? { short: NO_PIECES_SHORT, full: NO_PIECES_TEXT } : null;
 }

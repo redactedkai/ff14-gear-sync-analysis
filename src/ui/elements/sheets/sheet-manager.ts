@@ -7,6 +7,7 @@
    - a click anywhere on a row opens it (open-row.ts); the name link is the keyboard and screen-reader way in and a real link
      (a Ctrl or Cmd click opens it in a new tab);
    - a row is dragged by its handle, or moved with Up and Down on the focused handle (row-reorder.ts). */
+import type { sheetManagerView } from '../../views/sheet-manager.ts';
 import { LitElement, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -20,33 +21,11 @@ import { type SheetAction, sendSheetAction } from './sheet-action.ts';
 /* The framed job icons by job id (src/data/job-icons.js). */
 const ICONS: Record<string, string> = JOB_ICONS;
 
-/* One row of the manager (views/sheet-manager.js): what the template shows of a sheet. */
-export interface ManagerRow {
-  id: string;
-  href: string;
-  name: string;
-  descriptionLine: string;
-  jobId: string;
-  jobName: string;
-  settingsText: string;
-  setCount: number;
-  created: string;
-  changed: string;
-  patch: string;
-  patchTitle: string;
-}
+/* The manager's view (views/sheet-manager.ts sheetManagerView). */
+export type ManagerView = ReturnType<typeof sheetManagerView>;
 
-/* The manager's view (views/sheet-manager.js sheetManagerView). */
-export interface ManagerView {
-  title: string;
-  empty: boolean;
-  showNewButton: boolean;
-  emptyCard: { title: string; text: string; buttonText: string };
-  columns: readonly string[];
-  rows: readonly ManagerRow[];
-  unreadableTitle: string;
-  unreadable: readonly { id: string; key: string; text: string }[];
-}
+/* One row of the manager: what the template shows of a sheet. */
+export type ManagerRow = ManagerView['rows'][number];
 
 /* The "not found" screen (views/sheet-text.ts notFoundView). */
 export interface NotFoundView {

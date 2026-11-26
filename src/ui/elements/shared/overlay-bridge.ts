@@ -1,4 +1,4 @@
-/* Lets the page's overlay manager (src/ui/overlays.js) know about a Zag layer (a popover or menu that a Zag machine opens),
+/* Lets the page's overlay manager (src/ui/overlays.ts) know about a Zag layer (a popover or menu that a Zag machine opens),
    so the two kinds of layer live together while the move from the page's own overlays to Zag's goes on.
    Two stacks listen for Escape on the page: the manager's, and Zag's dismissable layer (a capturing `keydown` listener that
    calls `preventDefault()` once it closes a layer; the manager ignores an Escape that is already prevented). Left alone, an
@@ -9,14 +9,14 @@
    - a Zag layer with a manager layer above it hands the Escape to the manager (`guardEscape`, passed to the machine as its
      `onEscapeKeyDown`): the topmost layer closes first, whichever stack it is in.
    The manager is a parameter so Node tests can use their own. */
-import { overlays } from '../../overlays.js';
+import { overlays } from '../../overlays.ts';
 
 /* What the bridge reads of the machine's api: whether the layer is open. A Zag popover's and menu's api have it. */
 export interface BridgedLayerApi {
   open: boolean;
 }
 
-/* One layer as the manager takes it (see the top of src/ui/overlays.js). */
+/* One layer as the manager takes it (see the top of src/ui/overlays.ts). */
 export interface ManagedLayer {
   id: string;
   root: () => Element | null;

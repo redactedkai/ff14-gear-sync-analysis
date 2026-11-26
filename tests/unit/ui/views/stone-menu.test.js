@@ -1,10 +1,10 @@
-/* A set page's materia menu (src/ui/views/stone-menu.js) on real items: the grades an item level takes, the room under the
+/* A set page's materia menu (src/ui/views/stone-menu.ts) on real items: the grades an item level takes, the room under the
    cap, the odds of an overmeld slot. Expected values come from the items' published facts (materia grades, meld rules), not
    from the code. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { materiaMenuView } from '../../../../src/ui/views/stone-menu.js';
+import { materiaMenuView } from '../../../../src/ui/views/stone-menu.ts';
 import { placePiece } from '../../../../src/ui/sheets/set-edits.ts';
 import { hasNumber, hasParts, piece } from '../../helpers/common.js';
 import { sageSet } from '../../helpers/sheet-fixtures.js';

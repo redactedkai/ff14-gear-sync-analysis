@@ -1,5 +1,5 @@
 /* The Lit side of the page's number boxes: a directive that gives an `<input type="number">` the value a `numberBox`
-   (ui/number-field.js) says it should show. The rule is the box's: the stored value, except
+   (ui/number-field.ts) says it should show. The rule is the box's: the stored value, except
    that text typed in the focused box (or left in it) that still means the stored value stays as typed ("60.7" for 61).
    Use: `<input type="number" .value=${shownNumber(box)} @input=${box.onInput} @change=${box.onChange}>`. */
 import { noChange, nothing } from 'lit';

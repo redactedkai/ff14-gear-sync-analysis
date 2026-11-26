@@ -1,4 +1,4 @@
-/* The search box of a set page's piece menu (src/ui/views/piece-menu.js piecePickerView): every word must be in the piece's
+/* The search box of a set page's piece menu (src/ui/views/piece-menu.ts piecePickerView): every word must be in the piece's
    name or its gear category, in any order and case; groups the search empties are dropped; a search that leaves nothing
    says so. Real Sage ring rows. Replaces the old "Same-result menu search" test of the removed Gear tab. Expected
    pieces are real rings (item level, category as listed by the game data):
@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { categoryOf, jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { piecePickerView } from '../../../../src/ui/views/piece-menu.js';
+import { piecePickerView } from '../../../../src/ui/views/piece-menu.ts';
 import { sageSet } from '../../helpers/sheet-fixtures.js';
 
 const SGE = makeJobContext('SGE');

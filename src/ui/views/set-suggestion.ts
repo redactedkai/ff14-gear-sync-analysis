@@ -7,18 +7,37 @@
 import { makeJobContext } from '../../core/job-context.ts';
 import { equipLevel, jobGear, poolItemById, slotInfo } from '../../core/items.ts';
 import { applyFill, badPinMessages, dropBadPins, fillPlan, unpinnedText } from '../sheets/fill.ts';
-import { changeText, draftChanges } from './set-draft.js';
-import { evaluateInSheet, figuresAgainst, setFigures } from './set-totals.js';
+import { changeText, draftChanges } from './set-draft.ts';
+import { evaluateInSheet, figuresAgainst, setFigures } from './set-totals.ts';
 import { plural } from '../text.ts';
 import { fillSettingsOf } from '../sheets/fill-settings.ts';
 import { MEAL_ROW_LABEL, holdsPiece, rowLabel, sameRow, usedRows } from '../sheets/saved-set.ts';
+import type { GearSet as CoreGearSet, JobContext } from '../../core/types.ts';
+import type { SavedGearSet, SavedSheet } from '../sheets/saved-types.ts';
+import type { SolveAnswer } from '../solve.ts';
+import type { HeaderRow } from './set-draft.ts';
+import type { Figure, FigureAgainst } from './set-totals.ts';
+
+/* A Take box of a suggestion's row or meal: whether it is taken, the text under the piece, and `locked` (only for a covered
+   Off-hand's box, which follows the weapon's). */
+export interface TakeBox {
+  taken: boolean;
+  text: string;
+  locked?: boolean;
+}
+
+/* The Take boxes the player turned off: the saved row numbers, and whether the meal's. */
+export interface Declined {
+  rows: readonly number[];
+  meal: boolean;
+}
 
 /* The line on a set page while an Auto-fill result waits for Apply or Discard and the page is left. */
 export const SUGGESTION_LEAVE_TEXT = 'This Auto-fill result has not been applied. Leaving drops it, and the set stays as it is.';
 
 /* The rows of `saved` (a GearSet) a suggestion changes: the used, unpinned rows whose piece or stones differ from
    `suggested.pieces` (fill.ts applyFill's rows). Row indexes in order. */
-function changedRowsOf(job, saved, suggested) {
+function changedRowsOf(job: JobContext, saved: SavedGearSet, suggested: Pick<SuggestedSet, 'pieces'>): number[] {
   const open = new Set(fillPlan(job, saved).openRows);
   return saved.pieces.flatMap((row, index) => (open.has(index) && !sameRow(row, suggested.pieces[index]) ? [index] : []));
 }
@@ -27,9 +46,32 @@ function changedRowsOf(job, saved, suggested) {
    and the meal), put on the set's open rows by applyFill; `bestMeals` the answer's tied best meals (solve.ts, null
    with Food off). Returns {pieces, meal, bestMeals}, the set as Auto-fill would leave it and the meals to tag "best for goal"
    if it is applied whole. */
-export function suggestionOf(sheet, saved, result, bestMeals = null) {
+export function suggestionOf(
+  sheet: Pick<SavedSheet, 'job'>,
+  saved: SavedGearSet,
+  result: Pick<CoreGearSet, 'pieces' | 'meal'>,
+  bestMeals: string[] | null = null,
+) {
   return { ...applyFill(makeJobContext(sheet.job), saved, result), bestMeals };
 }
+
+/* What the page makes of the solver's reply to an Auto-fill (fillAnswerView): a `suggestion` to show; a `badpin` (pins the set cannot
+   keep: the lines to say, the rows that stay pinned and the ones dropped, whether the meal's pin is dropped, and the line naming what
+   was unpinned); or a `failed` answer with its line. */
+export type FillAnswer =
+  | { kind: 'suggestion'; suggested: SuggestedSet }
+  | {
+      kind: 'badpin';
+      messages: string[];
+      pinnedRows: number[];
+      droppedRows: number[];
+      mealDropped: boolean;
+      droppedText: string;
+    }
+  | { kind: 'failed'; text: string };
+
+/* What suggestionOf returns: the set as Auto-fill would leave it, and the meals to tag "best for goal". */
+export type SuggestedSet = ReturnType<typeof suggestionOf>;
 
 /* The Take boxes as they stand once a covered Off-hand follows the weapon: a two-handed weapon in the set the player would keep
    covers the Off-hand row, so that row cannot hold a shield (placePiece refuses one). Each row's Take box is otherwise free,
@@ -38,7 +80,12 @@ export function suggestionOf(sheet, saved, result, bestMeals = null) {
    whichever of the saved and suggested rows is empty. `declined` as for takenSet; returns {off, locked}: the set of declined
    row numbers, and the Off-hand row number whose Take box follows the weapon (null when it is free). `job` is the JobContext;
    without it the Take boxes stay as they are. */
-function takeStateOf(job, saved, suggested, declined) {
+function takeStateOf(
+  job: JobContext | null,
+  saved: SavedGearSet,
+  suggested: Pick<SuggestedSet, 'pieces'>,
+  declined: Declined,
+): { off: Set<number>; locked: number | null } {
   const off = new Set(declined.rows);
   if (!job) {
     return { off, locked: null };
@@ -69,9 +116,13 @@ function takeStateOf(job, saved, suggested, declined) {
 /** The set the player would keep: the suggested rows and meal where taken, the saved ones where declined. `declined`:
    {rows: saved row numbers whose Take box is off, meal: the meal's Take box is off}. `job` (a JobContext) lets a covered
    Off-hand follow the weapon (takeStateOf). Returns a GearSet (a copy of `saved` with the pieces and meal replaced), the
-   set Apply saves.
-   @param {{ rows: readonly number[], meal: boolean }} [declined] */
-export function takenSet(saved, suggested, declined = { rows: [], meal: false }, job = null) {
+   set Apply saves. */
+export function takenSet(
+  saved: SavedGearSet,
+  suggested: Pick<SuggestedSet, 'pieces' | 'meal'>,
+  declined: Declined = { rows: [], meal: false },
+  job: JobContext | null = null,
+): SavedGearSet {
   const { off } = takeStateOf(job, saved, suggested, declined);
   return {
     ...saved,
@@ -82,10 +133,13 @@ export function takenSet(saved, suggested, declined = { rows: [], meal: false },
 
 /** The fields Apply saves for a suggestion taken as `declined` says ({rows, meal}, as for takenSet): {pieces, meal,
    bestMeals}. The set is as Auto-fill made it only when nothing is declined, so only then does it keep the tied best meals
-   (suggested.bestMeals, null with Food off) that tag its meal "best for goal"; otherwise bestMeals is null.
-   @param {{ rows: readonly number[], meal: boolean }} [declined]
-   @param {import('../../core/types.ts').JobContext | null} [job] */
-export function appliedFields(saved, suggested, declined = { rows: [], meal: false }, job = null) {
+   (suggested.bestMeals, null with Food off) that tag its meal "best for goal";    bestMeals is null. */
+export function appliedFields(
+  saved: SavedGearSet,
+  suggested: SuggestedSet,
+  declined: Declined = { rows: [], meal: false },
+  job: JobContext | null = null,
+) {
   const { pieces, meal } = takenSet(saved, suggested, declined, job);
   const asFillMadeIt = !declined.rows.length && !declined.meal;
   return { pieces, meal, bestMeals: asFillMadeIt ? (suggested.bestMeals ?? null) : null };
@@ -107,9 +161,13 @@ export function appliedFields(saved, suggested, declined = { rows: [], meal: fal
      level 60."), '' for none;
    - applyText ("Apply 3 changes", "Nothing taken", "Nothing to change"), applyDisabled, discardText, leaveText;
    - appliedNote: the plain note after Apply ("Applied: 2 slots and meal changed."), '' when nothing is taken (Apply is off then,
-     and applySuggestion returns before it reads the note).
-   @param {{ rows: readonly number[], meal: boolean }} [declined] */
-export function suggestionView(sheet, saved, suggested, declined = { rows: [], meal: false }) {
+     and applySuggestion returns before it reads the note). */
+export function suggestionView(
+  sheet: SavedSheet,
+  saved: SavedGearSet,
+  suggested: SuggestedSet,
+  declined: Declined = { rows: [], meal: false },
+) {
   const job = makeJobContext(sheet.job);
   const { off, locked } = takeStateOf(job, saved, suggested, declined);
   const shown = takenSet(saved, suggested, declined, job);
@@ -122,9 +180,9 @@ export function suggestionView(sheet, saved, suggested, declined = { rows: [], m
   const total = rows.length + (mealDiffers ? 1 : 0);
   const taken = takenRows.length + (mealTaken ? 1 : 0);
 
-  // 2. the Take boxes' texts, from the differences between the saved and the suggested rows (set-draft.js)
+  // 2. the Take boxes' texts, from the differences between the saved and the suggested rows (set-draft.ts)
   const diff = draftChanges(job, saved, { ...saved, pieces: suggested.pieces, meal: suggested.meal ?? null });
-  const takes = {};
+  const takes: Record<number, TakeBox> = {};
   for (const change of diff.rows) {
     if (!rows.includes(change.index)) {
       continue;
@@ -143,7 +201,7 @@ export function suggestionView(sheet, saved, suggested, declined = { rows: [], m
   const afterFigures = setFigures(evaluateInSheet(sheet, shown));
   const emptySet = !holdsPiece(job, saved);
   const against = figuresAgainst(nowFigures, afterFigures);
-  let header;
+  let header: HeaderRow[];
   if (emptySet) {
     header = [{ label: 'Suggested · set is empty', after: false, figures: plainFigures(afterFigures) }];
   } else if (!total) {
@@ -174,7 +232,7 @@ export function suggestionView(sheet, saved, suggested, declined = { rows: [], m
 }
 
 /* The Apply button's text: `total` changes are suggested, `taken` of them taken. */
-function applyTextOf(total, taken) {
+function applyTextOf(total: number, taken: number): string {
   if (!total) {
     return 'Nothing to change';
   }
@@ -182,13 +240,13 @@ function applyTextOf(total, taken) {
 }
 
 /* Figures with no delta line (the Now row, or a single row). */
-function plainFigures(figures) {
+function plainFigures(figures: readonly Figure[]): FigureAgainst[] {
   return figures.map(figure => ({ ...figure, change: null }));
 }
 
 /* The line for an Auto-fill that failed, `message` being the failure's own (a rejected request's or a solver error's): the
    same prefix, the message and exactly one full stop, whether or not the message ends with one. */
-export function failedText(message) {
+export function failedText(message: unknown): string {
   return `Auto-fill failed: ${String(message).replace(/\.$/, '')}.`;
 }
 
@@ -199,7 +257,7 @@ export const STEP_LIMIT_TEXT = 'Auto-fill stopped at its step limit before findi
    plain line. 'badpin' is fillAnswerView's. Two kinds have no line of their own because the page cannot reach them: 'excluded'
    (no piece to search: the Auto-fill button is off, and a press before the first count lands waits for it) and 'noset' (without
    a Target GCD the search always finds a set); a kind not named here gets the generic line below. */
-const FAILURE_TEXT = {
+const FAILURE_TEXT: Record<string, string> = {
   nogcd: 'Auto-fill found no set that fits this GCD.',
   infeasible: STEP_LIMIT_TEXT,
 };
@@ -208,7 +266,7 @@ const FAILURE_TEXT = {
    the set's Auto-fill settings: no piece of the slot has an equip level up to the one under Gear to search (its lowest equip
    level is above it), e.g. "Weapon: no Sage piece up to equip level 50, the lowest needs level 60." `shown` is the set
    as the page shows it, `saved` the saved set whose settings the Auto-fill used. */
-function emptySlotNote(job, saved, shown) {
+function emptySlotNote(job: JobContext, saved: SavedGearSet, shown: SavedGearSet): string {
   const limit = fillSettingsOf(job, saved).searchCriteria.lvl;
   if (limit === '' || limit == null) {
     return '';
@@ -238,7 +296,7 @@ function emptySlotNote(job, saved, shown) {
      "Ring 2 and Food unpinned. Auto-fill again to fill them.", '' when only the pins as a whole were the problem)}: the sheet
      drops those pins and says so;
    - {kind: 'failed', text}: no set, with the reason (an error's own message after "Auto-fill failed: "). */
-export function fillAnswerView(sheet, saved, answer) {
+export function fillAnswerView(sheet: Pick<SavedSheet, 'job'>, saved: SavedGearSet, answer: SolveAnswer): FillAnswer {
   const job = makeJobContext(sheet.job);
   if (answer.kind === 'ok') {
     return { kind: 'suggestion', suggested: suggestionOf(sheet, saved, answer.set, answer.bestMeals) };

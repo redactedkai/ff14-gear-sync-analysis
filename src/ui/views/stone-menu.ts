@@ -6,6 +6,8 @@ import { ROMAN, materiaFit, meldSlots, overmeldChance, overmeldNumber, slotGrade
 import { meldCaps } from '../../core/piece.ts';
 import { rowLabel } from '../sheets/saved-set.ts';
 import { lastStone, paddedStones } from '../sheets/set-edits.ts';
+import type { JobContext, PoolItem, StatKey } from '../../core/types.ts';
+import type { SavedGearSet, SavedStone } from '../sheets/saved-types.ts';
 
 /* How many grades the materia menu shows before "Show all grades": the most valuable ones the slot takes. */
 const BEST_GRADES = 4;
@@ -14,7 +16,7 @@ const BAND_COLUMNS = 6;
 const NO_ODDS_TEXT = '–'; // the odds cell of a grade the slot cannot take: it has no odds, which is not a 0% chance
 
 /* The odds cell of grade column `g` of `item` in overmeld slot number `overNo` ('' in a guaranteed slot, which has none). */
-function oddsText(item, g, overNo) {
+function oddsText(item: PoolItem, g: { grade: number; ok: boolean }, overNo: number): string {
   if (!overNo) {
     return '';
   }
@@ -33,9 +35,9 @@ function oddsText(item, g, overNo) {
    The odds are display only: every meld counts as a success, in the search too (docs/mechanics/materia.md).
    The best grades are the BEST_GRADES most valuable ones the slot takes, highest grade first; all grades are the twelve
    in fixed places, a grade the slot cannot take shown off. */
-export function materiaMenuView(job, gearSet, index, slot, all) {
+export function materiaMenuView(job: JobContext, gearSet: SavedGearSet, index: number, slot: number, all: boolean) {
   const row = gearSet.pieces[index];
-  const item = poolItemById(job, row.gameId);
+  const item = poolItemById(job, row.gameId as number) as PoolItem; // the row holds the piece its menu is open on
   const stones = paddedStones(item, row.stones);
   const { big } = meldSlots(item);
   const guaranteed = meldInfo(item)?.slots ?? 0;
@@ -50,7 +52,7 @@ export function materiaMenuView(job, gearSet, index, slot, all) {
 
   // room under each stat's cap for this slot's stone: the cap less the piece's own points and the other stones'
   const caps = meldCaps(job, item);
-  const room = stat => {
+  const room = (stat: StatKey) => {
     const others = stones.reduce((sum, s, i) => (s && i !== slot && s.stat === stat ? sum + grades[s.grade - 1].value : sum), 0);
     return Math.max(0, caps[stat] - (item.stats[stat] || 0) - others);
   };
@@ -77,7 +79,7 @@ export function materiaMenuView(job, gearSet, index, slot, all) {
             value: g.value,
             text: `+${g.value}`,
             ok: g.ok,
-            on: Boolean(here) && here.stat === stat && here.grade === g.grade,
+            on: Boolean(here) && (here as SavedStone).stat === stat && (here as SavedStone).grade === g.grade,
             fit: g.ok ? materiaFit(left, g.value) : '',
           };
         }),
@@ -85,7 +87,7 @@ export function materiaMenuView(job, gearSet, index, slot, all) {
     });
   }
   const last = lastStone(stones);
-  const place = k => (k >= guaranteed ? `overmeld slot ${k - guaranteed + 1}` : `slot ${k + 1} of ${guaranteed}`);
+  const place = (k: number) => (k >= guaranteed ? `overmeld slot ${k - guaranteed + 1}` : `slot ${k + 1} of ${guaranteed}`);
   return {
     title: `${rowLabel(gearSet, index)} · ${place(slot)}`,
     bands,

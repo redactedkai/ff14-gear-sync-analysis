@@ -1,8 +1,8 @@
-/* The overlay manager (src/ui/overlays.js): Escape, a press outside, Tab out, one at a time and a change of screen. A fake
+/* The overlay manager (src/ui/overlays.ts): Escape, a press outside, Tab out, one at a time and a change of screen. A fake
    document records the listeners; elements are plain objects with `contains` and `focus`. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createOverlays } from '../../../src/ui/overlays.js';
+import { createOverlays } from '../../../src/ui/overlays.ts';
 
 /* A fake document: it keeps the listeners the manager adds, and sends them an event. */
 function fakeDocument() {

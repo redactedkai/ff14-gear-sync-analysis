@@ -2,13 +2,13 @@
    model keeps the open dialog's fields and the control that gets the focus back, answers what the dialog element sends
    (`act`, one DialogAction at a time) and builds the view the element draws (`view`). The element (sheet-dialog.ts) reads nothing
    else; the page that hosts it calls the openers and `close`, and calls `afterClosed` once the element has removed its box.
-   Rules: docs/engineering/sheets.md; the fields' checks and what the main button does are views/sheet-forms.js and
+   Rules: docs/engineering/sheets.md; the fields' checks and what the main button does are views/sheet-forms.ts and
    sheets/dialogs.ts. */
 import { shownName, submitDialog } from '../../sheets/dialogs.ts';
 import { NEW_SHEET_CAP, copyName, levelFor, ranges, sheetSettings } from '../../sheets/ops.ts';
 import type { SheetsFacade } from '../../store/sheets-facade.ts';
 import { deepFreeze } from '../../view-cache.ts';
-import { copySheetFormView, deleteQuestionView, editFormView, newSheetFormView } from '../../views/sheet-forms.js';
+import { type copyHelpView, copySheetFormView, deleteQuestionView, editFormView, newSheetFormView } from '../../views/sheet-forms.ts';
 
 /* The control of a dialog that takes the focus when it opens (a selector for `<gsa-dialog initial-focus>`): the first box of a form
    or its main button; a delete question puts it on Cancel, so a stray Enter cancels instead of deleting. */
@@ -120,7 +120,7 @@ export type DialogAction =
   | { action: 'ack'; checked: boolean }
   | { action: 'help'; open: boolean };
 
-/* The places a refused form's reason shows (views/sheet-forms.js errorPlaces): the text under the place that shows it, '' elsewhere. */
+/* The places a refused form's reason shows (views/sheet-forms.ts errorPlaces): the text under the place that shows it, '' elsewhere. */
 export interface ErrorPlaces {
   name: string;
   job: string;
@@ -134,22 +134,11 @@ export interface Counter {
   full: boolean;
 }
 
-/* The "?" panel of Copy sheet (views/sheet-forms.js copyHelpView). */
-export interface CopyHelpView {
-  title: string;
-  outcomes: readonly { label: string; text: string }[];
-  groupsTitle: string;
-  groups: readonly { label: string | null; jobs: string; own: boolean }[];
-  footText: string;
-}
+/* The "?" panel of Copy sheet (views/sheet-forms.ts copyHelpView). */
+export type CopyHelpView = ReturnType<typeof copyHelpView>;
 
-/* The pieces the chosen job cannot wear (views/sheet-forms.js copySheetFormView). */
-export interface ClearWarning {
-  title: string;
-  text: string;
-  items: readonly { key: string; setName: string; slotLabel: string; name: string }[];
-  ackText: string;
-}
+/* The pieces the chosen job cannot wear (views/sheet-forms.ts copySheetFormView). */
+export type ClearWarning = NonNullable<ReturnType<typeof copySheetFormView>['warning']>;
 
 /* The level and item level fields of a New sheet or Copy sheet form. */
 export interface SettingsView {
@@ -553,7 +542,7 @@ export class SheetDialogs {
 
   /* ---- what the dialog shows ---- */
 
-  /* The level and item level fields' values, from a form and the ranges of its job (views/sheet-forms.js gives them). */
+  /* The level and item level fields' values, from a form and the ranges of its job (views/sheet-forms.ts gives them). */
   private settingsView(form: SettingsForm, limits: { level: { max: number }; cap: { max: number } }): SettingsView {
     return {
       level: { value: form.level, max: limits.level.max },
@@ -561,7 +550,7 @@ export class SheetDialogs {
     };
   }
 
-  /* What the element draws for the open dialog (views/sheet-forms.js with the form's own fields), frozen all through; null while
+  /* What the element draws for the open dialog (views/sheet-forms.ts with the form's own fields), frozen all through; null while
      none is open. Reads the sheets store, so the page that draws it again on a change of the store sees a change of the sheet
      Copy sheet is about. */
   view(): SheetDialogView | null {

@@ -1,4 +1,4 @@
-/* The sheet manager and a sheet's page (src/ui/views/sheet-manager.js, sheet-sets.js): list rows, empty states, the
+/* The sheet manager and a sheet's page (src/ui/views/sheet-manager.ts, sheet-sets.ts): list rows, empty states, the
    unreadable records, the settings fields and the set list, with real Sage and Warrior sets. */
 // the manager's dates are in the reader's time zone: the test reads them in UTC
 process.env.TZ = 'UTC';
@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../src/core/tables.ts';
 import { UNAVAILABLE_MESSAGE } from '../../../../src/ui/sheets/storage.ts';
-import { sheetManagerView } from '../../../../src/ui/views/sheet-manager.js';
+import { sheetManagerView } from '../../../../src/ui/views/sheet-manager.ts';
 import {
   firstSortDir,
   nextListSort,
@@ -15,7 +15,7 @@ import {
   sheetPageView,
   sheetSwitcherView,
   sortSetRows,
-} from '../../../../src/ui/views/sheet-sets.js';
+} from '../../../../src/ui/views/sheet-sets.ts';
 import { plural } from '../../../../src/ui/text.ts';
 import { localDate, settingsLine, syncShort } from '../../../../src/ui/views/sheet-text.ts';
 import { sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.js';

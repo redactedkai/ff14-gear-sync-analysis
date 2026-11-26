@@ -82,7 +82,7 @@ export class GsaApp extends LitElement {
     const { tab } = app;
     const strip = model.stripInput();
     const dataSource = model.dataSource ? `${model.dataSource} · ` : '';
-    // a test build's marks: the badge by the title, and the test data button (ui/test-data.js)
+    // a test build's marks: the badge by the title, and the test data button (ui/test-data.ts)
     const badge = BUILD_MARKS
       ? html` <span class="build-badge">${BUILD_MARKS.label}</span>
           <button type="button" class="build-badge build-button" @click=${() => model.loadTestData()}>test data</button>`

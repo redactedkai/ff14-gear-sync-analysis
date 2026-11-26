@@ -6,7 +6,7 @@
    - `browse`: the browser's filters and sort (the store's frozen `browse`);
    - `active`: the Gear browser is the open tab. The list is built, and the page drawn, only while it is: hidden, the element keeps
      what it shows and does no work.
-   The list (views/gear.js gearView) is built by `GearBrowserModel` (gear-browser-model.ts), kept in a field and not in reactive
+   The list (views/gear.ts gearView) is built by `GearBrowserModel` (gear-browser-model.ts), kept in a field and not in reactive
    state, and frozen: a row is the 50 `tr` of the page, drawn by place with `map` (never `repeat`), so a sort, a page, a slot, a
    filter or a job change keeps the 50 rows and only rebinds their cells. A kept row must show nothing that follows the place and
    not the item: every part of a row comes from the same item in one draw (the smoke step `checkBrowserRowsMatchView` compares
@@ -20,7 +20,7 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 import { live } from 'lit/directives/live.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { MAX_REAL } from '../../../core/tables.ts';
-import { TYPING_DEBOUNCE_MS, numberBox } from '../../number-field.js';
+import { TYPING_DEBOUNCE_MS, numberBox } from '../../number-field.ts';
 import { shownNumber } from '../shared/number-box.ts';
 import { SEARCH_MAX_LENGTH } from '../../state.ts';
 import type { GearList } from './gear-browser-model.ts';

@@ -18,7 +18,8 @@ import { repeat } from 'lit/directives/repeat.js';
 import { JOB_ICONS } from '../../../data/job-icons.js';
 import { followInPage } from '../../router/plain-click.ts';
 import { bonusOptions } from '../../sheets/bonus-options.ts';
-import { nextListSort, sheetListView } from '../../views/sheet-sets.js';
+import { nextListSort, sheetListView } from '../../views/sheet-sets.ts';
+import type { ListSort, SheetPageView } from '../../views/sheet-sets.ts';
 import '../app/cap-field.ts';
 import '../app/level-field.ts';
 import { copyIcon, deleteIcon, editIcon } from '../shared/button-icons.ts';
@@ -35,46 +36,13 @@ const ICONS: Record<string, string> = JOB_ICONS;
 /* The entries of the Clan and Party bonus lists (the same for every sheet). */
 const BONUS_LISTS = bonusOptions();
 
-/* The sheet page's view (views/sheet-sets.js sheetPageView): what the template shows of a sheet. */
-export interface SheetPageView {
-  id: string;
-  crumbs: readonly { text: string; href?: string }[];
-  name: string;
-  description: { text: string; empty: boolean };
-  job: { id: string; name: string };
-  level: { value: number; max: number };
-  sync: { on: boolean; cap: number; max: number };
-  title: string;
-  bonusNote: string;
-  empty: boolean;
-  emptyCard: { title: string; text: string };
-  // the gear sets list's own fields, which sheetListView reads
-  rows: readonly unknown[];
-  columnKeys: readonly string[];
-  pointKeys: readonly string[];
-  columns: readonly string[];
-  pointColumns: readonly string[];
-  wideColumns: readonly boolean[];
-}
+/* The sheet page's view (views/sheet-sets.ts sheetPageView): what the template shows of a sheet. */
+export type { SheetPageView } from '../../views/sheet-sets.ts';
 
-/* The gear sets list (views/sheet-sets.js sheetListView). */
-export interface SheetListView {
-  sort: { key: string; dir: string };
-  nameAriaSort: string;
-  columns: readonly { key: string; label: string; wide: boolean; ariaSort: string }[];
-  rows: readonly {
-    id: string;
-    href: string;
-    name: string;
-    description: string;
-    descriptionLine: string;
-    originText: string;
-    cells: readonly { key: string; text: string }[];
-  }[];
-  orderLocked: boolean;
-}
+/* The gear sets list (views/sheet-sets.ts sheetListView). */
+type SheetListView = ReturnType<typeof sheetListView>;
 
-/* What the caret menu after the sheet's name shows (views/sheet-sets.js sheetSwitcherView). */
+/* What the caret menu after the sheet's name shows (views/sheet-sets.ts sheetSwitcherView). */
 export interface SheetSwitcher {
   items: readonly SwitchItem[];
   allLabel: string;
@@ -89,12 +57,6 @@ interface LoweredCap {
   to: number;
   level: number | null;
   sheetId: string | null;
-}
-
-/* The sort of the gear sets list: a heading's key and direction, key '' for the saved order. */
-interface ListSort {
-  key: string;
-  dir: string;
 }
 
 const NO_SORT: ListSort = { key: '', dir: '' };
@@ -124,7 +86,7 @@ export class GsaSheetPage extends LitElement {
   declare dialogOpen: boolean;
   declare sort: ListSort;
   declare capLowered: LoweredCap | null;
-  // what the gear sets list draws, built when the properties change (views/sheet-sets.js)
+  // what the gear sets list draws, built when the properties change (views/sheet-sets.ts)
   private list: SheetListView | null = null;
   readonly reorder: RowReorder;
 

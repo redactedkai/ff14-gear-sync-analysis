@@ -1,6 +1,6 @@
 {
   // Types only: nothing is emitted (esbuild builds the page, Node strips types for the tests). The JavaScript files stay
-  // unchecked (checkJs off) until they are converted; a .ts file that imports one reads its inferred types.
+  // unchecked (checkJs off): src/main.js, src/startup-failure.js, the scripts and most unit tests; a .ts file that imports one reads its inferred types.
   "compilerOptions": {
     "target": "ES2023",
     "lib": ["ES2024", "DOM", "DOM.Iterable"],

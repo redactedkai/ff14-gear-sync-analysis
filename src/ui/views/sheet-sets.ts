@@ -4,18 +4,37 @@
    store. Rules: sheets.md "A sheet's level and sync" and "Where an action lands". */
 import { makeJobContext } from '../../core/job-context.ts';
 import { fillPlan } from '../sheets/fill.ts';
-import { bonusNote, evaluateInSheet, setFigures, setTotalsView } from './set-totals.js';
+import { bonusNote, evaluateInSheet, setFigures, setTotalsView } from './set-totals.ts';
 import { plural } from '../text.ts';
 import { ranges } from '../sheets/ops.ts';
 import { settingsLine } from './sheet-text.ts';
 import { sheetHref } from '../store/app-state.ts';
+import type { SavedGearSet, SavedSheet } from '../sheets/saved-types.ts';
+import type { Figure } from './set-totals.ts';
+
+/* The figures a gear sets list shows: the header's effects, or the stat points of the Total row. */
+export type ListMode = 'effects' | 'points';
+
+/* The list's sort: a heading's key ('name' or a figure's key; '' for the saved order) and the direction ('' for none). */
+export interface ListSort {
+  key: string;
+  dir: 'asc' | 'desc' | '';
+}
+
+/* One stat of the Total row in a set's list row (setListRow): its key, its label and its number as text. It has no `shown` text. */
+export interface ListPoint {
+  key: string;
+  label: string;
+  text: string;
+  shown?: undefined;
+}
 
 /* One gear set of a sheet for the list: {id, href (its address), name, description, descriptionLine, originText, figures, points}. descriptionLine
    is the first line of the set's notes, '' without; originText counts the rows Auto-fill keeps and changes ("5
    pinned, 6 unpinned", owner: counts only, no goal text), with "2 slots empty" after it while the set has
    rows with no piece; figures are the header's figures (setFigures) under the sheet's settings; points the stat points the
    Total row of the set's page shows, [{key, label, text}] one per stat of the job (the character panel's numbers). */
-function setListRow(sheet, gearSet) {
+function setListRow(sheet: SavedSheet, gearSet: SavedGearSet) {
   const context = evaluateInSheet(sheet, gearSet);
   const plan = fillPlan(context.job, gearSet);
   const totals = setTotalsView(context).total;
@@ -30,16 +49,19 @@ function setListRow(sheet, gearSet) {
     descriptionLine: description.split('\n')[0],
     originText: empty ? `${counts} · ${plural(empty, 'slot')} empty` : counts,
     figures: setFigures(context),
-    points: totals.cells.map(cell => ({ key: cell.stat, label: cell.header, text: String(cell.value) })),
+    points: totals.cells.map((cell): ListPoint => ({ key: cell.stat, label: cell.header, text: String(cell.value) })),
   };
 }
 
+/* One gear set of a sheet for the list (setListRow). */
+export type SetListRow = ReturnType<typeof setListRow>;
+
 /* The number in a figure's text ("22.9%" 22.9, "+179 MP" 179, "2.48s" 2.48, "1324" 1324): what a heading sorts by. */
-const figureNumber = text => Number.parseFloat(text.replace(/[^0-9.-]/g, ''));
+const figureNumber = (text: string) => Number.parseFloat(text.replace(/[^0-9.-]/g, ''));
 
 /* What a click on a heading of the gear sets list starts with: names A to Z, the GCD lowest first (the best first), every
    other figure highest first. `key`: 'name' or a figure's key (setFigures; a stat's key in the stat points view). */
-export function firstSortDir(key, mode) {
+export function firstSortDir(key: string, mode: ListMode): 'asc' | 'desc' {
   if (key === 'name') {
     return 'asc';
   }
@@ -49,7 +71,7 @@ export function firstSortDir(key, mode) {
 /* The list's sort after a click on heading `key` (the sort now is `current`, {key, dir}, key '' for the saved order):
    a new heading starts with firstSortDir, the same heading again flips it, and a third click goes back to the saved
    order. Returns {key, dir}. */
-export function nextListSort(current, key, mode) {
+export function nextListSort(current: ListSort, key: string, mode: ListMode): ListSort {
   const first = firstSortDir(key, mode);
   if (current.key !== key) {
     return { key, dir: first };
@@ -62,23 +84,24 @@ export function nextListSort(current, key, mode) {
 
 /* `rows` (the page's set rows) sorted by `sort` ({key, dir}) in the view `mode` ('effects' or 'points'): a copy, the
    rows with equal figures keep their saved order; with no key the saved order. */
-export function sortSetRows(rows, sort, mode) {
+export function sortSetRows<Row extends SetListRow>(rows: readonly Row[], sort: ListSort, mode: ListMode): readonly Row[] {
   if (!sort.key) {
     return rows;
   }
   const sign = sort.dir === 'asc' ? 1 : -1;
-  const figureOf = row => (mode === 'points' ? row.points : row.figures).find(f => f.key === sort.key);
-  const figureValue = row => {
+  const figureOf = (row: SetListRow): Figure | ListPoint | undefined =>
+    (mode === 'points' ? row.points : row.figures).find(f => f.key === sort.key);
+  const figureValue = (row: SetListRow) => {
     const figure = figureOf(row);
     return figure ? figureNumber(figure.text) : Number.NEGATIVE_INFINITY;
   };
   // a hasted GCD's `text` is the hasted GCD, the same for sets that differ only in speed; the number the page shows in
   // front ("2.46s (2.22s)", the GCD without the haste) breaks those ties, so the column sorts by what it shows
-  const shownValue = row => Number.parseFloat(figureOf(row)?.shown ?? '') || 0;
+  const shownValue = (row: SetListRow) => Number.parseFloat(figureOf(row)?.shown ?? '') || 0;
   const compare =
     sort.key === 'name'
-      ? (a, b) => a.name.localeCompare(b.name)
-      : (a, b) => figureValue(a) - figureValue(b) || shownValue(a) - shownValue(b);
+      ? (a: SetListRow, b: SetListRow) => a.name.localeCompare(b.name)
+      : (a: SetListRow, b: SetListRow) => figureValue(a) - figureValue(b) || shownValue(a) - shownValue(b);
   return [...rows].sort((a, b) => sign * compare(a, b));
 }
 
@@ -88,9 +111,9 @@ export function sortSetRows(rows, sort, mode) {
    - job {id, name} (fixed once the sheet exists); level {value, max (the job's level cap)};
      sync {on, cap, max (the highest real item level)};
    - setCount; columns: the list's column headers (the figures' labels, first set's job), pointColumns the same for the stat points, columnKeys and pointKeys their figures' keys (what a heading sorts by), wideColumns (per column: true for a figure with a longer text, the GCD of a job with haste), set rows (setListRow);
-   - bonusNote: the note under the table when the sheet sets a clan or a party bonus (set-totals.js bonusNote), '' without;
+   - bonusNote: the note under the table when the sheet sets a clan or a party bonus (set-totals.ts bonusNote), '' without;
    - empty: no sets; emptyCard {title, text} is the "No gear sets yet" card with a New set button. */
-export function sheetPageView(sheet) {
+export function sheetPageView(sheet: SavedSheet) {
   const job = makeJobContext(sheet.job);
   const fields = ranges(sheet.job);
   const rows = sheet.sets.map(gearSet => setListRow(sheet, gearSet));
@@ -123,11 +146,14 @@ export function sheetPageView(sheet) {
   };
 }
 
+/* What sheetPageView returns. */
+export type SheetPageView = ReturnType<typeof sheetPageView>;
+
 /* The line above a set page: the breadcrumb "Sheets / <sheet> / <set>" and the sheet's settings as one read-only line
    (job, level, item level sync; edited on the sheet page only), and the set's notes. Returns {crumbs:
    [{text, to}, {text, to}, {text, here: true}], settingsText, jobId, notes: {text, empty}}. notes: the set's description
    as saved (line ends kept), or "No description" (empty: true, shown dim) without; the page shows it under the set name. `gearSet`: the saved GearSet that is open. */
-export function setHeaderView(sheet, gearSet) {
+export function setHeaderView(sheet: SavedSheet, gearSet: Pick<SavedGearSet, 'name' | 'description'>) {
   const job = makeJobContext(sheet.job);
   return {
     crumbs: [
@@ -150,11 +176,11 @@ export function setHeaderView(sheet, gearSet) {
    - rows: the set rows in the sort in force, each {id, href, name, description, descriptionLine, originText, cells:
      [{key, text}] (the figures of the mode)};
    - orderLocked: the list is sorted, so its rows have no order of their own to drag or step in. */
-export function sheetListView(page, sort, mode) {
+export function sheetListView(page: SheetPageView, sort: ListSort, mode: ListMode) {
   const keys = mode === 'points' ? page.pointKeys : page.columnKeys;
   const labels = mode === 'points' ? page.pointColumns : page.columns;
-  const inForce = sort.key && (sort.key === 'name' || keys.includes(sort.key)) ? sort : { key: '', dir: '' };
-  const ariaSort = key => {
+  const inForce: ListSort = sort.key && (sort.key === 'name' || (keys as string[]).includes(sort.key)) ? sort : { key: '', dir: '' };
+  const ariaSort = (key: string) => {
     if (inForce.key !== key) {
       return 'none';
     }
@@ -185,7 +211,7 @@ export function sheetListView(page, sort, mode) {
 /* What the caret menu after the sheet's name shows (<gsa-switch-menu>): `rows` (the manager's rows), `currentId` (the open sheet's
    id) and `busy` (an Auto-fill runs: the menu is off). Returns {items: [{id, name, href, current}], allLabel, allHref, newLabel,
    disabled}: a link to the manager, one per saved sheet (the open one marked) and "+ New sheet". */
-export function sheetSwitcherView(rows, currentId, busy) {
+export function sheetSwitcherView(rows: readonly { id: string; name: string; href: string }[], currentId: string | null, busy: boolean) {
   return {
     items: rows.map(row => ({ id: row.id, name: row.name, href: row.href, current: row.id === currentId })),
     allLabel: `All sheets (${rows.length})`,

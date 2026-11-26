@@ -10,7 +10,7 @@ import type { AppState, AppStore } from '../../store/app-state.ts';
 import { partKey } from '../../store/store.ts';
 import { shallowEq } from '../../store/select.ts';
 import type { SheetsFacade } from '../../store/sheets-facade.ts';
-import { loadExampleSheets } from '../../test-data.js';
+import { loadExampleSheets } from '../../test-data.ts';
 import type { GearPanel } from '../gear-browser/gear-browser-model.ts';
 import type { MathScreenPorts } from '../math-page/math-screen.ts';
 import type { SheetsScreenPorts } from '../sheets/sheets-screen-model.ts';
@@ -85,7 +85,7 @@ export class AppRootModel {
     this.sheetsPorts = ports;
   }
 
-  /* TEMPORARY (the "test data" button of a DEV build, ui/test-data.js): load the example sheets and show the manager. */
+  /* TEMPORARY (the "test data" button of a DEV build, ui/test-data.ts): load the example sheets and show the manager. */
   loadTestData(): void {
     if (this.sheets.askLeave(() => this.loadTestData())) {
       return;

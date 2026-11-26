@@ -5,12 +5,12 @@ import { clone } from './text.ts';
 /* The page's one way for an element to build a view (architecture.md, section 3): a getter reads the view's inputs
    from the store (or an element's properties) and asks this cache for the view of their
    key. A new key builds the view (a pure view builder in src/ui/views); the same key returns the last one, so a
-   template that reads the view many times a render builds it once. Kept in the element's closure, not in the store. Returns {get(key, build): the view for `key` (a string), last(): the last view built, or null}. */
-export function viewCache<View>() {
-  let key: string | null = null;
+   template that reads the view many times a render builds it once. Kept in the element's closure, not in the store. Returns {get(key, build): the view for `key` (a string, or the type `Key` names: another view's object), last(): the last view built, or null}. */
+export function viewCache<View, Key = string>() {
+  let key: Key | null = null;
   let view: View | null = null;
   return {
-    get(newKey: string, build: () => View): View {
+    get(newKey: Key, build: () => View): View {
       if (newKey !== key) {
         view = build();
         key = newKey;

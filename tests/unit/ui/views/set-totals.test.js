@@ -1,11 +1,11 @@
-/* A saved set's numbers (src/ui/views/set-totals.js): the Total row with and without the meal against the character
+/* A saved set's numbers (src/ui/views/set-totals.ts): the Total row with and without the meal against the character
    panel's rule (gear + meal + the character's base), the Tier and Defense rows, the header figures and the delta lines.
    Expected numbers are summed from the raw item data and the level 100 constants, not from the code under test. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { evaluateInSheet, figureChange, figuresAgainst, setFigures, setTotalsView } from '../../../../src/ui/views/set-totals.js';
+import { evaluateInSheet, figureChange, figuresAgainst, setFigures, setTotalsView } from '../../../../src/ui/views/set-totals.ts';
 import { hasNumber } from '../../helpers/common.js';
 import { piece, rawGear, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.js';
 

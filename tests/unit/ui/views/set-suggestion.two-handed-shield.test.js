@@ -1,11 +1,11 @@
 /* Q4: an Auto-fill suggestion taken partly used to save a two-handed weapon beside a shield (White Mage, Black Mage). Real
    items: Tidal Wave Wand (1H) + Tidal Wave Buckler are saved; the answer is Phantom Cane Eclipticum (2H, covers the
-   Off-hand) with the Off-hand left empty. A covered Off-hand now follows the weapon's Take box (set-suggestion.js). */
+   Off-hand) with the Off-hand left empty. A covered Off-hand now follows the weapon's Take box (set-suggestion.ts). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { poolItemById, slotInfo } from '../../../../src/core/items.ts';
-import { appliedFields, suggestionOf, suggestionView } from '../../../../src/ui/views/set-suggestion.js';
+import { appliedFields, suggestionOf, suggestionView } from '../../../../src/ui/views/set-suggestion.ts';
 import { SET_ROW_SLOTS } from '../../../../src/ui/sheets/storage.ts';
 import { piece, sheetOf } from '../../helpers/sheet-fixtures.js';
 

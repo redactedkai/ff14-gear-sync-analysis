@@ -1,4 +1,4 @@
-/* The clan and the party bonus in the saved-set views (src/ui/views/set-totals.js, sheet-sets.js): the Total row with and
+/* The clan and the party bonus in the saved-set views (src/ui/views/set-totals.ts, sheet-sets.ts): the Total row with and
    without the meal, the header's main-stat figure, the sheet list's Stat points tab and the note under the table. The sheet
    holds the two values (`clan`, `partyRoles`). Numbers are summed by hand from the Warrior set's raw items (342 Strength and
    356 Vitality at the level 100 base of 462 and 484) and the Sage set's (279 Mind, 257 Vitality at 506 and 440). */
@@ -6,8 +6,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { sheetPageView } from '../../../../src/ui/views/sheet-sets.js';
-import { bonusNote, evaluateInSheet, setFigures, setTotalsView } from '../../../../src/ui/views/set-totals.js';
+import { sheetPageView } from '../../../../src/ui/views/sheet-sets.ts';
+import { bonusNote, evaluateInSheet, setFigures, setTotalsView } from '../../../../src/ui/views/set-totals.ts';
 import { rawGear, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.js';
 
 const NO_SYNC = { on: false, cap: 795 };

@@ -10,7 +10,7 @@ import {
   NO_PIECES_SHORT,
   NO_PIECES_TEXT,
   RESULT_DISCARDED_TEXT,
-} from '../../../../../src/ui/views/set-page.js';
+} from '../../../../../src/ui/views/set-page.ts';
 import { LOCKED_TEXT } from '../../../../../src/ui/sheets/store-shared.ts';
 import { inProcessSolver } from '../../../../../src/ui/solver.ts';
 import { makeSession } from '../../../../../src/core/session.ts';

@@ -2,22 +2,22 @@
    and Apply or Discard on it. While an Auto-fill runs, `sheets.busy` locks every edit on the Sheets tab. Part of the page's session
    (session.ts). The Auto-fill's status, the search's id, the result waiting and the line about it are in the store (`session.running`,
    `suggestion`, `fillLine`; `pages` changes them). */
-import { overlays } from '../../overlays.js';
+import { overlays } from '../../overlays.ts';
 import { clone, messageOf } from '../../text.ts';
 import { frozenCopy } from '../../view-cache.ts';
 import { isCancelled, solverRequest } from '../../solver.ts';
 import { fillPlan } from '../../sheets/fill.ts';
 import { fillRecipe } from '../../sheets/fill-settings.ts';
-import { appliedFields, failedText, fillAnswerView, suggestionView } from '../../views/set-suggestion.js';
-import { evaluateInSheet } from '../../views/set-totals.js';
-import { FILL_CANCELLED_TEXT, LOCKED_TABLE_TEXT, RESULT_DISCARDED_TEXT } from '../../views/set-page.js';
-import type { Suggestion } from '../../store/app-state.ts';
+import { appliedFields, failedText, fillAnswerView, suggestionView } from '../../views/set-suggestion.ts';
+import { evaluateInSheet } from '../../views/set-totals.ts';
+import { FILL_CANCELLED_TEXT, LOCKED_TABLE_TEXT, RESULT_DISCARDED_TEXT } from '../../views/set-page.ts';
 import type { PageSession } from './session.ts';
-import type { FillAnswer, GearPins } from './session-types.ts';
+import type { GearPins, PageSuggestion } from './session-types.ts';
+import type { SolveAnswer } from '../../solve.ts';
 
 /* A suggestion as the store keeps it: {suggested, declined} frozen all through (`suggested` is {pieces, meal, bestMeals}, as
    suggestionView reads it; `declined` {rows, meal}, the Take boxes switched off). */
-function frozenSuggestion(suggested: Suggestion['suggested'], declined: Suggestion['declined']): Suggestion {
+function frozenSuggestion(suggested: PageSuggestion['suggested'], declined: PageSuggestion['declined']): PageSuggestion {
   return frozenCopy({ suggested, declined });
 }
 
@@ -98,7 +98,7 @@ export class PageFill {
       if (!this.searchIs(id)) {
         return;
       }
-      const { result, ms } = await solver.request(request);
+      const { result, ms } = await solver.request<SolveAnswer>(request);
       // the search's own time, not the wait for the worker's reply; read by scripts/perf/browser.mjs
       if (Number.isFinite(ms)) {
         performance.measure('fill', { start: performance.now() - ms, duration: ms });
@@ -123,9 +123,9 @@ export class PageFill {
   }
 
   /* The solver's answer (`result`, solve.ts solveView's) to search `id`. */
-  finishFill(id: number, result: unknown): void {
+  finishFill(id: number, result: SolveAnswer): void {
     const { session } = this;
-    const answer = fillAnswerView(session.sheet, session.saved, result) as FillAnswer;
+    const answer = fillAnswerView(session.sheet, session.saved, result);
     if (answer.kind === 'suggestion') {
       const suggestion = frozenSuggestion(answer.suggested, { rows: [], meal: false });
       if (!session.pages.fillSuggested(session.setId, id, suggestion)) {
@@ -133,7 +133,7 @@ export class PageFill {
       }
       // nothing to change: the set is already what Auto-fill makes, so it keeps the meals tagged "best for goal" (Apply is off); saved
       // by endFill, once the sheet is no longer busy
-      const bestMeals = suggestion.suggested.bestMeals as string[] | null | undefined;
+      const bestMeals = suggestion.suggested.bestMeals;
       if (bestMeals && !suggestionView(session.sheet, session.saved, suggestion.suggested, suggestion.declined).total) {
         this.bestMealsAfterFill = bestMeals;
       }

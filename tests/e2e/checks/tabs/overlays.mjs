@@ -1,4 +1,4 @@
-// The menus and popovers of the page share one overlay manager (ui/overlays.js): Escape closes the topmost one with the focus back on its
+// The menus and popovers of the page share one overlay manager (ui/overlays.ts): Escape closes the topmost one with the focus back on its
 // button, a press outside or Tab out closes it, ArrowDown opens it, one is open at a time, and a change of screen closes every one.
 
 import { check, expect, poll } from '../../lib/expect.mjs';

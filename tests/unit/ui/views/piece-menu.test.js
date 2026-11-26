@@ -1,10 +1,10 @@
-/* A set page's piece picker (src/ui/views/piece-menu.js) on real items: the pieces of a slot by expansion, the search, the
+/* A set page's piece picker (src/ui/views/piece-menu.ts) on real items: the pieces of a slot by expansion, the search, the
    empty text. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { piecePickerView } from '../../../../src/ui/views/piece-menu.js';
+import { piecePickerView } from '../../../../src/ui/views/piece-menu.ts';
 import { SAGE_IDS, sageSet } from '../../helpers/sheet-fixtures.js';
 
 const SGE = makeJobContext('SGE');

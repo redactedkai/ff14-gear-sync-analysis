@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createOverlayBridge } from '../../../../../src/ui/elements/shared/overlay-bridge.ts';
-import { createOverlays } from '../../../../../src/ui/overlays.js';
+import { createOverlays } from '../../../../../src/ui/overlays.ts';
 
 /* A fake document that keeps the manager's listeners and sends them an event. */
 function fakeDocument() {

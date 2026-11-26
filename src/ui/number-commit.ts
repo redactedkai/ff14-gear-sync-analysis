@@ -1,5 +1,5 @@
 /* The page's one rule for text typed into a number box: what value it commits and what the box then shows. Pure (no DOM,
-   no timers), so it runs in Node; the boxes' handlers (number-field.js, the GCD tab, the substat tiers) call it and keep
+   no timers), so it runs in Node; the boxes' handlers (number-field.ts, the GCD tab, the substat tiers) call it and keep
    only their own timing. The rules are in docs/engineering/architecture.md ("Number inputs"). */
 import { clamp } from '../core/clamp.ts';
 

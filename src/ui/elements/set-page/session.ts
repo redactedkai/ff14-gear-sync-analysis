@@ -16,7 +16,7 @@
    requestUpdate() (the page draws again: called after a change of what the parts keep, as the open menu), dialogOpen (a dialog of the
    Sheets tab is open)}. Both are typed in session-types.ts. */
 import { makeJobContext } from '../../../core/job-context.ts';
-import type { Sheet, Suggestion } from '../../store/app-state.ts';
+import type { Sheet } from '../../store/app-state.ts';
 import type { SheetsFacade } from '../../store/sheets-facade.ts';
 import type { SetPageActions } from '../../store/set-page-actions.ts';
 import { fillSettingsOf } from '../../sheets/fill-settings.ts';
@@ -25,7 +25,7 @@ import { PageFill } from './fill-run.ts';
 import { PageFillSettings } from './fill-settings-edit.ts';
 import { PageLeave } from './leave-guard.ts';
 import { PageMenus } from './menus.ts';
-import type { FillSettings, JobContext, PageGearSet, SessionHost, SetPagePorts, Solver } from './session-types.ts';
+import type { FillSettings, JobContext, PageGearSet, PageSuggestion, SessionHost, SetPagePorts, Solver } from './session-types.ts';
 
 /* The state and the parts of one open set page: `ports` (the store, the Sheets facade, the solver), the set's id, the element as `host`, and
    the five parts (`menus`, `edits`, `fill`, `settings`, `leave`) that reach one another through it. It holds no DOM and no Lit. */
@@ -109,8 +109,8 @@ export class PageSession {
     return this.pageState.draft as Readonly<PageGearSet> | null;
   }
   /* The Auto-fill result waiting for Apply or Discard, {suggested ({pieces, meal}), declined: {rows, meal}}, or null. */
-  get suggestion(): Suggestion | null {
-    return this.pageState.suggestion;
+  get suggestion(): PageSuggestion | null {
+    return this.pageState.suggestion as PageSuggestion | null;
   }
   /* This page's Auto-fill is running. */
   get running(): boolean {

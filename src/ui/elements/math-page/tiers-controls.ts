@@ -3,12 +3,12 @@
    - its parent gives it the sub-tab's settings: `job` (Substat tiers' own job id) and `typedLevel` (the
      level typed into the box, or null: the job's level cap); the element reads no store;
    - a level typed sends `tiers-level` (`detail`: `{level}`, null for the level cap); the page stores it and gives it back;
-   - the box is the page's number box (number-field.js numberBox, `live`): each valid level counts as it is typed, with no wait (owner),
+   - the box is the page's number box (number-field.ts numberBox, `live`): each valid level counts as it is typed, with no wait (owner),
      text that still means the stored level stays as typed ("60.7"), the box left or Enter corrects a level out of range to the
      nearest end, and an emptied box goes back to the job's level cap. */
 import { LitElement, html } from 'lit';
 import { makeJobContext } from '../../../core/job-context.ts';
-import { numberBox } from '../../number-field.js';
+import { numberBox } from '../../number-field.ts';
 import { tierLevel } from '../../views/tiers.ts';
 import { shownNumber } from '../shared/number-box.ts';
 import { TIERS_LEVEL_EVENT } from './tiers-names.ts';
@@ -47,7 +47,7 @@ export class GsaTiersControls extends LitElement {
     this.dispatchEvent(new CustomEvent(TIERS_LEVEL_EVENT, { detail: { level }, bubbles: true }));
   }
 
-  /* The number box (number-field.js) from 1 to the job's level cap; an emptied box left or entered goes back to the level cap. */
+  /* The number box (number-field.ts) from 1 to the job's level cap; an emptied box left or entered goes back to the level cap. */
   private makeBox() {
     return numberBox(
       () => this.shownLevel(),

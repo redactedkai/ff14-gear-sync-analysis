@@ -1,8 +1,8 @@
-/* The number boxes (src/ui/number-field.js: numberBox): what a box commits on Enter or leaving it, for each
+/* The number boxes (src/ui/number-field.ts: numberBox): what a box commits on Enter or leaving it, for each
    of its options, and after typing stops. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TYPING_DEBOUNCE_MS, numberBox } from '../../../src/ui/number-field.js';
+import { TYPING_DEBOUNCE_MS, numberBox } from '../../../src/ui/number-field.ts';
 import { TARGET_GCD_RANGE } from '../../../src/ui/job-sync-panel.ts';
 
 /* A box bound to one value: {field, value(), leave(text)}; leave types `text` and leaves the box. */

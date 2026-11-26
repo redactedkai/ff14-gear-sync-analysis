@@ -6,13 +6,14 @@ import { patchOnDay } from '../../core/patches.ts';
 import { UNAVAILABLE_MESSAGE } from '../sheets/storage.ts';
 import { sheetHref } from '../store/app-state.ts';
 import { localDate, syncShort } from './sheet-text.ts';
+import type { SheetsData } from '../store/app-state.ts';
 
 /* The manager's column names, in the order of a row's cells. */
 const MANAGER_COLUMNS = Object.freeze(['Sheet', 'Job', 'Level / IL', 'Sets', 'Created', 'Changed', 'Patch']);
 
 /* The hover text of a sheet's Patch cell for its `gameData` ({commit, date}, either may be missing or empty): "Game data
    d9582a6, 2026-09-30", "Game data 2026-09-30" with no commit, '' with no date. */
-function dataTitle(gameData) {
+function dataTitle(gameData: { commit?: string; date?: string } | null | undefined): string {
   if (!gameData?.date) {
     return '';
   }
@@ -30,7 +31,7 @@ function dataTitle(gameData) {
      (the hover text of that cell: the data's short commit and date, "Game data d9582a6, 2026-09-30"; '' with no date)};
    - unreadable: the records that could not be read, {id, key, cause, text ("Could not be read: not valid JSON")}, each
      with a Delete button; unreadableTitle is their heading. */
-export function sheetManagerView(loaded) {
+export function sheetManagerView(loaded: SheetsData) {
   const rows = loaded.sheets.map(sheet => {
     const descriptionLine = (sheet.description ?? '').split('\n')[0];
     return {
@@ -40,7 +41,7 @@ export function sheetManagerView(loaded) {
       descriptionLine: descriptionLine || 'No description',
       hasDescription: Boolean(descriptionLine),
       jobId: sheet.job,
-      jobName: jobById(sheet.job).name,
+      jobName: (jobById(sheet.job) as NonNullable<ReturnType<typeof jobById>>).name,
       settingsText: syncShort(sheet),
       setCount: sheet.sets.length,
       created: localDate(sheet.createdAt),

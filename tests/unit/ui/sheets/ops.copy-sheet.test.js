@@ -11,7 +11,7 @@ import { itemById, jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { copySheet, piecesToClear } from '../../../../src/ui/sheets/ops.ts';
 import { SET_ROW_SLOTS, parseSheet } from '../../../../src/ui/sheets/storage.ts';
-import { evaluateInSheet } from '../../../../src/ui/views/set-totals.js';
+import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
 import { rng } from '../../helpers/common.js';
 
 const SHEETS = 900;

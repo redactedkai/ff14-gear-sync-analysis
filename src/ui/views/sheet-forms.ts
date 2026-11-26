@@ -6,15 +6,31 @@ import { SLOT_LABEL, jobById } from '../../core/constants.ts';
 import { GEAR_GROUPS, gearGroupName } from '../../core/gear-groups.ts';
 import { oneOrMany, plural } from '../text.ts';
 import { DESCRIPTION_MAX_LENGTH, FORM_FIELD, NAME_MAX_LENGTH, defaultSheetName, piecesToClear, ranges } from '../sheets/ops.ts';
+import type { SavedGearSet, SavedSheet } from '../sheets/saved-types.ts';
+
+/* The reason a dialog's refused main button left and the form field it is about ('' for none of them). */
+interface FormRefusal {
+  error?: string;
+  errorField?: string;
+}
+
+/* The fields of the New sheet dialog (elements/sheets/sheet-dialogs-model.ts): the name and whether it was typed, and what the name follows. */
+type NewSheetForm = Parameters<typeof defaultSheetName>[0] & FormRefusal & { name: string; nameTyped: boolean };
+
+/* The fields of the Copy sheet dialog: the new name, the chosen job, and whether the box that accepts clearing pieces is ticked. */
+type CopySheetForm = FormRefusal & { name: string; job: string; ack: boolean };
+
+/* A job of constants.ts JOBS. */
+type Job = NonNullable<ReturnType<typeof jobById>>;
 
 /* Where a refused form's reason shows, from the form's `error` (the reason, '' for none) and `errorField` (the FORM_FIELD
    it is about, '' for none). Returns {error (the reason), errors: {name, job, ack, title}}: `errors` holds the reason
    under the place that shows it (the label row of that field, or the title row for a reason about no field) and '' under
    the others, so a template only displays them. */
-export function errorPlaces({ error = '', errorField = '' }) {
+export function errorPlaces({ error = '', errorField = '' }: FormRefusal) {
   const places = { name: '', job: '', ack: '', title: '' };
   if (error) {
-    places[Object.values(FORM_FIELD).includes(errorField) ? errorField : 'title'] = error;
+    places[(Object.values(FORM_FIELD) as string[]).includes(errorField) ? (errorField as keyof typeof places) : 'title'] = error;
   }
   return { error, errors: places };
 }
@@ -23,7 +39,7 @@ export function errorPlaces({ error = '', errorField = '' }) {
    job ('' for none), level, sync: {on, cap}, error, errorField}). Returns {title, name (the name the box shows: the
    default name while none is typed), namePlaceholder, nameMax, descriptionMax,
    level, cap (sheets/ops.ts ranges), buttonText, error, errors (errorPlaces)}. */
-export function newSheetFormView(form) {
+export function newSheetFormView(form: NewSheetForm) {
   return {
     title: 'New sheet',
     name: form.nameTyped ? form.name : defaultSheetName(form),
@@ -38,7 +54,7 @@ export function newSheetFormView(form) {
 
 /* The game's name for the armor each gear group wears, by the group's first job (checked against the item data: the
    armor sets named "of Fending", "of Healing", "of Striking", ... are worn by exactly these groups). */
-const ARMOR_TYPE_OF_GROUP_LEADER = Object.freeze({
+const ARMOR_TYPE_OF_GROUP_LEADER: Readonly<Record<string, string>> = Object.freeze({
   PLD: 'Fending',
   WHM: 'Healing',
   MNK: 'Striking',
@@ -49,7 +65,7 @@ const ARMOR_TYPE_OF_GROUP_LEADER = Object.freeze({
 });
 
 /* "Melee (Striking)", or whichever of the two is known. */
-function groupLabel(role, armorType) {
+function groupLabel(role: string | null, armorType: string | undefined): string | null {
   return role && armorType ? `${role} (${armorType})` : (role ?? armorType ?? null);
 }
 
@@ -58,8 +74,8 @@ function groupLabel(role, armorType) {
    game's armor type; either alone when the other is unknown), jobs ("Paladin, Warrior, ..."), own}], footText (the jobs alone in their groups)}. The groups are gear-groups.ts GEAR_GROUPS: jobs that
    can wear most of the same armor at the same level cap; a job alone in its group (Blue Mage, Beastmaster) is listed
    in footText, not in groups. */
-export function copyHelpView(ownJobId) {
-  const alone = GEAR_GROUPS.filter(group => group.length < 2).map(group => jobById(group[0]).name);
+export function copyHelpView(ownJobId: string) {
+  const alone = GEAR_GROUPS.filter(group => group.length < 2).map(group => (jobById(group[0]) as Job).name);
   return {
     title: 'How copying works:',
     outcomes: [
@@ -69,7 +85,7 @@ export function copyHelpView(ownJobId) {
     groupsTitle: 'Which jobs share similar gear (at same level cap):',
     groups: GEAR_GROUPS.filter(group => group.length > 1).map(group => ({
       label: groupLabel(gearGroupName(group[0]), ARMOR_TYPE_OF_GROUP_LEADER[group[0]]),
-      jobs: group.map(id => jobById(id).name).join(', '),
+      jobs: group.map(id => (jobById(id) as Job).name).join(', '),
       own: group.includes(ownJobId),
     })),
     footText: `Limited jobs like ${alone.join(' and ')} copy to no other job.`,
@@ -85,10 +101,10 @@ export function copyHelpView(ownJobId) {
    - warning: null, or {title ("Astrologian cannot wear 1 piece."), text, items: [{key, setName, slotLabel, name}],
      ackText ("Clear this piece in the copy")} when the chosen job cannot wear some of the sheet's pieces;
    - disabled: the warning shows and its box is not ticked (Copy waits until it is). */
-export function copySheetFormView(sheet, form) {
-  const own = jobById(sheet.job);
+export function copySheetFormView(sheet: SavedSheet, form: CopySheetForm) {
+  const own = jobById(sheet.job) as Job;
   const group = GEAR_GROUPS.find(g => g.includes(sheet.job)) ?? [sheet.job];
-  const chosen = jobById(form.job) ?? own;
+  const chosen: Job = jobById(form.job) ?? own;
   const cleared = piecesToClear(sheet, chosen.id);
   const items = cleared.map(piece => ({
     key: `${piece.setId}:${piece.index}`,
@@ -109,7 +125,7 @@ export function copySheetFormView(sheet, form) {
     sheetName: sheet.name,
     name: form.name,
     nameMax: NAME_MAX_LENGTH,
-    jobs: group.map(id => ({ id, name: jobById(id).name, checked: id === chosen.id })),
+    jobs: group.map(id => ({ id, name: (jobById(id) as Job).name, checked: id === chosen.id })),
     help: copyHelpView(sheet.job),
     ...ranges(chosen.id),
     warning,
@@ -121,7 +137,7 @@ export function copySheetFormView(sheet, form) {
 
 /* The edit dialog of a sheet or a gear set: {title, nameMax, descriptionMax, buttonText, error, errors (errorPlaces)}. `kind`:
    'edit-sheet' (title "Edit sheet") or 'edit-set' (title "Edit gear set"); `form`: {error, errorField}. */
-export function editFormView(kind, form) {
+export function editFormView(kind: 'edit-sheet' | 'edit-set', form: FormRefusal) {
   const title = kind === 'edit-set' ? 'Edit gear set' : 'Edit sheet';
   return { title, nameMax: NAME_MAX_LENGTH, descriptionMax: DESCRIPTION_MAX_LENGTH, buttonText: 'Save', ...errorPlaces(form) };
 }
@@ -129,15 +145,19 @@ export function editFormView(kind, form) {
 /* The question a Delete asks first (rule 8: always, no undo). `kind`: 'sheet' (`target` a Sheet: named with its number of
    gear sets), 'set' (a GearSet) or 'unreadable' (a record the manager could not read: {id, cause}); `form`: {error}. Returns
    {question, buttonText, error (the reason a refused Delete shows beside the buttons)}. */
-export function deleteQuestionView(kind, target, form) {
-  let question;
+export function deleteQuestionView(
+  kind: 'sheet' | 'set' | 'unreadable',
+  target: SavedSheet | SavedGearSet | { cause?: string },
+  form: { error?: string },
+) {
+  let question: string;
   if (kind === 'sheet') {
-    const count = target.sets.length;
-    question = `Delete the sheet “${target.name}” ${count ? `and its ${plural(count, 'gear set')}` : '(it has no gear sets)'}?`;
+    const count = (target as SavedSheet).sets.length;
+    question = `Delete the sheet “${(target as SavedSheet).name}” ${count ? `and its ${plural(count, 'gear set')}` : '(it has no gear sets)'}?`;
   } else if (kind === 'set') {
-    question = `Delete the gear set “${target.name}”?`;
+    question = `Delete the gear set “${(target as SavedGearSet).name}”?`;
   } else {
-    question = `Delete the saved sheet that could not be read (${target.cause})?`;
+    question = `Delete the saved sheet that could not be read (${(target as { cause?: string }).cause})?`;
   }
   return { question, buttonText: 'Delete', error: form.error ?? '' };
 }

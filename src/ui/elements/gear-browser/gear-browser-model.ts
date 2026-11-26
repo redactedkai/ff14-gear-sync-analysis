@@ -5,14 +5,14 @@
 import type { makeJobContext } from '../../../core/job-context.ts';
 import { defaultBrowse } from '../../state.ts';
 import { syncSettings } from '../../job-sync-panel.ts';
-import { browseFiltered, gearView } from '../../views/gear.js';
+import { browseFiltered, gearView } from '../../views/gear.ts';
 import { viewCache } from '../../view-cache.ts';
 
-/* The browser's list (views/gear.js gearView) and its filters and sort (the store's `browse`: state.ts defaultBrowse). */
+/* The browser's list (views/gear.ts gearView) and its filters and sort (the store's `browse`: state.ts defaultBrowse). */
 export type GearList = ReturnType<typeof gearView>;
 export type GearBrowse = ReturnType<typeof defaultBrowse>;
 
-/* One stat cell of a row (views/gear.js browseCell) and one button of the page line (pageButtons). */
+/* One stat cell of a row (views/gear.ts browseCell) and one button of the page line (pageButtons). */
 export interface GearCell {
   text: string;
   cls: string;
@@ -89,7 +89,7 @@ export class GearBrowserModel {
     return JSON.stringify([panel.job, syncSettings(panel), browse]);
   }
 
-  /* The list for the settings now (views/gear.js gearView), built again only when the job, the sync settings, the browser's
+  /* The list for the settings now (views/gear.ts gearView), built again only when the job, the sync settings, the browser's
      filters or sort, or the page change, and only while the tab is `open`: hidden, it keeps the last one (null until the tab
      is first opened). A change to the list drops the page for good (the page shown is 1 for the render in between), so going
      back to the old filters or sort also starts at page 1. */
@@ -116,7 +116,7 @@ export class GearBrowserModel {
     this.pageFor = this.lastKey ?? '';
   }
 
-  /* Whether some filter is off its default, so Reset filters shows (views/gear.js browseFiltered). */
+  /* Whether some filter is off its default, so Reset filters shows (views/gear.ts browseFiltered). */
   static filtered(panel: GearPanel, browse: GearBrowse): boolean {
     return browseFiltered(panel.jobCtx, browse);
   }

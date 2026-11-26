@@ -1,11 +1,11 @@
-/* Gear browser tab (src/ui/views/gear.js): the rows matching the filters with their synced stats, the Slot menu,
+/* Gear browser tab (src/ui/views/gear.ts): the rows matching the filters with their synced stats, the Slot menu,
    sorting, the name search and Reset filters; computed from store-shaped state. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ACTIVITIES } from '../../../../src/core/constants.ts';
 import { browseItems } from '../../../../src/core/items.ts';
 import { ANY_SLOT_LABEL } from '../../../../src/ui/elements/gear-browser/slot-menu-names.ts';
-import { PAGE_SIZE, PAGE_SLOTS, browseFiltered, browseCell, markWords, pageList, slotCellText } from '../../../../src/ui/views/gear.js';
+import { PAGE_SIZE, PAGE_SLOTS, browseFiltered, browseCell, markWords, pageList, slotCellText } from '../../../../src/ui/views/gear.ts';
 import { gearViewOf, makeApp } from '../../helpers/views.js';
 
 /* The browser's list: database rows matching its filters that its own "Gear categories" filter lets through; no pool. With

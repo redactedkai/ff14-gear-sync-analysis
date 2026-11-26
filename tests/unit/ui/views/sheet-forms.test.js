@@ -1,4 +1,4 @@
-/* The Sheets tab's dialogs (src/ui/views/sheet-forms.js): New sheet with its default name and ranges, Copy sheet's jobs
+/* The Sheets tab's dialogs (src/ui/views/sheet-forms.ts): New sheet with its default name and ranges, Copy sheet's jobs
    from the gear group and its list of pieces to clear (a real White Mage cane), "Edit sheet" and "Edit gear set", and the
    Delete questions. */
 import { test } from 'node:test';
@@ -13,7 +13,7 @@ import {
   errorPlaces,
   newSheetFormView,
   copyHelpView,
-} from '../../../../src/ui/views/sheet-forms.js';
+} from '../../../../src/ui/views/sheet-forms.ts';
 import { hasNumber, hasParts } from '../../helpers/common.js';
 import { WHM_CANE, piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 

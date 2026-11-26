@@ -156,7 +156,7 @@ export interface GearToSearch {
   gcdLabel: Readonly<{ name: string; range: string; haste: string | null; off: string | null; full: string }>;
 }
 
-/* An Auto-fill result waiting for Apply or Discard: suggested ({pieces, meal, bestMeals}, views/set-suggestion.js
+/* An Auto-fill result waiting for Apply or Discard: suggested ({pieces, meal, bestMeals}, views/set-suggestion.ts
    suggestionOf), declined (the Take boxes switched off: {rows: row numbers, meal}). Frozen all through. */
 export interface Suggestion {
   readonly suggested: Readonly<Record<string, unknown>>;

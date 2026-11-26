@@ -24,7 +24,7 @@ const MENU_GAP_PX = 4;
 /* The widest number of matches a slot can show, as text: it sizes the hidden copy of the rows. */
 const WIDEST_COUNT_TEXT = '99,999';
 
-/* One choice of the menu (a row of `view.slots`, src/ui/views/gear.js): `key` is the slot's code, `label` its name, `count` how
+/* One choice of the menu (a row of `view.slots`, src/ui/views/gear.ts): `key` is the slot's code, `label` its name, `count` how
    many pieces match under the other filters and `countText` that count with thousands separators. */
 export interface SlotChoice {
   key: string;

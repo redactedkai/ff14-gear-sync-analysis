@@ -1,12 +1,12 @@
-/* What Apply saves of an Auto-fill result's tied best meals (src/ui/views/set-suggestion.js appliedFields and suggestionOf) and
-   what the Food row shows of them (set-rows.js). Real Sage meals and pieces. */
+/* What Apply saves of an Auto-fill result's tied best meals (src/ui/views/set-suggestion.ts appliedFields and suggestionOf) and
+   what the Food row shows of them (set-rows.ts). Real Sage meals and pieces. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { setRowsView } from '../../../../src/ui/views/set-rows.js';
-import { appliedFields, suggestionOf } from '../../../../src/ui/views/set-suggestion.js';
-import { evaluateInSheet } from '../../../../src/ui/views/set-totals.js';
+import { setRowsView } from '../../../../src/ui/views/set-rows.ts';
+import { appliedFields, suggestionOf } from '../../../../src/ui/views/set-suggestion.ts';
+import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
 import { piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 
 const sage = makeJobContext('SGE');

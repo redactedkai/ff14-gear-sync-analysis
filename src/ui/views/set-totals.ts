@@ -12,25 +12,50 @@ import { tierLadder } from '../../core/tiers.ts';
 import { plural } from '../text.ts';
 import { syncSettings } from '../job-sync-panel.ts';
 import { isUsed } from '../sheets/saved-set.ts';
+import type { SetEvaluation, SetTier } from '../../core/set.ts';
+import type { TierLadder } from '../../core/tiers.ts';
+import type { JobContext, PerStat, SetPiece, StatKey } from '../../core/types.ts';
+import type { SavedGearSet, SavedSheet } from '../sheets/saved-types.ts';
 
 /* The header's figures in order, by figure id. A stat figure's label is the job's short name for the stat (job.short);
    `main` and `spec` are the figures of the job's main stat (job.mainKey) and special substat (job.specKey, a figure only
    a job that has one shows); the other ids are stat keys. `gcd`, `critDmg` and `dot` are derived (the GCD, Critical
    Hit's second effect, the DoT/HoT bonus of the speed). */
-const FIGURES = ['main', 'gcd', 'crit', 'critDmg', 'det', 'dh', 'spec', 'dot'];
-const FIGURE_LABEL = { gcd: 'GCD', critDmg: 'Crit dmg', dot: 'DoT' };
+const FIGURES = ['main', 'gcd', 'crit', 'critDmg', 'det', 'dh', 'spec', 'dot'] as const;
+
+/* A figure's id: one of FIGURES. */
+export type FigureId = (typeof FIGURES)[number];
+
+/* One of the header's figures (setFigures): its id, its label and its text; `shown` is the text the page shows when it differs. */
+export interface Figure {
+  key: FigureId;
+  label: string;
+  text: string;
+  shown?: string;
+}
+
+/* How a figure changed (figureChange): the signed difference as text, and whether the number rose. */
+export interface FigureDelta {
+  text: string;
+  up: boolean;
+}
+
+/* A figure with its delta line against the figure before it (figuresAgainst), or none: `good` is the colour's data. */
+export type FigureAgainst = Figure & { change: (FigureDelta & { good: boolean }) | null };
+
+const FIGURE_LABEL: Partial<Record<FigureId, string>> = { gcd: 'GCD', critDmg: 'Crit dmg', dot: 'DoT' };
 /* The GCD figure's label for a job with an always-on haste (HASTE in core/constants.ts): its text is the hasted GCD, and
    `shown` adds the GCD without the haste in front of it. */
 const HASTE_GCD_LABEL = 'GCD (with Haste)';
 /* The job's stat behind a figure id: the stat key for a stat figure, null for a derived one or a job without it. */
-function figureStat(job, id) {
+function figureStat(job: JobContext, id: FigureId): StatKey | null {
   if (id === 'main') {
     return job.mainKey;
   }
   if (id === 'spec') {
     return job.specKey;
   }
-  return job.stats.includes(id) ? id : null;
+  return job.stats.includes(id as StatKey) ? (id as StatKey) : null;
 }
 
 /* A gear set evaluated under its sheet's job, level and item level sync: {job (JobContext), level, sync (core's sync
@@ -38,21 +63,24 @@ function figureStat(job, id) {
    a sheet without them has none). The rows of `gearSet.pieces` a job does not use (the off-hand of a
    two-handed job) keep their piece in the saved set but are not counted, so they are emptied here; the evaluation's rows
    keep the saved set's row numbers. */
-export function evaluateInSheet(sheet, gearSet) {
+export function evaluateInSheet(sheet: SavedSheet, gearSet: Pick<SavedGearSet, 'pieces' | 'meal'>) {
   const job = makeJobContext(sheet.job);
   const level = Math.min(sheet.level, job.maxLevel);
   const sync = syncSettings({ cap: sheet.sync.cap, sync: sheet.sync.on, level });
-  const pieces = gearSet.pieces.map(piece => (isUsed(job, piece) ? piece : { slot: piece.slot }));
+  const pieces = gearSet.pieces.map((piece): SetPiece => (isUsed(job, piece) ? piece : { slot: piece.slot }));
   const bonuses = { clan: sheet.clan ?? null, partyRoles: sheet.partyRoles ?? 0 };
   return { job, level, sync, evaluated: evaluateSet(job, makeSet(pieces, gearSet.meal ?? null), sync, level, bonuses) };
 }
+
+/* What evaluateInSheet returns: the job, the level, the sync settings and the evaluation. */
+export type SheetContext = ReturnType<typeof evaluateInSheet>;
 
 /* The note under the Gear sets table for `sheet` (a saved Sheet): what the clan and the party bonus changed in the totals,
    or '' when the sheet sets neither. "STR and VIT count the Midlander clan's bonus and the 5% party bonus, rounded down."
    The stats are the job's main stat and Vitality (short names). The clan part names the
    clan's offset ("the Sea Wolf clan's +3") when it is the same for both stats and otherwise says "bonus"; "rounded
    down" appears only with a party bonus (clan-bonus.ts withPartyBonus). */
-export function bonusNote(sheet) {
+export function bonusNote(sheet: Pick<SavedSheet, 'job' | 'clan' | 'partyRoles'>): string {
   const clan = isClan(sheet.clan) ? sheet.clan : null;
   const roles = partyRoles(sheet.partyRoles);
   if (!clan && !roles) {
@@ -69,7 +97,7 @@ export function bonusNote(sheet) {
 }
 
 /* A whole number with its sign: "+3", "−2" (a true minus sign, as the page writes them), "0". */
-function signed(points) {
+function signed(points: number): string {
   if (points > 0) {
     return `+${points}`;
   }
@@ -79,7 +107,7 @@ function signed(points) {
 /* The Tier row's cells, one per stat in job.stats order: {effect, spare, toNext, text ("3 · +16"; "0 · –" at the last
    tier), zero}, or null for a stat without tiers. spare is the points above the tier's start, toNext the points to the
    next tier. */
-function tierCells(evaluated) {
+function tierCells(evaluated: SetEvaluation) {
   return evaluated.tiers.map(
     tier =>
       tier && {
@@ -94,7 +122,7 @@ function tierCells(evaluated) {
 
 /* The Defense row: {phys, mag}, each {label, value, valueText ("3456"), pctText ("−12% damage")}; the share of damage a
    defense removes is whole percent at the sheet's level (shown only, never ranked). */
-function defenseRow(evaluated) {
+function defenseRow(evaluated: SetEvaluation) {
   const d = evaluated.defense;
   return {
     phys: { label: 'Physical', value: d.phys, valueText: String(d.phys), pctText: `−${d.physPct}% damage` },
@@ -104,7 +132,7 @@ function defenseRow(evaluated) {
 
 /* The Total row's cells for panel numbers `values` (a stat map): one per stat in job.stats order, {stat, header (the
    job's short name), value}. */
-function totalCells(job, values) {
+function totalCells(job: JobContext, values: PerStat<number>) {
   return job.stats.map(stat => ({ stat, header: job.short[stat], value: values[stat] }));
 }
 
@@ -119,7 +147,7 @@ function totalCells(job, values) {
    - tier: {caption: "spare · to next tier", cells} (tierCells), counting the meal; a job with an always-on haste has
      "spare · to next tier (hasted speed)", since its speed tier counts the hasted GCD's steps;
    - defense: defenseRow. */
-export function setTotalsView(context) {
+export function setTotalsView(context: SheetContext) {
   const { job, evaluated } = context;
   const used = evaluated.rows.filter(row => isUsed(job, row));
   const emptyCount = used.filter(row => !row.item && !row.blockedBy).length;
@@ -150,26 +178,26 @@ export function setTotalsView(context) {
    one has no such figure), and the DoT/HoT bonus ("+0.7%"). Tiers count the meal, as the Tier row does. A job with an
    always-on haste (Monk, Ninja, Samurai, Viper) has the label "GCD (with Haste)", its `text` the hasted GCD (the one the
    delta lines compare) and `shown` "2.49s (1.99s)": the GCD without the haste, then with it. */
-export function setFigures(context) {
+export function setFigures(context: SheetContext): Figure[] {
   const { job, level, evaluated } = context;
-  const tierOf = stat => evaluated.tiers[job.stats.indexOf(stat)];
+  const tierOf = (stat: StatKey): SetTier | null => evaluated.tiers[job.stats.indexOf(stat)];
   const critPanel = evaluated.panel.crit;
   const { mainKey, speedKey, specKey } = job;
-  const text = {
+  const text: Record<FigureId, string | null> = {
     main: String(evaluated.panel[mainKey]),
     gcd: tierOf(speedKey)?.effect ?? `${evaluated.gcd.gcd.toFixed(2)}s`,
-    crit: tierOf('crit').effect,
-    critDmg: tierLadder(job, 'crit', level, critPanel, 0).rows[0].values[1],
-    det: tierOf('det').effect,
-    dh: tierOf('dh').effect,
-    spec: specKey ? tierOf(specKey).effect : null,
+    crit: (tierOf('crit') as SetTier).effect,
+    critDmg: (tierLadder(job, 'crit', level, critPanel, 0) as TierLadder).rows[0].values[1],
+    det: (tierOf('det') as SetTier).effect,
+    dh: (tierOf('dh') as SetTier).effect,
+    spec: specKey ? (tierOf(specKey) as SetTier).effect : null,
     dot: `+${evaluated.gcd.dot.toFixed(1)}%`,
   };
   const hasted = Boolean(evaluated.gcd.haste);
   return FIGURES.filter(key => text[key] != null).map(key => ({
     key,
-    label: key === 'gcd' && hasted ? HASTE_GCD_LABEL : (FIGURE_LABEL[key] ?? job.short[figureStat(job, key)]),
-    text: text[key],
+    label: key === 'gcd' && hasted ? HASTE_GCD_LABEL : (FIGURE_LABEL[key] ?? job.short[figureStat(job, key) as StatKey]),
+    text: text[key] as string,
     // what the page shows when it differs from `text` (the figure deltas are taken from `text`): "2.49s (1.99s)"
     ...(key === 'gcd' && hasted ? { shown: `${evaluated.gcd.unhasted.toFixed(2)}s (${text.gcd})` } : {}),
   }));
@@ -177,19 +205,19 @@ export function setFigures(context) {
 
 /* The widths of a row of figures (setFigures' list), for a CSS grid: one share per figure, a figure with a `shown` text
    (the GCD of a job with haste, "2.49s (1.99s)") gets 1.7 shares. */
-export function figureColumns(figures) {
+export function figureColumns(figures: readonly Pick<Figure, 'shown'>[]): string {
   return figures.map(figure => (figure.shown ? 'minmax(0, 1.7fr)' : 'minmax(0, 1fr)')).join(' ');
 }
 
 /* How a figure changed from `before` to `after` (texts as setFigures gives them): {text ("+1.7%", "−0.01s"), up}, or null
    when the two texts are the same. text is the signed difference with the figure's unit and as many decimals as the
    figures have; up is whether the number rose. */
-export function figureChange(before, after) {
+export function figureChange(before: string, after: string): FigureDelta | null {
   if (before === after) {
     return null;
   }
-  const number = t => Number.parseFloat(t.replace(/[^0-9.-]/g, ''));
-  const decimals = t => (t.replace(/[^0-9.]/g, '').split('.')[1] || '').length;
+  const number = (t: string) => Number.parseFloat(t.replace(/[^0-9.-]/g, ''));
+  const decimals = (t: string) => (t.replace(/[^0-9.]/g, '').split('.')[1] || '').length;
   const diff = number(after) - number(before);
   let unit = '';
   if (after.includes('%')) {
@@ -204,7 +232,7 @@ export function figureChange(before, after) {
 /* The figures of `after` with each one's delta line against `before` (both setFigures lists): [{key, label, text,
    change}], change {text, up, good} or null. good is the colour's data (green better, red worse): a
    higher figure is good, except the GCD, where a lower one is. The template maps good to a class. */
-export function figuresAgainst(before, after) {
+export function figuresAgainst(before: readonly Figure[], after: readonly Figure[]): FigureAgainst[] {
   return after.map((figure, i) => {
     const change = figureChange(before[i].text, figure.text);
     return { ...figure, change: change && { ...change, good: figure.key === 'gcd' ? !change.up : change.up } };

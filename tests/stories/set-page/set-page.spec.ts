@@ -1,7 +1,7 @@
 /* Stories of <gsa-set-page>: a piece picked by hand opens a draft with Apply and Discard, and Discard puts the set back; leaving with a
    draft asks first, and Keep editing stays; Tab goes from the set's buttons to Auto-fill and the gear; an Auto-fill that fails (the
    solver rejects, answers with an error, or stops at its step limit) says so in a line and leaves the page as it was; axe. */
-import { STEP_LIMIT_TEXT, failedText } from '../../../src/ui/views/set-suggestion.js';
+import { STEP_LIMIT_TEXT, failedText } from '../../../src/ui/views/set-suggestion.ts';
 import { expect, test } from '../fixtures.ts';
 import { FILL_ERROR_MESSAGE, HEAD_ROW, type Default, type FillFails } from './set-page.story.js';
 

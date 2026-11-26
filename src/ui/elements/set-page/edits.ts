@@ -3,7 +3,7 @@
    edit by hand to Apply or Discard, null without one) is in the store: `session.draft` reads it, `pages.setDraft` changes it. */
 import type { StatKey } from '../../../core/types.ts';
 import { frozenCopy } from '../../view-cache.ts';
-import { draftNote, draftView, samePieces } from '../../views/set-draft.js';
+import { draftNote, draftView, samePieces } from '../../views/set-draft.ts';
 import { editableCopy, placePiece, withMeal, withMealPin, withPin, withStone, withoutStone } from '../../sheets/set-edits.ts';
 import type { PageSession } from './session.ts';
 import type { PageGearSet } from './session-types.ts';

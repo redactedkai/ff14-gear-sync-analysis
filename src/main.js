@@ -11,7 +11,7 @@ import { DEFAULT_ROUTE, parseRoute } from './ui/router/routes.ts';
 import { focusScreenHeading, isPlacingScroll } from './ui/router/focus.ts';
 import { readScrollPositions, tabStorage, writeScrollPositions } from './ui/router/scroll-storage.ts';
 import { installUnloadGuard } from './ui/router/unload-guard.ts';
-import { overlays } from './ui/overlays.js';
+import { overlays } from './ui/overlays.ts';
 import { enableHqFont } from './ui/hq-font.ts';
 // the Lit elements (each registers itself on import): the page's root, which draws the others
 import './ui/elements/gear-browser/expansion-menu.ts';

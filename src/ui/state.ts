@@ -35,7 +35,7 @@ function defaultPanel(): Panel {
 }
 
 /* The Gear browser's settings at their defaults for `job` (a JobContext, or null before one is chosen). The one copy of
-   them: defaultState, the job reset (resetForJob), Reset filters (elements/gear-browser/gear-browser.ts) and its check (views/gear.js
+   them: defaultState, the job reset (resetForJob), Reset filters (elements/gear-browser/gear-browser.ts) and its check (views/gear.ts
    browseFiltered) all read it. expOff: expansions switched off. exclude: ACTIVITIES keys ("Gear categories" boxes) left out;
    market: tradeable pieces listed whatever their source (the market board switch, on by default). lvl: the "Equip
    level" filter, the job's level cap (DEFAULT_LEVEL with no job). sort: the table heading it is sorted by ('name',

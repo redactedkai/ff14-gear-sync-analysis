@@ -18,7 +18,7 @@ export const PICKER_SEARCH_LABEL = 'Search pieces';
 /* The name of the button that empties the slot. */
 export const PICKER_EMPTY_LABEL = 'Empty this slot';
 
-/* One piece of the picker (views/piece-menu.js piecePickerView; its comment names every field): `key` (the gameId), `name`, `hq`,
+/* One piece of the picker (views/piece-menu.ts piecePickerView; its comment names every field): `key` (the gameId), `name`, `hq`,
    `unique` with its note `uniqueText`, `taken` (a Unique ring worn in the other ring row: shown, not pickable), `onClass` ('on' for
    the piece the row holds), the lines `pillClass` and `pillLabel` (the gear category), `line` (the stats) and `levels`. */
 export interface PickerPiece {
@@ -35,7 +35,7 @@ export interface PickerPiece {
   levels: string;
 }
 
-/* The picker the page gives (views/piece-menu.js piecePickerView, cut to the rows drawn so far by views/limit-rows.ts): `groups` (the
+/* The picker the page gives (views/piece-menu.ts piecePickerView, cut to the rows drawn so far by views/limit-rows.ts): `groups` (the
    pieces by expansion), `placeholder` (the search box's, naming the slot), `canEmpty` (the row holds a piece, so "Empty" is offered),
    `emptyText` (why no piece shows, or ''), `footText` ("412 pieces"). */
 export interface PiecePicker {

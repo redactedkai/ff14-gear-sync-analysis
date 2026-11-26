@@ -5,12 +5,12 @@
    It sits inside the Sheets screen (`<gsa-sheets-screen>`, sheets/sheets-screen.ts), made again for each set it shows (the screen draws
    it with `keyed(setId, ...)`), so nothing here outlives a set:
    - the screen gives it `ports` (the store, its Sheets facade, the solver and the highest real item level: SetPagePorts), `setId`,
-     `header` (the page's top line, views/sheet-sets.js setHeaderView) and `dialogIsOpen` (a function: whether a dialog of the screen is
+     `header` (the page's top line, views/sheet-sets.ts setHeaderView) and `dialogIsOpen` (a function: whether a dialog of the screen is
      open); the element follows the store itself: it draws again when the Sheets tab or the set pages change;
    - what it does is the page's session (session.ts and the parts it makes: menus, edits, Auto-fill, settings, leaving); the element
      makes one when it has its ports and set, starts it, and stops it when it leaves the page (the Auto-fill still running is stopped,
      the page's draft and result go);
-   - what it draws is views/set-page.js's view, built once per change of the sheets, the set, the draft or the result (never in reactive
+   - what it draws is views/set-page.ts's view, built once per change of the sheets, the set, the draft or the result (never in reactive
      state); the template only displays it;
    - Edit and Delete are asked of the Sheets screen, which owns those dialogs, with a `sheet-action` event (sheets/sheet-action.ts).
    Everything a menu, a popover or the question needs is an element of its own (the piece picker, the materia menu, the Food menu, the
@@ -22,7 +22,7 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { JOB_ICONS } from '../../../data/job-icons.js';
 import { followInPage } from '../../router/plain-click.ts';
-import { fillButtonView, noPiecesFlag, setPageViews } from '../../views/set-page.js';
+import { fillButtonView, noPiecesFlag, setPageViews } from '../../views/set-page.ts';
 import '../gear-browser/expansion-menu.ts';
 import '../gear-browser/gear-categories.ts';
 import { copyIcon, deleteIcon, editIcon } from '../shared/button-icons.ts';
@@ -44,7 +44,7 @@ import type { PageView, RowView } from './set-page-types.ts';
 /* The framed job icons by job id (src/data/job-icons.js). */
 const ICONS: Record<string, string> = JOB_ICONS;
 
-/* The page's top line (views/sheet-sets.js setHeaderView). */
+/* The page's top line (views/sheet-sets.ts setHeaderView). */
 export interface SetPageHeader {
   crumbs: readonly { text: string }[];
   jobId: string;
@@ -230,7 +230,7 @@ export class GsaSetPage extends LitElement {
     if (!saved || !sheet || saved.id !== session.setId) {
       return nothing;
     }
-    const view = this.views.view(session.sheets.rev, sheet, saved, session.draft, session.suggestion) as PageView;
+    const view = this.views.view(session.sheets.rev, sheet, saved, session.draft, session.suggestion);
     return html`<div class="setpage" @keydown=${(event: KeyboardEvent) => session.leave.pageKey(event)}>
       ${this.renderHead(session, header, view)}
       <p class="small stale-note" id="sh-fill-line" role="alert" style=${hideWhen(!session.fillLine)}>${session.fillLine}</p>

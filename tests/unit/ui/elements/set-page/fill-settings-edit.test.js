@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { inProcessSolver } from '../../../../../src/ui/solver.ts';
 import { fillRecipe } from '../../../../../src/ui/sheets/fill-settings.ts';
-import { evaluateInSheet } from '../../../../../src/ui/views/set-totals.js';
+import { evaluateInSheet } from '../../../../../src/ui/views/set-totals.ts';
 import { makeSession } from '../../../../../src/core/session.ts';
 import { gearToSearchView } from '../../../../../src/ui/solve.ts';
 import { makeJobContext } from '../../../../../src/core/job-context.ts';

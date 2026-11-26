@@ -1,8 +1,8 @@
 /* Leaving a set page: the store's leave guard, the question asked when a draft, a running Auto-fill or a waiting result would be lost,
    the moves that ask the same (Copy, New set), and the key of the page (Escape). Part of the page's session (session.ts). */
-import { overlays } from '../../overlays.js';
+import { overlays } from '../../overlays.ts';
 import { unsettledKind } from '../../store/app-state.ts';
-import { RESULT_DISCARDED_TEXT } from '../../views/set-page.js';
+import { RESULT_DISCARDED_TEXT } from '../../views/set-page.ts';
 import type { LeaveMove } from '../../store/sheets-actions.ts';
 import type { PageSession } from './session.ts';
 import type { PageView } from './set-page-types.ts';

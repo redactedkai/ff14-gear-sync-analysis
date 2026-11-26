@@ -20,7 +20,7 @@ import { LitElement, type PropertyValues, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { MAX_REAL } from '../../../core/tables.ts';
 import { capTextBad, limitCapToLevel } from '../../level-cap.ts';
-import { TYPING_DEBOUNCE_MS, flashLowered, numberBox } from '../../number-field.js';
+import { TYPING_DEBOUNCE_MS, flashLowered, numberBox } from '../../number-field.ts';
 import { capFieldView } from '../../views/cap-field.ts';
 import { shownNumber } from '../shared/number-box.ts';
 import { type CapFlag, capFlagTemplate } from './cap-flag.ts';
@@ -99,7 +99,7 @@ export class GsaCapField extends LitElement {
     this.box = this.makeBox();
   }
 
-  /* The number box (number-field.js): any whole number from 1 as typed; `snap` moves a number out of range to the nearest on leaving. */
+  /* The number box (number-field.ts): any whole number from 1 as typed; `snap` moves a number out of range to the nearest on leaving. */
   private makeBox() {
     return numberBox(
       () => this.value,

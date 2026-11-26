@@ -12,20 +12,31 @@
    (a function of the event: true leaves this Escape to something else, e.g. a native menu's open list), close (a function
    that clears the layer's own state)}. */
 
+/* A layer as an overlay registers it (see the top). */
+export interface OverlayLayer {
+  id: string;
+  root: () => Element | null;
+  opener?: (() => HTMLElement | null) | null;
+  tabOut?: boolean;
+  parent?: string | null;
+  ignoreEscape?: (event: KeyboardEvent) => boolean;
+  close: () => void;
+}
+
 /* Whether `element` holds `target` (an element or null). */
-function holds(element, target) {
-  return Boolean(element && target && element.contains(target));
+function holds(element: Element | null | undefined, target: EventTarget | null): boolean {
+  return Boolean(element && target && element.contains(target as Node));
 }
 
 /* A manager of open layers. `getDocument` is a function returning the document the listeners go on (none in Node: the
    manager then only keeps the stack, which is what its unit tests use). */
-export function createOverlays(getDocument = () => globalThis.document) {
-  const stack = []; // the open layers, the oldest first
+export function createOverlays(getDocument: () => Document | undefined = () => globalThis.document) {
+  const stack: OverlayLayer[] = []; // the open layers, the oldest first
   let listening = false;
 
   /* The layer `id` and the ones it is part of (by `parent`), as a set of ids. */
-  function familyOf(id) {
-    const family = new Set();
+  function familyOf(id: string | null | undefined): Set<string> {
+    const family = new Set<string>();
     for (let next = id; next && !family.has(next); next = stack.find(layer => layer.id === next)?.parent) {
       family.add(next);
     }
@@ -33,12 +44,12 @@ export function createOverlays(getDocument = () => globalThis.document) {
   }
 
   /* Whether `target` is in the layer or on its opener. */
-  function reaches(layer, target) {
+  function reaches(layer: OverlayLayer, target: EventTarget | null): boolean {
     return holds(layer.root(), target) || holds(layer.opener?.(), target);
   }
 
   /* Takes `layer` off the stack and clears its state; the focus goes to its opener when `restoreFocus`. */
-  function closeLayer(layer, restoreFocus = false) {
+  function closeLayer(layer: OverlayLayer, restoreFocus = false): void {
     const at = stack.indexOf(layer);
     if (at >= 0) {
       stack.splice(at, 1);
@@ -51,7 +62,7 @@ export function createOverlays(getDocument = () => globalThis.document) {
 
   /* An Escape (`event`: the key event): closes the topmost layer with the focus back on its opener, unless the layer leaves
      this Escape to something else. Returns whether it closed one. */
-  function pressEscape(event) {
+  function pressEscape(event: KeyboardEvent): boolean {
     const layer = stack.at(-1);
     if (!layer || layer.ignoreEscape?.(event)) {
       return false;
@@ -60,13 +71,13 @@ export function createOverlays(getDocument = () => globalThis.document) {
     return true;
   }
 
-  function onKeydown(event) {
+  function onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape' && !event.defaultPrevented) {
       pressEscape(event);
     }
   }
 
-  function onPointerdown(event) {
+  function onPointerdown(event: PointerEvent): void {
     for (const layer of [...stack].reverse()) {
       if (reaches(layer, event.target)) {
         return; // a press inside a layer leaves the layers under it open
@@ -75,7 +86,7 @@ export function createOverlays(getDocument = () => globalThis.document) {
     }
   }
 
-  function onFocusin(event) {
+  function onFocusin(event: FocusEvent): void {
     for (const layer of [...stack].reverse()) {
       if (layer.tabOut && !reaches(layer, event.target)) {
         closeLayer(layer);
@@ -84,7 +95,7 @@ export function createOverlays(getDocument = () => globalThis.document) {
   }
 
   /* The listeners go on the document once, with the first layer. */
-  function listen() {
+  function listen(): void {
     const doc = getDocument();
     if (listening || !doc) {
       return;
@@ -97,7 +108,7 @@ export function createOverlays(getDocument = () => globalThis.document) {
 
   return {
     /* Opens `layer` (see the top): every layer that is not part of its family closes first. */
-    open(layer) {
+    open(layer: OverlayLayer): void {
       const family = familyOf(layer.parent);
       for (const other of [...stack]) {
         if (other.id === layer.id || !family.has(other.id)) {
@@ -108,7 +119,7 @@ export function createOverlays(getDocument = () => globalThis.document) {
       listen();
     },
     /* Closes the layer `id` if it is open; the focus goes to its opener when `restoreFocus`. Returns whether it was open. */
-    close(id, { restoreFocus = false } = {}) {
+    close(id: string, { restoreFocus = false }: { restoreFocus?: boolean } = {}): boolean {
       const layer = stack.find(entry => entry.id === id);
       if (layer) {
         closeLayer(layer, restoreFocus);
@@ -116,13 +127,13 @@ export function createOverlays(getDocument = () => globalThis.document) {
       return Boolean(layer);
     },
     /* Closes every layer, without moving the focus: for a change of screen. */
-    closeAll() {
+    closeAll(): void {
       for (const layer of [...stack].reverse()) {
         closeLayer(layer);
       }
     },
     pressEscape,
-    isOpen: id => stack.some(layer => layer.id === id),
+    isOpen: (id: string) => stack.some(layer => layer.id === id),
     /* the ids of the open layers, the oldest first */
     get openIds() {
       return stack.map(layer => layer.id);

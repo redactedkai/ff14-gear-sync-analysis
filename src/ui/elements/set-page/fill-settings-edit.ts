@@ -2,20 +2,20 @@
    GCD and Gear to search boxes that edit the set's saved Auto-fill settings, and the Gear to search count from the solver. Part of the
    page's session (session.ts). The Gear to search answer (the line, the count, the pieces per "Gear categories" box, the Target GCD
    label) and the id of the count on its way are in the store (`session.pageState.gearToSearch`, `countId`; `pages` changes them). */
-import { numberBox } from '../../number-field.js';
+import { numberBox } from '../../number-field.ts';
 import { clone, messageOf } from '../../text.ts';
 import { gearFilter } from '../../../core/items.ts';
 import { rankChoices, rankSwapNote, withRank } from '../../ranks.ts';
 import { TARGET_GCD_RANGE } from '../../job-sync-panel.ts';
 import { isCancelled, solverRequest } from '../../solver.ts';
 import { fillRecipe } from '../../sheets/fill-settings.ts';
-import { evaluateInSheet } from '../../views/set-totals.js';
+import { evaluateInSheet } from '../../views/set-totals.ts';
 import type { StatKey } from '../../../core/types.ts';
 import type { GearToSearchAnswer } from '../../store/set-page-actions.ts';
 import type { PageSession } from './session.ts';
 import type { FillGoal, FillSearchCriteria, FillSettings, SelectOption } from './session-types.ts';
 
-/* A number box's handlers (number-field.js numberBox). */
+/* A number box's handlers (number-field.ts numberBox). */
 type NumberBox = ReturnType<typeof numberBox>;
 
 /* The page's Auto-fill settings edits (`session.settings`): the goal, Target GCD and Gear to search boxes, and the Gear to search count. */

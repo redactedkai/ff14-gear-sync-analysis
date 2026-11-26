@@ -5,7 +5,7 @@ import { html } from 'lit';
 import '../../../src/ui/elements/sheets/sheet-manager.ts';
 import { recordEvents } from '../gallery/record.js';
 
-/* One sheet's row, shaped as views/sheet-manager.js builds it. */
+/* One sheet's row, shaped as views/sheet-manager.ts builds it. */
 const row = (id, name, jobId, jobName) => ({
   id,
   href: `#/sheets/${id}`,

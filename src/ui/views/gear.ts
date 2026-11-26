@@ -21,6 +21,10 @@ import { fmtInt } from '../text.ts';
 import { ANY_SLOT_KEY, ANY_SLOT_LABEL } from '../elements/gear-browser/slot-menu-names.ts';
 import { defaultBrowse } from '../state.ts';
 import { SLOT_LABEL } from '../../core/constants.ts';
+import type { ParsedRow } from '../../core/items.ts';
+import type { JobContext, SlotType, StatKey, StatMap } from '../../core/types.ts';
+import type { BrowseFields } from '../store/app-state.ts';
+import type { SyncSettings } from '../job-sync-panel.ts';
 
 /* The rows on one page of the table. The time of a sort or a page turn is mostly the time to draw the rows (about 1.3 ms
    a row), so a page is 50 rather than 100. */
@@ -31,24 +35,27 @@ export const PAGE_SIZE = 50;
 export const PAGE_SLOTS = 7;
 
 /* The Slot menu's groups, in the order they show (owner): weapon and shield, armor, accessories. */
-const SLOT_GROUPS = [
+const SLOT_GROUPS: readonly (readonly SlotType[])[] = [
   ['weapon', 'offhand'],
   ['head', 'body', 'hands', 'legs', 'feet'],
   ['ear', 'neck', 'wrist', 'ring'],
 ];
 
+/* The part of a browsed row the sort reads. */
+type BrowsedRow = { name: string; lvl: number; ilvl: number; eff: StatMap };
+
 /* The orders the table's headings sort by: 'name', 'lvl', 'ilvl' or a stat key (its synced value), each 'desc'
    (high first; Z to A for names) or 'asc'. Ties go to the higher item level, then the name. */
-function byOrder(sort, dir) {
+function byOrder(sort: string, dir: string) {
   const sign = dir === 'asc' ? -1 : 1;
-  return (x, y) => {
+  return (x: BrowsedRow, y: BrowsedRow) => {
     let d = 0;
     if (sort === 'name') {
       d = y.name.localeCompare(x.name);
     } else if (sort === 'lvl') {
       d = y.lvl - x.lvl;
     } else if (sort !== 'ilvl') {
-      d = (y.eff[sort] || 0) - (x.eff[sort] || 0);
+      d = (y.eff[sort as StatKey] || 0) - (x.eff[sort as StatKey] || 0);
     }
     return sign * d || sign * (y.ilvl - x.ilvl) || x.name.localeCompare(y.name);
   };
@@ -56,18 +63,18 @@ function byOrder(sort, dir) {
 
 /* A name cut where the search's words are found: [{text, hit}], hit true on a matched part (shown highlighted). Words
    are found ignoring case; overlapping matches merge. */
-export function markWords(name, query) {
+export function markWords(name: string, query: string): { text: string; hit: boolean }[] {
   const lower = name.toLowerCase(),
-    hit = new Array(name.length).fill(false);
+    hit: boolean[] = new Array(name.length).fill(false);
   for (const w of query.toLowerCase().split(/\s+/).filter(Boolean)) {
     for (let i = lower.indexOf(w); i >= 0; i = lower.indexOf(w, i + 1)) {
       hit.fill(true, i, i + w.length);
     }
   }
-  const parts = [];
+  const parts: { text: string; hit: boolean }[] = [];
   for (let i = 0; i < name.length; i++) {
-    if (parts.length && parts.at(-1).hit === hit[i]) {
-      parts.at(-1).text += name[i];
+    if (parts.length && (parts.at(-1) as { hit: boolean }).hit === hit[i]) {
+      (parts.at(-1) as { text: string }).text += name[i];
     } else {
       parts.push({ text: name[i], hit: hit[i] });
     }
@@ -76,19 +83,19 @@ export function markWords(name, query) {
 }
 
 /* The same keys, in any order. */
-const sameSet = (a, b) => [...a].sort().join() === [...b].sort().join();
+const sameSet = (a: readonly string[], b: readonly string[]) => [...a].sort().join() === [...b].sort().join();
 
 /* Whether any of the browser's filters is off its default (defaultBrowse; Reset filters shows only then): the name
    search (spaces aside), the slot, the item level range, the equip level (empty or the job's level cap is no filter), the
    expansions, or Gear categories (its boxes in any order, or the market board switch). The sort is not a filter. */
-export function browseFiltered(job, b) {
+export function browseFiltered(job: JobContext, b: BrowseFields): boolean {
   const d = defaultBrowse(job);
   return (
     b.q.trim() !== d.q ||
     b.type !== d.type ||
     b.min !== d.min ||
     b.max !== d.max ||
-    (b.lvl !== '' && b.lvl < d.lvl) ||
+    (b.lvl !== '' && b.lvl < (d.lvl as number)) ||
     !sameSet(b.expOff, d.expOff) ||
     b.market !== d.market ||
     !sameSet(b.exclude, d.exclude)
@@ -100,7 +107,7 @@ export function browseFiltered(job, b) {
    Lowered by sync: the synced value, bold with the cap bar (sync takes a stat to exactly the piece's cap; both come
    from the cell's `cut` class in src/styles/gear-browser.css), and `was` the value before sync, which the CSS draws as the muted line
    under it (from the cell's data-was attribute); else the value, dimmed when zero, and `was` null (no attribute). */
-export function browseCell(rawValue, syncedValue, col = '') {
+export function browseCell(rawValue: number | undefined, syncedValue: number | undefined, col = '') {
   const raw = rawValue || 0;
   const synced = syncedValue || 0;
   if (synced < raw) {
@@ -112,7 +119,7 @@ export function browseCell(rawValue, syncedValue, col = '') {
 /* The slot label as the cell shows it: a piece that takes three or more slots ("Body + Hands + Legs + Feet") goes on two
    lines, split in the middle ("Body + Hands", a line break, "Legs + Feet"), so one rare piece does not set the Slot
    column's width; the template keeps the break (white-space: pre-line). */
-export function slotCellText(label) {
+export function slotCellText(label: string): string {
   const parts = label.split(' + ');
   if (parts.length < 3) {
     return label;
@@ -122,13 +129,13 @@ export function slotCellText(label) {
 }
 
 /* "1 match", "1,939 matches". */
-const matchCount = n => `${fmtInt(n)} ${n === 1 ? 'match' : 'matches'}`;
+const matchCount = (n: number) => `${fmtInt(n)} ${n === 1 ? 'match' : 'matches'}`;
 
 /* The page line's numbers for page `current` of `count` (owner's pick P1 a): an array of page numbers,
    with null for a gap ("…"). Every page while there are PAGE_SLOTS or fewer; else always PAGE_SLOTS entries: page 1, the current page with one page each side, the last
    page, and a gap between them where pages are skipped. Near an end, the pages run on from that end instead
    (1 2 3 4 5 … 22), so a gap never stands for a single page. One page gives [1]. */
-export function pageList(current, count) {
+export function pageList(current: number, count: number): (number | null)[] {
   if (count <= PAGE_SLOTS) {
     return Array.from({ length: count }, (_, i) => i + 1);
   }
@@ -146,7 +153,7 @@ export function pageList(current, count) {
   }
 
   // first page, gap, the run, gap, last page (no gap on the side the run touches)
-  const list = [1];
+  const list: (number | null)[] = [1];
   if (from > 2) {
     list.push(null);
   }
@@ -172,12 +179,12 @@ export function pageList(current, count) {
    sync, level}: ui/job-sync-panel.ts syncSettings), with the browser's settings `browse` (the store's: state.ts
    defaultBrowse). The page line: pageButtons, [{key, page, current}] from pageList (page null for a gap; just 1 with one
    page), and prevPage and nextPage, the arrows' pages (null at the ends). */
-export function gearView(job, sync, browse, page = 1) {
+export function gearView(job: JobContext, sync: SyncSettings, browse: BrowseFields, page = 1) {
   const b = browse;
   // every slot first, for the Slot menu's counts; the slot filter is applied after
   const rows = browseItems(job, { ...gearFilter(b), q: b.q });
   const allowed = allowedActivities(b.exclude || [], b.market !== false);
-  const inSlot = r => b.type === ANY_SLOT_KEY || r.type === b.type;
+  const inSlot = (r: ParsedRow) => b.type === ANY_SLOT_KEY || r.type === b.type;
   const listed = rows.filter(r => routesAllow(r.routes, allowed));
   const all = listed.filter(inSlot).map(r => {
     const raw = dbStats(job, r.st);
@@ -224,11 +231,13 @@ export function gearView(job, sync, browse, page = 1) {
   });
 
   // the Slot menu's choices: how many matches each slot has under the other filters
-  const counts = {};
+  const counts: Partial<Record<SlotType, number>> = {};
   for (const r of listed) {
     counts[r.type] = (counts[r.type] || 0) + 1;
   }
-  const slots = [{ key: ANY_SLOT_KEY, label: ANY_SLOT_LABEL, count: listed.length, countText: fmtInt(listed.length), group: 0 }];
+  const slots: { key: string; label: string; count: number; countText: string; group: number }[] = [
+    { key: ANY_SLOT_KEY, label: ANY_SLOT_LABEL, count: listed.length, countText: fmtInt(listed.length), group: 0 },
+  ];
   SLOT_GROUPS.forEach((group, g) => {
     for (const t of group) {
       if (job.activeSlotTypes.includes(t)) {

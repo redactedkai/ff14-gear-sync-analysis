@@ -1,8 +1,11 @@
 /* What the Food menu (<gsa-food-menu>) keeps and works out, with no DOM: the search text, the stat pills, the sort, the "Best for goal"
-   switch, how many meals are drawn, and the list those make (views/meal-menu.js has the filters and the list). The element and the
-   Node tests both import it. The menu's data (`menu`, views/set-meal-menu.js setMealMenuView) is given by the page and is frozen. */
+   switch, how many meals are drawn, and the list those make (views/meal-menu.ts has the filters and the list). The element and the
+   Node tests both import it. The menu's data (`menu`, views/set-meal-menu.ts setMealMenuView) is given by the page and is frozen. */
 import { FIRST_ROWS, limitRows } from '../../views/limit-rows.ts';
-import { mealList, mealPillOff, mealsPassing } from '../../views/meal-menu.js';
+import { mealList, mealPillOff, mealsPassing } from '../../views/meal-menu.ts';
+import type { ListedMeal, MealItem as ViewMealItem } from '../../views/meal-menu.ts';
+import type { setMealMenuView } from '../../views/set-meal-menu.ts';
+import type { StatKey } from '../../../core/types.ts';
 
 /* The events the element sends: `food-open` (detail: whether the menu is open now; the page then gives it `menu`, which it builds
    only for an open menu) and `meal-pick` (detail: the meal's key, or null for No food). The page's template listens with
@@ -18,41 +21,21 @@ export const FOOD_SEARCH_LABEL = 'Search meals';
 /* Meals drawn below the shown meal when the menu opens, so the list can scroll to it. */
 const ROWS_BELOW_SHOWN = 10;
 
-/* One meal of the menu (views/meal-menu.js mealMenu): `key`, `name`, the stat keys it has (`stats`), `adds` what it gives on this
+/* One meal of the menu (views/meal-menu.ts mealMenu): `key`, `name`, the stat keys it has (`stats`), `adds` what it gives on this
    gear ({stat, text, value}), `on` (the row shows it) and `best` (it is tagged "best for goal"). */
-export interface MealItem {
-  key: string;
-  name: string;
-  stats: string[];
-  adds: { stat: string; text: string; value: number }[];
-  on: boolean;
-  best: boolean;
-}
+export type MealItem = ViewMealItem;
 
-/* The menu the page gives: `groups` (meals by expansion), `pills` (the stat pills), `hasBest` (some meal is tagged), `hasMeal`
-   (the set holds a meal, so "No food" is offered first). */
-export interface MealMenuData {
-  groups: { label: string; items: MealItem[] }[];
-  pills: { stat: string; short: string; label: string }[];
-  hasBest: boolean;
-  hasMeal: boolean;
-}
+/* The menu the page gives (views/set-meal-menu.ts setMealMenuView): `groups` (meals by expansion), `pills` (the stat pills), `hasBest`
+   (some meal is tagged), `hasMeal` (the set holds a meal, so "No food" is offered first). */
+export type MealMenuData = ReturnType<typeof setMealMenuView>;
 
-/* A meal as the list draws it (a MealItem with what views/meal-menu.js mealList adds): `ilvlText` ("i770"), `rowClass` (its classes)
+/* A meal as the list draws it (a MealItem with what views/meal-menu.ts mealList adds): `ilvlText` ("i770"), `rowClass` (its classes)
    and `line`, the chips of its stat line. */
-export interface MealRow extends MealItem {
-  ilvlText: string;
-  rowClass: string;
-  line: { text: string; cls: string }[];
-}
+export type MealRow = ListedMeal;
 
-/* What the open menu shows under its tools (views/meal-menu.js mealList): the Sort row's options, the meal groups (each meal with
+/* What the open menu shows under its tools (views/meal-menu.ts mealList): the Sort row's options, the meal groups (each meal with
    its `line` of chips, `rowClass`, `ilvlText` and `name`) and why the list is empty, if it is. */
-export interface MealListView {
-  sorts: { key: string; label: string }[];
-  groups: { key: string; label: string | null; items: MealRow[] }[];
-  empty: { text: string; action: string } | null;
-}
+export type MealListView = ReturnType<typeof mealList>;
 
 /* The state of one Food menu. Fields: `query` (search text), `stats` (the stats picked on the pills; a meal must have each, two at
    most since a meal has at most two; none at first), `sortBy` ('ilvl', or a picked stat's key), `bestOnly` (the "Best for goal"
@@ -60,8 +43,8 @@ export interface MealListView {
    menu draws: it draws a long list in steps, views/limit-rows.ts) and `menu` (the data, or null while the menu is closed). */
 export class FoodMenuModel {
   query = '';
-  stats: string[] = [];
-  sortBy = 'ilvl';
+  stats: StatKey[] = [];
+  sortBy: StatKey | 'ilvl' = 'ilvl';
   bestOnly = true;
   rows = Infinity;
   menu: MealMenuData | null = null;
@@ -86,7 +69,7 @@ export class FoodMenuModel {
   }
 
   /* Whether the pill of `stat` is greyed out (a third pill, or one that would leave the list empty): it cannot be turned on. */
-  pillOff(stat: string): boolean {
+  pillOff(stat: StatKey): boolean {
     return mealPillOff(this.items, stat, this.filters);
   }
 
@@ -102,7 +85,7 @@ export class FoodMenuModel {
   }
 
   /* A stat pill clicked: on or off; a greyed-out one stays off. Turning off the stat the list is sorted by goes back to ILVL. */
-  toggleStat(stat: string): void {
+  toggleStat(stat: StatKey): void {
     if (this.stats.includes(stat)) {
       this.stats = this.stats.filter(picked => picked !== stat);
       if (this.sortBy === stat) {
