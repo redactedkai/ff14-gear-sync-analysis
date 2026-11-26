@@ -4,7 +4,7 @@
    of the menu (texts, counts, All / None / Default) in Chromium. */
 import { test, expect } from '../fixtures.ts';
 import type { Default } from './gear-categories.story.js';
-import { expectForcedColoursLook, tapOutside } from '../look.ts';
+import { expectForcedColoursLook, expectLookApart, partShows, tapOutside } from '../look.ts';
 
 const STORY = 'gear-browser/gear-categories/Default';
 const MENU = '#b-from-menu';
@@ -115,5 +115,35 @@ test.describe('<gsa-gear-categories> in forced colours', () => {
     await expect(menu).toBeVisible();
     const boxes = menu.locator('input[data-activity]:visible');
     await expectForcedColoursLook(page, { panel: menu, ring: boxes.nth(1) });
+  });
+
+  test('a ticked box differs from an unticked one with its tick showing, and the market board switch on differs from off', async ({
+    mount,
+    page,
+  }) => {
+    await mount<typeof Default>(STORY);
+    await page.locator('#b-from').click();
+    const menu = page.locator(MENU);
+    await expect(menu).toBeVisible();
+
+    // the first tab has ticked boxes and, by default, an unticked one (Miscellaneous)
+    const ticked = menu.locator('input[data-activity]:checked:visible').first();
+    const unticked = menu.locator('input[data-activity]:not(:checked):visible').first();
+    await expectLookApart(ticked, unticked, 'a ticked box looks like an unticked one');
+    expect(await partShows(ticked, '::after'), 'the tick shows against the fill of a ticked box').toBe(true);
+
+    // the switch: its knob shows against its track, and a press changes the track's fill and the knob's place
+    const marketSwitch = menu.locator('.from-switch input');
+    const trackFill = () => marketSwitch.evaluate(element => getComputedStyle(element).backgroundColor);
+    const knobPlace = () => marketSwitch.evaluate(element => getComputedStyle(element, '::before').left);
+    await expect(marketSwitch).toBeChecked();
+    expect(await partShows(marketSwitch, '::before'), 'the knob shows against the track when on').toBe(true);
+    const fillOn = await trackFill();
+    const placeOn = await knobPlace();
+    await marketSwitch.click();
+    await expect(marketSwitch).not.toBeChecked();
+    expect(await partShows(marketSwitch, '::before'), 'the knob shows against the track when off').toBe(true);
+    expect(await trackFill(), 'the track has the same fill on and off').not.toBe(fillOn);
+    expect(await knobPlace(), 'the knob is in the same place on and off').not.toBe(placeOn);
   });
 });

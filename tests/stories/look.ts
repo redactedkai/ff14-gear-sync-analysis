@@ -29,6 +29,36 @@ export async function marksOf(locator: Locator): Promise<string> {
   return locator.evaluate((element, names) => names.map(name => getComputedStyle(element)[name]).join('|'), [...FORCED_MARKS]);
 }
 
+/* The paint of an element as one string: its fill and border colour, and for its `::before` and `::after` (a tick, a knob) the fill,
+   the content, the offset from the left and the transform. In forced colours these are the colours the system forces, so two
+   elements with the same string look alike. */
+export async function paintOf(locator: Locator): Promise<string> {
+  return locator.evaluate(element =>
+    [undefined, '::before', '::after']
+      .map(pseudo => {
+        const style = getComputedStyle(element, pseudo);
+        return [style.backgroundColor, style.borderTopColor, pseudo ? [style.content, style.left, style.transform] : []].flat().join(' ');
+      })
+      .join('|'),
+  );
+}
+
+/* Whether a part drawn over an element (its `::before` or `::after`: a tick, a knob) shows against the element's own fill: the part
+   exists (it has content) and its fill is another colour than the element's. In forced colours both are system colours. */
+export async function partShows(locator: Locator, pseudo: '::before' | '::after'): Promise<boolean> {
+  return locator.evaluate((element, name) => {
+    const part = getComputedStyle(element, name);
+    return part.content !== 'none' && part.backgroundColor !== getComputedStyle(element).backgroundColor;
+  }, pseudo);
+}
+
+/* Expects that two states of a control (ticked and not, on and off, worn and plain) look different in forced colours: their marks
+   (FORCED_MARKS) and their paint (`paintOf`) are not the same. */
+export async function expectLookApart(first: Locator, second: Locator, message: string): Promise<void> {
+  const look = async (locator: Locator) => `${await marksOf(locator)}#${await paintOf(locator)}`;
+  expect(await look(first), message).not.toBe(await look(second));
+}
+
 /* Whether the element draws a line round itself (a border or an outline), which forced colours keep: its edge against the page. */
 export async function hasEdge(locator: Locator): Promise<boolean> {
   return locator.evaluate(element => {

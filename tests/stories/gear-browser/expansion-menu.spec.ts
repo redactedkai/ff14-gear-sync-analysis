@@ -6,7 +6,7 @@ import { EXPANSIONS } from '../../../src/core/constants.js';
 import { EXPANSION_LABEL, expansionSummary } from '../../../src/ui/elements/gear-browser/filter-menu-model.ts';
 import { expect, test } from '../fixtures.ts';
 import type { Default } from './expansion-menu.story.js';
-import { expectForcedColoursLook, tapOutside } from '../look.ts';
+import { expectForcedColoursLook, expectLookApart, partShows, tapOutside } from '../look.ts';
 
 const STORY = 'gear-browser/expansion-menu/Default';
 const BUTTON = '#b-exp';
@@ -167,5 +167,17 @@ test.describe('<gsa-expansion-menu> in forced colours', () => {
     await page.locator(BUTTON).click();
     await expect(page.locator(MENU)).toBeVisible();
     await expectForcedColoursLook(page, { panel: page.locator(MENU), ring: page.locator(box(SHORTS[1])) });
+  });
+
+  test('a ticked box differs from an unticked one and its tick shows against its fill', async ({ mount, page }) => {
+    await mount<typeof Default>(STORY, { off: [SHORTS[0]] });
+    await page.locator(BUTTON).click();
+    await expect(page.locator(MENU)).toBeVisible();
+    const ticked = page.locator(box(SHORTS[1]));
+    const unticked = page.locator(box(SHORTS[0]));
+    await expect(ticked).toBeChecked();
+    await expect(unticked).not.toBeChecked();
+    await expectLookApart(ticked, unticked, 'a ticked box looks like an unticked one');
+    expect(await partShows(ticked, '::after'), 'the tick shows against the fill of a ticked box').toBe(true);
   });
 });

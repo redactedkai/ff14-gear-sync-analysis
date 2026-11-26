@@ -2,6 +2,7 @@
    and gold border (the field follows the level), text that is no item level is an error, and axe. */
 import { expect, test } from '../fixtures.ts';
 import type { Default } from './job-strip.story.js';
+import { partShows } from '../look.ts';
 
 const STORY = 'app/job-strip/Default';
 // the highest item level the best gear made for level 40 has (capCeiling in core/sync-target.js): what a cap at level 40 is lowered to
@@ -38,5 +39,32 @@ test.describe('<gsa-job-strip>', () => {
   test('has no axe violations', async ({ mount, axe }) => {
     await mount<typeof Default>(STORY);
     expect(await axe()).toEqual([]);
+  });
+});
+
+test.describe('<gsa-job-strip> in forced colours', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit does not force colours');
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+  });
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'none' });
+  });
+
+  test('the IL Sync switch shows its knob against its track, and looks different on and off', async ({ mount, page }) => {
+    await mount<typeof Default>(STORY);
+    const sync = page.locator('#sync');
+    const look = () =>
+      sync.evaluate(element => {
+        const knob = getComputedStyle(element, '::before');
+        return [getComputedStyle(element).backgroundColor, knob.backgroundColor, knob.transform].join(' ');
+      });
+    await expect(sync).toBeChecked();
+    expect(await partShows(sync, '::before'), 'the knob shows against the track when on').toBe(true);
+    const on = await look();
+    await sync.click();
+    await expect(sync).not.toBeChecked();
+    expect(await partShows(sync, '::before'), 'the knob shows against the track when off').toBe(true);
+    expect(await look(), 'the switch looks the same on and off').not.toBe(on);
   });
 });
