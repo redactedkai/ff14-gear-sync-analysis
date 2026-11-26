@@ -68,6 +68,9 @@ const SAGE_SHEET = {
 };
 const SHEETS = { tab: 'sheets', sheets: [SAGE_SHEET] };
 
+// the set page's head row (the row's index in the table) and its first materia chip
+const HEAD_CHIP = '[data-chip="2:0"]';
+
 /* Waits SETTLE_MS for the page to redraw; returns a promise. `page` is a Playwright page. */
 export const settle = page => page.waitForTimeout(SETTLE_MS);
 
@@ -159,7 +162,10 @@ export const VIEWS = {
   '18-math-gcd-haste': {
     state: { ...WARRIOR, tab: 'math', mathTab: 'gcd' },
     steps: async page => {
-      await page.selectOption('#g-haste', { index: 2 });
+      // the Haste choice is a <gsa-select>: open its list, take the third option
+      await clickAndSettle(page, '#g-haste');
+      await page.locator('#g-haste-list [role="option"]').nth(2).click();
+      await settle(page);
       await page.fill('#g-speed', '1200');
       await page.press('#g-speed', 'Enter');
       await settle(page);
@@ -171,6 +177,67 @@ export const VIEWS = {
   '22-browse-nojob': { state: { tab: 'browse' }, steps: noSteps },
   '24-browse-sorted': { state: SAGE, steps: page => clickAndSettle(page, '[data-sort="ilvl"]') },
   '26-blu-browse': { state: BLUE_MAGE, steps: noSteps },
+  '27-sheets-new-dialog': { state: SHEETS, steps: page => clickAndSettle(page, '#sh-new') },
+  '28-sheet-edit-dialog': {
+    state: SHEETS,
+    steps: async page => {
+      await clickAndSettle(page, '#sh-list a.sname');
+      await clickAndSettle(page, '#sh-edit');
+    },
+  },
+  '29-sheets-delete-question': {
+    state: SHEETS,
+    steps: page => clickAndSettle(page, '#sh-list tbody tr:nth-of-type(1) .rowacts [data-action="delete"]'),
+  },
+  '30-set-edit-dialog': {
+    state: SHEETS,
+    steps: async page => {
+      await openSet(page);
+      await clickAndSettle(page, '#sh-set-edit');
+    },
+  },
+  '31-set-settings-popover': {
+    state: SHEETS,
+    steps: async page => {
+      await openSet(page);
+      await clickAndSettle(page, '#sh-settings');
+    },
+  },
+  '32-set-rank-note': {
+    state: SHEETS,
+    steps: async page => {
+      await openSet(page);
+      await clickAndSettle(page, '#sh-settings');
+      await clickAndSettle(page, '#sh-settings-dialog .shelp');
+    },
+  },
+  '33-set-materia-menu': {
+    state: SHEETS,
+    steps: async page => {
+      await openSet(page);
+      await clickAndSettle(page, HEAD_CHIP);
+    },
+  },
+  '34-set-materia-draft': {
+    state: SHEETS,
+    steps: async page => {
+      await openSet(page);
+      await clickAndSettle(page, HEAD_CHIP);
+      await clickAndSettle(page, '.matpop button[data-stone]:not([disabled])');
+    },
+  },
+  '35-set-leave-question': {
+    state: SHEETS,
+    steps: async page => {
+      await openSet(page);
+      await clickAndSettle(page, HEAD_CHIP);
+      await clickAndSettle(page, '.matpop button[data-stone]:not([disabled])');
+      await clickAndSettle(page, '#sh-set .setcrumb a:nth-of-type(2)');
+    },
+  },
+  '36-browse-job-menu': { state: SAGE, steps: page => clickAndSettle(page, '#job-menu-btn') },
+  '37-browse-slot-menu': { state: SAGE, steps: page => clickAndSettle(page, '#b-slot') },
+  '38-math-job-menu': { state: { ...SAGE, tab: 'math', mathTab: 'piece' }, steps: page => clickAndSettle(page, '#m-job-btn') },
 };
 
 /* Turns off CSS animations and transitions and hides the text caret, from the first paint. */

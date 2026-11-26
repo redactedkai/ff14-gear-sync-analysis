@@ -2,7 +2,7 @@
    "Run by hand").
 
 Opens a built page from file:// in Chromium (Playwright) and takes a full-page PNG of each view in VIEWS at 1440 and
-960 px wide, in light and dark: 24 views, 96 shots, named `<view>-<width>-<scheme>.png`. Each view starts from a fresh
+960 px wide, in light and dark: 36 views, 144 shots, named `<view>-<width>-<scheme>.png`. Each view starts from a fresh
 browser context with its saved state already in localStorage, then clicks its way to what it shows.
 
 The shots are deterministic: Google Fonts are blocked (the page's fallback fonts; no network needed) and the fonts are
