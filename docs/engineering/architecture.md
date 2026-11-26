@@ -525,14 +525,14 @@ Notes:
 | Stat labels; level caps | `src/core/constants.ts` (`STAT_LABEL`, `STAT_SHORT`; `JOB_LEVEL_CAPS`) |
 | Saved position keys | `src/core/stat-keys.ts` (`currentStatKey`, `remapStatKey`) |
 | Raw row to stat keys, item filters, pool item ids | `src/core/items.js` (`dbStats`, `browseItems`, `gearFilter`, `filterGear`, `poolItemFromRow`) |
-| Gear groups (which jobs share gear) and the pieces a job cannot wear, by job mask | `src/core/gear-groups.js` (`GEAR_GROUPS`, `gearGroupName`, `piecesJobCannotWear`) |
+| Gear groups (which jobs share gear) and the pieces a job cannot wear, by job mask | `src/core/gear-groups.ts` (`GEAR_GROUPS`, `gearGroupName`, `piecesJobCannotWear`) |
 | Piece identity: a database piece by its game id; the same piece from several sources | `src/core/items.js` (`itemById`, `poolItemById`; `poolKey`) |
 | A piece under sync | `src/core/piece.js` (`itemSyncIlvl`, `effStats`, `itemCaps`, `meldCaps`, `keepsMelds`) |
 | A gear set and what it adds up to; a given list of stones on a piece | `src/core/set.js` (`makeSet`, `setFromPicks`, `evaluateSet`); `src/core/meld.js` (`applyStones`) |
 | Item stat rounding steps and the off-hand rule, written once | `src/core/formulas.js` (`statLine`, `offhandParts`) |
 | Per-level game data (ParamGrow: base speed, level divisor, level sync item level) | `src/core/level-params.ts` (`levelParams`, `clampLevel`) |
 | Meal choice (totals with food, then food points, then the first) | `src/core/food.js` (`pickMeal`, `mealTotals`, `bestFood`); Target GCD and tier ranking share their defaults through `goalSettings` in `src/core/target-gcd.js` |
-| Other core modules | `src/core/formulas.js`, `gear-groups.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `piece.js`, `set.js`, `recipe.js`, `session.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.js`, `optimizer/` |
+| Other core modules | `src/core/formulas.js`, `gear-groups.ts`, `sync-target.js`, `speed.ts`, `tiers.js`, `meld.js`, `piece.js`, `set.js`, `recipe.js`, `session.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.ts`, `optimizer/` |
 | Entry point: restore, make the store and register its two facades and the elements, start the router, autosave | `src/main.js` |
 | Addresses: the hash of each screen and the settings in its query (`query.js`: `readQuery`, `writeQuery`), the page title, the router that keeps the address and the two stores in step, the focus after Back | `src/ui/router/routes.js` (`parseRoute`, `formatRoute`, `titleOf`), `router.js` (`createRouter`, `windowPort`), `focus.js` (`focusScreenHeading`), `plain-click.js` (`plainClick`, `followInPage`), `scroll-storage.js` (`readScrollPositions`, `writeScrollPositions`), `unload-guard.js` (`installUnloadGuard`, `UNLOAD_GUARD_OFF_KEY`) |
 | Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `defaultBrowse`: the browser's defaults, `resetForJob`, `clampLevels`, `splitPanelSettings`, `restoreState`, `restoreBrowseFields` and `restorePieceFields` (the checks a saved setting and an address's setting share), `STORE_KEY`, `SEARCH_MAX_LENGTH`) |

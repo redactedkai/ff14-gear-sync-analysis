@@ -147,7 +147,7 @@ export function capDerivation(job, stat, ilvl, type, pct, factor = null) {
 
 /* The sync cap of one value from its ItemLevel budget `base`, its factor in percent and its slot share in thousandths:
    {afterFactor, exact, value}. The factor first, floored; then the slot share, floored, in tenths of a point; then
-   rounded to whole points. Shared by the stats (capDerivation) and weapon damage and defense (damage-defense.js). */
+   rounded to whole points. Shared by the stats (capDerivation) and weapon damage and defense (damage-defense.ts). */
 export function capFromBudget(base, factorPct, share) {
   const afterFactor = Math.floor((base * factorPct) / 100);
   const exact = Math.floor((afterFactor * share) / 100) / 10;

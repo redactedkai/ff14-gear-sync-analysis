@@ -24,7 +24,7 @@ import { realSlotType } from './optimizer/slot-index.js';
 import { itemSyncIlvl } from './piece.js';
 import { sameMeals, sameResult } from './same-result.js';
 import { evaluateSet, setFromPicks } from './set.js';
-import { BASE_GCD_MS, gcdFor, hasteFor } from './speed.js';
+import { BASE_GCD_MS, gcdFor, hasteFor } from './speed.ts';
 import { fastestGcd, optimizeGcd } from './target-gcd.js';
 import { rankByTier } from './tier-rank.js';
 

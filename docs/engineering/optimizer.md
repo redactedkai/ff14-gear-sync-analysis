@@ -636,14 +636,14 @@ Several gear sets can have exactly the same ranked totals: weapon damage, the ta
 | --- | --- |
 | A piece under sync: its synced item level, effective stats, caps, whether it keeps its melds | `src/core/piece.js` (`itemSyncIlvl`, `effStats`, `itemCaps`, `meldCaps`, `keepsMelds`) |
 | Item vectors, score weights, dominance pruning, candidate lists; weapon damage as the first key | `src/core/optimizer/candidates.js` (`makeScorer`, `rankedKeys`, `pruneDominated`, `pruneForLimits`, `buildCandidates`) |
-| A weapon's weapon damage after sync | `src/core/damage-defense.js` (`weaponDamage`) |
+| A weapon's weapon damage after sync | `src/core/damage-defense.ts` (`weaponDamage`) |
 | Best melds of a piece; meld versions under a speed range | `src/core/meld.js` (`bestMeld`, `meldVersions`) |
 | Bounds, limit tables, filters before the search, slot order and depth-first branch and bound | `src/core/optimizer/search.js` (`branchAndBound` runs them; functions and constants in note 1 below the table) |
 | Regain cuts (tier ranking) | `src/core/optimizer/regain.js` (`addRegainCuts`) |
 | Pareto fronts (tier ranking's searches) | `src/core/optimizer/front.js` (`frontSearch`) |
 | Slot positions and blocked-slot masks | `src/core/optimizer/slot-index.js` (`slotPositions`, `positionMask`, `blockableTypes`, `typeMask`) |
 | Entry points: candidates once, search many times; which stats may get a minimum | `src/core/optimizer/index.js` (`prepare` with `minStats`, `solve`, `optimize`) |
-| Target GCD: GCD to speed band, meals, haste | `src/core/target-gcd.js` (`optimizeGcd`, `goalSettings`); `src/core/speed.js` (`speedForGcd`, `hasteFor`); the meal choice `pickMeal` in `src/core/food.js` |
+| Target GCD: GCD to speed band, meals, haste | `src/core/target-gcd.js` (`optimizeGcd`, `goalSettings`); `src/core/speed.ts` (`speedForGcd`, `hasteFor`); the meal choice `pickMeal` in `src/core/food.js` |
 | Which slots a job uses | `src/core/job-context.js` (`activeSlotTypes` in `makeJobContext`) |
 | Sync clamp | `src/core/formulas.js` (`syncStats`) |
 | Copies (Unique rings), pool items from the database | `src/core/items.js` (`poolItemFromRow`, `browseItems`) |

@@ -9,7 +9,7 @@ import { foodChoices } from '../../../src/core/food.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { optimize } from '../../../src/core/optimizer/index.js';
 import { levelParams } from '../../../src/core/level-params.ts';
-import { gcdFor, hasteFor } from '../../../src/core/speed.js';
+import { gcdFor, hasteFor } from '../../../src/core/speed.ts';
 import { rankByTier } from '../../../src/core/tier-rank.js';
 import { rng } from './common.js';
 import { foodAdd, forEachLoadout, loadoutCount, smallPool } from './exhaustive.js';

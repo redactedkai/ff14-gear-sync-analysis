@@ -16,17 +16,17 @@
    Custom pieces: the database's facts (equip level, meld slots, slot code, item kind, gear category) come from rowFacts
    in items.js, which has none for a custom piece. So one is never level-synced, takes stones only if it carries its own
    `meld` ({slots, overmeld}; meldInfo), uses the job's slot share and stat factors, and gets the item level table's
-   weapon damage and defense (syncedValue in damage-defense.js). An editable custom piece will have to carry the rest
+   weapon damage and defense (syncedValue in damage-defense.ts). An editable custom piece will have to carry the rest
    itself (architecture.md, section 7). */
 import { SLOT_LABEL } from './constants.ts';
-import { mitigationPct, setDefense } from './damage-defense.js';
+import { mitigationPct, setDefense } from './damage-defense.ts';
 import { statBase } from './base-stats.ts';
 import { bonusStats, characterStat, clanOffset, isClan, partyRoles } from './clan-bonus.js';
 import { allMeals, foodBonus, withFood } from './food.js';
 import { categoryOf, equipLevel, expansionOf, poolItemById, slotInfo, slotLabel } from './items.js';
 import { applyStones, meldStones, meldText } from './meld.js';
 import { itemCaps, itemSyncIlvl } from './piece.js';
-import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor } from './speed.js';
+import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor } from './speed.ts';
 import { statTier } from './tiers.js';
 
 /* A set (see above) from `pieces` and `meal`, frozen to the stones, so it can be kept and shared as it is. */

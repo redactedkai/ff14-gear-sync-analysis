@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS, ROW } from '../../../../src/core/constants.ts';
-import { GEAR_GROUPS } from '../../../../src/core/gear-groups.js';
+import { GEAR_GROUPS } from '../../../../src/core/gear-groups.ts';
 import { itemById, jobGear } from '../../../../src/core/items.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { copySheet, piecesToClear } from '../../../../src/ui/sheets/ops.js';

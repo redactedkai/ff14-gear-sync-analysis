@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { IL, MAX_REAL } from '../../../../src/core/tables.ts';
 import { capsFor } from '../../../../src/core/formulas.js';
 import { meldInfo, mkItem } from '../../../../src/core/items.js';
-import { gcdFor } from '../../../../src/core/speed.js';
+import { gcdFor } from '../../../../src/core/speed.ts';
 import { meldSlotChoices, meldSlotsOf } from '../../../../src/ui/job-sync-panel.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { explainerOffText } from '../../../../src/ui/views/sync-explainer.js';

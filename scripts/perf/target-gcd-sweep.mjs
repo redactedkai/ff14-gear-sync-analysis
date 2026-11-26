@@ -80,7 +80,7 @@ if (isMainThread) {
   const { withActivities } = await import(`${ROOT}src/core/items.js`);
   const { DEFAULT_EXCLUDE } = await import(`${ROOT}src/ui/job-sync-panel.js`);
   const { optimize, solve } = await import(`${ROOT}src/core/optimizer/index.js`);
-  const { gcdFor, hasteFor, speedForGcd } = await import(`${ROOT}src/core/speed.js`);
+  const { gcdFor, hasteFor, speedForGcd } = await import(`${ROOT}src/core/speed.ts`);
   const { optimizeGcd } = await import(`${ROOT}src/core/target-gcd.js`);
   const { exhaustive } = await import(`${ROOT}tests/unit/helpers/exhaustive.js`);
   const score = (r, keys) => (r?.ok ? keys.map(key => r.totals[key] || 0) : null);

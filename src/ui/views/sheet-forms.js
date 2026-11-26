@@ -3,7 +3,7 @@
    `SheetDialogs` (elements/sheets/sheet-dialogs-model.ts) keeps each form's fields; these builders turn them into what the dialog shows. Pure: no store.
    Rules: docs/engineering/sheets.md ("Names", "Copy sheet", "Where an action lands"). */
 import { SLOT_LABEL, jobById } from '../../core/constants.ts';
-import { GEAR_GROUPS, gearGroupName } from '../../core/gear-groups.js';
+import { GEAR_GROUPS, gearGroupName } from '../../core/gear-groups.ts';
 import { oneOrMany, plural } from '../text.ts';
 import { DESCRIPTION_MAX_LENGTH, FORM_FIELD, NAME_MAX_LENGTH, defaultSheetName, piecesToClear, ranges } from '../sheets/ops.js';
 
@@ -55,7 +55,7 @@ function groupLabel(role, armorType) {
 
 /* The "?" panel of the Copy sheet dialog: how a copy is made and which jobs copy to which. `ownJobId`: the sheet's job (its
    group is marked). Returns {title, outcomes: [{label, text}] (what a copy keeps and what it clears), groupsTitle (the heading over the list), groups: [{label ("Melee (Striking)": the role row of the picker and the
-   game's armor type; either alone when the other is unknown), jobs ("Paladin, Warrior, ..."), own}], footText (the jobs alone in their groups)}. The groups are gear-groups.js GEAR_GROUPS: jobs that
+   game's armor type; either alone when the other is unknown), jobs ("Paladin, Warrior, ..."), own}], footText (the jobs alone in their groups)}. The groups are gear-groups.ts GEAR_GROUPS: jobs that
    can wear most of the same armor at the same level cap; a job alone in its group (Blue Mage, Beastmaster) is listed
    in footText, not in groups. */
 export function copyHelpView(ownJobId) {
@@ -77,7 +77,7 @@ export function copyHelpView(ownJobId) {
 }
 
 /* The Copy sheet dialog for `sheet` (a saved Sheet) and `form` ({name, job, level, sync: {on, cap}, ack (the box that
-   accepts clearing the pieces is ticked), error, errorField}). The jobs offered are the sheet's gear group (gear-groups.js), its
+   accepts clearing the pieces is ticked), error, errorField}). The jobs offered are the sheet's gear group (gear-groups.ts), its
    own job included, in the group's order; Blue Mage and Beastmaster are alone in theirs. Returns:
    - title ("Copy “Bahamut T13 Healer” sheet"), sheetName (the sheet's name, which the title shows clipped to one line), name, nameMax, buttonText, error, errors (errorPlaces);
    - jobs: [{id, name, checked}]; help (copyHelpView: the "?" panel);

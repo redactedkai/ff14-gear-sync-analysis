@@ -5,7 +5,7 @@
    types another); item level sync does not change them. The view object is built here; the template only shows it. */
 import { clamp } from '../../core/clamp.ts';
 import { rowIndexAt, tierLadder, tierSizes, statEffectKinds } from '../../core/tiers.js';
-import { hasteFor } from '../../core/speed.js';
+import { hasteFor } from '../../core/speed.ts';
 import { statBase } from '../../core/base-stats.ts';
 import { levelParams } from '../../core/level-params.ts';
 import { MAX_SPEED } from '../../core/tables.ts';

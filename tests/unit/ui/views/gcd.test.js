@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { levelParams } from '../../../../src/core/level-params.ts';
-import { recastMult } from '../../../../src/core/speed.js';
+import { recastMult } from '../../../../src/core/speed.ts';
 import { MAX_LEVEL, MAX_SPEED } from '../../../../src/core/tables.ts';
 import { HASTE } from '../../../../src/core/constants.ts';
 import {

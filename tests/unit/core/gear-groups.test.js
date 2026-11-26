@@ -1,10 +1,10 @@
-/* Gear groups for Copy sheet (src/core/gear-groups.js): the generated table, the group's role name, and the
+/* Gear groups for Copy sheet (src/core/gear-groups.ts): the generated table, the group's role name, and the
    pieces a job cannot wear (by the job mask). Expected values are the groups measured on the item data (owner's table in
    a4-sheet's data model: tanks, healers, melee A, B and C, physical ranged, casters, Blue Mage and Beastmaster alone). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import ITEM_FORMAT from '../../../src/core/item-format.json' with { type: 'json' };
-import { GEAR_GROUPS, gearGroupName, piecesJobCannotWear } from '../../../src/core/gear-groups.js';
+import { GEAR_GROUPS, gearGroupName, piecesJobCannotWear } from '../../../src/core/gear-groups.ts';
 import { JOB_LEVEL_CAPS } from '../../../src/core/constants.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { itemRow } from '../helpers/common.js';

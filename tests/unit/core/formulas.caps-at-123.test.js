@@ -17,7 +17,7 @@ import { capsFor } from '../../../src/core/formulas.js';
 import { genericItems, rowStats } from '../../../src/core/items.js';
 import { ROW } from '../../../src/core/constants.ts';
 import { optimize } from '../../../src/core/optimizer/index.js';
-import { gcdFor } from '../../../src/core/speed.js';
+import { gcdFor } from '../../../src/core/speed.ts';
 import { IL, ITEMS } from '../../../src/core/tables.ts';
 import { SLOT_PERMILLE, roundHalfUp } from '../helpers/common.js';
 

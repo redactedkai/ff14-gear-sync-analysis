@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { foodChoices } from '../../../src/core/food.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { optimize, prepare, solve } from '../../../src/core/optimizer/index.js';
-import { gcdFor, gcdTierAt, hasteFor } from '../../../src/core/speed.js';
+import { gcdFor, gcdTierAt, hasteFor } from '../../../src/core/speed.ts';
 import { optimizeGcd } from '../../../src/core/target-gcd.js';
 import { exhaustive, foodAdd, gamePool, smallPool, WINDOWS } from '../helpers/exhaustive.js';
 import { rng } from '../helpers/common.js';

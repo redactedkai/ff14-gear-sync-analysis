@@ -11,7 +11,7 @@ import { branchAndBound, dropShortfalls, improveStart } from '../../../../src/co
 import { frontSearch } from '../../../../src/core/optimizer/front.js';
 import { slotInfo } from '../../../../src/core/items.js';
 import { pruneForLimits } from '../../../../src/core/optimizer/candidates.js';
-import { gcdTierAt } from '../../../../src/core/speed.js';
+import { gcdTierAt } from '../../../../src/core/speed.ts';
 import { exhaustive, smallPool } from '../../helpers/exhaustive.js';
 import { rng } from '../../helpers/common.js';
 

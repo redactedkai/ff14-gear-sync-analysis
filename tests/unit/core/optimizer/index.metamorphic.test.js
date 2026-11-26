@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS } from '../../../../src/core/constants.ts';
-import { GEAR_GROUPS } from '../../../../src/core/gear-groups.js';
+import { GEAR_GROUPS } from '../../../../src/core/gear-groups.ts';
 import { jobGear } from '../../../../src/core/items.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { optimize } from '../../../../src/core/optimizer/index.js';

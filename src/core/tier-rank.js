@@ -16,7 +16,7 @@
      proof (solve's `proven`) and cuts by it (optimizer/regain.js). */
 import { gearNeeded, mealsFor, mealTotals, pickMeal } from './food.js';
 import { prepare, solve } from './optimizer/index.js';
-import { speedForGcd } from './speed.js';
+import { speedForGcd } from './speed.ts';
 import { fastestGcd, foodFields, gearBand, goalSettings } from './target-gcd.js';
 import { rankTierOf, tierStart } from './tiers.js';
 

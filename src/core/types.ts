@@ -28,7 +28,7 @@ export type StatMap = Partial<Record<StatKey, number>>;
    modifiers. The type lists every StatKey; a key the job lacks has no entry and reads undefined at runtime. */
 export type PerStat<T> = Readonly<Record<StatKey, T>>;
 
-/* The dimensions the optimizer tracks per candidate: the stat keys, and weapon damage under 'wd' (WD_KEY in damage-defense.js). */
+/* The dimensions the optimizer tracks per candidate: the stat keys, and weapon damage under 'wd' (WD_KEY in damage-defense.ts). */
 export type DimKey = StatKey | 'wd';
 
 /* An immutable description of everything that depends on the selected job (makeJobContext in job-context.js; the fields
@@ -118,3 +118,52 @@ export type FoodRow = readonly [
   stats: readonly (readonly [stat: RawStatKey, pct: number, max: number])[],
   vitality: readonly [pct: number, max: number] | null,
 ];
+
+/* A pool item: a piece the optimizer searches or a set holds (mkItem in items.js; the fields are explained there). Frozen:
+   nothing may change one after it is made. A database piece (src 'game') also has its gameId and hq; a hand-made one may
+   carry its own `meld`. */
+export interface PoolItem {
+  readonly id: string;
+  readonly name: string;
+  readonly type: SlotType;
+  readonly ilvl: number;
+  readonly stats: StatMap;
+  /* how many of it can be worn at once */
+  readonly copies: number;
+  readonly src: 'game' | 'generated' | 'custom';
+  /* the game's item id, on a database piece */
+  readonly gameId?: number;
+  /* can be high quality (a database piece) */
+  readonly hq?: boolean;
+  /* the item's own melding facts, on a hand-made piece (meldInfo) */
+  readonly meld?: MeldInfo;
+}
+
+/* The materia slots of a pool item: the guaranteed slots, and whether overmelding is allowed (meldInfo in items.js). */
+export interface MeldInfo {
+  readonly slots: number;
+  readonly overmeld: boolean;
+}
+
+/* The settings that sync a piece: the item level cap (null for none), whether item level sync is on, and the synced
+   character level (null or missing: no level sync). itemSyncIlvl in piece.js. */
+export interface Sync {
+  readonly cap: number | null;
+  readonly sync: boolean;
+  readonly level?: number | null;
+}
+
+/* A stone in a meld slot: the stat key it raises and its grade (1 to 12). A slot with no stone is null. */
+export interface Stone {
+  readonly stat: StatKey;
+  readonly grade: number;
+}
+
+/* One piece of a set (set.js): a database piece by its game id, a custom pool item, or an empty slot (neither). `stones`:
+   one entry per meld slot, [] for no melds. */
+export interface SetPiece {
+  readonly slot: SlotType;
+  readonly gameId?: number;
+  readonly custom?: PoolItem;
+  readonly stones?: readonly (Stone | null)[];
+}

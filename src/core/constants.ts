@@ -219,7 +219,7 @@ export const DEFAULT_JOB = JOBS[0].id;
 export const ONE_HANDED_JOBS = Object.freeze(['PLD', 'BST']);
 /* MIXED_WEAPON_JOBS: 2H weapons and also 1H weapons with shields, at every level (weaponMode 'mixed'). */
 export const MIXED_WEAPON_JOBS = Object.freeze(['WHM', 'BLM']);
-/* Jobs whose weapons carry no real weapon damage, so the optimizer does not rank it (damage-defense.js): Blue Mage's
+/* Jobs whose weapons carry no real weapon damage, so the optimizer does not rank it (damage-defense.ts): Blue Mage's
    weapons all hold 6 physical and 1 magic damage (Item.csv); its weapon damage comes from Intelligence instead
    (xivgear's bluWdfromInt), which a goal covers when Intelligence is in it (owner's decision). */
 export const NO_WEAPON_DAMAGE_JOBS = Object.freeze(['BLU']);

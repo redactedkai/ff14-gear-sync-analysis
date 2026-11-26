@@ -10,7 +10,7 @@
      tiebreaks, then the most food points, then the first in the job's food choices (pickMeal in food.js, as bestFood). */
 import { gearNeeded, mealsFor, mealTotals, pickMeal } from './food.js';
 import { prepare, rankedKeys, solve } from './optimizer/index.js';
-import { BASE_GCD_MS, gcdFor, hasteFor, speedForGcd } from './speed.js';
+import { BASE_GCD_MS, gcdFor, hasteFor, speedForGcd } from './speed.ts';
 
 /**
  * @param job   JobContext

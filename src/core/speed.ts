@@ -2,6 +2,23 @@
 import { HASTE, GCD_FLOOR_MS } from './constants.ts';
 import { levelParams } from './level-params.ts';
 
+/* How a Target GCD is asked for: 'exact' (that GCD, no faster) or 'min' (that GCD or faster). */
+export type GcdMode = 'min' | 'exact';
+/* The haste a job counts in its Target GCD at a level: the trait's name, the percent, and the step it comes from. */
+export interface Haste {
+  readonly name: string;
+  readonly pct: number;
+  readonly level: number;
+  readonly source: string;
+}
+/* The GCD step a speed falls in (gcdTierAt). */
+export interface GcdTier {
+  gcd: number;
+  start: number;
+  next: number | null;
+  nextGcd: number | null;
+}
+
 /* The recast of a weaponskill or spell before speed: 2.5 s, in ms (the GCD every speed formula here starts from). */
 export const BASE_GCD_MS = 2500;
 /* Search ceiling for the speed that reaches a GCD: far above any real gear speed (a few thousand). */
@@ -10,14 +27,14 @@ const SPEED_SEARCH_LIMIT = 100000;
    LevelModifier (div) points of speed above the base. */
 const SPEED_STEP = 130;
 
-/* The haste a job counts in its Target GCD at `level` (HASTE in constants.ts): {name, pct}, or null for none. */
-export function hasteFor(jobId, level) {
+/* The haste a job counts in its Target GCD at `level` (HASTE in constants.ts): {name, pct, level (the step's), source}, or null for none. */
+export function hasteFor(jobId: string, level: number): Haste | null {
   const haste = HASTE[jobId];
   if (!haste) {
     return null;
   }
   // steps are in level order: the last one the level has reached applies
-  let reached = null;
+  let reached: Haste | null = null;
   for (const step of haste.steps) {
     if (level >= step.level) {
       reached = { name: haste.name, pct: step.pct, level: step.level, source: step.source };
@@ -28,14 +45,14 @@ export function hasteFor(jobId, level) {
 
 /* The recast multiplier in per mille for `gearSpd` speed above the level's base: 1000 minus SPEED_STEP per `div` points (the
    part step rounds toward 1000, so it gives nothing), never below 0. Every cast and recast time is multiplied by it. */
-function speedModifier(gearSpd, level) {
+function speedModifier(gearSpd: number, level: number): number {
   const { div } = levelParams(level);
   return Math.max(0, 1000 - Math.floor((SPEED_STEP * gearSpd) / div));
 }
 
 /* What `gearSpd` speed above the base and `haste` (percent) multiply every cast and recast time by, before the result
    is rounded down to 0.01 s: e.g. 0.843 for a 15.7% cut (How the math works, GCD: "cast and recast times"). */
-export function recastMult(gearSpd, level, haste = 0) {
+export function recastMult(gearSpd: number, level: number, haste = 0): number {
   return (speedModifier(gearSpd, level) / 1000) * ((100 - haste) / 100);
 }
 
@@ -43,7 +60,7 @@ export function recastMult(gearSpd, level, haste = 0) {
    The haste comes after the speed step is rounded down, then the result is rounded down again (xivgear's formula,
    xivmath.ts; with no haste it is AkhMorning's). The speed multiplier is at least 0 and the result at least 1.50 s
    (GCD_FLOOR_MS: the game client's floor, second-hand; xivgear and AkhMorning have none). */
-export function gcdFor(gearSpd, level, baseMs, haste = 0) {
+export function gcdFor(gearSpd: number, level: number, baseMs?: number, haste = 0): number {
   const baseRecastMs = baseMs || BASE_GCD_MS;
   const recastMs = Math.floor((baseRecastMs * speedModifier(gearSpd, level)) / 1000);
   // haste in percent, then down to hundredths of a second (ms x (100 - haste) / 100 / 10, floored), no shorter than the
@@ -52,7 +69,7 @@ export function gcdFor(gearSpd, level, baseMs, haste = 0) {
 }
 
 /* DoT/HoT tick multiplier from gear speed, e.g. 1.012 */
-export function dotMult(gearSpd, level) {
+export function dotMult(gearSpd: number, level: number): number {
   const { div } = levelParams(level);
   return (1000 + Math.floor((SPEED_STEP * gearSpd) / div)) / 1000;
 }
@@ -60,18 +77,18 @@ export function dotMult(gearSpd, level) {
 /* The GCD step that `gearSpd` falls in: {gcd, start, next, nextGcd}. `start` is the lowest gear speed with the same
    GCD, `next` the lowest with a shorter one (null if none within 100,000). The GCD never rises with more speed,
    so both are found by binary search, at any speed (an earlier fixed scan window stopped at 1,200). */
-export function gcdTierAt(gearSpd, level, baseMs, haste = 0) {
+export function gcdTierAt(gearSpd: number, level: number, baseMs?: number, haste = 0): GcdTier {
   const spd = Math.max(0, Math.floor(gearSpd));
   const gcd = gcdFor(spd, level, baseMs, haste);
   // the step starts at the lowest speed with this GCD (or shorter, which below spd cannot happen)
   const start = lowest(0, spd, s => gcdFor(s, level, baseMs, haste) <= gcd);
-  const shorter = s => gcdFor(s, level, baseMs, haste) < gcd;
+  const shorter = (s: number) => gcdFor(s, level, baseMs, haste) < gcd;
   const next = shorter(spd + SPEED_SEARCH_LIMIT) ? lowest(spd + 1, spd + SPEED_SEARCH_LIMIT, shorter) : null;
   return { gcd, start, next, nextGcd: next == null ? null : gcdFor(next, level, baseMs, haste) };
 }
 
 /* smallest s in [lo, hi] with pred(s), given pred is false then true; hi must satisfy pred */
-function lowest(lo, hi, pred) {
+function lowest(lo: number, hi: number, pred: (speed: number) => boolean): number {
   let low = lo;
   let high = hi;
   while (low < high) {
@@ -93,8 +110,8 @@ function lowest(lo, hi, pred) {
    speed is too much: 'exact' 1.50 has no maximum (max 100,000). The GCD falls 0.01 s at a time, with or without haste, so every value
    in between is some speed's (tests/unit/core/speed.test.js). A target at or above the no-speed GCD is met by any speed: {min: 0} in
    'min' mode. Speeds are totals the GCD formula sees (gear, plus food when the caller adds it). */
-export function speedForGcd(gcd, level, mode, haste = 0) {
-  const gcdAt = s => gcdFor(s, level, BASE_GCD_MS, haste);
+export function speedForGcd(gcd: number, level: number, mode: GcdMode, haste = 0): { min: number; max: number | null } | null {
+  const gcdAt = (s: number) => gcdFor(s, level, BASE_GCD_MS, haste);
   const target = Math.round(gcd * 100) / 100; // to hundredths, as the GCD is
   // even the most speed cannot reach it
   if (gcdAt(SPEED_SEARCH_LIMIT) > target) {
@@ -114,8 +131,8 @@ export function speedForGcd(gcd, level, mode, haste = 0) {
 }
 
 /* Every gear-speed value up to `maxSpd` (default 1,200) where the GCD drops a step. */
-export function gcdTiers(level, baseMs, maxSpd = 1200, haste = 0) {
-  const out = [];
+export function gcdTiers(level: number, baseMs: number, maxSpd = 1200, haste = 0): { spd: number; gcd: number }[] {
+  const out: { spd: number; gcd: number }[] = [];
   let last = gcdFor(0, level, baseMs, haste);
   out.push({ spd: 0, gcd: last });
   for (let s = 1; s <= maxSpd; s++) {

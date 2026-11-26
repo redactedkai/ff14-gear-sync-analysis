@@ -1,4 +1,4 @@
-/* Weapon damage and defense (core/damage-defense.js) on real items, and the optimizer ranking weapon damage first
+/* Weapon damage and defense (core/damage-defense.ts) on real items, and the optimizer ranking weapon damage first
    (owner's decision 2026-10-18; docs/engineering/optimizer.md section 1). Expected values: the game files and xivgear's
    in-instance sync tests (defense). */
 import { test } from 'node:test';
@@ -7,7 +7,7 @@ import { makeJobContext } from '../../../src/core/job-context.js';
 import { mkItem } from '../../../src/core/items.js';
 import { optimize } from '../../../src/core/optimizer/index.js';
 import { itemSyncIlvl } from '../../../src/core/piece.js';
-import { mitigationPct, setDefense, syncedValue, weaponDamage } from '../../../src/core/damage-defense.js';
+import { mitigationPct, setDefense, syncedValue, weaponDamage } from '../../../src/core/damage-defense.ts';
 import { resultOf } from '../../../src/core/same-result.js';
 import { IL } from '../../../src/core/tables.ts';
 import { gamePool } from '../helpers/exhaustive.js';

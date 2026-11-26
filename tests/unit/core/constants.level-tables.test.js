@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { LEVEL_MAIN } from '../../../src/core/base-stats.ts';
 import { EXPANSIONS, HASTE, JOB_LEVEL_CAPS } from '../../../src/core/constants.ts';
 import { levelParams } from '../../../src/core/level-params.ts';
-import { hasteFor } from '../../../src/core/speed.js';
+import { hasteFor } from '../../../src/core/speed.ts';
 import { MAX_LEVEL, MAX_SPEED, PG } from '../../../src/core/tables.ts';
 
 test('the level cap is read from the items', () => {

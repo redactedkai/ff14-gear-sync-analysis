@@ -24,7 +24,8 @@ export const DOMAINS = {
   model: {
     title: 'The game number rules: item stats, sync, speed, tiers, food, materia',
     src: [
-      'src/core/{clan-bonus,damage-defense,food,formulas,meld,piece,speed,sync-target,tiers}.js',
+      'src/core/{clan-bonus,food,formulas,meld,piece,sync-target,tiers}.js',
+      'src/core/{damage-defense,speed}.ts',
       'src/core/{base-stats,clamp,level-params}.ts',
       'scripts/validate/**',
     ],
@@ -33,7 +34,8 @@ export const DOMAINS = {
   data: {
     title: 'The game data and job facts, and the pipeline that generates them',
     src: [
-      'src/core/{items,job-context,gear-groups}.js',
+      'src/core/{items,job-context}.js',
+      'src/core/gear-groups.ts',
       'src/core/{constants,tables,stat-keys,patches,types}.ts',
       'src/core/item-format.json',
       'src/data/**',

@@ -84,7 +84,7 @@ export function makeJobContext(jobId) {
     vitFactor: CASTER_MAIN_KEYS.includes(mainKey) ? 0.9 : 1,
     /* the job's level cap: limited jobs stop below the game's (JOB_LEVEL_CAPS); it cannot wear gear of a higher equip level */
     maxLevel: JOB_LEVEL_CAPS[id] ?? MAX_LEVEL,
-    // the weapon damage the job's damage uses (damage-defense.js): physical for Strength and Dexterity jobs, magic for
+    // the weapon damage the job's damage uses (damage-defense.ts): physical for Strength and Dexterity jobs, magic for
     // Intelligence and Mind jobs; null for a job whose weapons carry none (NO_WEAPON_DAMAGE_JOBS), which the optimizer
     // then does not rank
     damageKey: damageKeyOf(id, mainKey),

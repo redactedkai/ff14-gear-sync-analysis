@@ -2,10 +2,10 @@
    gear points g at a level, the effect is floor(c x g / div) per mille, with div = ParamGrow.LevelModifier and a step
    size c per effect (AkhMorning's formulas, which xivgear's xivmath matches; docs/mechanics/math.md, section 6):
      Critical Hit rate 200 (plus a base 5%), Determination 140, Direct Hit 550, Tenacity damage 112, Piety 150 (MP per
-     tick, not per mille); Skill/Spell Speed by its GCD (speed.js).
+     tick, not per mille); Skill/Spell Speed by its GCD (speed.ts).
    The character's base value of each stat cancels out of these formulas, so the tier depends on the gear points alone.
    Food is not counted: it would move every total. Main stats and Vitality have no tiers here. */
-import { BASE_GCD_MS, gcdFor, gcdTierAt } from './speed.js';
+import { BASE_GCD_MS, gcdFor, gcdTierAt } from './speed.ts';
 import { levelParams } from './level-params.ts';
 import { statBase } from './base-stats.ts';
 
@@ -14,7 +14,7 @@ import { statBase } from './base-stats.ts';
 const TEN_MITIGATION_STEP = 200;
 
 /* Each substat's effects, in the order the page shows them: {kind, step}, step the c in floor(c x g / div) (speed has
-   none: its GCD comes from speed.js). Kinds:
+   none: its GCD comes from speed.ts). Kinds:
      rate: the chance of a critical hit (from 5%) or a direct hit; onCrit: what a critical hit adds (from 40%, always
      the rate + 35%, the same step); dmgHeal: damage and healing done; dmgTaken: Tenacity's cut to damage taken; mp:
      Piety's MP per tick; gcd: the GCD.
@@ -87,7 +87,7 @@ function effectText(kind, stat, tier) {
    elsewhere without losing the effect, and next - points are needed for the next step. */
 export function statTier(job, stat, points, level) {
   const gear = Math.max(0, Math.floor(points || 0));
-  // speed's effect is its GCD, which has its own steps (speed.js)
+  // speed's effect is its GCD, which has its own steps (speed.ts)
   if (stat === job.speedKey) {
     const t = gcdTierAt(gear, level);
     return { effect: effectText('gcd', stat, t.gcd), start: t.start, next: t.next };

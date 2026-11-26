@@ -1,9 +1,9 @@
-/* Speed (src/core/speed.js): GCD tiers and DoT scalars against AkhMorning's published tables, haste, the tier lookup,
+/* Speed (src/core/speed.ts): GCD tiers and DoT scalars against AkhMorning's published tables, haste, the tier lookup,
    and the speed band for a target GCD. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { expansionBounds } from '../../../src/core/items.js';
-import { dotMult, gcdFor, gcdTierAt, gcdTiers, hasteFor, speedForGcd } from '../../../src/core/speed.js';
+import { dotMult, gcdFor, gcdTierAt, gcdTiers, hasteFor, speedForGcd } from '../../../src/core/speed.ts';
 import { rngInt } from '../helpers/common.js';
 
 /* Expected values in this file are read from AkhMorning's published tier tables:

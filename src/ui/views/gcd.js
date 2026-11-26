@@ -3,7 +3,7 @@
    steps around the speed. Pure, so Node can test it. */
 import { clamp } from '../../core/clamp.ts';
 import { HASTE, jobById } from '../../core/constants.ts';
-import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor, recastMult } from '../../core/speed.js';
+import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor, recastMult } from '../../core/speed.ts';
 import { levelParams } from '../../core/level-params.ts';
 import { MAX_SPEED } from '../../core/tables.ts';
 import { commit } from '../number-commit.js';

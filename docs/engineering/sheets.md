@@ -109,7 +109,7 @@ Names may repeat (the id is the identity). A name is trimmed, and an empty one i
 
 ## Copy sheet
 
-Copy sheet is the only way to change a sheet's job. The form offers a new name, job, level and sync. A job is offered only from the same gear group (`src/core/gear-groups.js`, generated from the item data: jobs that share most of their armor). Blue Mage and Beastmaster, with their own level caps, copy to no other job.
+Copy sheet is the only way to change a sheet's job. The form offers a new name, job, level and sync. A job is offered only from the same gear group (`src/core/gear-groups.ts`, generated from the item data: jobs that share most of their armor). Blue Mage and Beastmaster, with their own level caps, copy to no other job.
 
 The clan and the party bonus are copied as they are. The goal and the stones move to the new job by position (`remapStatKey`: the main stat to the main stat, speed to speed, the special substat to the special substat). A stat the new job lacks stays in the copy, and the set's Auto-fill settings put it back to their default.
 

@@ -517,7 +517,7 @@ Notes:
 | Prediction of a real piece's stats | `src/core/formulas.js` (`predictRaw`) |
 | Caps used by the tests above | `src/core/formulas.js` (`capsFor`, `capValue`) |
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js` (`syncTarget`, `levelSyncIlvl`) |
-| GCD, tier scan and tier lookup | `src/core/speed.js` (`gcdFor`, `gcdTiers`, `gcdTierAt`) |
+| GCD, tier scan and tier lookup | `src/core/speed.ts` (`gcdFor`, `gcdTiers`, `gcdTierAt`) |
 | Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.js` (`exhaustive`, `gamePool`) |
 | Unit tests named above | `tests/unit/core/formulas.model-accuracy.test.js`, `core/formulas.test.js`, `core/formulas.caps-at-123.test.js`, `core/formulas.sync-clamp.test.js`, `core/formulas.sync-cap-order.test.js`, `core/sync-target.test.js`, `core/speed.test.js`, `core/optimizer/index.test.js`, `core/optimizer/index.exhaustive.test.js`, `core/optimizer/index.speed-limits.test.js`, `core/formulas.stat-factor.test.js`, `ui/views/*.test.js`, `core/items.test.js`, `core/item-format.test.js`, `core/tables.provenance.test.js`, `ui/state.test.js` |
 | Generator tests | `tests/data/test_*.py` |

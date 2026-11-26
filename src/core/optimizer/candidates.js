@@ -5,7 +5,7 @@
    A candidate (built by withMeld, read by search.js and solve in index.js):
      item    the pool item
      eff     its effective stats: after sync, plus its melds ({stat key: points}, the job's stats), and its weapon
-             damage after sync under WD_KEY when the job ranks it (damage-defense.js; 0 off the weapon)
+             damage after sync under WD_KEY when the job ranks it (damage-defense.ts; 0 off the weapon)
      copies  how many of it can be worn (2 for a non-Unique ring), counted per item, not per candidate
      blocks  slot types it leaves empty (a two-handed weapon the off-hand, a cloak the head)
      meld    its melds (bestMeld in meld.js) or null
@@ -15,7 +15,7 @@
              swap a ring for any of them, including those pruning dropped
      fixed   true on a pinned piece (fixedCandidate): worn as it is, in a slot the search does not fill */
 import { SLOT_TYPES } from '../constants.ts';
-import { WD_KEY, weaponDamage } from '../damage-defense.js';
+import { WD_KEY, weaponDamage } from '../damage-defense.ts';
 import { meldInfo, slotInfo } from '../items.js';
 import { applyStones, bestMeld, meldVersions } from '../meld.js';
 import { effStats, itemSyncIlvl, keepsMelds } from '../piece.js';

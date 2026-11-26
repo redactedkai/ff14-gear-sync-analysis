@@ -4,14 +4,15 @@
 import GEAR_GROUPS_FILE from '../data/gear-groups.json' with { type: 'json' };
 import { JOB_ROWS, ROW } from './constants.ts';
 import { itemById } from './items.js';
+import type { JobContext, SetPiece, SlotType } from './types.ts';
 
 /* GEAR_GROUPS: [[job id, ...], ...], every job in exactly one group. */
-export const GEAR_GROUPS = Object.freeze(GEAR_GROUPS_FILE.groups.map(group => Object.freeze([...group])));
+export const GEAR_GROUPS: readonly (readonly string[])[] = Object.freeze(GEAR_GROUPS_FILE.groups.map(group => Object.freeze([...group])));
 
 /* The role name of the gear group of `jobId` ("Healers"), for the Copy sheet note: the job picker's row label
    (constants.ts JOB_ROWS) when every job of the group is in that one row, else null (a group that spans rows, or a job
    alone in its group, Blue Mage and Beastmaster, takes no name). */
-export function gearGroupName(jobId) {
+export function gearGroupName(jobId: string): string | null {
   const group = GEAR_GROUPS.find(g => g.includes(jobId));
   if (!group || group.length < 2) {
     return null;
@@ -24,13 +25,17 @@ export function gearGroupName(jobId) {
    database row: [{index (in `pieces`), slot, gameId, name (the database row's)}], in order. The mask only: the equip level is not checked
    (`wearable` in items.js does that), since a level-synced piece stays wearable. Pieces not from the database (custom,
    empty slots, or a game id no row has any more) are never listed. */
-export function piecesJobCannotWear(job, pieces) {
+export function piecesJobCannotWear(
+  job: JobContext,
+  pieces: readonly SetPiece[],
+): { index: number; slot: SlotType; gameId: number; name: string }[] {
   const bit = 1 << job.jobIndex;
-  const out = [];
+  const out: { index: number; slot: SlotType; gameId: number; name: string }[] = [];
   pieces.forEach((piece, index) => {
     const row = piece.gameId == null ? null : itemById(piece.gameId);
     if (row && !(row[ROW.jobMask] & bit)) {
-      out.push({ index, slot: piece.slot, gameId: piece.gameId, name: row[ROW.name] });
+      // a row was found by the piece's game id, so the piece has one
+      out.push({ index, slot: piece.slot, gameId: piece.gameId as number, name: row[ROW.name] });
     }
   });
   return out;

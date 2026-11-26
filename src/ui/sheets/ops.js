@@ -5,7 +5,7 @@
    store), so the tests can fix them. Pure: no storage, no document. */
 import { clamp } from '../../core/clamp.ts';
 import { jobById } from '../../core/constants.ts';
-import { piecesJobCannotWear } from '../../core/gear-groups.js';
+import { piecesJobCannotWear } from '../../core/gear-groups.ts';
 import { makeJobContext } from '../../core/job-context.js';
 import { remapStatKey } from '../../core/stat-keys.ts';
 import { DATA_SOURCE, MAX_REAL } from '../../core/tables.ts';
@@ -180,7 +180,7 @@ export function copyGearSet(gearSet, name, id, at) {
   return { ...clone(gearSet), id, name, createdAt: at, updatedAt: at };
 }
 
-/* The pieces of `sheet` a sheet for job `jobId` cannot wear, by the job mask (gear-groups.js piecesJobCannotWear): every
+/* The pieces of `sheet` a sheet for job `jobId` cannot wear, by the job mask (gear-groups.ts piecesJobCannotWear): every
    saved row, the off-hand row of a two-handed job included, since the copy keeps it. Returns [{setId, setName, index (the
    row), slot, name}], set by set in row order; [] when the job is the sheet's own. */
 export function piecesToClear(sheet, jobId) {

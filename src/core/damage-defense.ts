@@ -12,6 +12,7 @@ import { capFromBudget, clampIlvl } from './formulas.js';
 import { damageDefenseFacts } from './items.js';
 import { levelParams } from './level-params.ts';
 import { IL, MP, SHARES } from './tables.ts';
+import type { DamageDefenseKey, JobContext, PoolItem } from './types.ts';
 
 /* The weapon damage key on candidates and totals (optimizer): one of the job's weapon damage, on the weapon only. */
 export const WD_KEY = 'wd';
@@ -22,7 +23,7 @@ const MITIGATION_PER_DIV = 15;
 
 /* The cap of `key` (a DAMAGE_DEFENSE_KEYS entry) on a piece of slot code `slotCode` and item kind `kind` at item level
    `ilvl` (capFromBudget: budget x factor, x slot share). */
-function damageDefenseCap(key, slotCode, ilvl, kind) {
+function damageDefenseCap(key: DamageDefenseKey, slotCode: number, ilvl: number, kind: number): number {
   return capFromBudget(IL[key][clampIlvl(ilvl)], MP[key][kind], SHARES[key][slotCode]).value;
 }
 
@@ -31,7 +32,7 @@ function damageDefenseCap(key, slotCode, ilvl, kind) {
    database (hand-made, generated) has the ItemLevel table's value at its item level (exact for weapon damage on 5,566 of
    the 5,579 combat weapons in Item.csv and 5,412 of the 5,425 in the database; docs/mechanics/math.md), at the target
    when synced, scaled by the slot share of its type's first slot code. */
-export function syncedValue(item, key, target) {
+export function syncedValue(item: PoolItem, key: DamageDefenseKey, target: number | null): number {
   const f = damageDefenseFacts(item);
   if (f) {
     const own = f.values[key] || 0;
@@ -46,7 +47,7 @@ export function syncedValue(item, key, target) {
 
 /* The weapon damage the optimizer ranks for a pool item: the job's weapon damage (job.damageKey) after sync, on a
    main-hand weapon; 0 on anything else and for a job with no damageKey (Blue Mage). `target` as for syncedValue. */
-export function weaponDamage(job, item, target) {
+export function weaponDamage(job: JobContext, item: PoolItem, target: number | null): number {
   if (!job.damageKey || item.type !== 'weapon') {
     return 0;
   }
@@ -55,7 +56,7 @@ export function weaponDamage(job, item, target) {
 
 /* A set's total physical and magic defense after sync: {phys, mag}. `pieces`: [{item, target}], each worn piece with
    the item level it is synced to (null when untouched). */
-export function setDefense(pieces) {
+export function setDefense(pieces: readonly { item: PoolItem; target: number | null }[]): { phys: number; mag: number } {
   let phys = 0,
     mag = 0;
   for (const { item, target } of pieces) {
@@ -67,6 +68,6 @@ export function setDefense(pieces) {
 
 /* The share of damage taken that `defense` removes at character `level`, in whole percent (before cooldowns, which
    multiply with it). */
-export function mitigationPct(defense, level) {
+export function mitigationPct(defense: number, level: number): number {
   return Math.floor((MITIGATION_PER_DIV * defense) / levelParams(level).div);
 }
