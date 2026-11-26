@@ -3,7 +3,7 @@
    fixed line; no Auto-fill is run here (the page's smoke steps run it with the real solver). */
 import { html } from 'lit';
 import '../../../src/ui/elements/set-page/set-page.ts';
-import { restoreState } from '../../../src/ui/state.js';
+import { restoreState } from '../../../src/ui/state.ts';
 import { saveSheet } from '../../../src/ui/sheets/storage.js';
 import { createPageStore } from '../../../src/ui/store/page-store.ts';
 import { setHeaderView } from '../../../src/ui/views/sheet-sets.js';

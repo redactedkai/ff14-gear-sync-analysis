@@ -1,7 +1,7 @@
 /* The cap follows the level (src/ui/level-cap.ts): the rule that lowers a cap and the note under the cap field. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { defaultState } from '../../../src/ui/state.js';
+import { defaultState } from '../../../src/ui/state.ts';
 import {
   CAP_MISSING_FLAG,
   CAP_MISSING_TEXT,

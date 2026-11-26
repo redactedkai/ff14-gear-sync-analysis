@@ -7,7 +7,7 @@ import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor, recastMult } from '.
 import { levelParams } from '../../core/level-params.ts';
 import { MAX_SPEED } from '../../core/tables.ts';
 import { commit } from '../number-commit.ts';
-import { speedStepChartSvg } from '../sync-charts.js';
+import { speedStepChartSvg } from '../sync-charts.ts';
 
 /* The levels the tab covers: every level of the game, whatever the job (its own setting). */
 export const GCD_LEVELS = MAX_SPEED.length;

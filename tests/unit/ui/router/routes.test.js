@@ -1,9 +1,9 @@
-/* The page's addresses (src/ui/router/routes.js): what a hash names and the hash of a screen. The ids are the forms the page
+/* The page's addresses (src/ui/router/routes.ts): what a hash names and the hash of a screen. The ids are the forms the page
    makes (sheets/ops.js randomId: 's_' or 'g_', the time in base 36 and six letters) and the readable ones of the example
    sheets (ui/test-sheets.json). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MATH_TABS, TABS } from '../../../../src/ui/state.js';
+import { MATH_TABS, TABS } from '../../../../src/ui/state.ts';
 import {
   APP_TITLE,
   DEFAULT_ROUTE,
@@ -13,7 +13,7 @@ import {
   parseRoute,
   samePath,
   titleOf,
-} from '../../../../src/ui/router/routes.js';
+} from '../../../../src/ui/router/routes.ts';
 
 const SHEET_ID = 's_mh3k2x9a1b2c3d';
 const SET_ID = 'g_mh3k4p0q9r8s7t';

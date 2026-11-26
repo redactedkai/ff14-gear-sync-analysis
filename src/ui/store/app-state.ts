@@ -30,7 +30,7 @@
    - Behaviours kept on purpose, odd as they are: opening a tab that is already open still applies a math sub-tab; a job change
      on the Sheets tab, which has no panel, does nothing; `openTab` counts requests so only the newest shows. */
 import { makeJobContext } from '../../core/job-context.ts';
-import { DEFAULT_ROUTE, formatRoute } from '../router/routes.js';
+import { DEFAULT_ROUTE, formatRoute } from '../router/routes.ts';
 import { Store } from './store.ts';
 
 /* One tab's Job and sync panel: the job's id, the item level cap (null: none), whether item level sync is on, the synced level. */
@@ -59,7 +59,7 @@ export interface PieceFields {
   slots: number | null;
 }
 
-/* The Gear browser's filters and sort (state.js defaultBrowse); min, max and lvl are '' while their box is empty. */
+/* The Gear browser's filters and sort (state.ts defaultBrowse); min, max and lvl are '' while their box is empty. */
 export interface BrowseFields {
   q: string;
   type: string;
@@ -205,7 +205,7 @@ export type AppStore = Store<AppState>;
 /* The mark in `SheetsState.unsaved` for the order of the sheets (the index): no sheet id looks like it. */
 export const ORDER_MARK = '(order)';
 
-/* The state.js state that restoreState returns (the shape that was saved in one object, with the panel copied into the top
+/* The state.ts state that restoreState returns (the shape that was saved in one object, with the panel copied into the top
    level), as far as this file reads it. */
 export interface RestoredState {
   tab: string;
@@ -227,7 +227,7 @@ function ownFields<Own>(group: Own & Panel): Own {
   return own as unknown as Own;
 }
 
-/* The saved settings of a restored state (state.js restoreState) in the shape of the `settings` slice: each tab's panel apart
+/* The saved settings of a restored state (state.ts restoreState) in the shape of the `settings` slice: each tab's panel apart
    from its group. */
 export function settingsOf(restored: RestoredState): SettingsState {
   return {
@@ -265,7 +265,7 @@ export function emptySetPage(): SetPageState {
    comes back each time. */
 const NO_SET_PAGE: SetPageState = Object.freeze(emptySetPage());
 
-/* The state the page starts with: `restored` (state.js restoreState of what loadSaved gave and the address's screen) and
+/* The state the page starts with: `restored` (state.ts restoreState of what loadSaved gave and the address's screen) and
    `sheetsData` (the saved sheets as sheets/store-shared.js readSheets read them). */
 export function initialState(restored: RestoredState, sheetsData: SheetsData): AppState {
   return {
@@ -389,13 +389,13 @@ export function unsettledKind(page: SetPageState): 'draft' | 'running' | 'result
 }
 
 /* Whether any gear set page holds work a reload, a closed tab or a move off the page would lose: a manual draft, a running
-   Auto-fill or a result waiting. The leave guard and the reload and close guard (router/unload-guard.js) both ask it. A page is
+   Auto-fill or a result waiting. The leave guard and the reload and close guard (router/unload-guard.ts) both ask it. A page is
    in the state only while it is open, so a page left holds nothing. */
 export function unsettled(state: AppState): boolean {
   return Object.values(state.setPages).some(page => unsettledKind(page) !== null);
 }
 
-/* The screen the stores show, as a route without the settings query (router/routes.js): the tab being opened counts as open, a
+/* The screen the stores show, as a route without the settings query (router/routes.ts): the tab being opened counts as open, a
    sheet or set that an address named and is not saved counts as open too ("not found" keeps its address). The router adds the
    query of the Gear browser and the math views. A new object each call. */
 export function routeOf(state: AppState) {

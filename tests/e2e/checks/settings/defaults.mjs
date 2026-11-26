@@ -1,6 +1,6 @@
 // Settings panel: defaults, the cap field, job switch, level caps.
 
-import { DEFAULT_ROUTE, titleOf } from '../../../../src/ui/router/routes.js';
+import { DEFAULT_ROUTE, titleOf } from '../../../../src/ui/router/routes.ts';
 import { DEBOUNCE_SETTLE_MS, DEFAULT_CAP, DEFAULT_JOB, DEFAULT_LEVEL, STORE_KEY } from '../../lib/constants.mjs';
 import { check, expect } from '../../lib/expect.mjs';
 import { afterFrames, browserRows, fieldValue, pickJob, setJob, setNumber, showTab, waitSaved } from '../../lib/nav.mjs';
@@ -131,7 +131,7 @@ export async function checkJobLevelCap(pg) {
 
 /** The checks that need a fresh page with nothing set: the title, the defaults and the cap field's validation. */
 export async function checkDefaults(pg) {
-  // the page opens on the Sheets list: its title names the screen (ui/router/routes.js titleOf)
+  // the page opens on the Sheets list: its title names the screen (ui/router/routes.ts titleOf)
   const title = await pg.title();
   check(title === titleOf(DEFAULT_ROUTE), `title is '${title}'`);
   for (const [sel, v] of Object.entries({ '#job': DEFAULT_JOB, '#cap': DEFAULT_CAP, '#level': DEFAULT_LEVEL })) {

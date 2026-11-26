@@ -1,10 +1,10 @@
-/* Substat tiers' own job in the saved shape (src/ui/state.js restoreState, defaultState): `tiers: { job }`. A save without a
+/* Substat tiers' own job in the saved shape (src/ui/state.ts restoreState, defaultState): `tiers: { job }`. A save without a
    valid one (from before it had one: a single job for the three math sub-tabs) gives it Stat Allocation's restored job; a valid
    one is kept apart from it. The math panel with IL Sync off holds level sync's item level as its cap, at load too. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { defaultState, restoreState } from '../../../src/ui/state.js';
+import { defaultState, restoreState } from '../../../src/ui/state.ts';
 import { DEFAULT_JOB } from '../../../src/core/constants.ts';
 import { restoreOpen } from '../helpers/common.js';
 

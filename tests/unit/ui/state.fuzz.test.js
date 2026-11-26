@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS } from '../../../src/core/constants.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import { MATH_TABS, TABS, defaultState, restoreState } from '../../../src/ui/state.js';
+import { MATH_TABS, TABS, defaultState, restoreState } from '../../../src/ui/state.ts';
 import { rng } from '../helpers/common.js';
 import { WRONG, clone, damage } from '../helpers/fuzz.js';
 

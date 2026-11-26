@@ -3,8 +3,8 @@
    given, the notes, and the footer's data line. `appRootSelection` says which parts of the store the root draws from: it draws again
    when one changes. */
 import { dataSourceLabel } from '../../../core/tables.ts';
-import { followInPage } from '../../router/plain-click.js';
-import { formatRoute } from '../../router/routes.js';
+import { followInPage } from '../../router/plain-click.ts';
+import { formatRoute } from '../../router/routes.ts';
 import type { AppFacade } from '../../store/app-facade.ts';
 import type { AppState, AppStore } from '../../store/app-state.ts';
 import { partKey } from '../../store/store.ts';
@@ -111,7 +111,7 @@ export class AppRootModel {
   /* TODO: Space on a tab link does not open it (a link takes Enter only; the tabs were buttons, which took Space too). A keydown
      handler for Space on the tab links would bring it back. */
   /* A tab link's click (`event`): a plain click opens tab `tab`; a Ctrl, Cmd, Shift or Alt click is left to the browser
-     (plain-click.js). Leaving the Sheets tab while its set page has something to settle (a manual draft, a running Auto-fill, an
+     (plain-click.ts). Leaving the Sheets tab while its set page has something to settle (a manual draft, a running Auto-fill, an
      Auto-fill result waiting) asks first, with the set page's own question (ui/store/sheets-actions.ts askLeave); the answer opens the
      tab. The tab shows as selected with a loading line first (store.openTab). */
   goTab(tab: TabName, event: MouseEvent): void {

@@ -11,7 +11,7 @@ import { mkItem } from '../../core/items.ts';
 import { bestMeld } from '../../core/meld.ts';
 import { meldSlotChoices, meldSlotsOf, shownSync } from '../job-sync-panel.ts';
 import { LEVEL_TEXT, rangeOnly, rangeText } from '../level-cap.ts';
-import { OVERGEAR_BANDS, overgearChartSvg } from '../sync-charts.js';
+import { OVERGEAR_BANDS, overgearChartSvg } from '../sync-charts.ts';
 
 /* The item level range the slider and both charts cover, relative to the cap (item levels). */
 const RANGE_BELOW = 30; // from 30 below the cap

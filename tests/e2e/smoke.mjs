@@ -40,7 +40,7 @@ SMOKE_TIMEOUT (ms for any single wait, default 10000; page loads wait 30000 or t
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
-import { UNLOAD_GUARD_OFF_KEY } from '../../src/ui/router/unload-guard.js';
+import { UNLOAD_GUARD_OFF_KEY } from '../../src/ui/router/unload-guard.ts';
 import { parseDomains } from '../domains.mjs';
 import { GROUPS } from './groups.mjs';
 import { OUT, PAGE, PAGE_PATH, WORKERS, shot } from './lib/constants.mjs';

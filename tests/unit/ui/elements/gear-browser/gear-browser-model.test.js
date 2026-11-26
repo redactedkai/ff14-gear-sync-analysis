@@ -11,7 +11,7 @@ import {
   wantsSearchFocus,
 } from '../../../../../src/ui/elements/gear-browser/gear-browser-model.ts';
 import { syncSettings } from '../../../../../src/ui/job-sync-panel.ts';
-import { defaultBrowse } from '../../../../../src/ui/state.js';
+import { defaultBrowse } from '../../../../../src/ui/state.ts';
 import { gearView } from '../../../../../src/ui/views/gear.js';
 import { restoreOpen } from '../../../helpers/common.js';
 import { createAppFacade } from '../../../helpers/stores.js';

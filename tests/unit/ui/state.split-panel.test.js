@@ -1,8 +1,8 @@
-/* splitPanelSettings (src/ui/state.js): the saved settings with the Job and sync panel split between the Gear browser and
+/* splitPanelSettings (src/ui/state.ts): the saved settings with the Job and sync panel split between the Gear browser and
    How the math works, and the old optimizer's `opt` dropped. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { splitPanelSettings } from '../../../src/ui/state.js';
+import { splitPanelSettings } from '../../../src/ui/state.ts';
 
 /* A save of the shape before the split: the panel at the top, the old optimizer's settings in `opt`. */
 const OLD = {

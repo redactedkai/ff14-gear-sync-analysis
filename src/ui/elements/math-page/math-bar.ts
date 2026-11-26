@@ -19,8 +19,8 @@ import { classMap } from 'lit/directives/class-map.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { live } from 'lit/directives/live.js';
 import { makeJobContext } from '../../../core/job-context.ts';
-import { followInPage } from '../../router/plain-click.js';
-import { formatRoute } from '../../router/routes.js';
+import { followInPage } from '../../router/plain-click.ts';
+import { formatRoute } from '../../router/routes.ts';
 import {
   IL_BOX_SIZER,
   IL_CONTROL_TEXT,

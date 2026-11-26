@@ -16,7 +16,7 @@ import { createSheetsFacade } from './sheets-facade.ts';
 /* The saved sheets of a page with no storage: none, and none can be saved. */
 const NO_SHEETS: SheetsData = { available: false, sheets: [], unreadable: [], indexProblem: null };
 
-/* What a page store is made from. restored: state.js restoreState of what was saved and the screen the address names;
+/* What a page store is made from. restored: state.ts restoreState of what was saved and the screen the address names;
    storage, now, makeId: the sheets' storage (the browser's by default; null for none), the clock and the id maker; frame: the
    frame scheduler (app-actions.ts). */
 export interface PageStoreOptions extends AppActionOptions, SheetsActionOptions {

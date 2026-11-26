@@ -6,23 +6,58 @@
    slot or stat name) goes through escapeXml, so a name can never add markup; the rest is numbers. */
 import { clamp } from '../core/clamp.ts';
 
+/* The functions that put an item level or a value on the chart: from the data to the x and y positions (px). */
+type Scale = (value: number) => number;
+
+/* One item level of the overgeared chart: the piece's points there (`points`), by chosen substat (`parts`, after sync) and the points
+   its melds add (`melds`). */
+export interface OvergearPoint {
+  il: number;
+  points: number;
+  parts: number[];
+  melds: number;
+}
+
+/* What overgearChartSvg draws (below). `width`: the container's width in px (0 or missing: a default). */
+export interface OvergearChartInput {
+  curve: readonly OvergearPoint[];
+  cap: number;
+  il: number;
+  ref: number;
+  labels?: readonly string[];
+  ceilings?: readonly number[];
+  width?: number;
+}
+
+/* One level of the GCD chart: the points of speed one 0.01 s step takes there. */
+export interface SpeedBar {
+  level: number;
+  speed: number;
+}
+
+/* A haste's line on the GCD chart: the level where it starts or grows and its percent. */
+export interface HasteMark {
+  level: number;
+  pct: number;
+}
+
 const DEFAULT_WIDTH = 760;
 const MIN_WIDTH = 420;
 
 /* `text` with the characters that mean markup in SVG and HTML written as entities. */
-export function escapeXml(text) {
+export function escapeXml(text: unknown): string {
   return String(text).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 }
 
 /* A round step for about five grid lines between 0 and `span`. */
-function niceStep(span) {
+function niceStep(span: number): number {
   const raw = span / 5,
     mag = 10 ** Math.floor(Math.log10(raw || 1));
-  return [1, 2, 5, 10].map(m => m * mag).find(s => s >= raw);
+  return [1, 2, 5, 10].map(m => m * mag).find(s => s >= raw) as number; // 10 * mag is never below raw
 }
 
 /* x ticks every 20 item levels (10 for a short range), and the axis caption. */
-function xAxis(x0, x1, X, H, B, caption) {
+function xAxis(x0: number, x1: number, X: Scale, H: number, B: number, caption: string): string {
   const every = x1 - x0 > 80 ? 20 : 10;
   let g = '';
   for (let v = Math.ceil(x0 / every) * every; v <= x1; v += every) {
@@ -35,7 +70,31 @@ function xAxis(x0, x1, X, H, B, caption) {
 const LABEL_HALF_WIDTH = 24;
 
 /* The cap line (unlabelled: the legend names it), the item level marker of the chosen piece or set (its label above the plot, on top of the marker line), and the shaded range `more` (item levels, in order). */
-function marks({ x0, x1, X, T, H, B, W, cap, il, more, markerY }) {
+function marks({
+  x0,
+  x1,
+  X,
+  T,
+  H,
+  B,
+  W,
+  cap,
+  il,
+  more,
+  markerY,
+}: {
+  x0: number;
+  x1: number;
+  X: Scale;
+  T: number;
+  H: number;
+  B: number;
+  W: number;
+  cap: number;
+  il: number;
+  more: readonly number[];
+  markerY: number;
+}): string {
   let g = '';
   if (more.length) {
     g += `<rect data-shade="${more[0]}-${more[more.length - 1]}" x="${X(more[0])}" y="${T}" width="${Math.max(1, X(more[more.length - 1]) - X(more[0]))}" height="${H - T - B}" fill="var(--fg)" opacity=".07"/>`;
@@ -62,7 +121,7 @@ export const OVERGEAR_BANDS = Object.freeze([
    points the piece's melds add); ref: the piece at the cap's points (with its melds); labels and ceilings: each chosen
    substat's name and its cap at the synced item level. Drawn as stacked bands (the substats, then the melds), so the top
    edge is the piece's points and each band shows where its substat reaches its ceiling. */
-export function overgearChartSvg({ curve, cap, il, ref, labels = [], ceilings = [], width }) {
+export function overgearChartSvg({ curve, cap, il, ref, labels = [], ceilings = [], width }: OvergearChartInput): string {
   if (!curve.length) {
     return '';
   }
@@ -78,8 +137,8 @@ export function overgearChartSvg({ curve, cap, il, ref, labels = [], ceilings = 
   const hi = Math.max(ref, ...curve.map(p => p.points));
   const step = niceStep(hi || 10),
     ymax = hi + step * 0.6;
-  const X = v => L + ((v - x0) / Math.max(1, x1 - x0)) * (W - L - R),
-    Y = v => T + (1 - v / ymax) * (H - T - B);
+  const X = (v: number) => L + ((v - x0) / Math.max(1, x1 - x0)) * (W - L - R),
+    Y = (v: number) => T + (1 - v / ymax) * (H - T - B);
 
   let g = '';
   for (let v = 0; v <= ymax; v += step) {
@@ -89,8 +148,8 @@ export function overgearChartSvg({ curve, cap, il, ref, labels = [], ceilings = 
   g += `<text x="12" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 12 ${(T + H - B) / 2})">Stat points</text>`;
 
   // the bands: each substat on the ones below it, then the melds; a band is the area between two running totals
-  const layers = [...curve[0].parts.map((_, i) => p => p.parts[i]), p => p.melds];
-  const below = (p, k) => layers.slice(0, k).reduce((a, f) => a + f(p), 0);
+  const layers: ((p: OvergearPoint) => number)[] = [...curve[0].parts.map((_, i) => (p: OvergearPoint) => p.parts[i]), p => p.melds];
+  const below = (p: OvergearPoint, k: number) => layers.slice(0, k).reduce((a, f) => a + f(p), 0);
   layers.forEach((f, k) => {
     const band = OVERGEAR_BANDS[Math.min(k === layers.length - 1 ? 2 : k, 2)];
     const top = curve.map(p => `${X(p.il).toFixed(1)},${Y(below(p, k) + f(p)).toFixed(1)}`);
@@ -110,7 +169,7 @@ export function overgearChartSvg({ curve, cap, il, ref, labels = [], ceilings = 
   const first = curve[Math.min(2, curve.length - 1)],
     last = curve[curve.length - 1];
   labels.forEach((name, i) => {
-    const mid = p => Y(below(p, i) + p.parts[i] / 2) + 4;
+    const mid = (p: OvergearPoint) => Y(below(p, i) + p.parts[i] / 2) + 4;
     if (Y(below(first, i)) - Y(below(first, i) + first.parts[i]) >= 16) {
       g += `<text class="lbl" x="${X(first.il) + 4}" y="${mid(first)}">${escapeXml(name)}</text>`;
     }
@@ -130,7 +189,17 @@ export function overgearChartSvg({ curve, cap, il, ref, labels = [], ceilings = 
 /* bars: [{level, speed}] for levels 1 to 100 in order (speed: points per 0.01 s step there); level: the bar to
    highlight and label; marks: [{level, pct}], a dotted line where a haste starts or grows. A click on a bar is read from
    its data-level. */
-export function speedStepChartSvg({ bars, level, marks: hasteMarks = [], width }) {
+export function speedStepChartSvg({
+  bars,
+  level,
+  marks: hasteMarks = [],
+  width,
+}: {
+  bars: readonly SpeedBar[];
+  level: number;
+  marks?: readonly HasteMark[];
+  width?: number;
+}): string {
   if (!bars.length) {
     return '';
   }
@@ -142,8 +211,8 @@ export function speedStepChartSvg({ bars, level, marks: hasteMarks = [], width }
     B = 34;
   const top = Math.max(...bars.map(b => b.speed));
   const slot = (W - L - R) / bars.length,
-    X = lv => L + (lv - 1) * slot,
-    Y = v => H - B - (v / top) * (H - T - B);
+    X = (lv: number) => L + (lv - 1) * slot,
+    Y = (v: number) => H - B - (v / top) * (H - T - B);
 
   let g = '';
   for (const f of [0, 0.5, 1]) {

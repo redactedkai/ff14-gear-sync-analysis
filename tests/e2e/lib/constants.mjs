@@ -36,7 +36,7 @@ export const DEBOUNCE_SETTLE_MS = 400;
 // There is no phone layout (owner's decision, 2026-10-15).
 export const NARROW = { width: 960, height: 900 };
 
-export const STORE_KEY = 'ilvl-stat-lab-v4'; // localStorage key of the saved state (src/ui/state.js)
+export const STORE_KEY = 'ilvl-stat-lab-v4'; // localStorage key of the saved state (src/ui/state.ts)
 
 // Defaults owe nothing to any player's setup: no job chosen, no sync cap (sync off), level 100.
 export const [DEFAULT_JOB, DEFAULT_CAP, DEFAULT_LEVEL] = ['PLD', '', '100'];

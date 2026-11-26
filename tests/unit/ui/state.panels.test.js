@@ -1,4 +1,4 @@
-/* restoreState with a Job and sync panel on each tab (src/ui/state.js): the saved shapes it reads. An older save has one
+/* restoreState with a Job and sync panel on each tab (src/ui/state.ts): the saved shapes it reads. An older save has one
    panel (top-level job, cap, sync, level), which the two tabs with a panel share at first; a newer one has a panel in
    each of `piece` and `browse`; a broken one is repaired field by field. An older save's Gear optimizer settings (`opt`,
    `optPanel`) are dropped. */

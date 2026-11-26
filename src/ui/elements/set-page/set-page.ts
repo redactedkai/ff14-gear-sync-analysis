@@ -20,7 +20,7 @@ import { classMap } from 'lit/directives/class-map.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { JOB_ICONS } from '../../../data/job-icons.js';
-import { followInPage } from '../../router/plain-click.js';
+import { followInPage } from '../../router/plain-click.ts';
 import { fillButtonView, noPiecesFlag, setPageViews } from '../../views/set-page.js';
 import '../gear-browser/expansion-menu.ts';
 import '../gear-browser/gear-categories.ts';

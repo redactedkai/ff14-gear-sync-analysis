@@ -1,8 +1,8 @@
-/* The saved scroll positions (src/ui/router/scroll-storage.js): only finite numbers come back, and no stored text can stop
+/* The saved scroll positions (src/ui/router/scroll-storage.ts): only finite numbers come back, and no stored text can stop
    the page from starting. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SCROLL_KEY, readScrollPositions, tabStorage, writeScrollPositions } from '../../../../src/ui/router/scroll-storage.js';
+import { SCROLL_KEY, readScrollPositions, tabStorage, writeScrollPositions } from '../../../../src/ui/router/scroll-storage.ts';
 import { fakeStorage } from '../../helpers/sheet-fixtures.js';
 
 /* A storage that holds `text` under the scroll key. */

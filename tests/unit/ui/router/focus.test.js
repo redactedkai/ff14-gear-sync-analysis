@@ -1,8 +1,8 @@
-/* Focus and scroll after Back or Forward (src/ui/router/focus.js) over a stand-in document: the first visible heading of the
+/* Focus and scroll after Back or Forward (src/ui/router/focus.ts) over a stand-in document: the first visible heading of the
    visible tab panel gets the focus, and the page scrolls to the position asked for. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { focusScreenHeading, isPlacingScroll } from '../../../../src/ui/router/focus.js';
+import { focusScreenHeading, isPlacingScroll } from '../../../../src/ui/router/focus.ts';
 
 const shown = { getClientRects: () => [{}] };
 const hidden = { getClientRects: () => [] };

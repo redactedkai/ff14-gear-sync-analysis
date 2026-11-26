@@ -13,7 +13,7 @@
      of screen closes it. */
 import * as popover from '@zag-js/popover';
 import { LitElement, html, nothing } from 'lit';
-import { plainClick } from '../../router/plain-click.js';
+import { plainClick } from '../../router/plain-click.ts';
 import { createOverlayBridge } from '../shared/overlay-bridge.ts';
 import { ZagController } from '../shared/zag-controller.ts';
 

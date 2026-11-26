@@ -1,8 +1,8 @@
 // Addresses: every screen has its own, and Back, Forward and reload move between them.
 
 import { ANY_SLOT_LABEL, slotButtonName } from '../../../../src/ui/elements/gear-browser/slot-menu-names.ts';
-import { SCROLL_KEY } from '../../../../src/ui/router/scroll-storage.js';
-import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.js';
+import { SCROLL_KEY } from '../../../../src/ui/router/scroll-storage.ts';
+import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.ts';
 import { check, expect, poll } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
 import { afterFrames, waitSaved } from '../../lib/nav.mjs';
@@ -13,7 +13,7 @@ import { expectApplyCount, openSageSet, seedSheet, seedSheets } from '../../lib/
 const hashOf = pg => pg.evaluate(() => location.hash);
 
 /** How many frames a scroll position is watched after the page has landed on it: more than the router tries the scroll for
- * (MAX_SCROLL_FRAMES in focus.js, 30), counted in frames and not in ms, so a busy machine, which draws fewer frames a second, is
+ * (MAX_SCROLL_FRAMES in focus.ts, 30), counted in frames and not in ms, so a busy machine, which draws fewer frames a second, is
  * watched for as many. */
 const STAY_FRAMES = 35;
 

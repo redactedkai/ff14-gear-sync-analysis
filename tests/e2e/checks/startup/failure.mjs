@@ -5,7 +5,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.js';
+import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.ts';
 import { OUT, PAGE_PATH, STORE_KEY } from '../../lib/constants.mjs';
 import { check, expect } from '../../lib/expect.mjs';
 import { afterFrames, newPage } from '../../lib/nav.mjs';

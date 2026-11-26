@@ -19,7 +19,7 @@ import { syncStats } from '../../core/formulas.ts';
 import { syncTarget } from '../../core/sync-target.ts';
 import { fmtInt } from '../text.ts';
 import { ANY_SLOT_KEY, ANY_SLOT_LABEL } from '../elements/gear-browser/slot-menu-names.ts';
-import { defaultBrowse } from '../state.js';
+import { defaultBrowse } from '../state.ts';
 import { SLOT_LABEL } from '../../core/constants.ts';
 
 /* The rows on one page of the table. The time of a sort or a page turn is mostly the time to draw the rows (about 1.3 ms
@@ -169,7 +169,7 @@ export function pageList(current, count) {
    confusing). slots: the Slot menu's choices, [{key, label, count, countText, group}], 'any' first (label "Any slot", group 0), then the job's
    slots by group (1 to 3), count the matches in that slot under the other filters (countText: with thousands separators);
    slotLabel: the label of the chosen slot, the closed Slot button's text. For `job` (a JobContext) under `sync` ({cap,
-   sync, level}: ui/job-sync-panel.ts syncSettings), with the browser's settings `browse` (the store's: state.js
+   sync, level}: ui/job-sync-panel.ts syncSettings), with the browser's settings `browse` (the store's: state.ts
    defaultBrowse). The page line: pageButtons, [{key, page, current}] from pageList (page null for a gap; just 1 with one
    page), and prevPage and nextPage, the arrows' pages (null at the ends). */
 export function gearView(job, sync, browse, page = 1) {

@@ -1,5 +1,5 @@
 /* The page's settings as the core and the views take them: plain values read from the store's fields, so a view never
-   needs the store itself (a sheet hands in its own). Pure: no import of another UI module, so state.js,
+   needs the store itself (a sheet hands in its own). Pure: no import of another UI module, so state.ts,
    level-cap.ts, the views and the elements can all use it without an import going back up. */
 import { ACTIVITIES } from '../core/constants.ts';
 import { capCeiling, levelSyncIlvl } from '../core/sync-target.ts';
@@ -41,7 +41,7 @@ export function meldSlotChoices(slotType: SlotType): readonly number[] {
 /* The materia slots of Stat Allocation's example piece `piece` ({slot, slots}): its own choice (`slots`: null means the
    slot's usual total), or the usual one when the choice is not a total that slot's pieces have. */
 export function meldSlotsOf(piece: { slot: string; slots: number | null }): number {
-  // the saved slot is a slot type (state.js repairs it on restore)
+  // the saved slot is a slot type (state.ts repairs it on restore)
   const { choices, usual } = MELD_SLOTS_BY_KIND[SLOT_KIND[piece.slot as SlotType]];
   // a null `slots` is in no list, so the usual total applies
   return choices.includes(piece.slots as number) ? (piece.slots as number) : usual;

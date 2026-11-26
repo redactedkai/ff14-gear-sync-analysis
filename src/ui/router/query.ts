@@ -1,5 +1,5 @@
 /* The settings an address names after its route (#/gear?sort=det&min=700), in both directions. Pure: no DOM and no store, so Node can
-   test it. The router (router.js) hands in the store's settings objects and reads back plain values.
+   test it. The router (router.ts) hands in the store's settings objects and reads back plain values.
 
    A view's query names that view's own settings and nothing else:
      gear   (#/gear)          q slot min max equip noexp skip market sort dir      the Gear browser's search, filters and sort
@@ -12,27 +12,51 @@
 
    Reading a query is a complete description: a setting it leaves out is the default (never the reader's saved value), and a
    value that is not valid falls back to the default too, checked by the same functions that check a saved setting
-   (state.js restoreBrowseFields and restorePieceFields). A name the view does not have is ignored. Writing is the other
+   (state.ts restoreBrowseFields and restorePieceFields). A name the view does not have is ignored. Writing is the other
    way: only the settings that differ from the defaults, in the order above, as text. */
 import { clamp } from '../../core/clamp.ts';
 import { ACTIVITIES, EXPANSIONS, HASTE } from '../../core/constants.ts';
 import { DEFAULT_EXCLUDE, meldSlotChoices } from '../job-sync-panel.ts';
 import { DEFAULT_JOB } from '../../core/constants.ts';
-import { defaultBrowse, defaultSubs, restoreBrowseFields, restorePanel, restorePieceFields } from '../state.js';
+import { defaultBrowse, defaultSubs, restoreBrowseFields, restorePanel, restorePieceFields } from '../state.ts';
 import { MAX_SPEED } from '../../core/tables.ts';
 import { GCD_LEVELS, gcdLevelInput } from '../views/gcd.js';
+import type { JobContext, SlotType } from '../../core/types.ts';
+import type { BrowseFields, PieceFields } from '../store/app-state.ts';
+import type { RestoredPanel } from '../state.ts';
+import type { Route, RouteParams } from './routes.ts';
+
+/* The views whose settings an address names: the Gear browser, and the math screen's three sub-views. */
+export type QueryView = 'gear' | 'piece' | 'gcd' | 'tiers';
+
+/* GCD Scaling's settings: the level typed (null: the synced level), the haste's job id ('' for none), the total speed asked for (null: the
+   level's base). */
+export interface GcdSettings {
+  level: number | null;
+  haste: string;
+  speed: number | null;
+}
+
+/* Substat tiers' settings: its job (an id) and the level typed into its box (null: the job's level cap). */
+export interface TiersSettings {
+  job: string;
+  level: number | null;
+}
+
+/* The settings of any view that has a query. */
+export type QuerySettings = BrowseFields | PieceFields | GcdSettings | TiersSettings;
 
 /* The most speed any job has at any level: a link's speed is held to it (the tab holds it to the level's range). */
 const MOST_SPEED = Math.max(...MAX_SPEED);
 
-/* The view of `route` (a route object, routes.js): 'gear' for the Gear browser, the math view's name ('piece', 'gcd' or
+/* The view of `route` (a route object, routes.ts): 'gear' for the Gear browser, the math view's name ('piece', 'gcd' or
    'tiers') for a math screen, or null for a screen with no query (the Sheets screens). */
-export function queryViewOf(route) {
+export function queryViewOf(route: Route | null | undefined): QueryView | null {
   if (route?.tab === 'browse') {
     return 'gear';
   }
   if (route?.tab === 'math') {
-    return route.mathTab;
+    return route.mathTab as QueryView; // 'piece', 'gcd' or 'tiers' on a route that parseRoute made
   }
   return null;
 }
@@ -49,19 +73,19 @@ export const QUERY_NAMES = Object.freeze({
 });
 
 /* The items of a list value ('ARR,HW'): the non-empty items, in the order written. */
-const listOf = text =>
+const listOf = (text: string | undefined): string[] =>
   String(text ?? '')
     .split(',')
     .filter(item => item !== '');
 
 /* The whole number in `text`, or null for an empty or other text (an item level, a speed, a level). */
-function wholeNumberOrNull(text) {
+function wholeNumberOrNull(text: string | undefined): number | null {
   const number = Number(text);
   return text === undefined || text === '' || !Number.isInteger(number) ? null : number;
 }
 
 /* `on` and `off` for a switch's text: true for '1' or 'true', false for '0' or 'false', undefined for anything else. */
-function switchOf(text) {
+function switchOf(text: string | undefined): boolean | undefined {
   if (text === '1' || text === 'true') {
     return true;
   }
@@ -71,12 +95,12 @@ function switchOf(text) {
   return undefined;
 }
 
-/* The Job and sync panel `params` ({name: text}) names, checked like a saved one (state.js restorePanel): {job, cap, sync,
+/* The Job and sync panel `params` ({name: text}) names, checked like a saved one (state.ts restorePanel): {job, cap, sync,
    level, jobCtx}. Complete: a job it leaves out is the default job, a level the default level (the job's cap at most), and
    item level sync is on when `il` is a whole number (the cap) or empty (sync on, no cap yet), else off. A cap held while sync is off is no setting
    of the link's: it stays the reader's (`heldCap`, null for none), so the page's own address, opened again by a reload, keeps
    the cap the reader had set before turning sync off. */
-export function readPanelQuery(params, heldCap = null) {
+export function readPanelQuery(params: RouteParams, heldCap: number | null = null): RestoredPanel {
   const cap = wholeNumberOrNull(params.il);
   const sync = cap !== null || params.il === '';
   return restorePanel({ job: params.job, level: wholeNumberOrNull(params.level), sync, cap: cap ?? heldCap });
@@ -84,16 +108,16 @@ export function readPanelQuery(params, heldCap = null) {
 
 /* The job `params` names (the `job` of Substat tiers), checked like a saved one: a JobContext; the default job when it names
    none or an unknown one. */
-export function readJobQuery(params) {
+export function readJobQuery(params: RouteParams): JobContext {
   return restorePanel({ job: params.job }).jobCtx;
 }
 
 /* The query of the Job and sync panel `panel` ({job, cap, sync, level, jobCtx}): {name: text} for what differs from the
    defaults. The item level cap is written only while item level sync is on (empty when no cap is set yet): with sync off the
    cap is not a setting. */
-export function writePanelQuery(panel) {
+export function writePanelQuery(panel: { job: string; cap: number | null; sync: boolean; level: number }): RouteParams {
   const defaults = restorePanel({ job: panel.job });
-  const query = {};
+  const query: RouteParams = {};
   if (panel.job !== DEFAULT_JOB) {
     query.job = panel.job;
   }
@@ -112,24 +136,29 @@ export function writePanelQuery(panel) {
    `syncedLevel`: the level the page is synced to (for Substat tiers the job's level cap); a level typed into GCD Scaling or
    Substat tiers that is the synced level is kept as null (follow the synced level), as the boxes do. null for a view with no
    query. */
-export function readQuery(view, params, job, syncedLevel) {
+export function readQuery(view: 'gear', params: RouteParams, job: JobContext, syncedLevel: number): BrowseFields;
+export function readQuery(view: 'piece', params: RouteParams, job: JobContext, syncedLevel: number): PieceFields;
+export function readQuery(view: 'gcd', params: RouteParams, job: JobContext | null, syncedLevel: number): GcdSettings;
+export function readQuery(view: 'tiers', params: RouteParams, job: JobContext, syncedLevel: number): TiersSettings;
+export function readQuery(view: QueryView | null, params: RouteParams, job: JobContext | null, syncedLevel: number): QuerySettings | null;
+export function readQuery(view: QueryView | null, params: RouteParams, job: JobContext | null, syncedLevel: number): QuerySettings | null {
   if (view === 'gear') {
-    return readGear(params, job);
+    return readGear(params, job as JobContext);
   }
   if (view === 'piece') {
-    return readPiece(params, job);
+    return readPiece(params, job as JobContext);
   }
   if (view === 'gcd') {
     return readGcd(params, syncedLevel);
   }
   if (view === 'tiers') {
-    return readTiers(params, job, syncedLevel);
+    return readTiers(params, job as JobContext, syncedLevel);
   }
   return null;
 }
 
 /* The Gear browser's settings {q, type, expOff, min, max, lvl, exclude, market, sort, dir} for `params`. */
-function readGear(params, job) {
+function readGear(params: RouteParams, job: JobContext): BrowseFields {
   return restoreBrowseFields(
     {
       q: params.q ?? '',
@@ -149,7 +178,7 @@ function readGear(params, job) {
 }
 
 /* Stat Allocation's settings {ilvl, slot, subs, slots} for `params`. */
-function readPiece(params, job) {
+function readPiece(params: RouteParams, job: JobContext): PieceFields {
   return restorePieceFields(
     {
       ilvl: wholeNumberOrNull(params.item),
@@ -164,7 +193,7 @@ function readPiece(params, job) {
 
 /* GCD Scaling's settings {level, haste, speed} for `params`: the level held to the levels the tab covers, a haste only a job
    with one has, a speed a whole number from 0 (the tab holds it to the level's range). */
-function readGcd(params, syncedLevel) {
+function readGcd(params: RouteParams, syncedLevel: number): GcdSettings {
   const typed = params.gcdlevel === undefined ? null : gcdLevelInput(params.gcdlevel);
   const speed = wholeNumberOrNull(params.speed);
   return {
@@ -175,7 +204,7 @@ function readGcd(params, syncedLevel) {
 }
 
 /* Substat tiers' settings {job (an id), level} for `params`: the level held to 1 and the job's level cap. */
-function readTiers(params, job, syncedLevel) {
+function readTiers(params: RouteParams, job: JobContext, syncedLevel: number): TiersSettings {
   const typed = wholeNumberOrNull(params.tierlevel);
   const level = typed === null ? null : clamp(typed, 1, job.maxLevel);
   return { job: job.jobId, level: level === syncedLevel ? null : level };
@@ -183,28 +212,28 @@ function readTiers(params, job, syncedLevel) {
 
 /* The query of `view` for `settings` (the view's settings object, as readQuery returns it) for `job`: {name: text} for the
    settings that differ from the defaults, in QUERY_NAMES order. An object with no entry is the defaults. */
-export function writeQuery(view, settings, job) {
+export function writeQuery(view: QueryView | null, settings: QuerySettings, job: JobContext | null): RouteParams {
   if (view === 'gear') {
-    return writeGear(settings, job);
+    return writeGear(settings as BrowseFields, job);
   }
   if (view === 'piece') {
-    return writePiece(settings, job);
+    return writePiece(settings as PieceFields, job as JobContext);
   }
   if (view === 'gcd') {
-    return writeGcd(settings);
+    return writeGcd(settings as GcdSettings);
   }
   if (view === 'tiers') {
-    return writeTiers(settings);
+    return writeTiers(settings as TiersSettings);
   }
   return {};
 }
 
 /* Whether the lists `a` and `b` hold the same items, in any order. */
-const sameItems = (a, b) => a.length === b.length && a.every(item => b.includes(item));
+const sameItems = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every(item => b.includes(item));
 
-function writeGear(browse, job) {
+function writeGear(browse: BrowseFields, job: JobContext | null): RouteParams {
   const defaults = defaultBrowse(job);
-  const query = {};
+  const query: RouteParams = {};
   if (browse.q !== defaults.q) {
     query.q = browse.q;
   }
@@ -242,8 +271,8 @@ function writeGear(browse, job) {
   return query;
 }
 
-function writePiece(piece, job) {
-  const query = {};
+function writePiece(piece: PieceFields, job: JobContext): RouteParams {
+  const query: RouteParams = {};
   if (piece.slot !== 'head') {
     query.slot = piece.slot;
   }
@@ -254,15 +283,15 @@ function writePiece(piece, job) {
   if (subs !== defaultSubs(job).filter(Boolean).join(',')) {
     query.subs = subs;
   }
-  if (piece.slots !== null && meldSlotChoices(piece.slot).includes(piece.slots)) {
+  if (piece.slots !== null && meldSlotChoices(piece.slot as SlotType).includes(piece.slots)) {
     query.meld = String(piece.slots);
   }
   return query;
 }
 
 /* Substat tiers' query: its job when it is not the default one, and the level typed into its box. */
-function writeTiers(tiers) {
-  const query = {};
+function writeTiers(tiers: TiersSettings): RouteParams {
+  const query: RouteParams = {};
   if (tiers.job !== DEFAULT_JOB) {
     query.job = tiers.job;
   }
@@ -272,8 +301,8 @@ function writeTiers(tiers) {
   return query;
 }
 
-function writeGcd(gcd) {
-  const query = {};
+function writeGcd(gcd: GcdSettings): RouteParams {
+  const query: RouteParams = {};
   if (gcd.level != null) {
     query.gcdlevel = String(clamp(gcd.level, 1, GCD_LEVELS));
   }

@@ -1,5 +1,5 @@
 /* The router: keeps the browser's address and the page's two stores in step, so the Back and Forward buttons, reload and
-   bookmarks work. The addresses are routes.js's. The stores stay the one place that says which screen is drawn: the router
+   bookmarks work. The addresses are routes.ts's. The stores stay the one place that says which screen is drawn: the router
    follows them and moves them, it never draws.
 
    Two directions:
@@ -33,19 +33,64 @@
 
    The browser is reached through a `port` ({read, state, length, push, replace, go, onPop}; windowPort below), so Node tests
    drive the router with a stand-in history. */
-import { queryViewOf, readJobQuery, readPanelQuery, readQuery, writePanelQuery, writeQuery } from './query.js';
-import { DEFAULT_ROUTE, formatRoute, parseRoute, samePath, titleOf } from './routes.js';
+import { queryViewOf, readJobQuery, readPanelQuery, readQuery, writePanelQuery, writeQuery } from './query.ts';
+import { DEFAULT_ROUTE, formatRoute, parseRoute, samePath, titleOf } from './routes.ts';
+import type { AppFacade } from '../store/app-facade.ts';
+import type { SheetsFacade } from '../store/sheets-facade.ts';
+import type { BrowseFields, PieceFields } from '../store/app-state.ts';
+import type { QueryView } from './query.ts';
+import type { Route, RouteParams } from './routes.ts';
+
+/* The state of a history entry the router wrote: `id` is unique to the entry, `pos` is where it sits in the browser's history. */
+export interface HistoryEntry {
+  id: string;
+  pos: number;
+}
+
+/* The browser's history as the router needs it (windowPort below says what each does). */
+export interface HistoryPort {
+  read(): string;
+  state(): unknown;
+  length(): number;
+  push(hash: string, entry: HistoryEntry): void;
+  replace(hash: string, entry: HistoryEntry): void;
+  go(distance: number): void;
+  onPop(callback: (move: { hash: string; state: unknown }) => void): void;
+}
+
+/* A move of the browser to an entry, as the router holds it back or opens it (onPop, openEntry). */
+interface Move {
+  entry: HistoryEntry;
+  route: Route;
+  hash: string;
+  own: boolean;
+}
+
+/* What createRouter takes (below): the stores, the history port, the store's `watch` and the page's hooks (each described there). */
+export interface RouterOptions {
+  app: AppFacade;
+  sheets: SheetsFacade;
+  port: HistoryPort;
+  watch: <Value>(getter: () => Value, callback: (value: Value) => void) => unknown;
+  setTitle?: (text: string) => void;
+  focusScreen?: (scrollY: number) => void;
+  readScroll?: () => { y: number; maxY: number } | null;
+  savedScroll?: Record<string, number>;
+  restoreScroll?: (y: number) => void;
+  startAtTop?: () => void;
+  isPlacing?: () => boolean;
+}
 
 /* A fresh id for a history entry: unique among the entries of every load of the page. */
 let idCount = 0;
-function newEntryId() {
+function newEntryId(): string {
   idCount += 1;
   return `${Date.now().toString(36)}${idCount.toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }
 
 /* Whether `state` is the state of an entry the router wrote: {id (text), pos (a whole number)}. */
-function isEntry(state) {
-  return Boolean(state) && typeof state.id === 'string' && Number.isInteger(state.pos);
+function isEntry(state: unknown): state is HistoryEntry {
+  return Boolean(state) && typeof (state as HistoryEntry).id === 'string' && Number.isInteger((state as HistoryEntry).pos);
 }
 
 /* The browser's history as the router needs it, over `win` (the window). `read()`: the address's hash. `state()`: the state
@@ -54,8 +99,8 @@ function isEntry(state) {
    each move the browser makes (Back, Forward, a typed address, a link), with the state of the entry it arrived at (null for
    an entry the router did not make). A write the browser refuses (a limit on how often history may change, a sandboxed
    frame) is ignored: the page works without an address. */
-export function windowPort(win = window) {
-  const safely = action => {
+export function windowPort(win: Window = window): HistoryPort {
+  const safely = (action: () => void) => {
     try {
       action();
     } catch {
@@ -66,9 +111,9 @@ export function windowPort(win = window) {
     read: () => win.location.hash,
     state: () => win.history.state,
     length: () => win.history.length,
-    push: (hash, entry) => safely(() => win.history.pushState(entry, '', hash)),
-    replace: (hash, entry) => safely(() => win.history.replaceState(entry, '', hash)),
-    go: distance => safely(() => win.history.go(distance)),
+    push: (hash: string, entry: HistoryEntry) => safely(() => win.history.pushState(entry, '', hash)),
+    replace: (hash: string, entry: HistoryEntry) => safely(() => win.history.replaceState(entry, '', hash)),
+    go: (distance: number) => safely(() => win.history.go(distance)),
     onPop: callback => win.addEventListener('popstate', event => callback({ hash: win.location.hash, state: event.state })),
   };
 }
@@ -88,7 +133,7 @@ const WRITE_COOLDOWN_MS = 100;
 
 /* The router over the app store `app`, the sheets store `sheets`, a history `port` and `watch(getter, callback)` (the store's
    watch: calls `callback(value)` after a store change that makes `getter()` differ from before). `setTitle(text)` sets the
-   page title as the screen changes (routes.js titleOf); `focusScreen(scrollY)` moves the focus to the new screen after a Back or
+   page title as the screen changes (routes.ts titleOf); `focusScreen(scrollY)` moves the focus to the new screen after a Back or
    Forward (a click already places the focus where the player acted) and scrolls to where the player left that screen (`scrollY`,
    0 for an entry the router has not seen scrolled); the page reports its scrolling with `noteScroll(y)`, and `readScroll()`
    gives {y, maxY} where it is scrolled now (null: unknown), read as the router pushes a screen so the screen it leaves keeps
@@ -115,23 +160,24 @@ export function createRouter({
   restoreScroll = () => {},
   startAtTop = () => {},
   isPlacing = () => false,
-}) {
-  // the entry the browser is on, and the entry whose screen the stores show (they differ while a held move is undone)
-  let at = null;
-  let shown = null;
+}: RouterOptions) {
+  // the entry the browser is on, and the entry whose screen the stores show (they differ while a held move is undone); both are set by
+  // start() before anything else runs
+  let at = null as unknown as HistoryEntry;
+  let shown = null as unknown as HistoryEntry;
   // a move the leave guard holds, {entry, route, hash}, or null; the player's answer "leave" before the browser is back
   // on the shown entry waits for it (leaveWhenSettled)
-  let pending = null;
+  let pending: Move | null = null;
   let leaveWhenSettled = false;
   // the router moved the browser (history.go) and waits for it to arrive; the address to write on the entry it arrives at
   let settling = false;
-  let settleTimer = null;
-  let canonicalAfter = null;
+  let settleTimer: ReturnType<typeof setTimeout> | null = null;
+  let canonicalAfter: string | null = null;
   // writes of the settings to the address: the route being written, the timer of a search text waiting for its pause, the
   // cooldown between two writes and whether a change came during it
-  let pendingRoute = null;
-  let pauseTimer = null;
-  let coolTimer = null;
+  let pendingRoute: Route | null = null;
+  let pauseTimer: ReturnType<typeof setTimeout> | null = null;
+  let coolTimer: ReturnType<typeof setTimeout> | null = null;
   let dirty = false;
   // how far the page was scrolled on each entry the router made, by entry id (kept while the page is open)
   const scrollByEntry = new Map(Object.entries(savedScroll));
@@ -140,9 +186,9 @@ export function createRouter({
   let lastScrollY = 0;
 
   /* The router moved the browser: until it arrives the stores' changes write no address. */
-  function startSettling() {
+  function startSettling(): void {
     settling = true;
-    clearTimeout(settleTimer);
+    clearTimeout(settleTimer as ReturnType<typeof setTimeout>);
     settleTimer = setTimeout(() => {
       settling = false;
       leaveWhenSettled = false;
@@ -151,9 +197,9 @@ export function createRouter({
   }
 
   /* The browser arrived at the entry the page shows. */
-  function endSettling() {
+  function endSettling(): void {
     settling = false;
-    clearTimeout(settleTimer);
+    clearTimeout(settleTimer as ReturnType<typeof setTimeout>);
     if (canonicalAfter !== null) {
       if (port.read() !== canonicalAfter) {
         port.replace(canonicalAfter, at);
@@ -167,14 +213,14 @@ export function createRouter({
   }
 
   /* The store's own settings object for the view of `route` (the Gear browser or a math view). */
-  function settingsOf(route) {
-    return { gear: app.browse, piece: app.piece, gcd: app.gcd, tiers: app.tiers }[queryViewOf(route)];
+  function settingsOf(route: Route) {
+    return { gear: app.browse, piece: app.piece, gcd: app.gcd, tiers: app.tiers }[queryViewOf(route) as QueryView];
   }
 
   /* The settings the stores hold for `route`'s view, as a query ({name: text}, only what differs from the defaults): for the Gear
      browser and Stat Allocation the tab's Job and sync panel, then the view's own settings; Substat tiers holds its own job
      with its level; GCD Scaling has no job. */
-  function paramsFor(route) {
+  function paramsFor(route: Route): RouteParams {
     const view = queryViewOf(route);
     if (view === 'tiers') {
       return writeQuery(view, app.tiers, app.panel('tiers').jobCtx);
@@ -186,27 +232,28 @@ export function createRouter({
     return { ...writePanelQuery(panel), ...writeQuery(view, settingsOf(route), panel.jobCtx) };
   }
 
-  /* Put the settings `route.params` names into the stores, through the checks a saved setting passes (query.js): for the Gear
+  /* Put the settings `route.params` names into the stores, through the checks a saved setting passes (query.ts): for the Gear
      browser and Stat Allocation the tab's Job and sync panel, then the view's settings; Substat tiers takes its job
      (setTiersJob) and level; GCD Scaling its level, haste and speed. All of them are set; a name the query leaves out is its
      default. The view's settings are read for the job and level the link names. */
-  function applyParams(route) {
+  function applyParams(route: Route): void {
     const view = queryViewOf(route);
     if (view === 'tiers') {
-      const job = readJobQuery(route.params);
-      const settings = readQuery(view, route.params, job, job.maxLevel);
+      const job = readJobQuery(route.params as RouteParams);
+      const settings = readQuery(view, route.params as RouteParams, job, job.maxLevel);
       app.setTiersJob(settings.job);
       app.setTiersLevel(settings.level);
     } else if (view === 'gcd') {
-      app.editGcd(readQuery(view, route.params, null, app.panel('math').level));
+      app.editGcd(readQuery(view, route.params as RouteParams, null, app.panel('math').level));
     } else {
-      const panel = readPanelQuery(route.params, app.panel(route.tab).cap);
-      const settings = readQuery(view, route.params, panel.jobCtx, panel.level);
+      const panel = readPanelQuery(route.params as RouteParams, app.panel(route.tab).cap);
+      const settings = readQuery(view, route.params as RouteParams, panel.jobCtx, panel.level);
       app.setPanel(route.tab, panel);
+      // the view is 'gear' or 'piece' here: readQuery gave that view's own settings
       if (view === 'gear') {
-        app.editBrowse(settings);
+        app.editBrowse(settings as BrowseFields);
       } else {
-        app.editPiece(settings);
+        app.editPiece(settings as PieceFields);
       }
     }
   }
@@ -214,7 +261,7 @@ export function createRouter({
   /* `route` as the stores show it now: a query the address wrote is replaced by the settings the stores hold (the unknown names,
      the defaults and the order are gone). A route with no query stays as it is, unless `follow` (the address is the page's own:
      an entry the router wrote): then the Gear browser's and the math views' routes always take the settings the stores hold. */
-  function canonicalOf(route, { follow = false } = {}) {
+  function canonicalOf(route: Route, { follow = false }: { follow?: boolean } = {}): Route {
     const hasSettings = route.tab === 'browse' || route.tab === 'math';
     return hasSettings && (route.params || follow) ? { ...route, params: paramsFor(route) } : route;
   }
@@ -222,7 +269,7 @@ export function createRouter({
   /* The route the stores show now. A tab being opened counts as open (pendingTab), so the address does not lag behind a
      click; a sheet or set the address named that is not saved counts as open too ("not found" keeps its address). The
      Gear browser's and the math views' routes carry the settings the stores hold, as a query. */
-  function routeFromStores() {
+  function routeFromStores(): Route {
     const tab = app.pendingTab ?? app.tab;
     if (tab === 'browse') {
       return { tab, params: paramsFor({ tab }) };
@@ -246,7 +293,7 @@ export function createRouter({
   }
 
   /* The page title of the screen the stores show: the screen's name, and the sheet's and gear set's names the address names. */
-  function titleFromStores() {
+  function titleFromStores(): string {
     const route = routeFromStores();
     const sheet = route.sheetId ? sheets.sheet(route.sheetId) : null;
     const set = sheet && route.setId ? sheet.sets.find(gearSet => gearSet.id === route.setId) : null;
@@ -258,11 +305,11 @@ export function createRouter({
   }
 
   /* Whether `route` names a sheet or set that is not saved (a "dead" address): the next move away from it replaces it. */
-  function isDead(route) {
+  function isDead(route: Route): boolean {
     if (route.tab !== 'sheets' || (route.screen !== 'sheet' && route.screen !== 'set')) {
       return false;
     }
-    const sheet = sheets.sheet(route.sheetId);
+    const sheet = sheets.sheet(route.sheetId as string);
     if (!sheet) {
       return true;
     }
@@ -272,26 +319,27 @@ export function createRouter({
   /* Open the sheet or set `route` names (a route with screen 'sheet' or 'set'), read fresh from storage; a sheet or set
      that is not saved opens the "not found" screen instead. The stores' own actions ask the leave guard first when they
      leave a set page. */
-  function openSheetsRoute(route) {
+  function openSheetsRoute(route: Route) {
+    // a route that opens a sheet or a set names its sheet id, and a set's route its set id too (parseRoute)
     sheets.reload();
-    const sheet = sheets.sheet(route.sheetId);
+    const sheet = sheets.sheet(route.sheetId as string);
     if (!sheet) {
-      return sheets.showMissing(route.sheetId, null);
+      return sheets.showMissing(route.sheetId as string, null);
     }
     if (route.screen === 'sheet') {
-      return sheets.openSheet(route.sheetId);
+      return sheets.openSheet(route.sheetId as string);
     }
     if (!sheet.sets.some(gearSet => gearSet.id === route.setId)) {
-      return sheets.showMissing(route.sheetId, route.setId);
+      return sheets.showMissing(route.sheetId as string, route.setId as string);
     }
-    sheets.openSheet(route.sheetId);
-    return sheets.openSet(route.setId);
+    sheets.openSheet(route.sheetId as string);
+    return sheets.openSet(route.setId as string);
   }
 
   /* Put the screen `route` names into the stores, and the settings its query names unless `withParams` is false (before the
      tab opens, so the tab is built once). `atStart`: the page is being built, so the tab opens at once (no loading line)
      instead of after a painted frame. */
-  function applyRoute(route, { atStart = false, withParams = true } = {}) {
+  function applyRoute(route: Route, { atStart = false, withParams = true }: { atStart?: boolean; withParams?: boolean } = {}): void {
     if (route.tab === 'sheets') {
       if (route.screen === 'sheets') {
         sheets.openManager();
@@ -299,7 +347,7 @@ export function createRouter({
         openSheetsRoute(route);
       }
     } else if (route.tab === 'math') {
-      app.showSub(route.mathTab);
+      app.showSub(route.mathTab as string);
     }
     if (withParams && route.params) {
       applyParams(route);
@@ -339,7 +387,7 @@ export function createRouter({
   /* A new screen: its address becomes a new entry after the one the page is on. What the entry being left was waiting to
      write (a search text) goes into it first, and where it is scrolled is kept for it. The new screen starts at the top (Back
      and Forward place a saved position instead): it is already in the page when this runs, before the next frame is drawn. */
-  function pushScreen(hash) {
+  function pushScreen(hash: string): void {
     flushWrites();
     // the browser may have clamped the position while the new screen was swapped in (a shorter page): the position its scroll
     // events noted, which is the deeper one then, is where the screen was left
@@ -354,10 +402,11 @@ export function createRouter({
   /* The settings of the screen `here` (its address's route) changed to those of `route`: replace the address's query. A change
      of the search text alone waits until typing pauses (QUERY_PAUSE_MS); any other change writes at once, with the search
      text as it is (WRITE_COOLDOWN_MS apart at the most). */
-  function writeSettings(route, here) {
-    const withoutSearch = params => JSON.stringify(Object.entries(params ?? {}).filter(([name]) => name !== 'q'));
+  function writeSettings(route: Route, here: Route): void {
+    const withoutSearch = (params: RouteParams | undefined) =>
+      JSON.stringify(Object.entries(params ?? {}).filter(([name]) => name !== 'q'));
     pendingRoute = route;
-    clearTimeout(pauseTimer);
+    clearTimeout(pauseTimer as ReturnType<typeof setTimeout>);
     pauseTimer = null;
     if (withoutSearch(here.params) === withoutSearch(route.params)) {
       pauseTimer = setTimeout(() => {
@@ -372,7 +421,7 @@ export function createRouter({
 
   /* Write the settings the stores hold now to the address, unless a write was made a moment ago: then it is written when the
      cooldown ends. */
-  function writeLatest() {
+  function writeLatest(): void {
     if (coolTimer !== null) {
       dirty = true;
       return;
@@ -393,15 +442,15 @@ export function createRouter({
   }
 
   /* Drop writes that are waiting: the address already names the settings, or is about to change for another reason. */
-  function dropWrites() {
-    clearTimeout(pauseTimer);
+  function dropWrites(): void {
+    clearTimeout(pauseTimer as ReturnType<typeof setTimeout>);
     pauseTimer = null;
     dirty = false;
   }
 
   /* Write what is waiting (a search text, a change in the cooldown) to the entry the browser is on, now. Returns the address
      written, or null when nothing waited. */
-  function flushWrites() {
+  function flushWrites(): string | null {
     if (pauseTimer === null && !dirty) {
       return null;
     }
@@ -415,7 +464,7 @@ export function createRouter({
 
   /* The browser moved (Back, Forward, a typed address, a link) to an entry: `state` is its state, null for an entry the router
      did not make (its query is settings to apply). */
-  function onPop({ hash, state }) {
+  function onPop({ hash, state }: { hash: string; state: unknown }): void {
     const from = at;
     // the page still shows the screen the move leaves (it is swapped after this): where it is scrolled is read now, as a scroll
     // the page has not yet heard of (a wheel scroll is reported a frame later) has no event to note it
@@ -423,7 +472,7 @@ export function createRouter({
       keepScrollOfScreenLeft({ clamped: false });
     }
     const own = isEntry(state);
-    let entry = state;
+    let entry = state as HistoryEntry;
     if (!own) {
       // a typed address or a link: a new entry just after the one the page was on, which gets its state at once
       entry = { id: newEntryId(), pos: from.pos + 1 };
@@ -475,7 +524,7 @@ export function createRouter({
 
   /* The move the page makes once nothing is held back: open the screen the entry names, and make the address its own form. The
      browser is on the entry. */
-  function openEntry({ entry, route, hash, own }) {
+  function openEntry({ entry, route, hash, own }: Move): void {
     applyRoute(route, { withParams: !own });
     const canonical = formatRoute(canonicalOf(route, { follow: own }));
     if (hash !== canonical) {
@@ -486,7 +535,7 @@ export function createRouter({
   }
 
   /* The player answered "leave": open the screen of the held move, then move the browser to its entry. */
-  function leave() {
+  function leave(): void {
     if (!pending) {
       return;
     }
@@ -513,7 +562,7 @@ export function createRouter({
   }
 
   /* Move the browser from the entry it is on to `entry`. Never history.go(0), which reloads the page. */
-  function goTo(entry) {
+  function goTo(entry: HistoryEntry): void {
     const distance = entry.pos - at.pos;
     if (distance === 0) {
       endSettling();
@@ -525,7 +574,7 @@ export function createRouter({
   /* Read the address, open its screen, make the address the router's own entry, then follow the stores and the browser. An
      address the router wrote in an earlier load (a reload) is the page's own: the saved settings stand and the address follows
      them. Any other address is a link: the settings it names are applied. */
-  function start() {
+  function start(): void {
     const stored = port.state();
     const own = isEntry(stored);
     at = own ? stored : { id: newEntryId(), pos: Math.max(0, port.length() - 1) };
@@ -535,7 +584,7 @@ export function createRouter({
     port.replace(formatRoute(canonicalOf(route, { follow: own })), at);
     // a reload: the browser no longer puts the page back where it was, so the router does
     if (own && scrollByEntry.has(at.id)) {
-      lastScrollY = scrollByEntry.get(at.id);
+      lastScrollY = scrollByEntry.get(at.id) as number;
       restoreScroll(lastScrollY);
     }
     port.onPop(onPop);
@@ -548,7 +597,7 @@ export function createRouter({
      have or have not reported yet. `clamped`: the new screen is already in the page (a push), so the browser may have moved the
      position to its shorter page and the deeper of this and the position the scroll events noted is where the screen was left;
      false for a move of the browser, which is read before the screen is swapped. */
-  function keepScrollOfScreenLeft({ clamped }) {
+  function keepScrollOfScreenLeft({ clamped }: { clamped: boolean }): void {
     const scrolledTo = readScroll();
     if (!scrolledTo) {
       return;
@@ -559,7 +608,7 @@ export function createRouter({
   }
 
   /* Focus the screen of `entry` and put the page where the player left it. */
-  function placeScreen(entry) {
+  function placeScreen(entry: HistoryEntry): void {
     lastScrollY = scrollByEntry.get(entry.id) ?? 0;
     focusScreen(lastScrollY);
   }
@@ -568,7 +617,7 @@ export function createRouter({
      return to it. An event that finds the page where it was last seen is not a scroll of the screen now open: it is the late event
      of the screen the page has just left (a scroll event comes a frame after the scroll, and a screen pushed meanwhile is the
      entry the page is on by then). */
-  function noteScroll(y, maxY = Number.POSITIVE_INFINITY) {
+  function noteScroll(y: number, maxY = Number.POSITIVE_INFINITY): void {
     const previousY = lastScrollY;
     lastScrollY = y;
     if (y !== previousY) {
@@ -580,7 +629,7 @@ export function createRouter({
      page was before. A scroll up that ends at the very end of the page is the browser holding the position to a page that has just
      become shorter (the screen is changing), not the player scrolling: it is left out, and so is every scroll while the page is
      being put at a position (`isPlacing`). */
-  function rememberScroll(y, maxY, previousY) {
+  function rememberScroll(y: number, maxY: number, previousY: number): void {
     if (at === null || isPlacing()) {
       return;
     }

@@ -8,7 +8,7 @@ import { dbStats, expansionOf, rowStats } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { ITEMS } from '../../../../src/core/tables.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
-import { defaultBrowse } from '../../../../src/ui/state.js';
+import { defaultBrowse } from '../../../../src/ui/state.ts';
 import { gearView } from '../../../../src/ui/views/gear.js';
 import { rng } from '../../helpers/common.js';
 

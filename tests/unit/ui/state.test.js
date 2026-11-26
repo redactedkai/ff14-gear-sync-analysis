@@ -1,4 +1,4 @@
-/* Restoring saved state (restoreState, src/ui/state.js): a valid save round-trips, and every damaged or outdated field
+/* Restoring saved state (restoreState, src/ui/state.ts): a valid save round-trips, and every damaged or outdated field
    falls back to its default on its own, leaving the rest. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -12,7 +12,7 @@ import {
   SEARCH_MAX_LENGTH,
   loadSaved,
   save,
-} from '../../../src/ui/state.js';
+} from '../../../src/ui/state.ts';
 import { limitCapToLevel } from '../../../src/ui/level-cap.ts';
 import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.ts';
 import { STORE_KEY } from '../../../src/ui/store-key.ts';

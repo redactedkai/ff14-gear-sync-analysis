@@ -18,7 +18,7 @@ export function settingsLine(sheet, jobName) {
 }
 
 /* The "not found" screen of an address that names a sheet or gear set that is not saved in this browser (the router,
-   router/router.js): the page's title line, its text and the button that goes up. `sheet`: the saved sheet the address
+   router/router.ts): the page's title line, its text and the button that goes up. `sheet`: the saved sheet the address
    names, or null when that sheet is not saved (then the sheet is what is missing; else its gear set is). Returns {title,
    text, buttonText, target ('sheets': the manager, 'sheet': the sheet's page)}. */
 export function notFoundView(sheet) {

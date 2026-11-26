@@ -6,7 +6,7 @@
    - a click on a bar of the chart or on a row of the table sends `gcd-edit` (`detail`: `{level}` or `{speed}`); the page then
      edits its settings and gives them back (a row past the most any job can have does nothing);
    - the chart is drawn at its box's width (an `ElementWidthController`), so its text keeps the page's size; the markup comes from
-     `speedStepChartSvg` (sync-charts.js), whose texts are escaped there (`escapeXml`), and is drawn with `unsafeSVG`;
+     `speedStepChartSvg` (sync-charts.ts), whose texts are escaped there (`escapeXml`), and is drawn with `unsafeSVG`;
    - the view is built again only when a setting or the chart's width changes (`viewCache`). */
 import { LitElement, html } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';

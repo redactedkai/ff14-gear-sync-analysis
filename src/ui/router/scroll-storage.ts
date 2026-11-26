@@ -6,7 +6,7 @@
 export const SCROLL_KEY = 'gsa-scroll-by-entry';
 
 /* The browser's sessionStorage, or null where touching it throws (blocked storage). */
-export function tabStorage() {
+export function tabStorage(): Storage | null {
   try {
     return globalThis.sessionStorage ?? null;
   } catch {
@@ -17,13 +17,13 @@ export function tabStorage() {
 /* The saved positions as {entry id: scrollY}, with only the entries whose value is a finite number (any other value, such as
    a nested array or text, is dropped: it would throw or scroll nowhere when used). Never throws: {} for no storage, nothing
    saved, text that is not JSON or not an object. `storage` is a Storage or null. */
-export function readScrollPositions(storage) {
+export function readScrollPositions(storage: Pick<Storage, 'getItem'> | null | undefined): Record<string, number> {
   try {
     const saved = JSON.parse(storage?.getItem(SCROLL_KEY) ?? '{}');
     if (saved === null || typeof saved !== 'object' || Array.isArray(saved)) {
       return {};
     }
-    const positions = {};
+    const positions: Record<string, number> = {};
     for (const [entry, y] of Object.entries(saved)) {
       if (typeof y === 'number' && Number.isFinite(y)) {
         positions[entry] = y;
@@ -36,7 +36,7 @@ export function readScrollPositions(storage) {
 }
 
 /* Saves `positions` ({entry id: scrollY}) in `storage` (a Storage or null); does nothing where the storage refuses. */
-export function writeScrollPositions(storage, positions) {
+export function writeScrollPositions(storage: Pick<Storage, 'setItem'> | null | undefined, positions: Record<string, number>): void {
   try {
     storage?.setItem(SCROLL_KEY, JSON.stringify(positions));
   } catch {

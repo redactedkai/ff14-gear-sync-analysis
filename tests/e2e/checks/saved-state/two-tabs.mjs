@@ -36,7 +36,7 @@ async function pieceBoxes(page) {
 }
 
 /** The saved settings of the Gear browser and Stat Allocation in two browser tabs (two pages of one context share the storage, as
- * two tabs do). The rule, as the page behaves (src/ui/store/autosave.ts, src/ui/state.js): a tab reads the saved settings once,
+ * two tabs do). The rule, as the page behaves (src/ui/store/autosave.ts, src/ui/state.ts): a tab reads the saved settings once,
  * when it opens, and never again (it ignores storage events: no live sync); each save writes the tab's whole settings, the
  * Gear browser's, Stat Allocation's and Substat tiers' together, not only the field that changed. So the tab that saves last
  * wins everything: a change the other tab made and this tab never saw is written over by this tab's old value of it, and a reload

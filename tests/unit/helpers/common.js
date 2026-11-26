@@ -6,7 +6,7 @@ import { ROW } from '../../../src/core/constants.ts';
 import { browseItems, poolItemFromRow } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { ITEMS, MAX_REAL } from '../../../src/core/tables.ts';
-import { restoreState } from '../../../src/ui/state.js';
+import { restoreState } from '../../../src/ui/state.ts';
 import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.js';
 
 /* A seeded random number generator returning floats in [0, 1): the same seed gives the same sequence, so a failure

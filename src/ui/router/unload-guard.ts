@@ -11,7 +11,7 @@ export const UNLOAD_GUARD_OFF_KEY = `${STORE_KEY}:no-unload-guard`;
 
 /* Whether the dev flag turns the guard off. Reads `storage` inside try/catch (a disabled storage throws; then the guard stays
    on). */
-export function unloadGuardDisabled(storage) {
+export function unloadGuardDisabled(storage: Pick<Storage, 'getItem'> | null | undefined): boolean {
   try {
     return storage?.getItem(UNLOAD_GUARD_OFF_KEY) === '1';
   } catch {
@@ -22,8 +22,16 @@ export function unloadGuardDisabled(storage) {
 /* Adds the `beforeunload` listener to `target` and returns it (a test removes it by hand). `hasUnsettled()` says whether
    work would be lost; the flag is read at each unload, so setting it needs no restart. The listener asks the browser to show
    its own question (preventDefault, and returnValue for older browsers) and does nothing otherwise. */
-export function installUnloadGuard({ target, hasUnsettled, storage }) {
-  const listener = event => {
+export function installUnloadGuard({
+  target,
+  hasUnsettled,
+  storage,
+}: {
+  target: Pick<Window, 'addEventListener'>;
+  hasUnsettled: () => boolean;
+  storage: Pick<Storage, 'getItem'> | null | undefined;
+}): (event: BeforeUnloadEvent) => void {
+  const listener = (event: BeforeUnloadEvent) => {
     if (unloadGuardDisabled(storage) || !hasUnsettled()) {
       return;
     }

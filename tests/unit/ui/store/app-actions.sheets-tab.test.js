@@ -1,8 +1,8 @@
-/* The Sheets tab in the app store (app-actions.ts, state.js), through the app facade: it has no Job and sync panel, so going to it and back leaves
+/* The Sheets tab in the app store (app-actions.ts, state.ts), through the app facade: it has no Job and sync panel, so going to it and back leaves
    every tab's panel as it was, and the save holds no panel for it. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TABS } from '../../../../src/ui/state.js';
+import { TABS } from '../../../../src/ui/state.ts';
 import { createAppFacade } from '../../helpers/stores.js';
 import { restoreOpen } from '../../helpers/common.js';
 

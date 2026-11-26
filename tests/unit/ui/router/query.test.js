@@ -1,4 +1,4 @@
-/* The settings an address names (src/ui/router/query.js) over real jobs: what each name reads as, what falls back, and what a
+/* The settings an address names (src/ui/router/query.ts) over real jobs: what each name reads as, what falls back, and what a
    view's settings write back. Sage (a healer: Mind, Spell Speed, Piety), Paladin (a tank: Tenacity) and Blue Mage (level cap
    80) are the jobs. */
 import { test } from 'node:test';
@@ -13,11 +13,11 @@ import {
   readQuery,
   writePanelQuery,
   writeQuery,
-} from '../../../../src/ui/router/query.js';
+} from '../../../../src/ui/router/query.ts';
 import { capCeiling } from '../../../../src/core/sync-target.ts';
 import { MAX_SPEED } from '../../../../src/core/tables.ts';
 import { DEFAULT_EXCLUDE } from '../../../../src/ui/job-sync-panel.ts';
-import { defaultBrowse, defaultSubs } from '../../../../src/ui/state.js';
+import { defaultBrowse, defaultSubs } from '../../../../src/ui/state.ts';
 import { GCD_LEVELS } from '../../../../src/ui/views/gcd.js';
 
 const SGE = makeJobContext('SGE');

@@ -17,7 +17,7 @@
   // The settings key; the sheets' keys are this plus a colon and more. The build writes the value of
   // src/ui/store-key.ts over the marker, so the key is written once.
   var PREFIX = '@STORE_KEY@';
-  // The dev flag that turns the reload guard off (src/ui/router/unload-guard.js) is in that family but is not saved data: a person
+  // The dev flag that turns the reload guard off (src/ui/router/unload-guard.ts) is in that family but is not saved data: a person
   // never sets it, and a reset leaves it. The build writes its key over the marker too.
   var GUARD_FLAG = '@UNLOAD_GUARD_OFF_KEY@';
   var errors = [];
@@ -44,7 +44,7 @@
 
   // The tab the page will open, for the shell: data-boot-tab on <html> picks the selected tab link and the loading line
   // (styles/layout.css). The address names it (#/gear is the Gear browser, #/math and #/math/... How the math works); a bare or
-  // other address leaves the Sheets tab. The words are ui/router/routes.js's.
+  // other address leaves the Sheets tab. The words are ui/router/routes.ts's.
   var firstWord = String(location.hash)
     .replace(/^#/, '')
     .split('?')[0]

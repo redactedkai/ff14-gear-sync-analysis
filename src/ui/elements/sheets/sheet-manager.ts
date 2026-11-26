@@ -11,7 +11,7 @@ import { LitElement, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { JOB_ICONS } from '../../../data/job-icons.js';
-import { followInPage } from '../../router/plain-click.js';
+import { followInPage } from '../../router/plain-click.ts';
 import { dragHandle } from './drag-handle.ts';
 import { opensRow } from './open-row.ts';
 import { RowReorder } from './row-reorder.ts';

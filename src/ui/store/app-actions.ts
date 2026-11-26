@@ -3,9 +3,9 @@
    What each slice holds: app-state.ts. */
 import { makeJobContext } from '../../core/job-context.ts';
 import { holdLevelSyncCap } from '../job-sync-panel.ts';
-import { MATH_TABS, TABS, resetForJob, restoreState } from '../state.js';
+import { MATH_TABS, TABS, resetForJob, restoreState } from '../state.ts';
 import { PANEL_KEYS, PANEL_TABS, panelFields, settingsOf } from './app-state.ts';
-import type { AppState, AppStore, Panel, PanelTab, RestoredState, ScreenState } from './app-state.ts';
+import type { AppState, AppStore, Panel, PanelTab, ScreenState } from './app-state.ts';
 
 /* How the actions reach what is not state. frame(callback): run `callback` on the next animation frame (the default is the browser's
    requestAnimationFrame, read when it is called, so a test can replace it). */
@@ -22,15 +22,14 @@ function hasPanel(tab: string): tab is PanelTab {
 }
 
 /* Hold the job's level cap on the synced level and the Gear browser's equip level filter, and reset the selections the new job
-   cannot use (state.js resetForJob) for `tab`'s settings. resetForJob reads `level`, `piece` and `browse` of one object, so it
+   cannot use (state.ts resetForJob) for `tab`'s settings. resetForJob reads `level`, `piece` and `browse` of one object, so it
    is handed one built from the state; the level it may lower is written back to the panel when `writeLevelBack` is true (a job
    change did; a link's panel was already checked). */
 function resetSettingsForJob(state: AppState, tab: PanelTab, job: JobContext, from: JobContext | null, writeLevelBack: boolean): void {
   const { settings } = state;
   const panel = settings.panels[tab];
   const carrier = { level: panel.level, piece: settings.piece, browse: settings.browse };
-  // resetForJob's `from` has no type in the JavaScript (its default is null): the cast hands it the JobContext or null it takes
-  resetForJob(carrier, job, from as null, [tab === 'browse' ? 'browse' : 'math']);
+  resetForJob(carrier, job, from, [tab === 'browse' ? 'browse' : 'math']);
   if (writeLevelBack) {
     panel.level = carrier.level;
   }
@@ -86,7 +85,7 @@ export function createAppActions(store: AppStore, options: AppActionOptions = {}
     setTiersJob,
 
     /* Switch the job of `owner` ('browse', 'math' or 'tiers'; the open tab's panel when omitted) to a different job: that
-       owner's job-specific selections the new job cannot use are reset (state.js resetForJob), the levels are held to the job's
+       owner's job-specific selections the new job cannot use are reset (state.ts resetForJob), the levels are held to the job's
        cap, and every other tab and sub-tab keeps its own job. A user action only (the job menu's tile). On the Sheets tab,
        which has no panel, nothing changes. */
     setJob(id: string, owner: string = store.state.screen.tab): void {
@@ -126,7 +125,7 @@ export function createAppActions(store: AppStore, options: AppActionOptions = {}
       store.update('settings/followLevelSync', followLevelSyncIn);
     },
 
-    /* Set tab `tab`'s ('browse' or 'math') panel to `panel` ({job, cap, sync, level}, already checked: state.js restorePanel),
+    /* Set tab `tab`'s ('browse' or 'math') panel to `panel` ({job, cap, sync, level}, already checked: state.ts restorePanel),
        whether or not that tab is open. A different job resets what that tab holds for its old job that the new one cannot use,
        as setJob does. The one place an address writes the panel, so the rules for cap and sync live here. */
     setPanel(tab: string, panel: Panel): void {
@@ -164,7 +163,7 @@ export function createAppActions(store: AppStore, options: AppActionOptions = {}
         return;
       }
       store.update('settings/resetAll', state => {
-        const defaults = settingsOf(restoreState(null) as RestoredState);
+        const defaults = settingsOf(restoreState(null));
         state.settings.panels[tab] = defaults.panels[tab];
         if (tab === 'browse') {
           state.settings.browse = defaults.browse;

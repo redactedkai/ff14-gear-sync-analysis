@@ -1,16 +1,16 @@
 /* Entry point: restore saved state, make the store, start the router and give the page's root element its ports. */
 import 'styles:bundle'; // the stylesheet: src/styles/entry.css imports the files in cascade order
-import { restoreState, loadSaved } from './ui/state.js';
+import { restoreState, loadSaved } from './ui/state.ts';
 import { unsettled } from './ui/store/app-state.ts';
 import { createPageStore, sealFacade } from './ui/store/page-store.ts';
 import { startAutosave } from './ui/store/autosave.ts';
 import { watch } from './ui/store/watch.ts';
 import { defaultStorage } from './ui/sheets/storage.js';
-import { createRouter, windowPort } from './ui/router/router.js';
-import { DEFAULT_ROUTE, parseRoute } from './ui/router/routes.js';
-import { focusScreenHeading, isPlacingScroll } from './ui/router/focus.js';
-import { readScrollPositions, tabStorage, writeScrollPositions } from './ui/router/scroll-storage.js';
-import { installUnloadGuard } from './ui/router/unload-guard.js';
+import { createRouter, windowPort } from './ui/router/router.ts';
+import { DEFAULT_ROUTE, parseRoute } from './ui/router/routes.ts';
+import { focusScreenHeading, isPlacingScroll } from './ui/router/focus.ts';
+import { readScrollPositions, tabStorage, writeScrollPositions } from './ui/router/scroll-storage.ts';
+import { installUnloadGuard } from './ui/router/unload-guard.ts';
 import { overlays } from './ui/overlays.js';
 import { enableHqFont } from './ui/hq-font.ts';
 // the Lit elements (each registers itself on import): the page's root, which draws the others
@@ -65,7 +65,7 @@ const sheets = sealFacade(pageStore.sheets);
 function pageScroll() {
   return { y: scrollY, maxY: document.documentElement.scrollHeight - innerHeight };
 }
-/* Where each history entry was scrolled is kept over a reload in the tab's sessionStorage (ui/router/scroll-storage.js). The router
+/* Where each history entry was scrolled is kept over a reload in the tab's sessionStorage (ui/router/scroll-storage.ts). The router
    places the scroll of every Back, Forward and reload before the first frame of the screen. The browser's own restore would show its
    remembered position first, clamped to the screen still on show (a flicker), so it is off; set before the router starts. */
 const tabScrollStorage = tabStorage();

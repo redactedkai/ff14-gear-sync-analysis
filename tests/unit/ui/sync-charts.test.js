@@ -1,8 +1,8 @@
-/* The math tab's SVG charts (src/ui/sync-charts.js), shown with x-html: text passed in never becomes markup; the
+/* The math tab's SVG charts (src/ui/sync-charts.ts), shown with x-html: text passed in never becomes markup; the
    overgeared chart's bands, cap line, shading and labels, the speed step chart's bars and haste marks, and the width. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { OVERGEAR_BANDS, escapeXml, overgearChartSvg, speedStepChartSvg } from '../../../src/ui/sync-charts.js';
+import { OVERGEAR_BANDS, escapeXml, overgearChartSvg, speedStepChartSvg } from '../../../src/ui/sync-charts.ts';
 import { labelled } from '../helpers/common.js';
 
 /* Audit 12, finding 2: the charts said they were "built only from numbers", but they take a slot name and stat names.

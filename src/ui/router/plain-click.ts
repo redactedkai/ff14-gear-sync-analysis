@@ -5,13 +5,16 @@
 /* Whether `event` is a plain click: the primary button with no Ctrl, Cmd (meta), Shift or Alt held. A middle click never
    reaches a `click` listener, but its button is checked all the same. `event` is a click's MouseEvent (only `button`,
    `ctrlKey`, `metaKey`, `shiftKey`, `altKey` are read). */
-export function plainClick(event) {
+export function plainClick(event: Pick<MouseEvent, 'button' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey'>): boolean {
   return event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey;
 }
 
 /* The handler of an in-page link's click: on a plain click, cancels the browser's navigation and runs `move`, and returns true;
    on any other click, does nothing, so the browser opens the link its own way, and returns false. `event` is the click. */
-export function followInPage(event, move) {
+export function followInPage(
+  event: Pick<MouseEvent, 'button' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey' | 'preventDefault'>,
+  move: () => void,
+): boolean {
   if (!plainClick(event)) {
     return false;
   }

@@ -17,7 +17,7 @@ function opened(saved = {}, sheets = undefined) {
 }
 const settled = () => new Promise(resolve => setTimeout(resolve, 5));
 
-/* A plain click on a tab link (plain-click.js). */
+/* A plain click on a tab link (plain-click.ts). */
 const plain = { button: 0, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, preventDefault() {} };
 
 test("the Job and sync strip is given the Gear browser's own panel, whichever tab is open", () => {

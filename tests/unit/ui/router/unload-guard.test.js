@@ -1,7 +1,7 @@
-/* The reload and close guard (src/ui/router/unload-guard.js): it asks only while work is held, and the dev flag turns it off. */
+/* The reload and close guard (src/ui/router/unload-guard.ts): it asks only while work is held, and the dev flag turns it off. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { UNLOAD_GUARD_OFF_KEY, installUnloadGuard, unloadGuardDisabled } from '../../../../src/ui/router/unload-guard.js';
+import { UNLOAD_GUARD_OFF_KEY, installUnloadGuard, unloadGuardDisabled } from '../../../../src/ui/router/unload-guard.ts';
 import { fakeStorage } from '../../helpers/sheet-fixtures.js';
 
 /* A window stand-in that keeps the listener, and an unload event as the browser hands it. */

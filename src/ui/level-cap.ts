@@ -10,6 +10,8 @@ export interface CapPanel {
   cap: number | null;
   sync: boolean;
   level?: number | null;
+  /* not read: restorePanel (state.ts) hands its job context along */
+  jobCtx?: unknown;
 }
 
 /* A cap that limitCapToLevel lowered: the cap before and after, and the level that limited it (null: no level, the highest real

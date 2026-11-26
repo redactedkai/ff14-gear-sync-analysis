@@ -238,7 +238,7 @@ test('built page: the startup script is first in head, before the style, and hol
 test('startupScript: the key comes from STORE_KEY, the code is ES5 with no literal color and no leftover marker', async () => {
   const { STORE_KEY } = await import('../../../src/ui/store-key.ts');
   const code = startupScript();
-  const { UNLOAD_GUARD_OFF_KEY } = await import('../../../src/ui/router/unload-guard.js');
+  const { UNLOAD_GUARD_OFF_KEY } = await import('../../../src/ui/router/unload-guard.ts');
   assert.ok(code.includes(JSON.stringify(STORE_KEY)));
   assert.ok(code.includes(JSON.stringify(UNLOAD_GUARD_OFF_KEY)), 'the dev flag is named, so the reset leaves it out');
   assert.ok(!code.includes('@STORE_KEY@') && !code.includes('@UNLOAD_GUARD_OFF_KEY@'));

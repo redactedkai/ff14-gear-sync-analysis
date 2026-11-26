@@ -1,7 +1,7 @@
-/* Which clicks the page takes over (src/ui/router/plain-click.js): the primary button with no modifier key. */
+/* Which clicks the page takes over (src/ui/router/plain-click.ts): the primary button with no modifier key. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { followInPage, plainClick } from '../../../../src/ui/router/plain-click.js';
+import { followInPage, plainClick } from '../../../../src/ui/router/plain-click.ts';
 
 const click = (overrides = {}) => ({
   button: 0,

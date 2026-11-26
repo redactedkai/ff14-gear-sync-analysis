@@ -2,8 +2,8 @@
    level slider show, and the edits they make (the page's own rules, for the <gsa-math-bar> element). Pure view builder: no DOM,
    so Node can load and test it. */
 import { rankChoices } from '../ranks.ts';
-import { MATH_TAB_LABEL } from '../router/routes.js';
-import { MATH_TABS } from '../state.js';
+import { MATH_TAB_LABEL } from '../router/routes.ts';
+import { MATH_TABS } from '../state.ts';
 import { meldSlotChoices, meldSlotsOf } from '../job-sync-panel.ts';
 import { slotGroups, withSub } from './piece.js';
 import { NO_SUBSTAT_LABEL, explainerItemLevel, pieceChipView } from './sync-explainer.js';

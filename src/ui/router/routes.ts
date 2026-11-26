@@ -1,5 +1,5 @@
 /* The page's addresses: which screen a hash names, and the hash of a screen. Pure: no DOM and no store, so Node
-   can test it. The router (router.js) reads and writes the browser's address with these two functions.
+   can test it. The router (router.ts) reads and writes the browser's address with these two functions.
 
    A route says where the page is, and on two screens how it is set up:
      { tab: 'sheets', screen: 'sheets' }                      #/sheets
@@ -7,12 +7,26 @@
      { tab: 'sheets', screen: 'set', sheetId, setId }         #/sheets/<sheetId>/sets/<setId>
      { tab: 'browse', params? }                               #/gear?<query>
      { tab: 'math', mathTab, params? }                        #/math/<piece|gcd|tiers>?<query>
-   `tab` and `mathTab` are the app store's values (state.js TABS and MATH_TABS), `screen`, `sheetId` and `setId` the sheets
+   `tab` and `mathTab` are the app store's values (state.ts TABS and MATH_TABS), `screen`, `sheetId` and `setId` the sheets
    store's. A route holds only the fields its screen uses. `params` is the settings the address names after the route, a
    query ({name: text}, a name once, in the order written); a route without `params` names no settings (the page keeps its
-   own). This file reads and writes the query as text; what its names mean is query.js's. Whether a sheet or a set with that id is saved is not decided
+   own). This file reads and writes the query as text; what its names mean is query.ts's. Whether a sheet or a set with that id is saved is not decided
    here: the page shows a "not found" screen for an id it does not have. */
-import { MATH_TABS } from '../state.js';
+import { MATH_TABS } from '../state.ts';
+
+/* The settings an address names after its route: {name: text}, a name once, in the order written. */
+export type RouteParams = Record<string, string>;
+
+/* A route: the screen an address names (see above), and `params` where the address named settings. A route holds only the fields its
+   screen uses. */
+export interface Route {
+  tab: string;
+  screen?: string;
+  sheetId?: string | null;
+  setId?: string | null;
+  mathTab?: string;
+  params?: RouteParams;
+}
 
 /* The route of the page's home: the Sheets list. A bare address and an address that names nothing go here. */
 export const DEFAULT_ROUTE = Object.freeze({ tab: 'sheets', screen: 'sheets' });
@@ -32,12 +46,12 @@ const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[
 
 /* `text` percent-encoded; a lone half of a surrogate pair becomes the replacement character, so no text (a saved search, an
    id) can make an address fail to build. */
-function encodeText(text) {
+function encodeText(text: unknown): string {
   return encodeURIComponent(String(text).replace(LONE_SURROGATE, '\uFFFD'));
 }
 
 /* The segment `text` percent-decoded, or null when it is not valid percent-encoding or decodes to nothing. */
-function decodeSegment(text) {
+function decodeSegment(text: string): string | null {
   try {
     const decoded = decodeURIComponent(text);
     return decoded === '' ? null : decoded;
@@ -48,13 +62,13 @@ function decodeSegment(text) {
 
 /* The query text after the first '?' of `text` as {name: value}: each name once (the first), the pairs in the order written,
    names and values percent-decoded ('+' is a space). An empty query, and a pair with no name, give no entries. */
-function parseQuery(text) {
+function parseQuery(text: string): RouteParams {
   const at = text.indexOf('?');
   if (at < 0) {
     return {};
   }
-  const entries = [];
-  const seen = new Set();
+  const entries: [string, string][] = [];
+  const seen = new Set<string>();
   for (const [name, value] of new URLSearchParams(text.slice(at + 1))) {
     if (name === '' || seen.has(name)) {
       continue;
@@ -66,7 +80,7 @@ function parseQuery(text) {
 }
 
 /* `route` with `params` set when the address wrote any (a query with no pair names no settings). */
-function withParams(route, params) {
+function withParams(route: Route, params: RouteParams): Route {
   return Object.keys(params).length > 0 ? { ...route, params } : route;
 }
 
@@ -74,7 +88,7 @@ function withParams(route, params) {
    names nothing the page has. An empty hash, '#' and '#/' are the home address. A trailing slash and empty segments are
    ignored. A query after the route ('?sort=det') becomes the route's `params` on the Gear browser and the math views; the
    Sheets screens ignore it. Ids are percent-decoded. Returns a new object. */
-export function parseRoute(hash) {
+export function parseRoute(hash: string | null | undefined): Route | null {
   const withoutHash = String(hash ?? '').replace(/^#/, '');
   const path = withoutHash.split('?')[0];
   const words = path.split('/').filter(word => word !== '');
@@ -100,7 +114,7 @@ export function parseRoute(hash) {
 }
 
 /* The route of the words after `sheets` in an address: none (the list), a sheet id, or a sheet id, `sets` and a set id. */
-function parseSheetsRoute(words) {
+function parseSheetsRoute(words: string[]): Route | null {
   if (words.length === 0) {
     return { ...DEFAULT_ROUTE };
   }
@@ -120,12 +134,12 @@ function parseSheetsRoute(words) {
 
 /* The hash of `route` without its query: '#/gear', '#/math/gcd', '#/sheets/s_1'. A route that is not one of the page's
    screens comes out as the home address. Ids are percent-encoded. */
-export function formatPath(route) {
+export function formatPath(route: Route | null | undefined): string {
   if (route?.tab === 'browse') {
     return `#/${GEAR_WORD}`;
   }
   if (route?.tab === 'math') {
-    const view = MATH_TABS.includes(route.mathTab) ? route.mathTab : DEFAULT_MATH_TAB;
+    const view = MATH_TABS.includes(route.mathTab as string) ? route.mathTab : DEFAULT_MATH_TAB;
     return `#/${MATH_WORD}/${view}`;
   }
   if (route?.tab === 'sheets' && route.sheetId) {
@@ -140,20 +154,20 @@ export function formatPath(route) {
 
 /* The query text of `params` ({name: text}): '' for none, else '?name=text&...' in the order of the object. A value is
    percent-encoded except its commas, which separate the items of a list ('noexp=ARR,HW'). */
-function formatQuery(params) {
+function formatQuery(params: RouteParams | null | undefined): string {
   const pairs = Object.entries(params ?? {}).map(([name, value]) => `${name}=${encodeText(value).replaceAll('%2C', ',')}`);
   return pairs.length > 0 ? `?${pairs.join('&')}` : '';
 }
 
 /* The hash of `route` (a route object, as parseRoute returns): its path and, on the Gear browser and the math views, the
    query of its `params`. */
-export function formatRoute(route) {
+export function formatRoute(route: Route | null | undefined): string {
   const hasQuery = route?.tab === 'browse' || route?.tab === 'math';
   return formatPath(route) + (hasQuery ? formatQuery(route.params) : '');
 }
 
 /* Whether routes `a` and `b` name the same screen, whatever settings their query names. */
-export function samePath(a, b) {
+export function samePath(a: Route | null | undefined, b: Route | null | undefined): boolean {
   return formatPath(a) === formatPath(b);
 }
 
@@ -161,19 +175,26 @@ export function samePath(a, b) {
 export const APP_TITLE = 'Gear Sync Analysis';
 
 /* The names of the math views on the page (the sub-tabs of the math screen, elements/math-page/math-screen.ts), for the page title. */
-export const MATH_TAB_LABEL = Object.freeze({ piece: 'Stat Allocation', gcd: 'GCD Scaling', tiers: 'Substat tiers' });
+export const MATH_TAB_LABEL: Readonly<Record<string, string>> = Object.freeze({
+  piece: 'Stat Allocation',
+  gcd: 'GCD Scaling',
+  tiers: 'Substat tiers',
+});
 
 /* The page title for the screen `route` (a route object) names: the screen's name first, then APP_TITLE, joined by " · ".
    `names`: {sheet, set}, the saved sheet's and gear set's names (a sheet or set that is not saved has none), and `missing`:
    whether the "not found" screen is showing. The names are the player's own text: the caller sets the title as text. */
-export function titleOf(route, { sheet = null, set = null, missing = false } = {}) {
-  let parts = ['Sheets'];
+export function titleOf(
+  route: Route | null | undefined,
+  { sheet = null, set = null, missing = false }: { sheet?: string | null; set?: string | null; missing?: boolean } = {},
+): string {
+  let parts: string[] = ['Sheets'];
   if (missing) {
     parts = ['Not found'];
   } else if (route?.tab === 'browse') {
     parts = ['Gear browser'];
   } else if (route?.tab === 'math') {
-    parts = [MATH_TAB_LABEL[route.mathTab] ?? 'How the math works'];
+    parts = [MATH_TAB_LABEL[route.mathTab as string] ?? 'How the math works'];
   } else if (route?.screen === 'sheet' && sheet) {
     parts = [sheet];
   } else if (route?.screen === 'set' && sheet && set) {

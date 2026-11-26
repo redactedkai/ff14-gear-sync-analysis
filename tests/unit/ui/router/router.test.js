@@ -1,10 +1,10 @@
-/* The router (src/ui/router/router.js) over stand-ins: a history that delivers its moves when the test says so, the app store's
+/* The router (src/ui/router/router.ts) over stand-ins: a history that delivers its moves when the test says so, the app store's
    open tab as plain fields, a real sheet store over a stand-in storage, and a watch that runs by hand. The sheet and set ids
    are the fixtures' ('s_1', 'g_1'). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createRouter } from '../../../../src/ui/router/router.js';
-import { DEFAULT_ROUTE, formatRoute, titleOf } from '../../../../src/ui/router/routes.js';
+import { createRouter } from '../../../../src/ui/router/router.ts';
+import { DEFAULT_ROUTE, formatRoute, titleOf } from '../../../../src/ui/router/routes.ts';
 import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 import { saveSheet } from '../../../../src/ui/sheets/storage.js';
 import { restoreOpen } from '../../helpers/common.js';
@@ -604,7 +604,7 @@ test('the scroll events of a placement and of the browser clamping a page are no
   assert.equal(placed.at(-1), 120);
 });
 
-/* ---- the settings an address names (query.js): applied when a link opens, written back as they change ---- */
+/* ---- the settings an address names (query.ts): applied when a link opens, written back as they change ---- */
 
 test('a link with a query applies its settings, takes the defaults for the names it leaves out, and is rewritten as the settings', () => {
   const { app, hash } = setup('#/gear?sort=det&min=700&colour=red', page => {

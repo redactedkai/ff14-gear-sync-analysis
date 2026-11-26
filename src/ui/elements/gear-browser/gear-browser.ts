@@ -22,7 +22,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { MAX_REAL } from '../../../core/tables.ts';
 import { TYPING_DEBOUNCE_MS, numberBox } from '../../number-field.js';
 import { shownNumber } from '../shared/number-box.ts';
-import { SEARCH_MAX_LENGTH } from '../../state.js';
+import { SEARCH_MAX_LENGTH } from '../../state.ts';
 import type { GearList } from './gear-browser-model.ts';
 import { BROWSE_EDIT_EVENT, GearBrowserModel, resetPatch, sortPatch, sortState, wantsSearchFocus } from './gear-browser-model.ts';
 import type { GearBrowse, GearCell, GearPanel, PageButton } from './gear-browser-model.ts';

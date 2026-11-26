@@ -98,7 +98,7 @@ How it works: `docs/engineering/optimizer.md` (start at its overview) and `tier-
 
 ## Page rules
 
-- Title: `<screen> · Gear Sync Analysis` (`titleOf` in `src/ui/router/routes.js`); the file holds the bare `Gear Sync Analysis` until the router has run.
+- Title: `<screen> · Gear Sync Analysis` (`titleOf` in `src/ui/router/routes.ts`); the file holds the bare `Gear Sync Analysis` until the router has run.
 - Colors only through CSS tokens on `:root`, with dark mode under `@media (prefers-color-scheme: dark)` (guarded by `:root:not([data-theme="light"])`) and `:root[data-theme="dark"]`. `body` sets its own background.
 - `localStorage` only inside try/catch, for conveniences only (key `ilvl-stat-lab-v4`). No users yet: when the saved shape changes, repair it in `restoreState()` without bumping the key.
 - Desktop only: must work at 960 px with no sideways scroll.

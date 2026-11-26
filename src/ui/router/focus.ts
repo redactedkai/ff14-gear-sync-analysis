@@ -3,7 +3,7 @@
    history (the router's focusScreen) needs this. */
 
 /* The first heading of the open screen that is on the page (the first visible h2 in the open tab's panel), or null. */
-function screenHeading(doc) {
+function screenHeading(doc: Document): HTMLHeadingElement | null {
   const panel = [...doc.querySelectorAll('.tab')].find(tab => tab.getClientRects().length > 0);
   if (!panel) {
     return null;
@@ -21,6 +21,24 @@ const STABLE_FRAMES = 3;
    tried again as the screen grows, so the page never turns millions of pixels tall. */
 const MAX_HELD_WINDOWS = 4;
 
+/* The options of focusScreenHeading (below); each is described there. The ones after `isPending` are stand-ins for the browser, which a
+   test hands in. */
+export interface FocusScreenOptions {
+  scrollY?: number;
+  focus?: boolean;
+  once?: boolean;
+  isPending?: () => boolean;
+  doc?: Document;
+  raf?: (callback: () => void) => unknown;
+  scrollTo?: (y: number) => void;
+  scrolledTo?: () => number;
+  viewportHeight?: () => number;
+  naturalHeight?: () => number;
+  watchSize?: (onResize: () => void) => () => void;
+  holdHeight?: (y: number) => void;
+  releaseHeight?: () => void;
+}
+
 /* The latest call's number: a call that is no longer the latest (a newer Back or Forward started) stops scrolling and leaves the
    page's height alone, so two moves never pull the page in turn. */
 let latestCall = 0;
@@ -31,7 +49,7 @@ let placing = false;
 /* Whether the page is still being put at the position of a Back, Forward or reload (the latest call has not finished). The
    scroll events of that time are the placement's own and the browser's clamp to a screen not yet drawn, not the player's, so the
    router does not remember them as where an entry was left. */
-export function isPlacingScroll() {
+export function isPlacingScroll(): boolean {
   return placing;
 }
 
@@ -60,11 +78,11 @@ export function focusScreenHeading({
   isPending = () => false,
   doc = document,
   raf = requestAnimationFrame,
-  scrollTo = y => window.scrollTo(0, y),
+  scrollTo = (y: number) => window.scrollTo(0, y),
   scrolledTo = () => window.scrollY,
-  viewportHeight = () => doc.defaultView.innerHeight,
+  viewportHeight = () => (doc.defaultView as Window).innerHeight,
   naturalHeight = () => doc.body.scrollHeight,
-  watchSize = onResize => {
+  watchSize = (onResize: () => void) => {
     if (typeof ResizeObserver === 'undefined') {
       return () => {};
     }
@@ -72,7 +90,7 @@ export function focusScreenHeading({
     observer.observe(doc.body);
     return () => observer.disconnect();
   },
-  holdHeight = y => {
+  holdHeight = (y: number) => {
     const windowHeight = viewportHeight();
     const ownRange = Math.max(0, naturalHeight() - windowHeight);
     const held = Math.min(y, Math.max(ownRange, MAX_HELD_WINDOWS * windowHeight));
@@ -85,7 +103,7 @@ export function focusScreenHeading({
       root.removeAttribute('style');
     }
   },
-} = {}) {
+}: FocusScreenOptions = {}): void {
   const MAX_FRAMES_WAITED = 120;
   const target = scrollY;
   const call = ++latestCall;

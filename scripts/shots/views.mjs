@@ -15,7 +15,7 @@ const LAYOUT_TIMEOUT_MS = 10_000;
 // how many animation frames in a row the page and its open layers must keep their places to count as settled
 const STILL_FRAMES = 3;
 
-/* Saved states the views start from (the shape of src/ui/state.js; restoreState fills in the rest). */
+/* Saved states the views start from (the shape of src/ui/state.ts; restoreState fills in the rest). */
 const SAGE = { job: 'SGE', cap: 123, sync: true, level: 100, tab: 'browse', mathTab: 'piece' };
 const WARRIOR = { job: 'WAR', cap: 123, sync: true, level: 90, tab: 'browse', mathTab: 'piece' };
 const BLUE_MAGE = { job: 'BLU', cap: 123, sync: true, level: 80, tab: 'browse', mathTab: 'piece' };
@@ -375,7 +375,7 @@ export async function openView(page, view) {
   await settle(page);
 }
 
-/* The address a view opens at: the page's file URL plus the hash of its tab (src/ui/router/routes.js; a bare address
+/* The address a view opens at: the page's file URL plus the hash of its tab (src/ui/router/routes.ts; a bare address
    opens Sheets whatever tab the saved state names). */
 export function viewUrl(pageUrl, view) {
   const { tab, mathTab = 'piece' } = view.state ?? {};

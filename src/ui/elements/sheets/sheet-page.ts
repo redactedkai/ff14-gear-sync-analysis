@@ -16,7 +16,7 @@ import { LitElement, type PropertyValues, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { JOB_ICONS } from '../../../data/job-icons.js';
-import { followInPage } from '../../router/plain-click.js';
+import { followInPage } from '../../router/plain-click.ts';
 import { bonusOptions } from '../../sheets/bonus-options.js';
 import { nextListSort, sheetListView } from '../../views/sheet-sets.js';
 import '../app/cap-field.ts';

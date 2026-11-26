@@ -2,8 +2,8 @@
    address of the screen (routeOf) against the routes the router formats. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatRoute, parseRoute } from '../../../../src/ui/router/routes.js';
-import { restoreState } from '../../../../src/ui/state.js';
+import { formatRoute, parseRoute } from '../../../../src/ui/router/routes.ts';
+import { restoreState } from '../../../../src/ui/state.ts';
 import { createAppActions } from '../../../../src/ui/store/app-actions.ts';
 import { createSetPageActions } from '../../../../src/ui/store/set-page-actions.ts';
 import {

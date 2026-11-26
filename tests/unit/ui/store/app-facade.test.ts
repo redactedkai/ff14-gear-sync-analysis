@@ -9,7 +9,7 @@ import type { RestoredState } from '../../../../src/ui/store/app-state.ts';
 import { restoreOpen } from '../../helpers/common.js';
 import { withRecordedReads } from '../../helpers/revision-reads.ts';
 
-/* A page store over `saved` (state.js restoreState's input, with the open tab) whose facade reports each revision key it reads
+/* A page store over `saved` (state.ts restoreState's input, with the open tab) whose facade reports each revision key it reads
    to `trail`, a key being a slice ('settings') or a part ('settings.browse'); `revisionsMoved(act)` runs `act` and lists the
    revisions it moved as '<key>:<revision>', sorted. */
 function recorded(saved: object = { tab: 'browse' }) {

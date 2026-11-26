@@ -2,7 +2,7 @@
    change, 1,000 changes make one write, 'pagehide' writes at once, and a storage that throws is ignored. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { restoreState } from '../../../../src/ui/state.js';
+import { restoreState } from '../../../../src/ui/state.ts';
 import { createAppActions } from '../../../../src/ui/store/app-actions.ts';
 import { createAppStore } from '../../../../src/ui/store/app-state.ts';
 import type { RestoredState } from '../../../../src/ui/store/app-state.ts';
@@ -214,7 +214,7 @@ test('a write that failed is tried again at a change of the screen, at a later w
   assert.equal(JSON.parse(written.at(-1) as string).browse.q, 'ringed');
 });
 
-test('a write that returns false counts as failed, like one that throws (the page writes through state.js save, which does not throw)', async () => {
+test('a write that returns false counts as failed, like one that throws (the page writes through state.ts save, which does not throw)', async () => {
   let storageWorks = false;
   const written: string[] = [];
   const { actions, clock } = setup(json => {

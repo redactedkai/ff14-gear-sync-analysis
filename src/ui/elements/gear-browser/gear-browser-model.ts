@@ -3,12 +3,12 @@
    filters shows, and what the "/" key does. The element and the Node tests both import it. The element is given the tab's Job
    and sync panel (`panel`) and the browser's filters and sort (`browse`) by the page; this reads no store. */
 import type { makeJobContext } from '../../../core/job-context.ts';
-import { defaultBrowse } from '../../state.js';
+import { defaultBrowse } from '../../state.ts';
 import { syncSettings } from '../../job-sync-panel.ts';
 import { browseFiltered, gearView } from '../../views/gear.js';
 import { viewCache } from '../../view-cache.ts';
 
-/* The browser's list (views/gear.js gearView) and its filters and sort (the store's `browse`: state.js defaultBrowse). */
+/* The browser's list (views/gear.js gearView) and its filters and sort (the store's `browse`: state.ts defaultBrowse). */
 export type GearList = ReturnType<typeof gearView>;
 export type GearBrowse = ReturnType<typeof defaultBrowse>;
 

@@ -1,8 +1,8 @@
 /* Saving the settings: one subscription to the store, a write a moment after the last change, and a write at once when the page
    is hidden or closed, so a link opened and the page reloaded within the moment loses nothing. localStorage is a convenience:
-   a write that throws is ignored (ui/state.js save does that), and the settings it could not write are tried again at the
+   a write that throws is ignored (ui/state.ts save does that), and the settings it could not write are tried again at the
    next change of the store (a tab switch is one), at the next write and at 'pagehide', so they are saved once storage works. */
-import { save } from '../state.js';
+import { save } from '../state.ts';
 import { persisted } from './app-state.ts';
 import type { AppStore } from './app-state.ts';
 
@@ -15,7 +15,7 @@ export interface AutosaveTimers {
   clearTimeout(handle: unknown): void;
 }
 
-/* What autosave takes besides the store. write(json): store the serialized settings (state.js `save`); it reports a failure by
+/* What autosave takes besides the store. write(json): store the serialized settings (state.ts `save`); it reports a failure by
    returning false or by throwing; timers: as above; pageEvents: where 'pagehide' is heard (the window; null for none). */
 export interface AutosaveOptions {
   write?: (json: string) => unknown;
@@ -32,7 +32,7 @@ export interface Autosave {
 
 /* Start saving `store`'s settings: after the start and after each change of the `settings` slice (the only one that is saved),
    the JSON of `persisted(state)` is written AUTOSAVE_DEBOUNCE_MS after the last change, unless it is what was written last. The
-   first write is made at the start too, since it repairs an older saved shape (state.js restoreState). The JSON is made when it
+   first write is made at the start too, since it repairs an older saved shape (state.ts restoreState). The JSON is made when it
    is written, not at each change, so a burst of changes costs one serialization. */
 export function startAutosave(store: AppStore, options: AutosaveOptions = {}): Autosave {
   const write = options.write ?? save;

@@ -5,7 +5,7 @@
      job-sync-panel.ts syncSettings), `piece` (the example piece) and `switchOn` (the IL Sync switch); the element reads no store
      and sends no event (the controls that edit the piece are the math bar's);
    - the chart is drawn at its box's width (an `ElementWidthController`), so its text keeps the page's size; the markup comes from
-     `overgearChartSvg` (sync-charts.js), whose texts are escaped there (`escapeXml`), and is drawn with `unsafeSVG`;
+     `overgearChartSvg` (sync-charts.ts), whose texts are escaped there (`escapeXml`), and is drawn with `unsafeSVG`;
    - the view is built again only when a setting or the chart's width changes (`viewCache`), by `pieceStatsView`
      (views/piece-stats.js). */
 import { LitElement, html, nothing } from 'lit';

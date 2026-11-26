@@ -18,7 +18,7 @@ Read these before answering; do not re-derive what they already settle:
   (`Item.SubStatCategory` 2) follows the level. Melds are ignored on synced-down pieces.
 - `docs/mechanics/math.md` section 5 ("Which pieces are synced", the "Caps real duties use" table, the rule in one
   formula) and `docs/glossary.md` (Item level sync, Minimum Item Level, Echo, T13).
-- `src/core/sync-target.ts` (`levelSyncIlvl`, `capCeiling`, `syncTarget`) and `src/ui/state.js` (`limitCapToLevel`,
+- `src/core/sync-target.ts` (`levelSyncIlvl`, `capCeiling`, `syncTarget`) and `src/ui/state.ts` (`limitCapToLevel`,
   which lowers a cap above `capCeiling` for the synced level; `shownSync`): what the page does today.
 - `docs/mechanics/validation.md` sections 8 and 10: xivgear.app's sync rules and test notes, and the comparison with
   it (xivgear pinned to commit 6c3c878). xivgear's code is a lead, not proof.
