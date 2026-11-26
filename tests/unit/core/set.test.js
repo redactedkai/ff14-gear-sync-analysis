@@ -1,4 +1,4 @@
-/* A gear set (src/core/set.js): plain frozen data and evaluateSet, what it adds up to.
+/* A gear set (src/core/set.ts): plain frozen data and evaluateSet, what it adds up to.
    The main guard is helpers/optimizer-view-sets.json: 14 real optimizer results (12 jobs; no sync, item level caps 123
    and 660, level sync to 90 and to 50 with cap 123; Food on and off, a picked meal, a piece picked from a row's menu;
    melds, tier ranking and Target GCD), recorded from the optimizer view before it went through evaluateSet: each row's
@@ -8,9 +8,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { browseItems, mkItem, poolItemById } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import { meldText } from '../../../src/core/meld.js';
+import { meldText } from '../../../src/core/meld.ts';
 import { optimize } from '../../../src/core/optimizer/index.js';
-import { evaluateSet, makeSet, setFromPicks } from '../../../src/core/set.js';
+import { evaluateSet, makeSet, setFromPicks } from '../../../src/core/set.ts';
 import CASES from '../helpers/optimizer-view-sets.json' with { type: 'json' };
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];

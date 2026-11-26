@@ -8,7 +8,7 @@ import { SLOT_TYPES } from '../constants.ts';
 
 /* The optimizer's other entry points for the modules built on it (same-result.js, target-gcd.js, tier-rank.js, the
    optimizer view): every candidate unpruned (buildCandidates), the dimensions a candidate tracks (vectorDims) and the
-   keys a score ranks (rankedKeys). A piece under sync (itemSyncIlvl, effStats, itemCaps) is core/piece.js. */
+   keys a score ranks (rankedKeys). A piece under sync (itemSyncIlvl, effStats, itemCaps) is core/piece.ts. */
 export {
   buildCandidates,
   fixedCandidate,
@@ -241,17 +241,17 @@ export function solve(prep, opts) {
 /**
  * @param job   JobContext
  * @param pool  pool items
- * @param sync  {cap, sync, level}: item level cap, item level sync on, synced level (optional; see itemSyncIlvl in piece.js)
+ * @param sync  {cap, sync, level}: item level cap, item level sync on, synced level (optional; see itemSyncIlvl in piece.ts)
  * @param opts  {target=job.mainKey, tiebreak=[], spdMin, spdMax, mins={}, nodeLimit=1.5e6, melds=false, fixed=[]}: `fixed`
  *              pinned pieces (fixedCandidate), counted in the totals and every limit but not searched; mins = {stat: gear
  *              points}, minimums on any stat's total; melds gives every piece that is not synced its best materia melds
  *              for the objective; with a speed range or minimums, every meld split worth keeping (meldVersions in
- *              meld.js), since the best melds of a piece then depend on the rest of the loadout
+ *              meld.ts), since the best melds of a piece then depend on the rest of the loadout
  * @returns {ok:false, truncated, nodes, noMeldData} when nothing is feasible, otherwise
  *          {ok:true, picks:[{type, item, eff, meld, blockedBy, pinned}], totals, truncated, nodes, noMeldData}; picks are in the
  *          character panel's slot order (SLOT_TYPES), not the search order; an empty pick has item null, and blockedBy
  *          is the chosen item that leaves its slot empty (a cloak for the head), if any; meld is the pick's melds
- *          (bestMeld in meld.js) or null, and eff includes them; noMeldData counts the pool pieces with no slot data when
+ *          (bestMeld in meld.ts) or null, and eff includes them; noMeldData counts the pool pieces with no slot data when
  *          melds are on
  */
 export function optimize(job, pool, sync, opts) {

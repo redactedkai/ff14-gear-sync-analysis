@@ -2,7 +2,7 @@
    GearSet and returns new plain data, never changing its argument. The menus that offer these edits are piece-menu.js,
    stone-menu.js and set-meal-menu.js. Pure: no store. */
 import { poolItemById, slotInfo } from '../../core/items.ts';
-import { meldSlots } from '../../core/meld.js';
+import { meldSlots } from '../../core/meld.ts';
 import { isUsed, rowLabel } from './saved-set.js';
 
 /* Said under an Off-hand row that a held two-handed weapon covers (its control is disabled); placePiece refuses a shield for

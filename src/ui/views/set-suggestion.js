@@ -23,7 +23,7 @@ function changedRowsOf(job, saved, suggested) {
   return saved.pieces.flatMap((row, index) => (open.has(index) && !sameRow(row, suggested.pieces[index]) ? [index] : []));
 }
 
-/* The suggestion of an Auto-fill answer for `saved`: `result` is an ok solve's plain `set` (core/set.js: pieces per active slot,
+/* The suggestion of an Auto-fill answer for `saved`: `result` is an ok solve's plain `set` (core/set.ts: pieces per active slot,
    and the meal), put on the set's open rows by applyFill; `bestMeals` the answer's tied best meals (solve.js, null
    with Food off). Returns {pieces, meal, bestMeals}, the set as Auto-fill would leave it and the meals to tag "best for goal"
    if it is applied whole. */

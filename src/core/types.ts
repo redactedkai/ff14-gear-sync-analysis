@@ -146,7 +146,7 @@ export interface MeldInfo {
 }
 
 /* The settings that sync a piece: the item level cap (null for none), whether item level sync is on, and the synced
-   character level (null or missing: no level sync). itemSyncIlvl in piece.js. */
+   character level (null or missing: no level sync). itemSyncIlvl in piece.ts. */
 export interface Sync {
   readonly cap: number | null;
   readonly sync: boolean;
@@ -159,7 +159,7 @@ export interface Stone {
   readonly grade: number;
 }
 
-/* One piece of a set (set.js): a database piece by its game id, a custom pool item, or an empty slot (neither). `stones`:
+/* One piece of a set (set.ts): a database piece by its game id, a custom pool item, or an empty slot (neither). `stones`:
    one entry per meld slot, [] for no melds. */
 export interface SetPiece {
   readonly slot: SlotType;
@@ -171,3 +171,25 @@ export interface SetPiece {
 /* Gear totals by key: the stat keys, and weapon damage under 'wd' (the optimizer's dimensions, DimKey). A key it lacks
    counts as 0. */
 export type Totals = Partial<Record<DimKey, number>>;
+
+/* A run of stones of one stat and grade in a meld: `n` stones of `grade` in `stat`. */
+export interface StoneGroup {
+  readonly stat: StatKey;
+  readonly grade: number;
+  readonly n: number;
+}
+
+/* A piece's melds, as bestMeld and applyStones give them (meld.js): the points the stones add per stat after the cap
+   (`gain`), the stones in slot order (the best grades first), and how many slots stay empty. */
+export interface Meld {
+  readonly gain: StatMap;
+  readonly stones: readonly StoneGroup[];
+  readonly free: number;
+}
+
+/* A gear set as plain frozen data (makeSet in set.js; the fields are explained there): one piece per row of the character
+   panel, and the meal's key or null. */
+export interface GearSet {
+  readonly pieces: readonly SetPiece[];
+  readonly meal: string | null;
+}

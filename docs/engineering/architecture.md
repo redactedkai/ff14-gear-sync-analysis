@@ -436,12 +436,12 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 
 | Module | Holds | Used by |
 | --- | --- | --- |
-| `piece.js` | A piece under sync: its synced item level, its stats there, the most each stat can be, whether it keeps its melds (note 1) | the optimizer, `meld.js`, `set.js`, the views |
-| `meld.js` | The meld rules (gates, high grades only in the big slots, caps) and what they are used for (note 2) | the optimizer, `set.js`, `sheets/fill-settings.js`, `views/stone-menu.js` |
-| `set.js` | A gear set as plain frozen data (`makeSet`, `setFromPicks`) and what it adds up to (`evaluateSet`) | `recipe.js`, the set page's views |
+| `piece.ts` | A piece under sync: its synced item level, its stats there, the most each stat can be, whether it keeps its melds (note 1) | the optimizer, `meld.ts`, `set.ts`, the views |
+| `meld.ts` | The meld rules (gates, high grades only in the big slots, caps) and what they are used for (note 2) | the optimizer, `set.ts`, `sheets/fill-settings.js`, `views/stone-menu.js` |
+| `set.ts` | A gear set as plain frozen data (`makeSet`, `setFromPicks`) and what it adds up to (`evaluateSet`) | `recipe.js`, the set page's views |
 
-1. `piece.js` holds the item level a piece is synced to (`itemSyncIlvl`), its stats there (`effStats`), the most each stat can be (`itemCaps`, `meldCaps`) and whether it keeps its melds (`keepsMelds`).
-2. `meld.js` applies the same meld rules for four uses:
+1. `piece.ts` holds the item level a piece is synced to (`itemSyncIlvl`), its stats there (`effStats`), the most each stat can be (`itemCaps`, `meldCaps`) and whether it keeps its melds (`keepsMelds`).
+2. `meld.ts` applies the same meld rules for four uses:
    - to find the best stones (`bestMeld`, `meldVersions`);
    - to apply a given list of stones (`applyStones`);
    - to list the grades a slot takes (`slotGrades`, for the set page's materia menu);
@@ -527,12 +527,12 @@ Notes:
 | Raw row to stat keys, item filters, pool item ids | `src/core/items.ts` (`dbStats`, `browseItems`, `gearFilter`, `filterGear`, `poolItemFromRow`) |
 | Gear groups (which jobs share gear) and the pieces a job cannot wear, by job mask | `src/core/gear-groups.ts` (`GEAR_GROUPS`, `gearGroupName`, `piecesJobCannotWear`) |
 | Piece identity: a database piece by its game id; the same piece from several sources | `src/core/items.ts` (`itemById`, `poolItemById`; `poolKey`) |
-| A piece under sync | `src/core/piece.js` (`itemSyncIlvl`, `effStats`, `itemCaps`, `meldCaps`, `keepsMelds`) |
-| A gear set and what it adds up to; a given list of stones on a piece | `src/core/set.js` (`makeSet`, `setFromPicks`, `evaluateSet`); `src/core/meld.js` (`applyStones`) |
+| A piece under sync | `src/core/piece.ts` (`itemSyncIlvl`, `effStats`, `itemCaps`, `meldCaps`, `keepsMelds`) |
+| A gear set and what it adds up to; a given list of stones on a piece | `src/core/set.ts` (`makeSet`, `setFromPicks`, `evaluateSet`); `src/core/meld.ts` (`applyStones`) |
 | Item stat rounding steps and the off-hand rule, written once | `src/core/formulas.ts` (`statLine`, `offhandParts`) |
 | Per-level game data (ParamGrow: base speed, level divisor, level sync item level) | `src/core/level-params.ts` (`levelParams`, `clampLevel`) |
 | Meal choice (totals with food, then food points, then the first) | `src/core/food.ts` (`pickMeal`, `mealTotals`, `bestFood`); Target GCD and tier ranking share their defaults through `goalSettings` in `src/core/target-gcd.js` |
-| Other core modules | `src/core/formulas.ts`, `gear-groups.ts`, `sync-target.ts`, `speed.ts`, `tiers.js`, `meld.js`, `piece.js`, `set.js`, `recipe.js`, `session.js`, `food.ts`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.ts`, `optimizer/` |
+| Other core modules | `src/core/formulas.ts`, `gear-groups.ts`, `sync-target.ts`, `speed.ts`, `tiers.js`, `meld.ts`, `piece.ts`, `set.ts`, `recipe.js`, `session.js`, `food.ts`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.ts`, `optimizer/` |
 | Entry point: restore, make the store and register its two facades and the elements, start the router, autosave | `src/main.js` |
 | Addresses: the hash of each screen and the settings in its query (`query.js`: `readQuery`, `writeQuery`), the page title, the router that keeps the address and the two stores in step, the focus after Back | `src/ui/router/routes.js` (`parseRoute`, `formatRoute`, `titleOf`), `router.js` (`createRouter`, `windowPort`), `focus.js` (`focusScreenHeading`), `plain-click.js` (`plainClick`, `followInPage`), `scroll-storage.js` (`readScrollPositions`, `writeScrollPositions`), `unload-guard.js` (`installUnloadGuard`, `UNLOAD_GUARD_OFF_KEY`) |
 | Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `defaultBrowse`: the browser's defaults, `resetForJob`, `clampLevels`, `splitPanelSettings`, `restoreState`, `restoreBrowseFields` and `restorePieceFields` (the checks a saved setting and an address's setting share), `STORE_KEY`, `SEARCH_MAX_LENGTH`) |
@@ -560,7 +560,7 @@ Notes:
 | Partial fill of a saved gear set: the pins, the "Auto-fill N slots" count, the result put back on the open rows, bad-pin messages | `src/ui/sheets/fill.js` (`fillPlan`, `applyFill`, `dropBadPins`, `badPinMessages`) |
 | A set page's Auto-fill settings and recipe, the goal line | `src/ui/sheets/fill-settings.js` (`defaultFillSettings`, `fillSettingsOf`, `fillRecipe`, `goalText`) |
 | A set page's edits by hand (a piece, a stone, the meal, a pin) | `src/ui/sheets/set-edits.js` (`placePiece`, `withStone`, `withoutStone`, `withMeal`, `withPin`) |
-| A set page's piece picker, materia menu and meal menu; the grades a meld slot takes | `src/ui/views/piece-menu.js` (`piecePickerView`), `stone-menu.js` (`materiaMenuView`), `set-meal-menu.js` (`setMealMenuView`); `src/core/meld.js` (`slotGrades`) |
+| A set page's piece picker, materia menu and meal menu; the grades a meld slot takes | `src/ui/views/piece-menu.js` (`piecePickerView`), `stone-menu.js` (`materiaMenuView`), `set-meal-menu.js` (`setMealMenuView`); `src/core/meld.ts` (`slotGrades`) |
 | The set page: its element, its session and the parts of it | `src/ui/elements/set-page/set-page.ts` (`GsaSetPage`) and `set-page-types.ts`, `session.ts` with `session-types.ts` (the shared types: `SetPagePorts`, `SessionHost`, `Solver`, the Auto-fill settings), `menus.ts`, `edits.ts`, `fill-run.ts`, `fill-settings-edit.ts`, `leave-guard.ts`; the view in `src/ui/views/set-page.js` |
 | Sheet view builders: a saved sheet and its gear sets as plain view objects (see the notes below the table) | `src/ui/views/sheet-manager.js`, `sheet-sets.js`, `sheet-forms.js`, `set-rows.js`, `set-totals.js`, `set-draft.js`, `set-suggestion.js`, `sheet-text.js` |
 | The page's solver: requests, the handler, the worker and page-thread solvers; the worker's entry; starting it | `src/ui/solver.js` (`solverRequest`, `makeSolverHandler`, `workerSolver`, `inProcessSolver`); `src/ui/solver-worker.js`; `src/main.js` (`startSolverWorker`) |

@@ -10,7 +10,7 @@
                generated; for now only tests and the optimizer's own pools make them);
              {slot} for an empty slot: covered by another piece (a cloak covers the head), or no copy left.
              `slot` is the slot type; `stones` one entry per meld slot ({stat, grade} or null), [] for no melds
-             (applyStones in meld.js).
+             (applyStones in meld.ts).
      meal    the meal's key (an allMeals key, HQ), or null for none.
    Job, level and sync are not part of a set: evaluateSet takes them, as a sheet holds them for all its sets.
    Custom pieces: the database's facts (equip level, meld slots, slot code, item kind, gear category) come from rowFacts
@@ -24,14 +24,82 @@ import { statBase } from './base-stats.ts';
 import { bonusStats, characterStat, clanOffset, isClan, partyRoles } from './clan-bonus.ts';
 import { allMeals, foodBonus, withFood } from './food.ts';
 import { categoryOf, equipLevel, expansionOf, poolItemById, slotInfo, slotLabel } from './items.ts';
-import { applyStones, meldStones, meldText } from './meld.js';
-import { itemCaps, itemSyncIlvl } from './piece.js';
+import { applyStones, meldStones, meldText } from './meld.ts';
+import { itemCaps, itemSyncIlvl } from './piece.ts';
 import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor } from './speed.ts';
 import { statTier } from './tiers.ts';
+import type { GearSet, JobContext, Meld, PerStat, PoolItem, SetPiece, SlotType, StatMap, Sync, Totals } from './types.ts';
+import type { FoodBonus, Meal } from './food.ts';
+import type { AppliedStones, RemovedStone } from './meld.ts';
+import type { GearCategory } from './items.ts';
+import type { Haste } from './speed.ts';
+
+/* One row of evaluateSet for a worn piece: see evaluateSet. */
+export interface WornRow {
+  slot: SlotType;
+  label: string;
+  item: PoolItem;
+  target: number | null;
+  stats: StatMap;
+  caps: PerStat<number>;
+  meld: Meld | null;
+  meldText: string;
+  lost: StatMap;
+  removed: RemovedStone[];
+  category: GearCategory | null;
+  from: string | null;
+}
+/* One row of evaluateSet for an empty slot: the name of the worn piece that covers it, or ''. */
+export interface EmptyRow {
+  slot: SlotType;
+  label: string;
+  item: null;
+  blockedBy: string;
+}
+/* A row of evaluateSet's `rows`. */
+export type SetRow = WornRow | EmptyRow;
+/* One stat's tier in evaluateSet: its effect text, the tier's start and the next one's (null at the last), the points above
+   the start and to the next (null at the last), and whether the total is 0. */
+export interface SetTier {
+  effect: string;
+  start: number;
+  next: number | null;
+  spare: number;
+  toNext: number | null;
+  zero: boolean;
+}
+/* What a set adds up to (evaluateSet). */
+export interface SetEvaluation {
+  readonly rows: SetRow[];
+  readonly gear: PerStat<number>;
+  readonly meal: Meal | null;
+  readonly bonus: FoodBonus;
+  readonly withFood: Totals;
+  readonly base: PerStat<number>;
+  readonly panel: PerStat<number>;
+  readonly panelGear: PerStat<number>;
+  readonly bonuses: { clan: string | null; partyRoles: number };
+  readonly lost: PerStat<number>;
+  readonly melded: number;
+  readonly tiers: (SetTier | null)[];
+  readonly defense: { phys: number; mag: number; physPct: number; magPct: number };
+  readonly gcd: { spd: number; haste: Haste | null; gcd: number; unhasted: number; dot: number };
+}
+/* A worn piece of a set while it is evaluated: the piece, its pool item and what its stones do (applyStones). */
+type WornPiece = { piece: SetPiece; item: PoolItem } & AppliedStones;
+/* A set's piece while it is evaluated: worn (WornPiece) or an empty slot. */
+type Worn = WornPiece | { piece: SetPiece; item: null; meld?: undefined };
+/* A pick of an optimizer result as setFromPicks reads it: the slot type and the pool item (null for an empty slot), with
+   the melds it was given (null or missing for none). */
+export interface PickInput {
+  type: SlotType;
+  item?: PoolItem | null;
+  meld?: Meld | null;
+}
 
 /* A set (see above) from `pieces` and `meal`, frozen to the stones, so it can be kept and shared as it is. */
-export function makeSet(pieces, meal = null) {
-  const frozenPiece = p =>
+export function makeSet(pieces: readonly SetPiece[], meal: string | null = null): GearSet {
+  const frozenPiece = (p: SetPiece): SetPiece =>
     Object.freeze({ ...p, ...(p.stones ? { stones: Object.freeze(p.stones.map(s => s && Object.freeze({ ...s }))) } : {}) });
   return Object.freeze({ pieces: Object.freeze(pieces.map(frozenPiece)), meal: meal ?? null });
 }
@@ -39,7 +107,7 @@ export function makeSet(pieces, meal = null) {
 /* The set an optimizer result shows: its picks ({type, item, meld}, in panel order; item null for an empty slot, as
    solve and sameResult give them) and the meal's key (or null). A database piece is kept by its game id, any other as
    a custom piece; melds become their stones (meldStones). */
-export function setFromPicks(picks, meal = null) {
+export function setFromPicks(picks: readonly PickInput[], meal: string | null = null): GearSet {
   return makeSet(
     picks.map(p => {
       if (!p.item) {
@@ -54,7 +122,7 @@ export function setFromPicks(picks, meal = null) {
 
 /* The pool item a set's piece stands for, for `job`: its custom item, the database piece of its game id
    (poolItemById), or null for an empty slot or a game id no database row has. */
-function pieceItem(job, piece) {
+function pieceItem(job: JobContext, piece: SetPiece): PoolItem | null {
   if (piece.custom) {
     return piece.custom;
   }
@@ -91,40 +159,47 @@ function pieceItem(job, piece) {
    unknown name: none) and the unique party roles (a whole number 0 to 5). They change only panel, panelGear and the
    meal's Vitality (the clan's offset is part of the base the meal's percent is taken of); gear, withFood and the rest
    are the gear's own. */
-export function evaluateSet(job, set, sync, level, bonuses = {}) {
+export function evaluateSet(
+  job: JobContext,
+  set: GearSet,
+  sync: Sync,
+  level: number,
+  bonuses: { clan?: string | null; partyRoles?: unknown } = {},
+): SetEvaluation {
   // 1. each piece: its pool item and its stats with the stones that stay
-  const worn = set.pieces.map(piece => {
+  const worn = set.pieces.map((piece): Worn => {
     const item = pieceItem(job, piece);
     return item ? { piece, item, ...applyStones(job, item, piece.stones ?? [], sync) } : { piece, item: null };
   });
-  const sumOver = pick => Object.fromEntries(job.stats.map(s => [s, worn.reduce((sum, w) => sum + (w.item ? pick(w)[s] || 0 : 0), 0)]));
+  const sumOver = (pick: (w: WornPiece) => StatMap): PerStat<number> =>
+    Object.fromEntries(job.stats.map(s => [s, worn.reduce((sum, w) => sum + (w.item ? pick(w)[s] || 0 : 0), 0)])) as PerStat<number>;
   const gear = sumOver(w => w.stats);
   const lost = sumOver(w => w.lost);
 
   // 2. the meal and the totals with it; the character's base for the panel's numbers
-  const clan = isClan(bonuses.clan) ? bonuses.clan : null;
+  const clan = isClan(bonuses.clan) ? (bonuses.clan as string) : null;
   const roles = partyRoles(bonuses.partyRoles);
   const clanBase = Object.fromEntries(bonusStats(job).map(s => [s, clanOffset(clan, s)]));
   const meal = (set.meal != null && allMeals(job).find(m => m.key === set.meal)) || null;
   const bonus = meal ? foodBonus(job, meal, gear, level, clanBase) : {};
   const totals = withFood(gear, bonus);
-  const base = Object.fromEntries(job.stats.map(s => [s, statBase(job, s, level)]));
+  const base = Object.fromEntries(job.stats.map(s => [s, statBase(job, s, level)])) as PerStat<number>;
 
   // the character panel's numbers, one rule for every reader (clan-bonus.ts): without and with the meal
-  const panelOf = withMeal =>
+  const panelOf = (withMeal: boolean): PerStat<number> =>
     Object.fromEntries(
       job.stats.map(s => [
         s,
         characterStat(job, s, { base: base[s], gear: gear[s], meal: withMeal ? (bonus[s]?.bonus ?? 0) : 0, clan, roles }),
       ]),
-    );
+    ) as PerStat<number>;
   const panelGear = panelOf(false);
   const panel = panelOf(true);
 
   // 3. one row per piece; rings numbered
   let ringN = 0;
-  const rows = worn.map(w => {
-    let label = SLOT_LABEL[w.piece.slot];
+  const rows = worn.map((w): SetRow => {
+    let label: string = SLOT_LABEL[w.piece.slot];
     if (w.piece.slot === 'ring') {
       ringN++;
       label = 'Ring ' + ringN;
@@ -135,7 +210,7 @@ export function evaluateSet(job, set, sync, level, bonuses = {}) {
         slot: w.piece.slot,
         label,
         item: null,
-        blockedBy: cover?.item.name ?? '',
+        blockedBy: (cover as WornPiece | undefined)?.item.name ?? '',
       };
     }
     if (w.piece.slot !== 'ring') {
@@ -162,7 +237,7 @@ export function evaluateSet(job, set, sync, level, bonuses = {}) {
   const haste = hasteFor(job.jobId, level);
   const hastePct = haste?.pct ?? 0;
   const tiers = job.stats.map(s => {
-    const value = totals[s];
+    const value = totals[s] as number;
     const g = s === job.speedKey && hastePct ? gcdTierAt(value || 0, level, BASE_GCD_MS, hastePct) : null;
     const tier = g ? { effect: `${g.gcd.toFixed(2)}s`, start: g.start, next: g.next } : statTier(job, s, value, level);
     if (!tier) {
@@ -179,11 +254,11 @@ export function evaluateSet(job, set, sync, level, bonuses = {}) {
   });
 
   // 5. defense after sync, and the share of damage it removes at this level (shown, never ranked)
-  const def = setDefense(rows.filter(r => r.item).map(r => ({ item: r.item, target: r.target })));
+  const def = setDefense((rows.filter(r => r.item) as WornRow[]).map(r => ({ item: r.item, target: r.target })));
   const defense = { phys: def.phys, mag: def.mag, physPct: mitigationPct(def.phys, level), magPct: mitigationPct(def.mag, level) };
 
   // 6. the GCD and DoT/HoT bonus of the speed with food
-  const spd = totals[job.speedKey];
+  const spd = totals[job.speedKey] as number;
   const gcd = {
     spd,
     haste,
@@ -222,9 +297,9 @@ export function evaluateSet(job, set, sync, level, bonuses = {}) {
    - a job whose weapons carry no damage (job.damageKey null, Blue Mage) leaves the weapon and off-hand out: 10 slots
      (xivgear);
    - the meal is not counted. */
-export function averageItemLevel(job, rows) {
+export function averageItemLevel(job: JobContext, rows: readonly SetRow[]): { value: number; slots: number; worn: number } | null {
   const used = rows.filter(row => job.activeSlotTypes.includes(row.slot));
-  const levelOf = row => row?.item?.ilvl ?? 0;
+  const levelOf = (row: SetRow | undefined) => row?.item?.ilvl ?? 0;
 
   // 1. the slots other than the weapon and off-hand
   const values = used.filter(row => row.slot !== 'weapon' && row.slot !== 'offhand').map(levelOf);
@@ -238,7 +313,7 @@ export function averageItemLevel(job, rows) {
   }
 
   // 3. nothing worn in the counted slots: no average
-  const isHandSlot = row => row.slot === 'weapon' || row.slot === 'offhand';
+  const isHandSlot = (row: SetRow) => row.slot === 'weapon' || row.slot === 'offhand';
   const worn = used.filter(row => row.item && (job.damageKey || !isHandSlot(row))).length;
   if (!worn) {
     return null;

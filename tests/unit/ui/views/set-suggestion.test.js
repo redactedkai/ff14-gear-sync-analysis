@@ -34,7 +34,7 @@ const DET_STONES = [
   { stat: 'crit', grade: 3 },
 ];
 
-/* A solve's plain set for Sage (pieces per slot type the job uses, in panel order; core/set.js), built from the saved
+/* A solve's plain set for Sage (pieces per slot type the job uses, in panel order; core/set.ts), built from the saved
    rows of `gearSet` with `changes` ({slot: piece}) and `meal`. */
 function answerSet(gearSet, changes, meal) {
   const pieces = gearSet.pieces

@@ -10,7 +10,7 @@ import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.js';
 import { statBase } from '../../../src/core/base-stats.ts';
 import { runRecipe } from '../../../src/core/recipe.js';
 import { makeSession } from '../../../src/core/session.js';
-import { evaluateSet, makeSet } from '../../../src/core/set.js';
+import { evaluateSet, makeSet } from '../../../src/core/set.ts';
 
 // "Gear categories" boxes left out by default, in a set's Auto-fill settings and the browser (owner's decision); the checks use them too.
 export { DEFAULT_EXCLUDE };

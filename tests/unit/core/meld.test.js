@@ -1,4 +1,4 @@
-/* Materia melds (src/core/meld.js): stones by item level, slots, caps and the best melds of real pieces. Expected values
+/* Materia melds (src/core/meld.ts): stones by item level, slots, caps and the best melds of real pieces. Expected values
    come from the game files (Materia sheet values and gates, Item slot counts) and published caps (Kirin's Osode of
    Fending, item level 300 body: substat cap 110, Console Games Wiki), worked by hand, not from the code under test. */
 import { test } from 'node:test';
@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { browseItems, meldInfo, mkItem, poolItemFromRow } from '../../../src/core/items.ts';
 import { MATERIA } from '../../../src/core/tables.ts';
-import { bestMeld, meldSlots, meldText, meldVersions, slotGrades, stoneValues } from '../../../src/core/meld.js';
-import { meldCaps } from '../../../src/core/piece.js';
+import { bestMeld, meldSlots, meldText, meldVersions, slotGrades, stoneValues } from '../../../src/core/meld.ts';
+import { meldCaps } from '../../../src/core/piece.ts';
 import { optimize } from '../../../src/core/optimizer/index.js';
 import { piece } from '../helpers/common.js';
 

@@ -1,6 +1,6 @@
 /* Helpers for the tests that compare the sets Auto-fill (runRecipe) returns: a set as text, what the search ranks as text,
    and a seeded shuffle of a pool. Shared by core/recipe.round-trip and core/recipe.pool-order. */
-import { evaluateSet } from '../../../src/core/set.js';
+import { evaluateSet } from '../../../src/core/set.ts';
 import { rng } from './common.js';
 
 /* A set's pieces (slot, game id, stones) and meal as text: two equal texts are the same set. */

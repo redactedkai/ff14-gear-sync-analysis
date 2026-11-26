@@ -7,7 +7,7 @@
    bonus when the sheet sets them. They all come from evaluateSet's `panel` and `panelGear` (one rule, core/clan-bonus.ts). */
 import { bonusStats, clanOffset, isClan, partyRoles } from '../../core/clan-bonus.ts';
 import { makeJobContext } from '../../core/job-context.ts';
-import { averageItemLevel, evaluateSet, makeSet } from '../../core/set.js';
+import { averageItemLevel, evaluateSet, makeSet } from '../../core/set.ts';
 import { tierLadder } from '../../core/tiers.ts';
 import { plural } from '../text.ts';
 import { syncSettings } from '../job-sync-panel.js';
@@ -34,7 +34,7 @@ function figureStat(job, id) {
 }
 
 /* A gear set evaluated under its sheet's job, level and item level sync: {job (JobContext), level, sync (core's sync
-   settings), evaluated (core/set.js evaluateSet)}, with the sheet's clan and party bonus (`sheet.clan`, `sheet.partyRoles`;
+   settings), evaluated (core/set.ts evaluateSet)}, with the sheet's clan and party bonus (`sheet.clan`, `sheet.partyRoles`;
    a sheet without them has none). The rows of `gearSet.pieces` a job does not use (the off-hand of a
    two-handed job) keep their piece in the saved set but are not counted, so they are emptied here; the evaluation's rows
    keep the saved set's row numbers. */
@@ -113,7 +113,7 @@ function totalCells(job, values) {
      panel's numbers: evaluateSet's `panel`: gear + meal + the character's base, with the sheet's clan and party bonus on
      the main stat and Vitality); withoutMeal the gear alone on the same base (`panelGear`), for a reader who wants the
      meal's part. emptyCount: used rows with no piece and no covering piece, and emptyText ("2 slots empty",
-     '' for none); ilvl the average item level of the worn pieces' own levels (core/set.js averageItemLevel) as a whole number
+     '' for none); ilvl the average item level of the worn pieces' own levels (core/set.ts averageItemLevel) as a whole number
      with a leading tilde ("~118"; the tilde marks it as an average), '' when nothing is worn; ilvlLabel the cell's accessible
      name, "Average item level 118" ('' when nothing is worn), since a screen reader would read "~118" as a bare symbol and number;
    - tier: {caption: "spare · to next tier", cells} (tierCells), counting the meal; a job with an always-on haste has

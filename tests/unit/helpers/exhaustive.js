@@ -3,7 +3,7 @@
 import { SLOT_TYPES } from '../../../src/core/constants.ts';
 import { capsFor } from '../../../src/core/formulas.ts';
 import { browseItems, meldInfo, poolItemFromRow, slotInfo } from '../../../src/core/items.ts';
-import { effStats, itemSyncIlvl } from '../../../src/core/piece.js';
+import { effStats, itemSyncIlvl } from '../../../src/core/piece.ts';
 import { weaponDamage } from '../../../src/core/damage-defense.ts';
 import { statBase } from '../../../src/core/base-stats.ts';
 import { MATERIA } from '../../../src/core/tables.ts';
@@ -78,7 +78,7 @@ function choicesFor(pool, t, pinnedRings = []) {
 }
 
 /* A pinned piece's stat vector (job stats, and 'wd' when the job ranks weapon damage), written independently of
-   src/core/meld.js: its stats after sync, plus each stone's value for its stat, the stat cut at the piece's own cap
+   src/core/meld.ts: its stats after sync, plus each stone's value for its stat, the stat cut at the piece's own cap
    (capsFor) without lowering a stat already above it, as enumerateVectors does. A synced piece keeps no stone.
    `stones`: {stat, grade} or null per meld slot, in slot order (a null ends the usable stones, as the game fills slots
    in order); the caller gives only stones the piece takes. */
@@ -102,7 +102,7 @@ export function pinnedVector(job, item, sync, stones) {
   return v;
 }
 
-/* Every effective stat vector a piece can reach with melds, written independently of src/core/meld.js: each slot gets
+/* Every effective stat vector a piece can reach with melds, written independently of src/core/meld.ts: each slot gets
    one of the job's substats or nothing, holding the most valuable grade that slot allows (guaranteed slots and the
    first overmeld slot any grade the item level gate allows, later overmeld slots no high grade; a bigger stone never
    lowers a stat, so smaller ones are never needed), and every stat is capped at the piece's own cap (capsFor at its item

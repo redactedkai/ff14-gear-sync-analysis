@@ -168,10 +168,10 @@ Notes: HQ (high quality) and NQ (normal quality) are the two versions of a craft
 
 | Concept | File |
 | --- | --- |
-| Stones by item level, slots, best melds, meld text | `src/core/meld.js` (`stoneValues`, `meldSlots`, `bestMeld`, `meldText`) |
-| A given list of stones on a piece, by the same rules (a gear set built by hand) | `src/core/meld.js` (`applyStones`; `meldStones` turns a best meld into that list) |
-| A piece's own caps; sync removing melds | `src/core/piece.js` (`meldCaps`, `keepsMelds`) |
+| Stones by item level, slots, best melds, meld text | `src/core/meld.ts` (`stoneValues`, `meldSlots`, `bestMeld`, `meldText`) |
+| A given list of stones on a piece, by the same rules (a gear set built by hand) | `src/core/meld.ts` (`applyStones`; `meldStones` turns a best meld into that list) |
+| A piece's own caps; sync removing melds | `src/core/piece.ts` (`meldCaps`, `keepsMelds`) |
 | Materia table, slot count and overmeld flag per item | `scripts/data/gen_items.py`, `src/core/items.ts` (`meldInfo`), `src/core/tables.ts` (`MATERIA`) |
-| Melds in the candidate lists; meld versions under a speed range | `src/core/optimizer/candidates.js` (`itemCandidate`, `itemVersions`), `src/core/meld.js` (`meldVersions`) |
+| Melds in the candidate lists; meld versions under a speed range | `src/core/optimizer/candidates.js` (`itemCandidate`, `itemVersions`), `src/core/meld.ts` (`meldVersions`) |
 | The Materia switch and the materia menu | `src/ui/sheets/fill-settings.js` (`fillRecipe`), `src/ui/views/stone-menu.js` (`materiaMenuView`), `src/ui/elements/set-page/set-page.ts` (`#s-melds`) |
 | Tests | `tests/unit/core/meld.test.js`, `tests/unit/helpers/exhaustive.js` (`meldVectors`), `tests/unit/core/optimizer/index.exhaustive.test.js` |

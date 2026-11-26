@@ -93,7 +93,7 @@ function newId(): string {
 
 /* A pool item with defaults (one copy, hand-made); `stats` ({stat key: points}) may leave stats out (0), `extra` overrides any field.
    Frozen, with its stats and any other object field (a hand-made `meld`): pool items are shared by every search, the
-   result rows and the caches keyed by them (WeakMaps in this file and piece.js), on the page's thread and in
+   result rows and the caches keyed by them (WeakMaps in this file and piece.ts), on the page's thread and in
    the worker alike, so nothing may change one after it is made. A piece that changes is a new item. */
 export function mkItem(name: string, type: SlotType, ilvl: number, stats: StatMap, extra?: Partial<PoolItem>): PoolItem {
   const item = Object.assign({ id: newId(), name, type, ilvl, stats: { ...stats }, copies: 1, src: 'custom' }, extra || {});

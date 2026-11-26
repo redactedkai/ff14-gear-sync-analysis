@@ -8,7 +8,7 @@ import { ALL_JOBS_ACCESSORY_FACTORS, JOBS, ITEM_STAT_ORDER, RAW_MAIN_IDX, ROW } 
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { predictRaw, syncStats, capsFor, jobFactor } from '../../../src/core/formulas.ts';
 import { kindFactors, browseItems, poolItemFromRow, rowStats } from '../../../src/core/items.ts';
-import { effStats } from '../../../src/core/piece.js';
+import { effStats } from '../../../src/core/piece.ts';
 import { MODEL_MIN_ILVL } from '../helpers/model-validation.js';
 import { appState, itemRow, roundHalfUp } from '../helpers/common.js';
 import { gearViewOf } from '../helpers/views.js';

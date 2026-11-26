@@ -4,7 +4,7 @@ import { EXPANSIONS } from '../../core/constants.ts';
 import { allMeals, foodBonus, foodLabel } from '../../core/food.ts';
 import { expansionOf, searchMatches } from '../../core/items.ts';
 
-/* The Food row's menu on gear with the totals `gearTotals` (a stat map: core/set.js evaluateSet's `gear`), `shown` the
+/* The Food row's menu on gear with the totals `gearTotals` (a stat map: core/set.ts evaluateSet's `gear`), `shown` the
    meal the row shows (an allMeals entry, or null), `bestKeys` the keys of the meals tagged "best for goal" ([] for a set
    the optimizer did not make: mealBestKeys). Returns {groups, pills, hasBest}:
    - groups: every meal the job can use, by expansion, newest first, {label, items}. Each meal is {key, name, ilvl,

@@ -1,6 +1,6 @@
 /* Which jobs share gear, for Copy sheet: the gear groups of src/data/gear-groups.json (made by scripts/data/gen_gear_groups.py
    from the item data: jobs that can wear 80 percent or more of the same head, body, hands, legs and feet pieces, with
-   the same level cap), and the pieces a job cannot wear. A set's pieces are as set.js keeps them. */
+   the same level cap), and the pieces a job cannot wear. A set's pieces are as set.ts keeps them. */
 import GEAR_GROUPS_FILE from '../data/gear-groups.json' with { type: 'json' };
 import { JOB_ROWS, ROW } from './constants.ts';
 import { itemById } from './items.ts';
@@ -21,7 +21,7 @@ export function gearGroupName(jobId: string): string | null {
   return row ? row[0] : null;
 }
 
-/* The pieces of `pieces` (a set's pieces, set.js) that `job` (a JobContext) cannot wear, by the job mask of the piece's
+/* The pieces of `pieces` (a set's pieces, set.ts) that `job` (a JobContext) cannot wear, by the job mask of the piece's
    database row: [{index (in `pieces`), slot, gameId, name (the database row's)}], in order. The mask only: the equip level is not checked
    (`wearable` in items.ts does that), since a level-synced piece stays wearable. Pieces not from the database (custom,
    empty slots, or a game id no row has any more) are never listed. */

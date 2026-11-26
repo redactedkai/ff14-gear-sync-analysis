@@ -3,7 +3,7 @@
    until Apply (docs/engineering/sheets.md, "Drafts and suggestions"), so the draft is a second GearSet in memory; these
    builders take both (sheets.md, "Saved data") and return plain view objects. Pure: no store. */
 import { allMeals } from '../../core/food.ts';
-import { ROMAN } from '../../core/meld.js';
+import { ROMAN } from '../../core/meld.ts';
 import { pieceName } from './set-rows.js';
 import { figuresAgainst, evaluateInSheet, setFigures } from './set-totals.js';
 import { plural } from '../text.ts';

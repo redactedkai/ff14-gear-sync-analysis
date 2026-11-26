@@ -1,5 +1,5 @@
 /* A solver session: the one thing kept between solves, each job's gear (every database piece the job can wear, as frozen
-   pool items; ~5-10 ms to build). The meld caps are cached per pool item object (core/meld.js), so keeping the same
+   pool items; ~5-10 ms to build). The meld caps are cached per pool item object (core/meld.ts), so keeping the same
    objects keeps them warm from solve to solve.
 
    Nothing else is kept: the search's candidate lists (tier ranking's, Target GCD's, the rows' menus, the fastest GCD)

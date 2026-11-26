@@ -1,4 +1,4 @@
-/* applyStones (src/core/meld.js): a given list of stones on a piece, by the rules the optimizer melds by. Expected
+/* applyStones (src/core/meld.ts): a given list of stones on a piece, by the rules the optimizer melds by. Expected
    values come from the game files (materia values I-XII 1, 2, 3, 4, 6, 16, 8, 24, 12, 36, 18, 54; gates 15, 30, 45, 70,
    160, 290, 420, 420, 560, 560, 690, 690; VI, VIII, X, XII only in the big slots) and materia.md's worked examples:
    Kirin's Osode of Fending (item level 300 body, 5 guaranteed slots, every substat capped at 110, Console Games Wiki;
@@ -8,8 +8,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { browseItems, mkItem, poolItemFromRow } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import { applyStones, bestMeld, meldStones, meldText, meldVersions } from '../../../src/core/meld.js';
-import { effStats } from '../../../src/core/piece.js';
+import { applyStones, bestMeld, meldStones, meldText, meldVersions } from '../../../src/core/meld.ts';
+import { effStats } from '../../../src/core/piece.ts';
 import { piece, rngInt } from '../helpers/common.js';
 
 const war = makeJobContext('WAR');

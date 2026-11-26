@@ -8,7 +8,7 @@
              damage after sync under WD_KEY when the job ranks it (damage-defense.ts; 0 off the weapon)
      copies  how many of it can be worn (2 for a non-Unique ring), counted per item, not per candidate
      blocks  slot types it leaves empty (a two-handed weapon the off-hand, a cloak the head)
-     meld    its melds (bestMeld in meld.js) or null
+     meld    its melds (bestMeld in meld.ts) or null
      score   [weapon damage, target, tiebreak 1, tiebreak 2] packed into one number (makeScorer); set by buildCandidates
      sum     its stat total, the sort tiebreak; set by buildCandidates
      versions every meld version of the piece, this one among them (itemVersions only): a regain cut (regain.js) may
@@ -17,8 +17,8 @@
 import { SLOT_TYPES } from '../constants.ts';
 import { WD_KEY, weaponDamage } from '../damage-defense.ts';
 import { meldInfo, slotInfo } from '../items.ts';
-import { applyStones, bestMeld, meldVersions } from '../meld.js';
-import { effStats, itemSyncIlvl, keepsMelds } from '../piece.js';
+import { applyStones, bestMeld, meldVersions } from '../meld.ts';
+import { effStats, itemSyncIlvl, keepsMelds } from '../piece.ts';
 import { FREE_RING, blockableTypes, typeMask } from './slot-index.js';
 
 /* The most keys of a goal: the target and two tiebreaks. Melds are chosen for these (weapon damage is no meld's). */
@@ -99,7 +99,7 @@ export function rankedKeys(job, target, tiebreak, weaponFirst = true) {
    its best melds for the objective (bestMeld), already added to the vector. One melded version per piece is exact:
    the loadout score is a sum of per-piece terms, and copies and blocked slots depend on the item, not on its melds, so
    giving every worn piece its own best melds never lowers a loadout (docs/engineering/optimizer.md, section 6). A synced piece
-   keeps no melds (keepsMelds in piece.js). */
+   keeps no melds (keepsMelds in piece.ts). */
 function itemCandidate(job, item, sync, keys) {
   const target = itemSyncIlvl(item, sync);
   const synced = effStats(job, item, sync);
@@ -325,7 +325,7 @@ export function buildCandidates(
   const ranked = rankedKeys(job, target, tiebreak, weaponFirst);
   // the stats the search may hold to a minimum or band, speed first
   const limitStats = [...new Set([...(speed ? [job.speedKey] : []), ...minStats])];
-  // melds are chosen per piece from the objective's keys (meld.js keeps the substats among them; weapon damage is no
+  // melds are chosen per piece from the objective's keys (meld.ts keeps the substats among them; weapon damage is no
   // meld's), before the score weights are derived from the vectors
   const keys = melds ? [target, ...tiebreak.filter(Boolean)].slice(0, MAX_GOAL_KEYS) : null;
 

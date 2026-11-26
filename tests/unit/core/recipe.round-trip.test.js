@@ -8,7 +8,7 @@ import { JOBS } from '../../../src/core/constants.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { runRecipe } from '../../../src/core/recipe.js';
 import { makeSession } from '../../../src/core/session.js';
-import { evaluateSet } from '../../../src/core/set.js';
+import { evaluateSet } from '../../../src/core/set.ts';
 import { syncSettings } from '../../../src/ui/job-sync-panel.js';
 import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.js';
 import { rng } from '../helpers/common.js';

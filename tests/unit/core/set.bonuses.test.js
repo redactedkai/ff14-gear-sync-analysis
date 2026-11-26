@@ -1,4 +1,4 @@
-/* The clan and the party bonus in evaluateSet (src/core/set.js) and foodBonus (src/core/food.ts). Expected numbers are
+/* The clan and the party bonus in evaluateSet (src/core/set.ts) and foodBonus (src/core/food.ts). Expected numbers are
    summed by hand from real items a Warrior in the Ironworks and Demon armor of Fending (item level
    120, no sync), whose gear is 342 Strength and 356 Vitality at the level 100 base of 462 Strength and 484 Vitality
    (440 x 105% and 110%), and a Sage in the crafted item level 115 set, whose gear is 279 Mind and 257 Vitality at 506 and 440. */
@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals, foodBonus } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import { evaluateSet, makeSet } from '../../../src/core/set.js';
+import { evaluateSet, makeSet } from '../../../src/core/set.ts';
 import { rawGear, sageSet, warSet } from '../helpers/sheet-fixtures.js';
 
 const NO_SYNC = { cap: 795, sync: false, level: 100 };

@@ -86,7 +86,7 @@ export const DEFAULT_EXCLUDE = Object.freeze(ACTIVITIES.filter(a => !a.on).map(a
 export const TARGET_GCD_RANGE = Object.freeze([0.5, 2.5]);
 
 /* The sync settings the core takes, from the store's fields {cap, sync, level} (sync: the item level sync switch):
-   {cap, sync, level}, sync true only while the switch is on and a cap is set (itemSyncIlvl in core/piece.js). */
+   {cap, sync, level}, sync true only while the switch is on and a cap is set (itemSyncIlvl in core/piece.ts). */
 export function syncSettings({ cap, sync, level }) {
   return { cap, sync: Boolean(sync) && cap != null, level: level ?? null };
 }

@@ -16,7 +16,7 @@ What happens when the user presses Auto-fill on a set page, step by step (each s
 4. **Search the rest.** Fill one slot at a time, shortest list first, best pieces first. At each partly filled gear set, a quick upper bound says how much the empty slots could still add; when even that cannot beat the best full gear set found so far, the whole branch is skipped (branch and bound, section 5). When the search ends, the best gear set found is the best there is, unless the search stopped at its node limit, which the page reports.
 5. **Options on top.** A Target GCD turns into a range the speed stat must stay in (sections 2 and 5); "Spare points to tiebreaks" runs one such search per ranked stat ([tier-ranking.md](tier-ranking.md)).
 
-The code is in `src/core/optimizer/`: `index.js` (`optimize`, the entry point), `candidates.js` (the stats, melds, scores and dominance of steps 1 to 3) and `search.js` (the branch and bound). A piece's stats under sync come from `src/core/piece.js`, shared with the rest of the page. The page builds the pool itself (section 7), and runs the search in a Web Worker, so the page stays responsive during a long one ([architecture.md, section 9](architecture.md#9-the-optimizers-worker)). [glossary.md](../glossary.md#project-terms) defines the search words (candidate, dominance, incumbent, fathom, node limit).
+The code is in `src/core/optimizer/`: `index.js` (`optimize`, the entry point), `candidates.js` (the stats, melds, scores and dominance of steps 1 to 3) and `search.js` (the branch and bound). A piece's stats under sync come from `src/core/piece.ts`, shared with the rest of the page. The page builds the pool itself (section 7), and runs the search in a Web Worker, so the page stays responsive during a long one ([architecture.md, section 9](architecture.md#9-the-optimizers-worker)). [glossary.md](../glossary.md#project-terms) defines the search words (candidate, dominance, incumbent, fathom, node limit).
 
 How to read the rest: section 1 is the game background and the problem in plain words, section 2 the formulation. Sections 3 to 5 are the algorithm, in the order it runs. Section 6 adds melds, section 7 is how the page uses the engine (its controls and menus are in [ui.md](ui.md)), and sections 8 and 9 are the evidence, timings and limits.
 
@@ -634,10 +634,10 @@ Several gear sets can have exactly the same ranked totals: weapon damage, the ta
 
 | Concept | File |
 | --- | --- |
-| A piece under sync: its synced item level, effective stats, caps, whether it keeps its melds | `src/core/piece.js` (`itemSyncIlvl`, `effStats`, `itemCaps`, `meldCaps`, `keepsMelds`) |
+| A piece under sync: its synced item level, effective stats, caps, whether it keeps its melds | `src/core/piece.ts` (`itemSyncIlvl`, `effStats`, `itemCaps`, `meldCaps`, `keepsMelds`) |
 | Item vectors, score weights, dominance pruning, candidate lists; weapon damage as the first key | `src/core/optimizer/candidates.js` (`makeScorer`, `rankedKeys`, `pruneDominated`, `pruneForLimits`, `buildCandidates`) |
 | A weapon's weapon damage after sync | `src/core/damage-defense.ts` (`weaponDamage`) |
-| Best melds of a piece; meld versions under a speed range | `src/core/meld.js` (`bestMeld`, `meldVersions`) |
+| Best melds of a piece; meld versions under a speed range | `src/core/meld.ts` (`bestMeld`, `meldVersions`) |
 | Bounds, limit tables, filters before the search, slot order and depth-first branch and bound | `src/core/optimizer/search.js` (`branchAndBound` runs them; functions and constants in note 1 below the table) |
 | Regain cuts (tier ranking) | `src/core/optimizer/regain.js` (`addRegainCuts`) |
 | Pareto fronts (tier ranking's searches) | `src/core/optimizer/front.js` (`frontSearch`) |
@@ -647,7 +647,7 @@ Several gear sets can have exactly the same ranked totals: weapon damage, the ta
 | Which slots a job uses | `src/core/job-context.ts` (`activeSlotTypes` in `makeJobContext`) |
 | Sync clamp | `src/core/formulas.ts` (`syncStats`) |
 | Copies (Unique rings), pool items from the database | `src/core/items.ts` (`poolItemFromRow`, `browseItems`) |
-| A result's rows, totals, tiers, defense and GCD (the gear set it shows) | `src/core/set.js` (`setFromPicks`, `evaluateSet`), called by `runRecipe` in `src/core/recipe.js` and by a set page's views (`src/ui/views/set-totals.js`, `meal-menu.js`) |
+| A result's rows, totals, tiers, defense and GCD (the gear set it shows) | `src/core/set.ts` (`setFromPicks`, `evaluateSet`), called by `runRecipe` in `src/core/recipe.js` and by a set page's views (`src/ui/views/set-totals.js`, `meal-menu.js`) |
 | Other pieces with the same result (A9) | `src/core/same-result.js` (`resultOf`, `sameOutcome`, `sameResult`), called by `runRecipe`; the unpruned candidates are `buildCandidates` with pruning off |
 | The Food row's menu | `allMeals` in `src/core/food.ts`; `src/ui/views/meal-menu.js` (`mealMenu`, `mealsPassing`, `mealPillOff`, `mealEmptyReason`, `sortMeals`, `mealList`) and `setMealMenuView` in `src/ui/views/set-meal-menu.js`; its search, pills and sort in `src/ui/elements/set-page/food-menu-model.ts` (`FoodMenuModel`) |
 | Page use: the job's gear, Gear categories, node limit, the solve, result | `src/core/recipe.js`, `src/core/session.js`, `src/core/items.ts`, `src/ui/solve.js`, `src/ui/sheets/fill.js`, `src/ui/elements/gear-browser/filter-menu-model.ts` (functions in note 2 below the table) |

@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeSession } from '../../../src/core/session.js';
-import { evaluateSet } from '../../../src/core/set.js';
+import { evaluateSet } from '../../../src/core/set.ts';
 import { inProcessSolver, isCancelled, makeSolverHandler, solverRequest, workerSolver } from '../../../src/ui/solver.js';
 import { gearToSearchView, solveView } from '../../../src/ui/solve.js';
 import { inputsOf, makeApp } from '../helpers/views.js';

@@ -8,7 +8,7 @@ import { JOBS, SLOT_LABEL, SUB_WEIGHTS } from '../../core/constants.ts';
 import { makeJobContext } from '../../core/job-context.ts';
 import { buildPiece, capsFor, clampIlvl, syncStats } from '../../core/formulas.ts';
 import { mkItem } from '../../core/items.ts';
-import { bestMeld } from '../../core/meld.js';
+import { bestMeld } from '../../core/meld.ts';
 import { meldSlotChoices, meldSlotsOf, shownSync } from '../job-sync-panel.js';
 import { LEVEL_TEXT, rangeOnly, rangeText } from '../level-cap.js';
 import { OVERGEAR_BANDS, overgearChartSvg } from '../sync-charts.js';

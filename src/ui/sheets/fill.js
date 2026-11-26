@@ -60,7 +60,7 @@ export function fillPlan(job, gearSet) {
   };
 }
 
-/* The set's pieces and meal after an Auto-fill: the rows of `gearSet` with `result` (an ok solve's `set`, core/set.js: pieces
+/* The set's pieces and meal after an Auto-fill: the rows of `gearSet` with `result` (an ok solve's `set`, core/set.ts: pieces
    per active slot in panel order) put on the open rows by slot type; pinned rows, rows the job does not use, and a
    pinned meal stay as they were. Returns {pieces, meal}, new data (the set is not changed).
    The result lists a slot type's pieces with the pinned ones first (a pinned ring before the free one), so the open

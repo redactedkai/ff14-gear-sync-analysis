@@ -1,10 +1,10 @@
 /* Shared setup of the view builder and solve tests: store-shaped state with sync on at cap 123 and a set's recipe (its
    Auto-fill settings at their defaults, rank by tier off), small real-gear pools whose best loadouts the brute force
    (exhaustive.js) can check, a solve as a set page's Auto-fill asks for it (core/recipe.js runRecipe, evaluated by
-   core/set.js evaluateSet), and the other tabs' builders called as their components call them. */
+   core/set.ts evaluateSet), and the other tabs' builders called as their components call them. */
 import { recipePool, runRecipe } from '../../../src/core/recipe.js';
 import { makeSession } from '../../../src/core/session.js';
-import { evaluateSet } from '../../../src/core/set.js';
+import { evaluateSet } from '../../../src/core/set.ts';
 import { syncSettings } from '../../../src/ui/job-sync-panel.js';
 import { gearView } from '../../../src/ui/views/gear.js';
 import { pieceView } from '../../../src/ui/views/piece.js';

@@ -6,7 +6,7 @@
 import { SLOT_TYPES } from '../../../src/core/constants.ts';
 import { slotInfo } from '../../../src/core/items.ts';
 import { weaponDamage } from '../../../src/core/damage-defense.ts';
-import { effStats, itemSyncIlvl } from '../../../src/core/piece.js';
+import { effStats, itemSyncIlvl } from '../../../src/core/piece.ts';
 import { meldVectors } from './exhaustive.js';
 
 /* Compares two equal-length number lists like words in a dictionary: negative, 0 or positive. */

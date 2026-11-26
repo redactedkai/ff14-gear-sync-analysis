@@ -3,8 +3,8 @@
    set-totals.js. Takes plain data (a saved GearSet: docs/engineering/sheets.md, "Saved data", evaluated by
    evaluateInSheet) and returns a plain view object; the template only displays it. Pure: no store. */
 import { allocatedRelic, meldInfo, poolItemById } from '../../core/items.ts';
-import { ROMAN, materiaFit, meldSlots } from '../../core/meld.js';
-import { meldCaps } from '../../core/piece.js';
+import { ROMAN, materiaFit, meldSlots } from '../../core/meld.ts';
+import { meldCaps } from '../../core/piece.ts';
 import { MATERIA } from '../../core/tables.ts';
 import { fillPlan } from '../sheets/fill.js';
 import { SHIELD_NEEDS_ONE_HANDED } from '../sheets/set-edits.js';

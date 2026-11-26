@@ -1,4 +1,4 @@
-/* Overmeld odds (src/core/meld.js overmeldChance, usesNqOvermeldRates, overmeldNumber). Expected values: the HQ table of
+/* Overmeld odds (src/core/meld.ts overmeldChance, usesNqOvermeldRates, overmeldNumber). Expected values: the HQ table of
    the Console Games Wiki, Advanced Materia Melding (grades I to IV, then V and up: 90/48/28/16, 82/44/26/16, 70/38/22/14,
    58/32/20/12, 17/10/7/5; VI, VIII, X and XII only in the first overmeld slot) and the MateriaGrade sheet for the NQ rates
    (80/40/20/10 for grade I, 12/6/3/2 for V and up). The Wiki's footnote gives 3% for the last NQ slot of V+, the sheet 2%;
@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { MATERIA } from '../../../src/core/tables.ts';
-import { overmeldChance, overmeldNumber, usesNqOvermeldRates } from '../../../src/core/meld.js';
+import { overmeldChance, overmeldNumber, usesNqOvermeldRates } from '../../../src/core/meld.ts';
 import { piece } from '../helpers/common.js';
 
 const earrings = piece(makeJobContext('SGE'), "Courtly Lover's Earrings of Healing");

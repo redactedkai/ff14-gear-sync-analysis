@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { mkItem } from '../../../src/core/items.ts';
 import { optimize } from '../../../src/core/optimizer/index.js';
-import { itemSyncIlvl } from '../../../src/core/piece.js';
+import { itemSyncIlvl } from '../../../src/core/piece.ts';
 import { mitigationPct, setDefense, syncedValue, weaponDamage } from '../../../src/core/damage-defense.ts';
 import { resultOf } from '../../../src/core/same-result.js';
 import { IL } from '../../../src/core/tables.ts';

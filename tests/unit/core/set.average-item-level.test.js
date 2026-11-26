@@ -1,11 +1,11 @@
-/* The set's average item level (src/core/set.js averageItemLevel): the sum of the slots' own item levels over 12 slots, a
+/* The set's average item level (src/core/set.ts averageItemLevel): the sum of the slots' own item levels over 12 slots, a
    two-handed weapon counted twice, an empty slot 0, Blue Mage's weapon left out (xivgear's avgIlvl). Expected values are
    hand sums of real items' item levels (the ids and levels are in the comments), not the function's output. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS } from '../../../src/core/constants.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import { averageItemLevel, evaluateSet, makeSet } from '../../../src/core/set.js';
+import { averageItemLevel, evaluateSet, makeSet } from '../../../src/core/set.ts';
 import { SAGE_IDS } from '../helpers/sheet-fixtures.js';
 
 const NO_SYNC = { cap: 795, sync: false, level: 100 };

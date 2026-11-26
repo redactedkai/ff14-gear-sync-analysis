@@ -49,7 +49,7 @@ export function gearToSearchView(job, sync, level, recipe, session) {
 /* The answer of a solve for `recipe` that keeps `pins` (sheets/fill.js fillPlan's: {pieces, meal}, or null for none). The
    optimizer can throw (e.g. stat totals too large to rank exactly); the answer is then {kind: 'error', message}.
    Otherwise {kind: runRecipe's status, ...}:
-   - 'ok': {set (the plain set, core/set.js: pieces by game id and stones, the meal's key), bestMeals (the keys of the
+   - 'ok': {set (the plain set, core/set.ts: pieces by game id and stones, the meal's key), bestMeals (the keys of the
      meals tagged "best for goal", runRecipe's found.food.tagged: allMeals order; null with Food off), recipe, truncated (the
      search stopped at its node limit)}; both clone-safe, since the worker's reply carries them;
    - 'badpin' (a pin cannot be kept): {messages (badPinMessages: one plain line per problem), badPins (runRecipe's

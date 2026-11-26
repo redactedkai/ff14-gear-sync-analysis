@@ -2,7 +2,7 @@
    Takes plain data and returns plain data; the template only displays it. Pure: no store. */
 import { EXPANSIONS, SLOT_LABEL } from '../../core/constants.ts';
 import { allocatedRelic, categoryOf, equipLevel, expansionOf, meldInfo, searchMatches } from '../../core/items.ts';
-import { meldSlots } from '../../core/meld.js';
+import { meldSlots } from '../../core/meld.ts';
 import { plural } from '../text.ts';
 import { uniqueTaken } from '../sheets/set-edits.js';
 

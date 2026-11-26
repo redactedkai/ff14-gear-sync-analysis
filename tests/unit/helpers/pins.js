@@ -2,7 +2,7 @@
    reference take (`fixed`: fixedCandidate; `oracle`: pinnedVector in exhaustive.js, written independently). */
 import { meldInfo, slotInfo } from '../../../src/core/items.ts';
 import { fixedCandidate } from '../../../src/core/optimizer/index.js';
-import { itemSyncIlvl } from '../../../src/core/piece.js';
+import { itemSyncIlvl } from '../../../src/core/piece.ts';
 import { MATERIA } from '../../../src/core/tables.ts';
 import { pinnedVector } from './exhaustive.js';
 

@@ -40,7 +40,7 @@ Relative links only, so they work on GitHub and in a local checkout:
 - **Sections** are linked by their GitHub anchor: lower case, spaces become hyphens, other punctuation is dropped. `## 4. The stats on a piece` is `#4-the-stats-on-a-piece`; `### 2.1 The brute-force reference and the real-gear pools` is `#21-the-brute-force-reference-and-the-real-gear-pools`.
 - **Renaming or renumbering a heading breaks every link to it.** Search `docs/` for the old anchor first and fix each hit.
 - **Link text** names the page and the section, and reads naturally: `[math.md, section 5](../mechanics/math.md#5-item-level-sync)`.
-- **Code, test and data files** are named in code font (`src/core/meld.js`), not linked.
+- **Code, test and data files** are named in code font (`src/core/meld.ts`), not linked.
 
 ## Writing
 

@@ -2,7 +2,7 @@
    base at the level plus gear), up to the meal's maximum: bonus = min(max, floor(percent x (base + gear) / 100)).
    Verified by the owner in a synced duty (2026-10-18; xivgear and Ariyala use it too), so it applies unchanged under
    item level and level sync (docs/mechanics/math.md, section 6, Food). Vitality's base leaves out the clan's bonus
-   (-3 to +3) unless the caller passes it (foodBonus, `extraBase`): a saved sheet that sets a clan does (core/set.js), the
+   (-3 to +3) unless the caller passes it (foodBonus, `extraBase`): a saved sheet that sets a clan does (core/set.ts), the
    searches never do, so their food can be a point off Vitality's in game.
    A meal's effect never falls with more gear points and gear + food rises with every gear point, so ranking gear sets by
    gear totals gives the same order as ranking them with food: the optimizer needs no change, and the best food for a goal

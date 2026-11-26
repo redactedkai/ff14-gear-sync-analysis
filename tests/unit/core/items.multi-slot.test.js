@@ -4,11 +4,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { browseItems, kindFactors, poolItemById, rowStats, slotInfo, slotLabel } from '../../../src/core/items.ts';
-import { evaluateSet } from '../../../src/core/set.js';
+import { evaluateSet } from '../../../src/core/set.ts';
 import { ROW } from '../../../src/core/constants.ts';
 import { predictRaw, syncStats } from '../../../src/core/formulas.ts';
 import { optimize } from '../../../src/core/optimizer/index.js';
-import { effStats } from '../../../src/core/piece.js';
+import { effStats } from '../../../src/core/piece.ts';
 import { exhaustive, gamePool, loadoutCount } from '../helpers/exhaustive.js';
 import { itemRow } from '../helpers/common.js';
 
@@ -215,7 +215,7 @@ test("picks come back in the character panel's slot order, though the search fil
 });
 
 /* A hand-picked two-handed weapon leaves a White Mage's Off-hand row covered; a wand does not. The rule is the one cloaks
-   and bodies use (slotInfo's blocks, set.js's blockedBy): the row is shown as covered, and nothing else changes. */
+   and bodies use (slotInfo's blocks, set.ts's blockedBy): the row is shown as covered, and nothing else changes. */
 test('Dreadwyrm Cane (two-handed) covers the Off-hand row; Tidal Wave Wand (one-handed) does not', () => {
   const pieceOf = (job, id) => poolItemById(job, id);
   const cane = pieceOf(whm, 9006);

@@ -24,7 +24,7 @@ export const DOMAINS = {
   model: {
     title: 'The game number rules: item stats, sync, speed, tiers, food, materia',
     src: [
-      'src/core/{meld,piece}.js',
+      'src/core/{meld,piece}.ts',
       'src/core/{clan-bonus,sync-target}.ts',
       'src/core/{food,formulas,tiers}.ts',
       'src/core/{damage-defense,speed}.ts',
@@ -50,7 +50,8 @@ export const DOMAINS = {
     title: 'The search for the best gear set, in the core',
     src: [
       'src/core/optimizer/**',
-      'src/core/{recipe,same-result,session,set,target-gcd,tier-rank}.js',
+      'src/core/{recipe,same-result,session,target-gcd,tier-rank}.js',
+      'src/core/set.ts',
       'scripts/perf/{adversarial,args,bench,compare,memory,split,target-gcd-sweep,workloads}.mjs',
     ],
     tests: [

@@ -20,7 +20,7 @@
      unexplained: none of the above */
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { kindFactors, parseRow, poolItemFromRow, wearable } from '../../../src/core/items.ts';
-import { effStats, itemSyncIlvl } from '../../../src/core/piece.js';
+import { effStats, itemSyncIlvl } from '../../../src/core/piece.ts';
 import { levelSyncIlvl } from '../../../src/core/sync-target.ts';
 import { ITEMS } from '../../../src/core/tables.ts';
 import { ROW } from '../../../src/core/constants.ts';

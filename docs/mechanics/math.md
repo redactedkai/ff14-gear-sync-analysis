@@ -632,7 +632,7 @@ Which number does the page show for a total: gear points only, or what the chara
 
 ### Average item level
 
-The set page's Total row shows the average item level of the worn gear, as the character panel does (`averageItemLevel`, `core/set.js`).
+The set page's Total row shows the average item level of the worn gear, as the character panel does (`averageItemLevel`, `core/set.ts`).
 
 - The sum of the slots' item levels over the slots: weapon, off-hand, head, body, hands, legs, feet, earrings, necklace, bracelet and two rings, 12 in all (xivgear's `avgIlvl`, `gear.ts` at commit `6c3c878`: **verified** in code; that the game does the same is **inferred**, from the [Wiki's Item Level page](https://ffxiv.consolegameswiki.com/wiki/Item_Level)). The soul crystal is not counted (**inferred**).
 - A two-handed weapon counts twice, in place of the off-hand (xivgear pushes its item level twice; the Wiki says the same: **verified** in code, **inferred** for the game). A one-handed weapon counts once, with a shield or without; with no shield the off-hand counts 0 (xivgear: **verified** in code; the game's own rule for it is a **guess**).
@@ -716,7 +716,7 @@ The status of each claim about the stat model (item stats, stat factors, substat
 | Gear above the job's level cap left out | `src/core/items.ts` (`browseItems`, `wearable`) |
 | An item's stat factors (from its kind) | `src/core/items.ts` |
 | Rounding, slot budget, piece stats (`buildPiece`), caps (`capValue`, `capsFor`), sync clamp, step-by-step derivation, real-piece prediction (`predictRaw`) | `src/core/formulas.ts` |
-| Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.ts`; for pool items `itemSyncIlvl` in `src/core/piece.js` |
+| Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.ts`; for pool items `itemSyncIlvl` in `src/core/piece.ts` |
 | The ceiling $\text{top}(L)$ on gear made for a higher level, and the cap lowered to it | `src/core/sync-target.ts` (`capCeiling`, used by `syncTarget`); `src/ui/level-cap.js` (`limitCapToLevel`, called by the item level field, `src/ui/elements/app/cap-field.ts`); `src/ui/job-sync-panel.js` (`shownSync` for How the math works) |
 | The cap shown on How the math works; level sync off at the job's cap | `src/ui/job-sync-panel.js` (`shownSync`, `levelSyncOn`) |
 | GCD, tick multiplier, GCD tiers, haste, speed for a target GCD | `src/core/speed.ts` (`gcdFor`, `hasteFor`, `speedForGcd`); haste table `HASTE` in `src/core/constants.ts` |

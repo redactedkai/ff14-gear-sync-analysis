@@ -12,7 +12,7 @@
      food              add the meal for the goal (a picked meal in its place, runRecipe's `choices`)
      gcd, gcdMode      the Target GCD in seconds ('' for any; askedGcd), 'exact' or 'min' (that or faster)
      byTier            rank the goal and tiebreaks by tier first (tier-rank.js)
-   Job, sync and level are not part of a recipe: like evaluateSet (set.js), the solve takes them, as a sheet will hold
+   Job, sync and level are not part of a recipe: like evaluateSet (set.ts), the solve takes them, as a sheet will hold
    them for all its sets.
 
    Pins are no part of a recipe either: they are the set's own pieces and meal that a solve must keep (runRecipe's
@@ -21,9 +21,9 @@ import { allMeals, bestFood, foodChoices } from './food.ts';
 import { activityCounts, allocatedRelic, filterGear, gearFilter, itemRoutes, poolItemById, wearable, withActivities } from './items.ts';
 import { buildCandidates, fixedCandidate, optimize, pinProblem } from './optimizer/index.js';
 import { realSlotType } from './optimizer/slot-index.js';
-import { itemSyncIlvl } from './piece.js';
+import { itemSyncIlvl } from './piece.ts';
 import { sameMeals, sameResult } from './same-result.js';
-import { evaluateSet, setFromPicks } from './set.js';
+import { evaluateSet, setFromPicks } from './set.ts';
 import { BASE_GCD_MS, gcdFor, hasteFor } from './speed.ts';
 import { fastestGcd, optimizeGcd } from './target-gcd.js';
 import { rankByTier } from './tier-rank.js';
@@ -85,7 +85,7 @@ function gearById(gear) {
 /* The pins a solve keeps, resolved for `job` under `sync`, with pieces taken from `gear` (the session's gear for the
    job, so a pinned piece is the very pool item the search would pick: its copies and Unique rings count alike).
    `pins` = {pieces, meal} or null:
-     pieces  the set's pinned pieces as it saves them, [{slot, gameId, stones}] (set.js; a ring pinned in either ring row
+     pieces  the set's pinned pieces as it saves them, [{slot, gameId, stones}] (set.ts; a ring pinned in either ring row
              is one entry, the order does not matter)
      meal    the pinned meal's allMeals key, or null
    Returns {fixed (fixedCandidate per usable piece, for the optimizer's `fixed`), meal (the allMeals entry, or null),
@@ -189,7 +189,7 @@ const frozenRecipe = recipe =>
    - status: 'ok'; 'excluded' (no piece passes the filters); 'noset' (no set at all); 'nogcd' (none at the Target
      GCD); 'infeasible' (the search stopped at its node limit before finding one); 'badpin' (a pin cannot be kept:
      found.badPins).
-   - set: the set the result shows (set.js makeSet; null unless ok): each row the player's pick where it still gives
+   - set: the set the result shows (set.ts makeSet; null unless ok): each row the player's pick where it still gives
      the same result, else the easiest piece that does (sameResult); the meal the Food row shows, the pick, else the
      highest item level meal with the best's result (sameMeals; owner), or none with Food off.
    - record: how the set was made, frozen: {job (its id), sync, level, recipe (a copy: the goal as asked, whatever the

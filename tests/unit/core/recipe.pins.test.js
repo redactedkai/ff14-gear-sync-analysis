@@ -8,7 +8,7 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { gcdRange, resolvePins, runRecipe } from '../../../src/core/recipe.js';
 import { jobGear } from '../../../src/core/items.ts';
 import { makeSession } from '../../../src/core/session.js';
-import { evaluateSet } from '../../../src/core/set.js';
+import { evaluateSet } from '../../../src/core/set.ts';
 import { appState, piece } from '../helpers/common.js';
 
 const sge = makeJobContext('SGE');
