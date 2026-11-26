@@ -64,6 +64,7 @@ import { checkSheets } from './checks/sheets/manager.mjs';
 import { checkOpenRow, checkOpenSheetRow } from './checks/sheets/open-row.mjs';
 import { checkSetListSort } from './checks/sheets/sort.mjs';
 import { checkTwoTabs } from './checks/sheets/two-tabs.mjs';
+import { checkTwoTabsSettings } from './checks/saved-state/two-tabs.mjs';
 import {
   checkStartupBlockedStorage,
   checkStartupFailures,
@@ -204,6 +205,7 @@ export const GROUPS = [
   },
   { steps: [step(checkSheetCap, 'sheets')] },
   { fresh: true, steps: [step(checkTwoTabs, 'sheets')] },
+  { fresh: true, steps: [step(checkTwoTabsSettings, 'app')] },
   { slow: true, steps: [step(checkThemes, 'look')] },
   { slow: true, steps: [step(checkAccessibility, 'look')] },
   { slow: true, steps: [step(checkViewports, 'look')] },

@@ -50,7 +50,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 21 | 12 |
 | `gear-browser` | the Gear browser tab and its filter menus | 5 | 16 |
 | `math-page` | How the math works: Piece stats, Substat tiers, GCD | 12 | 15 |
-| `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 43 | 47 |
+| `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 43 | 48 |
 | `look` | shared CSS: tokens, themes, layout at the five windows, radii | 3 | 8 |
 | `tooling` | the build, the test runners, the layout stress tool and the repo's code rules | 22 | 0 |
 
@@ -372,7 +372,7 @@ Most tests run on the CSV files in the test fixtures folder: real sheet headers,
 | Addresses | every screen has an address; Back, Forward and reload; a sheet or set that is not saved; an address that names nothing; the page title; the links: each tab, sub-tab, sheet and set name and breadcrumb points at its screen, a Ctrl or Shift click leaves the page as it was, a plain click moves (`checkLinkClicks`; forced colors keep the open tab apart, `checkForcedColorsCurrentTab`); the scroll position after Back and Forward, with no other position shown on the way (a frame-by-frame record), and after a reload (`checkScrollOnBack`, `checkScrollOnForward`, `checkScrollOnBackToMath`, `checkScrollOnReload`); a screen opened by a click (sheet from the list, set from a sheet, breadcrumb, tab link) drawn at the top from its first frame, and Back to the screen left at its depth and the Substat tiers sub-tab from a scrolled Stat Allocation (`checkScrollOnOpenedScreen`); Back to a list scrolled with the real mouse wheel landing exactly where it was left, 20 runs in each of two window sizes at normal speed and at 4x slower CPU, for a link acted on as soon as the page shows the scroll, for Back, Forward, a link and Back, and for a Back made in the same task as a script's scroll (`checkBackAfterQuickClick`, `checkBackAfterBackAndForward`, `checkBackAfterScriptScroll`; the link is on screen before and after the scroll, as a click that scrolls an off-screen link into view first moves the page itself); Back asks before it leaves a draft, and a reload or closed tab asks while a draft is open (`checkUnloadGuard`); the settings in an address: a link applies and saves them, a bare address keeps the saved ones, a change writes the address without a history entry, a link names the whole view (`checkRouting`, `checkRoutingGuard`, `checkRoutingAfterReload`, `checkAddressSettings`); the two stores refusing a console change (define, delete, add) with the page still working (`checkStoresSealed`) |
 | Sheets | at 960 px, no Job and sync panel: the empty state, New sheet, Copy sheet, Delete, set notes, reordering (note c); the sheet page's list of gear sets and a set page keeping their column widths: with four-digit and widest effect figures, under each sort, a filled set against an empty one, at 960, 1280 and 2560 px, for Sage and Monk, and the Effects / Stat points switch keeping its place and size within 1.5 px (its chosen option is bold) |
 | Startup failure | no message on a healthy load; a throw in the app script, an error while the root or a screen draws (a screen also when the rejection event comes late, as in WebKit) and a file cut inside the style or the app script each show it; a missing start marker shows it, and the marker is absent while the root first draws; Reset keeps another page's keys; no Reset button with storage blocked (note e) |
-| Sheets in two browser tabs, both color schemes and five windows | `checkTwoTabs`, `checkThemes` and `checkViewports` (note d) |
+| Two browser tabs, both color schemes and five windows | `checkTwoTabs` (Sheets), `checkTwoTabsSettings` (Gear browser and Stat Allocation settings), `checkThemes` and `checkViewports` (note d) |
 
 Notes on the longer rows:
 
@@ -395,6 +395,7 @@ Notes on the longer rows:
   - An unreadable record and its Delete question, the level range of Blue Mage and Beastmaster, Copy and Delete from a set page.
   - The widths where a rule switches (1099 and 1100 px, 1299 and 1301 px); no sideways scroll.
 - **Note d, two browser tabs, both color schemes and five windows.**
+  - `checkTwoTabsSettings` (`checks/saved-state/two-tabs.mjs`) is the same for the saved settings: a tab reads them once, when it opens, and ignores the other tab's saves (it hears the storage event and shows nothing new); each save writes the tab's whole settings, so the tab that saves last wins every field (a Gear browser "min" item level typed in one tab is lost when the other tab saves a Stat Allocation slot, and the other way round), and a reload of either tab shows that whole. There is no merge by field.
   - `checkTwoTabs` uses two pages of one context sharing storage:
     - the second tab reads the first's sheet and set when it opens;
     - its open pages do not change under it (no live sync);
