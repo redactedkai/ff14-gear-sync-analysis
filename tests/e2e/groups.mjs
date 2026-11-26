@@ -6,12 +6,7 @@ import { checkFillRealGear, checkWorkerFallback } from './checks/auto-fill/run.m
 import { checkEmptySlotNote, checkFillCancel, checkFillSearch } from './checks/auto-fill/search.mjs';
 import { checkSparePointsNoteFollowsButton } from './checks/auto-fill/note-placement.mjs';
 import { checkTakeBoxFollowsWeapon } from './checks/auto-fill/take-box.mjs';
-import {
-  checkBrowserColumnHover,
-  checkBrowserColumnsStay,
-  checkBrowserFourDigits,
-  checkBrowserPages,
-} from './checks/gear-browser/columns.mjs';
+import { checkBrowserColumnsStay, checkBrowserFourDigits, checkBrowserPages } from './checks/gear-browser/columns.mjs';
 import {
   checkExpansionFilter,
   checkPldOffhand,
@@ -118,7 +113,7 @@ export const GROUPS = [
     ],
   },
   { steps: [step(checkBrowserPages, 'gear-browser'), step(checkBrowserRowsMatchView, 'gear-browser')] },
-  { steps: [step(checkBrowserColumnsStay, 'gear-browser'), step(checkBrowserColumnHover, 'gear-browser')] },
+  { steps: [step(checkBrowserColumnsStay, 'gear-browser')] },
   { steps: [step(checkBrowserFourDigits, 'gear-browser')] },
   { steps: [step(checkSlotMenu, 'gear-browser'), step(checkSlotMenuPicksAndLayers, 'gear-browser')] },
   { steps: [step(checkStoresSealed, 'app')] },

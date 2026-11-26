@@ -14,10 +14,11 @@ function applyEdit(event) {
   recordEvents('edits')(event);
 }
 
-/* The screen for a Sage at level 100 with sync off and the default filters: the open tab, so it builds its list. */
-export const Default = () => {
-  const jobCtx = makeJobContext('SGE');
-  const panel = { job: 'SGE', jobCtx, cap: null, sync: false, level: jobCtx.maxLevel };
+/* The screen for a job (Sage unless `job` says another) at level 100 with sync off and the default filters: the open tab, so it builds
+   its list. */
+export const Default = ({ job = 'SGE' } = {}) => {
+  const jobCtx = makeJobContext(job);
+  const panel = { job, jobCtx, cap: null, sync: false, level: jobCtx.maxLevel };
   return html`
     <div style="width: 1100px" @browse-edit=${applyEdit}>
       <gsa-gear-browser class="panel" .panel=${panel} .browse=${Object.freeze(defaultBrowse(jobCtx))} .active=${true}></gsa-gear-browser>

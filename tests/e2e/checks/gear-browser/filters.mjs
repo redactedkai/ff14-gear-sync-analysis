@@ -40,20 +40,6 @@ export async function checkRingCopies(pg) {
   );
   await pg.click('#gear-table [data-sort="ilvl"]');
   await expect(ilvlHead).toHaveAttribute('aria-sort', 'descending');
-  // the column and the row under the pointer are tinted (owner, 2026-10-19); a cell in neither is not
-  await pg.hover('#gear-table tbody tr[data-key] td[data-col="crit"] >> nth=0');
-  await expect(pg.locator('#gear-table')).toHaveAttribute('data-hot', 'crit');
-  const background = (row, col) =>
-    pg
-      .locator('#gear-table tbody tr[data-key]')
-      .nth(row)
-      .locator(`td[data-col="${col}"]`)
-      .evaluate(e => getComputedStyle(e).backgroundColor);
-  const inColumn = await background(1, 'crit');
-  const inRow = await background(0, 'det');
-  const plain = await background(1, 'det');
-  check(inColumn !== plain, `the hovered column is not tinted (${inColumn} vs ${plain})`);
-  check(inRow !== plain, `the hovered row is not tinted (${inRow} vs ${plain})`);
   // "/" jumps to the search, and the word is marked in the names; Reset filters clears every filter and hides
   await pg.locator('#b-count').click();
   await pg.keyboard.press('/');

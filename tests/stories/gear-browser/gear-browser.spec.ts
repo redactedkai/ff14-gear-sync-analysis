@@ -15,6 +15,118 @@ test.describe('<gsa-gear-browser>', () => {
     expect(await axe()).toEqual([]);
   });
 
+  /* A column of the table under the pointer is tinted, heading and cells, for every column but Item and Slot: each heading and each
+     column's first cell, hovered in turn, tints every cell of that column and gives its heading the text colour, and no other column;
+     the column the table is sorted by has its own tint (the resting colours are taken under a sort by another column), which it keeps
+     under the pointer; hovering the Item or Slot heading tints nothing. Both colour schemes, a job with a special substat (Paladin)
+     and one without (Sage). */
+  test('the column under the pointer is tinted, heading and cells, but not Item or Slot, and the sorted column keeps its own tint; both colour schemes, Paladin and Sage', async ({
+    mount,
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    type Painted = Record<string, { head: string; cells: string[] }>;
+    const paint = (): Promise<Painted> =>
+      page.evaluate(() => {
+        const table = document.querySelector('#gear-table') as HTMLElement;
+        const columns: Record<string, { head: string; cells: string[] }> = {};
+        const column = (key: string) => {
+          columns[key] ??= { head: '', cells: [] };
+          return columns[key];
+        };
+        for (const [at, head] of [...table.querySelectorAll('thead th')].entries()) {
+          column((head as HTMLElement).dataset.col ?? `#${at}`).head = getComputedStyle(head).color;
+        }
+        for (const row of table.querySelectorAll('tbody tr[data-key]')) {
+          for (const [at, cell] of [...row.children].entries()) {
+            column((cell as HTMLElement).dataset.col ?? `#${at}`).cells.push(getComputedStyle(cell).backgroundColor);
+          }
+        }
+        return columns;
+      });
+    try {
+      for (const scheme of ['dark', 'light'] as const) {
+        await page.emulateMedia({ colorScheme: scheme });
+        for (const job of ['PLD', 'SGE']) {
+          await mount<typeof Default>(STORY, { job });
+          await expect(page.locator('#gear-table tbody tr[data-key]').first()).toBeVisible();
+          const keys = await page
+            .locator('#gear-table thead th[data-col]')
+            .evaluateAll(heads => heads.map(head => (head as HTMLElement).dataset.col as string));
+          expect(keys.length, `${job}: columns that have a data-col`).toBeGreaterThanOrEqual(6);
+          for (const key of keys) {
+            const where = `${scheme} ${job} column ${key}`;
+            // the table is sorted by another column, which is tinted (data-sorted); the resting colours are taken under that sort
+            const sortKey = keys.find(other => other !== key) as string;
+            await page.locator(`#gear-table [data-sort="${sortKey}"]`).click();
+            await page.mouse.move(0, 0);
+            const resting = await paint();
+            expect(
+              resting[sortKey].cells.every(color => color !== resting[key].cells[0]),
+              `${where}: the column sorted by (${sortKey}) is tinted`,
+            ).toBe(true);
+            for (const target of [
+              `#gear-table th[data-col="${key}"]`,
+              `#gear-table tbody tr[data-key] >> nth=1 >> td[data-col="${key}"]`,
+            ]) {
+              await page.locator(target).hover();
+              await expect(page.locator('#gear-table')).toHaveAttribute('data-hot', key);
+              const now = await paint();
+              const hovered = target.includes('tbody') ? 1 : -1; // a hovered row also tints itself, so it is left out below
+              const tinted = now[key].cells.filter((_, at) => at !== hovered);
+              expect(
+                tinted.length > 0 && tinted.every(color => color !== resting[key].cells[0]),
+                `${where}: every cell of the column is tinted`,
+              ).toBe(true);
+              expect(now[key].head, `${where}: the heading is in the text colour`).not.toBe(resting[key].head);
+              for (const other of Object.keys(now).filter(name => name !== key && !name.startsWith('#'))) {
+                expect(now[other].head, `${where}: the heading of ${other} changed`).toBe(resting[other].head);
+                expect(
+                  now[other].cells.every((color, at) => at === hovered || color === resting[other].cells[at]),
+                  `${where}: a cell of ${other} is tinted`,
+                ).toBe(true);
+              }
+            }
+            // sorted by this column: it keeps the sort tint under the pointer (its heading is in the accent, with the arrow)
+            await page.locator(`#gear-table [data-sort="${key}"]`).click();
+            await page.mouse.move(0, 0);
+            const sortedResting = await paint();
+            await page.locator(`#gear-table th[data-col="${key}"]`).hover();
+            const sortedNow = await paint();
+            expect(sortedNow[key].cells, `${where}: the sorted column changed colour under the pointer`).toEqual(sortedResting[key].cells);
+          }
+          // Item and Slot: nothing is tinted
+          for (const head of ['name', 'slot']) {
+            await page.locator(head === 'name' ? '#gear-table th:nth-child(2)' : '#gear-table th:nth-child(1)').hover();
+            await expect(page.locator('#gear-table')).toHaveAttribute('data-hot', '');
+            const now = await paint();
+            await page.mouse.move(0, 0);
+            expect(now, `${job} (${scheme}): hovering the ${head} heading changed a colour`).toEqual(await paint());
+          }
+        }
+      }
+    } finally {
+      await page.emulateMedia({ colorScheme: null });
+    }
+  });
+
+  test('the row under the pointer is tinted as well as its column, and a cell in neither is not', async ({ mount, page }) => {
+    await mount<typeof Default>(STORY);
+    await page.locator('#gear-table tbody tr[data-key] td[data-col="crit"] >> nth=0').hover();
+    await expect(page.locator('#gear-table')).toHaveAttribute('data-hot', 'crit');
+    const background = (row: number, column: string) =>
+      page
+        .locator('#gear-table tbody tr[data-key]')
+        .nth(row)
+        .locator(`td[data-col="${column}"]`)
+        .evaluate(cell => getComputedStyle(cell).backgroundColor);
+    const inColumn = await background(1, 'crit');
+    const inRow = await background(0, 'det');
+    const plain = await background(1, 'det');
+    expect(inColumn, 'the hovered column is tinted').not.toBe(plain);
+    expect(inRow, 'the hovered row is tinted').not.toBe(plain);
+  });
+
   test('a click on a heading sorts by it, again flips the order', async ({ mount, page }) => {
     await mount<typeof Default>(STORY);
     const head = page.locator('#gear-table th:has([data-sort="crit"])');
