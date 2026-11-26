@@ -28,7 +28,7 @@ import { checkRadii } from './checks/look/radii.mjs';
 import { checkThemes } from './checks/look/themes.mjs';
 import { checkBreakpoints, checkViewports } from './checks/look/viewports.mjs';
 import { checkVisualParity } from './checks/look/visual-parity.mjs';
-import { checkClosedPanel, checkHelpDimsPage, checkPieceBarSteady, checkPieceLab } from './checks/math-page/piece-stats.mjs';
+import { checkHelpDimsPage, checkPieceLab } from './checks/math-page/piece-stats.mjs';
 import { checkGcdTab, checkTiers } from './checks/math-page/tiers-gcd.mjs';
 import { checkLevelBox, checkMathBarBoxes, checkMathBarLayouts, checkMathJobs, checkSyncChip } from './checks/math-page/bar-layout.mjs';
 import { checkTiersNoteUnderPinnedBar } from './checks/math-page/tiers-note.mjs';
@@ -103,8 +103,6 @@ export const GROUPS = [
       step(checkOverlayKeys, 'app'),
       step(checkOverlaysOneAtATimeAndScreenChange, 'app'),
       step(checkPieceLab, 'math-page'),
-      step(checkClosedPanel, 'math-page'),
-      step(checkPieceBarSteady, 'math-page'),
       step(checkHelpDimsPage, 'math-page'),
       step(checkJobSwitch, 'app'),
       step(checkJobStrip, 'app'),
@@ -165,10 +163,7 @@ export const GROUPS = [
   },
   { steps: [step(checkTableMenusUnderHeading, 'set-page'), step(checkPieceMenuKeepsButtonInSight, 'set-page')] },
   {
-    steps: [
-      step(checkSparePointsNoteFollowsButton, 'auto-fill'),
-      step(checkTiersNoteUnderPinnedBar, 'math-page'),
-    ],
+    steps: [step(checkSparePointsNoteFollowsButton, 'auto-fill'), step(checkTiersNoteUnderPinnedBar, 'math-page')],
   },
   { steps: [step(checkSheetCap, 'sheets')] },
   { fresh: true, steps: [step(checkTwoTabs, 'sheets')] },

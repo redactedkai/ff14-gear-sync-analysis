@@ -49,7 +49,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 20 | 14 |
 | `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 21 | 11 |
 | `gear-browser` | the Gear browser tab and its filter menus | 5 | 15 |
-| `math-page` | How the math works: Piece stats, Substat tiers, GCD | 12 | 12 |
+| `math-page` | How the math works: Piece stats, Substat tiers, GCD | 12 | 10 |
 | `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 43 | 46 |
 | `look` | shared CSS: tokens, themes, layout at the five windows, radii | 3 | 6 |
 | `tooling` | the build, the test runners, the layout stress tool and the repo's code rules | 22 | 0 |

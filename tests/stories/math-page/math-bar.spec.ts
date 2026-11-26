@@ -1,6 +1,6 @@
 /* Stories of <gsa-math-bar> and <gsa-piece-stats>: the item level box and slider edit the example piece and Stat Allocation follows
    (a number typed is held to the slider's range, Reset goes back to the cap), the sub-tab links are links (a plain click shows the
-   sub-tab, a Ctrl click is the browser's), the controls follow the open sub-tab; the keyboard model is the slider's and the links'
+   sub-tab, a Ctrl click is the browser's), the controls follow the open sub-tab, no choice of a Slot or a substat moves the bar; the keyboard model is the slider's and the links'
    own; axe. */
 import { test, expect } from '../fixtures.ts';
 import type { Default } from './math-bar.story.js';
@@ -38,6 +38,46 @@ test.describe('<gsa-math-bar>', () => {
     await page.click('#p-ilvl-reset');
     await expect(page.locator('#p-ilvl')).toHaveValue('123');
     await expect(page.locator('#p-piece h2')).toHaveText('An example IL 123 piece, before and after sync');
+  });
+
+  test('choosing any Slot, 1st substat or 2nd substat moves nothing in the Stat Allocation bar: the menus and the chip keep one width', async ({
+    mount,
+    page,
+  }) => {
+    await mount<typeof Default>(STORY);
+    // every control of the bar (the popover closed), as its place and width
+    const boxes = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('gsa-math-bar .barrow > *, gsa-math-bar .piecesec > *, gsa-math-bar .ilrow > *')]
+          .filter(element => (element as HTMLElement).offsetParent)
+          .map(element => {
+            const box = element.getBoundingClientRect();
+            return `${element.id || element.className}:${box.left.toFixed(1)},${box.top.toFixed(1)},${box.width.toFixed(1)}`;
+          })
+          .join(' '),
+      );
+    const before = await boxes();
+    for (const menu of ['#p-slot', '#p-s1', '#p-s2']) {
+      const values = await page
+        .locator(`${menu}-list [role="option"]`)
+        .evaluateAll(options => options.map(option => (option as HTMLElement).dataset.value as string));
+      expect(values.length, `${menu} has options`).toBeGreaterThan(1);
+      for (const value of values) {
+        if (menu !== '#p-slot') {
+          // the substat menus are in the Substats & materia chip's popover
+          if (!(await page.locator('#p-piece-pop').isVisible())) {
+            await page.locator('#p-piece-chip').click();
+            await expect(page.locator('#p-piece-pop')).toBeVisible();
+          }
+        }
+        await page.locator(menu).click();
+        await page.locator(`${menu}-list [role="option"][data-value="${value}"]`).click();
+        await expect(page.locator(menu)).toHaveAttribute('data-value', value);
+        await page.keyboard.press('Escape'); // the popover closes; the chip says the new choice
+        await expect(page.locator('#p-piece-pop')).toBeHidden();
+        expect(await boxes(), `choosing ${value} in ${menu} moved the Stat Allocation bar`).toBe(before);
+      }
+    }
   });
 
   test('a plain click on a sub-tab link shows that sub-tab, a Ctrl click is left to the browser; the Stat Allocation controls hide with it', async ({

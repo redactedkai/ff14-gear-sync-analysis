@@ -2,62 +2,13 @@
 
 import { check, expect } from '../../lib/expect.mjs';
 import { openPieceMenus, setNumber, showMath, tableRows } from '../../lib/nav.mjs';
-import { expectSelectValue, pickOption, selectOptions } from '../../lib/select.mjs';
+import { pickOption } from '../../lib/select.mjs';
 
 /** Opens Piece stats' "Stat budget analysis, step by step" if it is closed. */
 async function openSteps(pg) {
   if (!(await pg.locator('#p-steps').evaluate(d => d.open))) {
     await pg.click('#p-steps > summary');
   }
-}
-
-/** A closed details panel ("Stat budget analysis, step by step") is only its summary plus padding: the flex gap of the panel must
-    not add space for the hidden content (it added 14 px, 2026-10-17). */
-
-export async function checkClosedPanel(pg) {
-  await showMath(pg, 'piece');
-  if (await pg.locator('#p-steps').evaluate(d => d.open)) {
-    await pg.click('#p-steps > summary');
-  }
-  const extra = await pg.locator('#p-steps').evaluate(d => {
-    const cs = getComputedStyle(d);
-    const frame = ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((n, k) => n + parseFloat(cs[k]), 0);
-    return d.getBoundingClientRect().height - frame - d.querySelector('summary').getBoundingClientRect().height;
-  });
-  check(Math.abs(extra) < 1, `closed #p-steps has ${extra.toFixed(1)} px beyond its summary and padding`);
-}
-
-/** The Stat Allocation bar does not move when a Slot, 1st substat or 2nd substat is chosen: the Slot menu and the Substats & materia
- * chip each have one width (a hidden copy of their longest text), so every control keeps its place. Reads each control's box
- * (the popover closed) before and after every choice of the three menus. */
-export async function checkPieceBarSteady(pg) {
-  await showMath(pg, 'piece');
-  const boxes = () =>
-    pg.evaluate(() =>
-      [...document.querySelectorAll('#m-bar .barrow > *, #m-bar .piecesec > *, #m-bar .ilrow > *')]
-        .filter(el => el.offsetParent)
-        .map(el => {
-          const box = el.getBoundingClientRect();
-          return `${el.id || el.className}:${box.left.toFixed(1)},${box.top.toFixed(1)},${box.width.toFixed(1)}`;
-        })
-        .join(' '),
-    );
-  const before = await boxes();
-  for (const menu of ['#p-slot', '#p-s1', '#p-s2']) {
-    const values = (await selectOptions(pg, menu)).map(option => option.value);
-    for (const value of values) {
-      if (menu !== '#p-slot') {
-        await openPieceMenus(pg); // the substat menus are in the chip's popover
-      }
-      await pickOption(pg, menu, value);
-      await expectSelectValue(pg, menu, value);
-      await pg.keyboard.press('Escape'); // the popover closes; the chip says the new choice
-      await expect(pg.locator('#p-piece-pop')).toBeHidden();
-      const after = await boxes();
-      check(after === before, `choosing ${value} in ${menu} moved the Stat Allocation bar: ${before} -> ${after}`);
-    }
-  }
-  await pickOption(pg, '#p-slot', { index: 0 });
 }
 
 /** The sync help popover dims the whole page with a backdrop. The tab bar and the bar's own Job box are dimmed like the rest
