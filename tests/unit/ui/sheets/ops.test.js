@@ -1,11 +1,11 @@
-/* Making and changing saved sheets as plain data (src/ui/sheets/ops.js): names and descriptions as stored, the default
-   names, a new sheet and gear set (both readable by sheets/storage.js), Copy sheet with the pieces the new job cannot
+/* Making and changing saved sheets as plain data (src/ui/sheets/ops.ts): names and descriptions as stored, the default
+   names, a new sheet and gear set (both readable by sheets/storage.ts), Copy sheet with the pieces the new job cannot
    wear cleared (a real White Mage cane), and moving a list's rows. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../src/core/tables.ts';
 import { capCeiling } from '../../../../src/core/sync-target.ts';
-import { SET_ROW_SLOTS, parseSheet } from '../../../../src/ui/sheets/storage.js';
+import { SET_ROW_SLOTS, parseSheet } from '../../../../src/ui/sheets/storage.ts';
 import {
   DESCRIPTION_MAX_LENGTH,
   NAME_MAX_LENGTH,
@@ -25,7 +25,7 @@ import {
   piecesToClear,
   ranges,
   sheetSettings,
-} from '../../../../src/ui/sheets/ops.js';
+} from '../../../../src/ui/sheets/ops.ts';
 import { WHM_CANE, piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 
 const AT = Date.UTC(2026, 10, 9, 12);

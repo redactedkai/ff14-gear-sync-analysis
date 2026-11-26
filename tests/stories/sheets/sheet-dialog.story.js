@@ -4,7 +4,7 @@
 import { html } from 'lit';
 import '../../../src/ui/elements/sheets/sheet-dialog.ts';
 import { SheetDialogs } from '../../../src/ui/elements/sheets/sheet-dialogs-model.ts';
-import { FORM_FIELD } from '../../../src/ui/sheets/ops.js';
+import { FORM_FIELD } from '../../../src/ui/sheets/ops.ts';
 
 /* The words the specs look for. */
 export const TITLE = 'New sheet';

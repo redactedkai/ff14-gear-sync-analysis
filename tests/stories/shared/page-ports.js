@@ -2,7 +2,7 @@
    over a stand-in storage that holds `sheets`, as main.js makes it, and the solver stand-in of the set page's story (no search is run
    here). Returns what the elements take: `{store, app, sheets, setPagePorts}`. */
 import { restoreState } from '../../../src/ui/state.ts';
-import { saveSheet } from '../../../src/ui/sheets/storage.js';
+import { saveSheet } from '../../../src/ui/sheets/storage.ts';
 import { createPageStore } from '../../../src/ui/store/page-store.ts';
 import { fakeStorage } from '../../unit/helpers/sheet-fixtures.js';
 import { solver } from '../set-page/set-page.story.js';

@@ -6,10 +6,10 @@ import { allocatedRelic, meldInfo, poolItemById } from '../../core/items.ts';
 import { ROMAN, materiaFit, meldSlots } from '../../core/meld.ts';
 import { meldCaps } from '../../core/piece.ts';
 import { MATERIA } from '../../core/tables.ts';
-import { fillPlan } from '../sheets/fill.js';
-import { SHIELD_NEEDS_ONE_HANDED } from '../sheets/set-edits.js';
+import { fillPlan } from '../sheets/fill.ts';
+import { SHIELD_NEEDS_ONE_HANDED } from '../sheets/set-edits.ts';
 import { mealBestNote } from './meal-menu.js';
-import { MEAL_ROW_LABEL, usedRows } from '../sheets/saved-set.js';
+import { MEAL_ROW_LABEL, usedRows } from '../sheets/saved-set.ts';
 
 /* The line a row shows where a saved game id has no row in the item data (docs/engineering/sheets.md, "Missing items"). */
 function missingItemText(gameId) {
@@ -97,7 +97,7 @@ function statCell(job, row, stat) {
 }
 
 /* The view of one used row of the set. `index` is the saved row's number, `piece` the saved row, `row` its evaluation,
-   `pinned` whether Auto-fill must keep it (fill.js fillPlan), `changed` whether a draft or suggestion changes it, `take` the
+   `pinned` whether Auto-fill must keep it (fill.ts fillPlan), `changed` whether a draft or suggestion changes it, `take` the
    row's Take box while an Auto-fill suggestion shows ({taken, text}: set-suggestion.js suggestionView's takes, or null). An
    empty row: {empty: true, emptyText ("Choose a piece", "Unavailable", "missing item 123"), blockedBy, coveredTitle ("Covered by X Robe"), missing,
    covered (the row is under a piece that covers it, so its control is disabled), shieldNote (the Off-hand row under a
@@ -186,7 +186,7 @@ function foodRow(job, gearSet, evaluated, pinned, changed, take, bestKeys) {
    (the meals tagged "best for goal", meal-menu.js mealBestKeys of the saved set; [] for a draft or a suggestion). Returns:
    - headers: the stat columns {stat, text (the job's short name), rank (1 to 3 or null; see rankBadges)};
    - rows: one view per row the job uses, in the saved order (rowView), each with `pinned`: the set pins the row and it
-     holds a piece (fill.js fillPlan, the one rule); a row the job does not use is left out, its piece stays saved;
+     holds a piece (fill.ts fillPlan, the one rule); a row the job does not use is left out, its piece stays saved;
    - food: the Food row; consumablesLabel: the header row above it;
    - anyAtCap: some cell is marked, so the page shows the cap key; capKeyText: that key's words. */
 export function setRowsView(

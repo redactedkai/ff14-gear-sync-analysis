@@ -10,7 +10,7 @@ import { runRecipe } from '../../../src/core/recipe.ts';
 import { makeSession } from '../../../src/core/session.ts';
 import { evaluateSet } from '../../../src/core/set.ts';
 import { syncSettings } from '../../../src/ui/job-sync-panel.ts';
-import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.js';
+import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.ts';
 import { rng } from '../helpers/common.js';
 import { rankedOf, setKey } from '../helpers/recipe-sets.js';
 

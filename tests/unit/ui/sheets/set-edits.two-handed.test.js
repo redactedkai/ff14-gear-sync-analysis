@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { poolItemById } from '../../../../src/core/items.ts';
 import { draftView } from '../../../../src/ui/views/set-draft.js';
-import { editableCopy, placePiece, removedNote } from '../../../../src/ui/sheets/set-edits.js';
+import { editableCopy, placePiece, removedNote } from '../../../../src/ui/sheets/set-edits.ts';
 import { hasParts } from '../../helpers/common.js';
 import { SAGE_IDS, sheetOf, sageSet } from '../../helpers/sheet-fixtures.js';
 

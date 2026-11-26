@@ -1,8 +1,8 @@
-/* A sheet's clan and party bonus in the sheet ops (src/ui/sheets/ops.js): a new sheet has none, a copy keeps both
+/* A sheet's clan and party bonus in the sheet ops (src/ui/sheets/ops.ts): a new sheet has none, a copy keeps both
    whatever job and settings it is copied to, and the source sheet is not changed. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { copySheet, newSheet } from '../../../../src/ui/sheets/ops.js';
+import { copySheet, newSheet } from '../../../../src/ui/sheets/ops.ts';
 import { sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 
 const FIELDS = { name: 'Bahamut', job: 'SGE', level: 100, sync: { on: true, cap: 123 } };

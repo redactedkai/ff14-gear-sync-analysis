@@ -4,7 +4,7 @@ import { EXPANSIONS, SLOT_LABEL } from '../../core/constants.ts';
 import { allocatedRelic, categoryOf, equipLevel, expansionOf, meldInfo, searchMatches } from '../../core/items.ts';
 import { meldSlots } from '../../core/meld.ts';
 import { plural } from '../text.ts';
-import { uniqueTaken } from '../sheets/set-edits.js';
+import { uniqueTaken } from '../sheets/set-edits.ts';
 
 /* "2 slots" or "2+3 slots" (guaranteed + overmeld), "no materia slots", for a picker line. */
 function slotsText(item) {

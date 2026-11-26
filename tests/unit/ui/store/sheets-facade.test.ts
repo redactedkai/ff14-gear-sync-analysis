@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { createPageStore } from '../../../../src/ui/store/page-store.ts';
 import type { RestoredState } from '../../../../src/ui/store/app-state.ts';
 import { restoreState } from '../../../../src/ui/state.ts';
-import { saveSheet, sheetKey } from '../../../../src/ui/sheets/storage.js';
+import { saveSheet, sheetKey } from '../../../../src/ui/sheets/storage.ts';
 import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 import { withRecordedReads } from '../../helpers/revision-reads.ts';
 

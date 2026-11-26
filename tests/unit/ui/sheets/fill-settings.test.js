@@ -1,9 +1,9 @@
-/* A set's Auto-fill settings (src/ui/sheets/fill-settings.js) on real items: the defaults, a stat the job lacks put back, the
+/* A set's Auto-fill settings (src/ui/sheets/fill-settings.ts) on real items: the defaults, a stat the job lacks put back, the
    recipe and the goal line they make. Expected values come from the items' published facts, not from the code. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { defaultFillSettings, fillRecipe, fillSettingsOf, goalText } from '../../../../src/ui/sheets/fill-settings.js';
+import { defaultFillSettings, fillRecipe, fillSettingsOf, goalText } from '../../../../src/ui/sheets/fill-settings.ts';
 import { sageSet } from '../../helpers/sheet-fixtures.js';
 
 const SGE = makeJobContext('SGE');

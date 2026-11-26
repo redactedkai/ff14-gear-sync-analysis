@@ -4,7 +4,7 @@
    Screens: 'sheets' (the sheet manager), 'sheet' (one sheet's page: sheetId) and 'set' (one gear set's page: sheetId and setId).
    Which sheet or set is open is screen state, never saved; the page always opens at the manager.
 
-   Saving: each edit writes the one sheet record it changed (and the index when the order changes) through sheets/storage.js,
+   Saving: each edit writes the one sheet record it changed (and the index when the order changes) through sheets/storage.ts,
    which never throws. A failed save keeps the edit in memory and puts the storage's message in `saveMessage`; such a sheet (or the
    order, when the index could not be written) is kept from memory when the list is read again, until a later save of it works.
    With storage unavailable nothing is written and the page says so once (the manager's unavailableText).
@@ -37,7 +37,7 @@ import {
   piecesToClear,
   randomId,
   sheetSettings,
-} from '../sheets/ops.js';
+} from '../sheets/ops.ts';
 import {
   ACK_REQUIRED_TEXT,
   EMPTY_NAME_TEXT,
@@ -51,13 +51,14 @@ import {
   deletedSheetNote,
   readSheets,
   refuse,
-} from '../sheets/store-shared.js';
-import { defaultStorage, deleteSheet as removeRecord, saveOrder, saveSheet } from '../sheets/storage.js';
+} from '../sheets/store-shared.ts';
+import { defaultStorage, deleteSheet as removeRecord, saveOrder, saveSheet } from '../sheets/storage.ts';
 import { ORDER_MARK, currentSheet, setOf, sheetById } from './app-state.ts';
-import type { AppStore, GearSet, Sheet, SheetsState } from './app-state.ts';
+import type { SavedGearSet } from '../sheets/saved-types.ts';
+import type { AppStore, Sheet, SheetsState } from './app-state.ts';
 
 /* What an action on a sheet returns: ok, and for a refusal the reason (`error`, for the user) and the form field it is about
-   (`field`, a FORM_FIELD value); a save that failed has `reason` and `message` (storage.js); a new sheet or set has its `id`; a
+   (`field`, a FORM_FIELD value); a save that failed has `reason` and `message` (storage.ts); a new sheet or set has its `id`; a
    settings edit has `lowered` (sheetSettings'). */
 export interface SheetResult {
   ok: boolean;
@@ -203,7 +204,11 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
       return { ok: false, error: NO_SHEET_OPEN_TEXT };
     }
     const { lowered, ...fields } = sheetSettings(sheet.job, change(sheet), { level: sheet.level, cap: sheet.sync.cap });
-    if (Object.entries(fields).every(([key, value]) => JSON.stringify(sheet[key]) === JSON.stringify(value))) {
+    if (
+      (Object.entries(fields) as [keyof typeof fields, unknown][]).every(
+        ([key, value]) => JSON.stringify(sheet[key]) === JSON.stringify(value),
+      )
+    ) {
       return { ok: true, lowered };
     }
     // the tied best meals of its sets were found for the old level and sync: they go
@@ -233,7 +238,7 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
 
   /* The open sheet's gear set `id` with `fields` replaced (any of name, description, pieces, meal, pinned, fillSettings) and
      saved, its updatedAt and the sheet's stamped: the set page's one way to save a set (Apply). */
-  function updateSet(id: string, fields: Partial<GearSet>): SheetResult {
+  function updateSet(id: string, fields: Partial<SavedGearSet>): SheetResult {
     const refused = lockedRefusal(store.state.sheets);
     if (refused) {
       return refused;
@@ -579,7 +584,7 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
       if (!sheet) {
         return { ok: false, error: NO_SHEET_OPEN_TEXT };
       }
-      const gearSet = newGearSet(defaultSetName(sheet), newSetId(sheet), now()) as GearSet;
+      const gearSet = newGearSet(defaultSetName(sheet), newSetId(sheet), now());
       store.update('sheets/newSet', state => {
         commitIn(state.sheets, { ...sheet, sets: [...sheet.sets, gearSet] });
         Object.assign(state.sheets, { screen: 'set', setId: gearSet.id, missing: null });
@@ -603,7 +608,7 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
         original.name,
         sheet.sets.map(gearSet => gearSet.name),
       );
-      const copy = copyGearSet(original, name, newSetId(sheet), now()) as GearSet;
+      const copy = copyGearSet(original, name, newSetId(sheet), now());
       store.update('sheets/copySet', state => {
         commitIn(state.sheets, { ...sheet, sets: [...sheet.sets.slice(0, at + 1), copy, ...sheet.sets.slice(at + 1)] });
         setNoteIn(state.sheets, copiedNote(name));

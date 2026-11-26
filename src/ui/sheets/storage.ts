@@ -29,6 +29,28 @@ import { PARTY_ROLES_MAX, isClan } from '../../core/clan-bonus.ts';
 import { makeJobContext } from '../../core/job-context.ts';
 import { currentStatKey } from '../../core/stat-keys.ts';
 import { STORE_KEY } from '../store-key.ts';
+import type { SlotType, StatKey } from '../../core/types.ts';
+import type { SheetsData } from '../store/app-state.ts';
+import type { SavedSheet } from './saved-types.ts';
+
+/* A save that failed: why (a full storage, or no usable storage) and the line the page shows. */
+export interface SaveFailure {
+  ok: false;
+  reason: 'quota' | 'unavailable';
+  message: string;
+}
+
+/* What a save or a delete returns: {ok: true}, or the failure. */
+export type SaveResult = { ok: true } | SaveFailure;
+
+/* What parseSheet returns: the sheet, or why the record cannot be read. */
+export type ParsedSheet = { sheet: SavedSheet; cause?: undefined } | { sheet?: undefined; cause: string };
+
+/* A storage error as browsers report it: a name, or an old numeric code. */
+type StorageError = { name?: string; code?: number } | null | undefined;
+
+/* Saved JSON that is not checked yet: every field is tested before it is used. */
+type Raw = Record<string, unknown>;
 
 /* The index's key, and the prefix of a sheet record's key (the sheet's id follows it). */
 export const SHEETS_KEY = `${STORE_KEY}:sheets`;
@@ -44,12 +66,12 @@ export const UNAVAILABLE_MESSAGE =
   'Local storage is disabled or turned off. Any sheets / gear sets you create will be wiped when the page closes.';
 
 /* The key of the record of the sheet with `id`. */
-export function sheetKey(id) {
+export function sheetKey(id: string): string {
   return SHEET_KEY_PREFIX + id;
 }
 
 /* The browser's localStorage, or null where touching it throws (blocked storage). */
-export function defaultStorage() {
+export function defaultStorage(): Storage | null {
   try {
     return globalThis.localStorage ?? null;
   } catch {
@@ -58,36 +80,45 @@ export function defaultStorage() {
 }
 
 /* Whether `error` is a full-storage error (the names and codes browsers use). */
-function isQuotaError(error) {
-  return error?.name === 'QuotaExceededError' || error?.name === 'NS_ERROR_DOM_QUOTA_REACHED' || error?.code === 22 || error?.code === 1014;
+function isQuotaError(error: unknown): boolean {
+  return (
+    (error as StorageError)?.name === 'QuotaExceededError' ||
+    (error as StorageError)?.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+    (error as StorageError)?.code === 22 ||
+    (error as StorageError)?.code === 1014
+  );
 }
 
 /* A failed save as a result: {ok: false, reason: 'quota' | 'unavailable', message} for the page to show. */
-function failure(error) {
+function failure(error: unknown): SaveFailure {
   return isQuotaError(error)
     ? { ok: false, reason: 'quota', message: QUOTA_MESSAGE }
     : { ok: false, reason: 'unavailable', message: UNAVAILABLE_MESSAGE };
 }
 
-const isObject = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+const isObject = (v: unknown): v is Raw => v !== null && typeof v === 'object' && !Array.isArray(v);
 /* The latest time, in ms since 1970, a JavaScript Date holds (8.64e15, either side of 1970): beyond it
    Intl.DateTimeFormat.format throws a RangeError, as the Sheets tab's date columns would. */
 const MAX_TIME_MS = 8.64e15;
-const isTime = v => Number.isFinite(v) && Math.abs(v) <= MAX_TIME_MS;
+const isTime = (v: unknown): boolean => Number.isFinite(v) && Math.abs(v as number) <= MAX_TIME_MS;
 /* `value` is missing, or passes `test` */
-const optional = (value, test) => value === undefined || test(value);
+const optional = (value: unknown, test: (value: unknown) => boolean): boolean => value === undefined || test(value);
 
 /* The rows of every gear set: SLOT_TYPES with the ring twice, for every job and level (sheets.md, "Saved data"). */
-export const SET_ROW_SLOTS = Object.freeze([...SLOT_TYPES, 'ring']);
+export const SET_ROW_SLOTS = Object.freeze<SlotType[]>([...SLOT_TYPES, 'ring']);
 
 /* A saved stone: {stat (a stat key), grade (1 to 12)}; null is an empty materia slot. */
-const isStone = stone =>
+const isStone = (stone: unknown): boolean =>
   stone === null ||
-  (isObject(stone) && typeof stone.stat === 'string' && Number.isInteger(stone.grade) && stone.grade >= 1 && stone.grade <= 12);
+  (isObject(stone) &&
+    typeof stone.stat === 'string' &&
+    Number.isInteger(stone.grade) &&
+    (stone.grade as number) >= 1 &&
+    (stone.grade as number) <= 12);
 
 /* Why row `index` of a gear set's pieces is damaged, or null: it must be {slot} with the slot of SET_ROW_SLOTS there,
    and, holding a piece, a whole-number game id and a list of stones. */
-function rowProblem(row, index) {
+function rowProblem(row: unknown, index: number): string | null {
   if (!isObject(row) || row.slot !== SET_ROW_SLOTS[index]) {
     return `row ${index + 1} is not a ${SET_ROW_SLOTS[index]} row`;
   }
@@ -105,18 +136,18 @@ function rowProblem(row, index) {
 
 /* Auto-fill settings ({goal, searchCriteria}, each optional, each field optional) with every field of the type the page
    reads; null and missing are none. */
-function fillSettingsOk(settings) {
+function fillSettingsOk(settings: unknown): boolean {
   if (settings == null) {
     return true;
   }
   if (!isObject(settings)) {
     return false;
   }
-  const { goal, searchCriteria } = settings;
-  const text = v => typeof v === 'string';
-  const flag = v => typeof v === 'boolean';
-  const limit = v => v === '' || Number.isFinite(v);
-  const texts = v => Array.isArray(v) && v.every(text);
+  const { goal, searchCriteria } = settings as { goal?: Raw; searchCriteria?: Raw };
+  const text = (v: unknown) => typeof v === 'string';
+  const flag = (v: unknown) => typeof v === 'boolean';
+  const limit = (v: unknown) => v === '' || Number.isFinite(v);
+  const texts = (v: unknown) => Array.isArray(v) && v.every(text);
   const goalOk =
     optional(goal, isObject) &&
     ['target', 'tb', 'tb2', 'gcdMode'].every(k => optional(goal?.[k], text)) &&
@@ -134,7 +165,7 @@ function fillSettingsOk(settings) {
    optional description, 12 rows in SET_ROW_SLOTS order (rowProblem), the meal (a key or null), the tagged best meals
    (not checked), the pins (row numbers 0
    to 11 and a boolean), the Auto-fill settings and the times. */
-function setProblem(set) {
+function setProblem(set: unknown): string | null {
   if (!isObject(set) || typeof set.id !== 'string' || typeof set.name !== 'string' || !Array.isArray(set.pieces)) {
     return 'a damaged gear set';
   }
@@ -154,8 +185,8 @@ function setProblem(set) {
     return 'a gear set with a damaged meal';
   }
   // `bestMeals` (the meals tagged "best for goal") is a hint: a damaged one does not make the set unreadable; the reader
-  // ignores it and sheets/ops.js repairSheet drops it
-  const pinsOk = pinned =>
+  // ignores it and sheets/ops.ts repairSheet drops it
+  const pinsOk = (pinned: unknown) =>
     isObject(pinned) &&
     optional(pinned.pieces, rows => Array.isArray(rows) && rows.every(i => Number.isInteger(i) && i >= 0 && i < SET_ROW_SLOTS.length)) &&
     optional(pinned.meal, meal => typeof meal === 'boolean');
@@ -175,7 +206,7 @@ function setProblem(set) {
    (the version, the job, the settings, the times, and every gear set: setProblem), so a damaged record is listed as
    unreadable rather than breaking a view; it repairs nothing and does not look at the game data, so a game id the
    database lacks is shown later as "missing item <id>". */
-function sheetProblem(value, id) {
+function sheetProblem(value: unknown, id: string): string | null {
   if (!isObject(value)) {
     return 'not a sheet';
   }
@@ -193,13 +224,13 @@ function sheetProblem(value, id) {
   if (!optional(value.description, d => typeof d === 'string')) {
     return 'a damaged description';
   }
-  if (!jobById(value.job)) {
+  if (!jobById(value.job as string)) {
     return `unknown job ${JSON.stringify(value.job)}`;
   }
   if (!optional(value.clan, clan => clan === null || typeof clan === 'string')) {
     return 'a damaged clan';
   }
-  if (!optional(value.partyRoles, roles => Number.isInteger(roles) && roles >= 0 && roles <= PARTY_ROLES_MAX)) {
+  if (!optional(value.partyRoles, roles => Number.isInteger(roles) && (roles as number) >= 0 && (roles as number) <= PARTY_ROLES_MAX)) {
     return 'a damaged party bonus';
   }
   if (!Number.isInteger(value.level)) {
@@ -214,7 +245,7 @@ function sheetProblem(value, id) {
   if (!Array.isArray(value.sets)) {
     return 'no list of sets';
   }
-  for (const set of value.sets) {
+  for (const set of value.sets as unknown[]) {
     const problem = setProblem(set);
     if (problem) {
       return problem;
@@ -226,15 +257,15 @@ function sheetProblem(value, id) {
 /* `sheet` (a record that passed sheetProblem) with every stat key it holds read as the game's own key of its job: the
    goal's target and tiebreaks of each set, and each stone's stat (currentStatKey: an old position key becomes the job's
    key at that position, any other value stays). A new object; `sheet` is not changed. */
-function withCurrentStatKeys(sheet) {
+function withCurrentStatKeys(sheet: SavedSheet): SavedSheet {
   const job = makeJobContext(sheet.job);
-  const key = stat => currentStatKey(job, stat);
+  const key = (stat: string) => currentStatKey(job, stat);
   const sets = sheet.sets.map(set => {
     const goal = set.fillSettings?.goal;
     return {
       ...set,
       pieces: set.pieces.map(row =>
-        row.stones ? { ...row, stones: row.stones.map(stone => stone && { ...stone, stat: key(stone.stat) }) } : row,
+        row.stones ? { ...row, stones: row.stones.map(stone => stone && { ...stone, stat: key(stone.stat) as StatKey }) } : row,
       ),
       ...(set.fillSettings
         ? {
@@ -244,7 +275,9 @@ function withCurrentStatKeys(sheet) {
                 ? {
                     goal: {
                       ...goal,
-                      ...Object.fromEntries(['target', 'tb', 'tb2'].filter(k => typeof goal[k] === 'string').map(k => [k, key(goal[k])])),
+                      ...Object.fromEntries(
+                        (['target', 'tb', 'tb2'] as const).filter(k => typeof goal[k] === 'string').map(k => [k, key(goal[k] as string)]),
+                      ),
                     },
                   }
                 : {}),
@@ -259,28 +292,28 @@ function withCurrentStatKeys(sheet) {
 /* `sheet` (a record that passed sheetProblem) with a clan name this build does not know read as no clan (null). A missing
    `clan` or `partyRoles` stays missing: it means none, and every reader takes it so (`?? null`, `?? 0`), so a record from
    before them is read as it was written. A new object; `sheet` is not changed. */
-function withKnownClan(sheet) {
+function withKnownClan(sheet: SavedSheet): SavedSheet {
   return sheet.clan == null || isClan(sheet.clan) ? sheet : { ...sheet, clan: null };
 }
 
 /* The sheet in the record text `text` of the sheet with `id`: {sheet}, or {cause} (text for the "Could not be read"
    list) when the text is not valid JSON or is not a sheet this build reads. The sheet has the game's stat keys
    (withCurrentStatKeys), whichever kind the record held, and a clan this build does not know read as none (withKnownClan). */
-export function parseSheet(text, id) {
-  let value;
+export function parseSheet(text: string, id: string): ParsedSheet {
+  let value: unknown;
   try {
     value = JSON.parse(text);
   } catch {
     return { cause: 'not valid JSON' };
   }
   const cause = sheetProblem(value, id);
-  return cause ? { cause } : { sheet: withKnownClan(withCurrentStatKeys(value)) };
+  return cause ? { cause } : { sheet: withKnownClan(withCurrentStatKeys(value as SavedSheet)) };
 }
 
 /* The ids in the index, in order and without repeats; [] when there is no index or it cannot be read. `problem` is why
    it could not be read (null when it was read or absent). */
-function readIndex(storage) {
-  let text;
+function readIndex(storage: Pick<Storage, 'getItem'>): { order: string[]; problem: string | null } {
+  let text: string | null;
   try {
     text = storage.getItem(SHEETS_KEY);
   } catch {
@@ -294,15 +327,15 @@ function readIndex(storage) {
     if (!isObject(value) || value.v !== SHEET_VERSION || !Array.isArray(value.order)) {
       return { order: [], problem: 'index not readable' };
     }
-    return { order: [...new Set(value.order.filter(id => typeof id === 'string'))], problem: null };
+    return { order: [...new Set<string>(value.order.filter((id: unknown) => typeof id === 'string'))], problem: null };
   } catch {
     return { order: [], problem: 'index not readable' };
   }
 }
 
 /* The ids that have a record in `storage`, in key order. */
-function recordIds(storage) {
-  const ids = [];
+function recordIds(storage: Storage): string[] {
+  const ids: string[] = [];
   for (let i = 0; i < storage.length; i++) {
     const key = storage.key(i);
     if (key?.startsWith(SHEET_KEY_PREFIX)) {
@@ -319,7 +352,7 @@ function recordIds(storage) {
    - unreadable: [{id, key, cause}] the records that could not be read, in the same order, for the "Could not be read"
      list; delete one with deleteSheet(id)
    - indexProblem: why the index could not be read, or null (the order then falls back to the ids' order) */
-export function loadSheets(storage = defaultStorage()) {
+export function loadSheets(storage: Storage | null = defaultStorage()): SheetsData {
   if (!storage) {
     return { available: false, sheets: [], unreadable: [], indexProblem: null };
   }
@@ -329,11 +362,11 @@ export function loadSheets(storage = defaultStorage()) {
     // 1. the index's ids that have a record, then the records the index lacks
     const ids = [...order.filter(id => stored.has(id)), ...[...stored].filter(id => !order.includes(id))];
     // 2. each record read: a sheet, or the cause it cannot be
-    const sheets = [];
-    const unreadable = [];
+    const sheets: SavedSheet[] = [];
+    const unreadable: SheetsData['unreadable'] = [];
     for (const id of ids) {
       const key = sheetKey(id);
-      const read = parseSheet(storage.getItem(key), id);
+      const read = parseSheet(storage.getItem(key) as string, id); // a record the scan found
       if (read.sheet) {
         sheets.push(read.sheet);
       } else {
@@ -347,7 +380,7 @@ export function loadSheets(storage = defaultStorage()) {
 }
 
 /* The index written with `order` (ids, first is top). Returns {ok: true}, or a failed result (see saveSheet). */
-export function saveOrder(order, storage = defaultStorage()) {
+export function saveOrder(order: readonly string[], storage: Storage | null = defaultStorage()): SaveResult {
   if (!storage) {
     return failure(null);
   }
@@ -363,7 +396,7 @@ export function saveOrder(order, storage = defaultStorage()) {
    it. Returns {ok: true}, or {ok: false, reason: 'quota' | 'unavailable', message} for the page to show; `sheet` is not
    changed either way, so a failed save leaves the edit in memory. Storage that throws on the index after the record was
    written is reported as failed too; the record is then added at the end of the order on the next read. */
-export function saveSheet(sheet, storage = defaultStorage()) {
+export function saveSheet(sheet: SavedSheet, storage: Storage | null = defaultStorage()): SaveResult {
   if (!storage) {
     return failure(null);
   }
@@ -379,7 +412,7 @@ export function saveSheet(sheet, storage = defaultStorage()) {
 /* The record of the sheet with `id` removed, and its id from the index: a sheet the user deletes, or an unreadable
    record (loadSheets' `unreadable`) deleted from its list. Returns {ok: true}, or a failed result (see saveSheet).
    Deleting an id with no record is not an error. */
-export function deleteSheet(id, storage = defaultStorage()) {
+export function deleteSheet(id: string, storage: Storage | null = defaultStorage()): SaveResult {
   if (!storage) {
     return failure(null);
   }

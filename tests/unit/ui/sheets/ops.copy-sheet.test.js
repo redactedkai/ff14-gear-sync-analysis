@@ -9,8 +9,8 @@ import { JOBS, ROW } from '../../../../src/core/constants.ts';
 import { GEAR_GROUPS } from '../../../../src/core/gear-groups.ts';
 import { itemById, jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { copySheet, piecesToClear } from '../../../../src/ui/sheets/ops.js';
-import { SET_ROW_SLOTS, parseSheet } from '../../../../src/ui/sheets/storage.js';
+import { copySheet, piecesToClear } from '../../../../src/ui/sheets/ops.ts';
+import { SET_ROW_SLOTS, parseSheet } from '../../../../src/ui/sheets/storage.ts';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.js';
 import { rng } from '../../helpers/common.js';
 

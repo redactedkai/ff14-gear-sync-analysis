@@ -4,8 +4,8 @@
    meals of the sets stay (the bonuses are not part of the search). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sheetKey } from '../../../../src/ui/sheets/storage.js';
-import { LOCKED_TEXT } from '../../../../src/ui/sheets/store-shared.js';
+import { sheetKey } from '../../../../src/ui/sheets/storage.ts';
+import { LOCKED_TEXT } from '../../../../src/ui/sheets/store-shared.ts';
 import { createSheetsFacade } from '../../helpers/stores.js';
 import { fakeStorage, quotaError } from '../../helpers/sheet-fixtures.js';
 

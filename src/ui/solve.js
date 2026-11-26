@@ -1,12 +1,12 @@
 /* What the page's solver (ui/solver.js) answers for a set page's Auto-fill: the solve's answer, and the Auto-fill settings' Gear
    to search line. The solve is core/recipe.ts runRecipe; a set page puts its plain set on the set's rows
-   (sheets/fill.js applyFill). Every builder takes plain inputs: the job (a JobContext), the sync settings ({cap, sync,
-   level}: ui/job-sync-panel.ts syncSettings), the character level, the recipe (sheets/fill-settings.js fillRecipe) and a solver
+   (sheets/fill.ts applyFill). Every builder takes plain inputs: the job (a JobContext), the sync settings ({cap, sync,
+   level}: ui/job-sync-panel.ts syncSettings), the character level, the recipe (sheets/fill-settings.ts fillRecipe) and a solver
    session (core/session.ts), never the store.
    Pure view builders, so Node can load and test them. */
 import { gcdRange, gearFromCounts, recipePool, runRecipe } from '../core/recipe.ts';
 import { fmtInt } from './text.ts';
-import { badPinMessages } from './sheets/fill.js';
+import { badPinMessages } from './sheets/fill.ts';
 
 /* {searched, left}: how many pieces of `gear` (a session's gear for `job`) the recipe searches, and how many its
    filters under Gear to search leave out, for its heading. */
@@ -46,7 +46,7 @@ export function gearToSearchView(job, sync, level, recipe, session) {
   };
 }
 
-/* The answer of a solve for `recipe` that keeps `pins` (sheets/fill.js fillPlan's: {pieces, meal}, or null for none). The
+/* The answer of a solve for `recipe` that keeps `pins` (sheets/fill.ts fillPlan's: {pieces, meal}, or null for none). The
    optimizer can throw (e.g. stat totals too large to rank exactly); the answer is then {kind: 'error', message}.
    Otherwise {kind: runRecipe's status, ...}:
    - 'ok': {set (the plain set, core/set.ts: pieces by game id and stones, the meal's key), bestMeals (the keys of the

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { SheetDialogs } from '../../../../../src/ui/elements/sheets/sheet-dialogs-model.ts';
-import { EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT } from '../../../../../src/ui/sheets/store-shared.js';
+import { EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT } from '../../../../../src/ui/sheets/store-shared.ts';
 import { WHM_CANE, fakeStorage, piece, sageSet } from '../../../helpers/sheet-fixtures.js';
 import { createSheetsFacade } from '../../../helpers/stores.js';
 

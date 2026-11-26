@@ -1,23 +1,23 @@
 /* An Auto-fill suggestion on a set page: what an Auto-fill's answer would change in the saved set, row by row with a Take box each in
    the set's own table, the header's Now and After figures ("After · 3 of 4 taken"), the Apply text, and the answers that
    are no suggestion (a pin the solve cannot keep, no set found). Nothing proposed is saved until Apply
-   (docs/engineering/sheets.md, "Drafts and suggestions"): the suggestion is held in memory as the pieces and meal fill.js
+   (docs/engineering/sheets.md, "Drafts and suggestions"): the suggestion is held in memory as the pieces and meal fill.ts
    applyFill gives, plus the rows the player declined. Takes plain data (a saved Sheet and GearSet: sheets.md, "Saved
    data") and returns plain view objects. Pure: no store. */
 import { makeJobContext } from '../../core/job-context.ts';
 import { equipLevel, jobGear, poolItemById, slotInfo } from '../../core/items.ts';
-import { applyFill, badPinMessages, dropBadPins, fillPlan, unpinnedText } from '../sheets/fill.js';
+import { applyFill, badPinMessages, dropBadPins, fillPlan, unpinnedText } from '../sheets/fill.ts';
 import { changeText, draftChanges } from './set-draft.js';
 import { evaluateInSheet, figuresAgainst, setFigures } from './set-totals.js';
 import { plural } from '../text.ts';
-import { fillSettingsOf } from '../sheets/fill-settings.js';
-import { MEAL_ROW_LABEL, holdsPiece, rowLabel, sameRow, usedRows } from '../sheets/saved-set.js';
+import { fillSettingsOf } from '../sheets/fill-settings.ts';
+import { MEAL_ROW_LABEL, holdsPiece, rowLabel, sameRow, usedRows } from '../sheets/saved-set.ts';
 
 /* The line on a set page while an Auto-fill result waits for Apply or Discard and the page is left. */
 export const SUGGESTION_LEAVE_TEXT = 'This Auto-fill result has not been applied. Leaving drops it, and the set stays as it is.';
 
 /* The rows of `saved` (a GearSet) a suggestion changes: the used, unpinned rows whose piece or stones differ from
-   `suggested.pieces` (fill.js applyFill's rows). Row indexes in order. */
+   `suggested.pieces` (fill.ts applyFill's rows). Row indexes in order. */
 function changedRowsOf(job, saved, suggested) {
   const open = new Set(fillPlan(job, saved).openRows);
   return saved.pieces.flatMap((row, index) => (open.has(index) && !sameRow(row, suggested.pieces[index]) ? [index] : []));

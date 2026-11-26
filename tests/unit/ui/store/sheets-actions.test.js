@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../src/core/tables.ts';
 import { capCeiling } from '../../../../src/core/sync-target.ts';
-import { QUOTA_MESSAGE, saveSheet, sheetKey } from '../../../../src/ui/sheets/storage.js';
+import { QUOTA_MESSAGE, saveSheet, sheetKey } from '../../../../src/ui/sheets/storage.ts';
 import {
   ACK_REQUIRED_TEXT,
   EMPTY_NAME_TEXT,
@@ -13,9 +13,9 @@ import {
   LOCKED_TEXT,
   SHEET_GONE_TEXT,
   copiedNote,
-} from '../../../../src/ui/sheets/store-shared.js';
+} from '../../../../src/ui/sheets/store-shared.ts';
 import { createSheetsFacade } from '../../helpers/stores.js';
-import { FORM_FIELD, NEW_SHEET_CAP } from '../../../../src/ui/sheets/ops.js';
+import { FORM_FIELD, NEW_SHEET_CAP } from '../../../../src/ui/sheets/ops.ts';
 import { WHM_CANE, fakeStorage, piece, quotaError, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 
 /* A store over `storage` with a clock that ticks 1 s per call and numbered ids. */

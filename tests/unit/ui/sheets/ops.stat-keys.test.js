@@ -1,10 +1,10 @@
-/* Copy sheet to another job (src/ui/sheets/ops.js copySheet): the goal and the stones move to the new job by position (the
+/* Copy sheet to another job (src/ui/sheets/ops.ts copySheet): the goal and the stones move to the new job by position (the
    main stat to the main stat, speed to speed, the special substat to the special substat); a stat the new job lacks is
    kept as it is, and the set's Auto-fill settings put it back to the default (fillSettingsOf). Stat keys are the game's own. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { copySheet } from '../../../../src/ui/sheets/ops.js';
-import { fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.js';
+import { copySheet } from '../../../../src/ui/sheets/ops.ts';
+import { fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 

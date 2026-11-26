@@ -1,6 +1,6 @@
 /* The saved sheets the stress tool opens the page on, and the scripts that put them in the page's storage. A fixture is
    {sheets: [saved sheet records], open: {sheetId, setId}} (what the views open), built from the test sheets the page ships
-   (src/ui/test-sheets.json, read only) plus made-up ones. The records have the shape src/ui/sheets/storage.js reads. */
+   (src/ui/test-sheets.json, read only) plus made-up ones. The records have the shape src/ui/sheets/storage.ts reads. */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO_ROOT } from './build.mjs';
@@ -10,7 +10,7 @@ export const STORE_KEY = 'ilvl-stat-lab-v4';
 const INDEX_KEY = `${STORE_KEY}:sheets`;
 const RECORD_KEY = id => `${STORE_KEY}:sheet:${id}`;
 
-/* The longest name a sheet or a gear set takes (NAME_MAX_LENGTH in src/ui/sheets/ops.js) and the longest description. */
+/* The longest name a sheet or a gear set takes (NAME_MAX_LENGTH in src/ui/sheets/ops.ts) and the longest description. */
 export const NAME_MAX = 60;
 export const DESCRIPTION_MAX = 400;
 

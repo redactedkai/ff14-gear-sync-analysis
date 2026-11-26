@@ -3,10 +3,10 @@
    (docs/engineering/sheets.md "Saved data") and builds plain view objects; the template only displays them. Pure: no
    store. Rules: sheets.md "A sheet's level and sync" and "Where an action lands". */
 import { makeJobContext } from '../../core/job-context.ts';
-import { fillPlan } from '../sheets/fill.js';
+import { fillPlan } from '../sheets/fill.ts';
 import { bonusNote, evaluateInSheet, setFigures, setTotalsView } from './set-totals.js';
 import { plural } from '../text.ts';
-import { ranges } from '../sheets/ops.js';
+import { ranges } from '../sheets/ops.ts';
 import { settingsLine } from './sheet-text.ts';
 import { sheetHref } from '../store/app-state.ts';
 

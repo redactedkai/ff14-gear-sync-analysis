@@ -1,8 +1,8 @@
 /* The page's store, put together: the state of a restored page and the saved sheets, the actions over it and the two facades the
    screens read (`app`, `sheets`). main.js makes one for the page; the unit tests of the elements
    make one over a stand-in storage. */
-import { defaultStorage } from '../sheets/storage.js';
-import { readSheets } from '../sheets/store-shared.js';
+import { defaultStorage } from '../sheets/storage.ts';
+import { readSheets } from '../sheets/store-shared.ts';
 import { createAppActions } from './app-actions.ts';
 import type { AppActionOptions } from './app-actions.ts';
 import { createAppFacade } from './app-facade.ts';

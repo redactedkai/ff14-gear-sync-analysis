@@ -3,14 +3,19 @@
    stone-menu.js and set-meal-menu.js. Pure: no store. */
 import { poolItemById, slotInfo } from '../../core/items.ts';
 import { meldSlots } from '../../core/meld.ts';
-import { isUsed, rowLabel } from './saved-set.js';
+import { isUsed, rowLabel } from './saved-set.ts';
+import type { JobContext, PoolItem, SlotType } from '../../core/types.ts';
+import type { SavedGearSet, SavedStone } from './saved-types.ts';
+
+/* What placePiece returns: the new set with a note for the page and the note about the pieces it took off, or a refusal. */
+export type PlaceResult = { ok: true; gearSet: SavedGearSet; note: string; removedNote: string } | { ok: false };
 
 /* Said under an Off-hand row that a held two-handed weapon covers (its control is disabled); placePiece refuses a shield for
    the same reason. */
 export const SHIELD_NEEDS_ONE_HANDED = 'Only a one-handed weapon allows a shield.';
 
 /* A copy of a GearSet deep enough to edit (rows, stones and pins copied). */
-export function editableCopy(gearSet) {
+export function editableCopy(gearSet: SavedGearSet): SavedGearSet {
   return {
     ...gearSet,
     pieces: gearSet.pieces.map(row => (row.gameId == null ? { slot: row.slot } : { ...row, stones: [...(row.stones ?? [])] })),
@@ -19,8 +24,8 @@ export function editableCopy(gearSet) {
 }
 
 /* `gearSet` with row `index` pinned or not (`on`); new data. */
-export function withPin(gearSet, index, on) {
-  const rows = new Set(gearSet.pinned?.pieces ?? []);
+export function withPin(gearSet: SavedGearSet, index: number, on: boolean): SavedGearSet {
+  const rows = new Set<number>(gearSet.pinned?.pieces ?? []);
   if (on) {
     rows.add(index);
   } else {
@@ -30,13 +35,13 @@ export function withPin(gearSet, index, on) {
 }
 
 /* `gearSet` with its meal pinned or not; new data. */
-export function withMealPin(gearSet, on) {
+export function withMealPin(gearSet: SavedGearSet, on: boolean): SavedGearSet {
   return { ...gearSet, pinned: { pieces: [...(gearSet.pinned?.pieces ?? [])], meal: Boolean(on) } };
 }
 
 /* Whether the other ring row of `gearSet` already holds the Unique ring `gameId` (a Unique ring is worn once). */
-export function uniqueTaken(job, gearSet, index, gameId) {
-  const item = poolItemById(job, gameId);
+export function uniqueTaken(job: JobContext, gearSet: SavedGearSet, index: number, gameId: number | null | undefined): boolean {
+  const item = poolItemById(job, gameId as number);
   if (item?.type !== 'ring' || item.copies !== 1) {
     return false;
   }
@@ -45,19 +50,19 @@ export function uniqueTaken(job, gearSet, index, gameId) {
 
 /* The note after a piece took others off: `names` the names of the pieces removed, `cause` what took them off (a
    two-handed weapon, or the name of the covering piece), e.g. "Tidal Wave Buckler removed due to two-handed weapon." */
-export function removedNote(names, cause = 'two-handed weapon') {
+export function removedNote(names: string[], cause = 'two-handed weapon'): string {
   return `${names.join(' and ')} removed due to ${cause}.`;
 }
 
 /* Whether a piece worn in a row of `gearSet` other than `index` covers slot type `slot` (a two-handed weapon the
    Off-hand, a cloak the head) and the job uses that row. */
-function coveredByWorn(job, gearSet, index, slot) {
+function coveredByWorn(job: JobContext, gearSet: SavedGearSet, index: number, slot: SlotType): boolean {
   return gearSet.pieces.some((row, i) => {
     if (i === index || row.gameId == null || !isUsed(job, row)) {
       return false;
     }
     const worn = poolItemById(job, row.gameId);
-    return Boolean(worn) && slotInfo(job, worn).blocks.includes(slot);
+    return Boolean(worn) && slotInfo(job, worn as PoolItem).blocks.includes(slot);
   });
 }
 
@@ -71,13 +76,13 @@ function coveredByWorn(job, gearSet, index, slot) {
    ring row, or a piece for a row that a worn piece covers (a shield under a two-handed weapon, a head under a cloak). Neither
    is offered: the picker disables the ring ("Unique, in the other ring") and a covered row's control is disabled, so the
    refusal has no note of its own. */
-export function placePiece(job, gearSet, index, gameId) {
+export function placePiece(job: JobContext, gearSet: SavedGearSet, index: number, gameId: number | null): PlaceResult {
   const label = rowLabel(gearSet, index);
   if (gameId == null) {
     const pieces = gearSet.pieces.map((row, i) => (i === index ? { slot: row.slot } : row));
     return { ok: true, gearSet: withPin({ ...gearSet, pieces }, index, false), note: `${label}: emptied`, removedNote: '' };
   }
-  const item = poolItemById(job, gameId);
+  const item = poolItemById(job, gameId) as PoolItem; // a game id the picker offered
   if (uniqueTaken(job, gearSet, index, gameId)) {
     return { ok: false };
   }
@@ -93,7 +98,9 @@ export function placePiece(job, gearSet, index, gameId) {
   const removedRows = gearSet.pieces.flatMap((row, i) =>
     i !== index && covered.includes(row.slot) && isUsed(job, row) && row.gameId != null ? [i] : [],
   );
-  const removedNames = removedRows.map(i => poolItemById(job, gearSet.pieces[i].gameId)?.name ?? `item ${gearSet.pieces[i].gameId}`);
+  const removedNames = removedRows.map(
+    i => poolItemById(job, gearSet.pieces[i].gameId as number)?.name ?? `item ${gearSet.pieces[i].gameId}`,
+  );
   const pieces = gearSet.pieces.map((row, i) => {
     if (i === index) {
       return { slot: row.slot, gameId, stones: Array.from({ length: big + small }, () => null) };
@@ -113,16 +120,16 @@ export function placePiece(job, gearSet, index, gameId) {
 }
 
 /* The stones of a worn piece padded to one entry per materia slot (null for an empty one), as an Auto-fill gives them. */
-export function paddedStones(item, stones) {
+export function paddedStones(item: PoolItem, stones: readonly (SavedStone | null)[] | undefined): (SavedStone | null)[] {
   const { big, small } = meldSlots(item);
   return Array.from({ length: big + small }, (_, i) => stones?.[i] ?? null);
 }
 
 /* Row `index` of `gearSet` with `stone` ({stat, grade}) in materia slot `slot`; an empty slot past the first empty one
    takes the stone in the first empty one instead (slots fill in order). The row is pinned. New data. */
-export function withStone(job, gearSet, index, slot, stone) {
+export function withStone(job: JobContext, gearSet: SavedGearSet, index: number, slot: number, stone: SavedStone): SavedGearSet {
   const row = gearSet.pieces[index];
-  const item = poolItemById(job, row.gameId);
+  const item = poolItemById(job, row.gameId as number) as PoolItem;
   const stones = paddedStones(item, row.stones);
   let at = slot;
   if (!stones[at]) {
@@ -136,9 +143,9 @@ export function withStone(job, gearSet, index, slot, stone) {
 
 /* Row `index` of `gearSet` with the stone in materia slot `slot` taken out: only the last stone can go, so no other chip
    moves. The row is pinned. Returns the new GearSet, or `gearSet` itself when `slot` is not the last stone. */
-export function withoutStone(job, gearSet, index, slot) {
+export function withoutStone(job: JobContext, gearSet: SavedGearSet, index: number, slot: number): SavedGearSet {
   const row = gearSet.pieces[index];
-  const item = poolItemById(job, row.gameId);
+  const item = poolItemById(job, row.gameId as number) as PoolItem;
   const stones = paddedStones(item, row.stones);
   if (slot !== lastStone(stones)) {
     return gearSet;
@@ -149,7 +156,7 @@ export function withoutStone(job, gearSet, index, slot) {
 }
 
 /* The index of the last stone in `stones`, -1 for none. */
-export function lastStone(stones) {
+export function lastStone(stones: readonly unknown[]): number {
   for (let i = stones.length - 1; i >= 0; i--) {
     if (stones[i]) {
       return i;
@@ -159,6 +166,6 @@ export function lastStone(stones) {
 }
 
 /* `gearSet` with the meal `key` (an allMeals key, or null for no food), pinned while there is one. New data. */
-export function withMeal(gearSet, key) {
+export function withMeal(gearSet: SavedGearSet, key: string | null | undefined): SavedGearSet {
   return { ...gearSet, meal: key ?? null, pinned: { pieces: [...(gearSet.pinned?.pieces ?? [])], meal: key != null } };
 }

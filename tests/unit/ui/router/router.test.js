@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { createRouter } from '../../../../src/ui/router/router.ts';
 import { DEFAULT_ROUTE, formatRoute, titleOf } from '../../../../src/ui/router/routes.ts';
 import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
-import { saveSheet } from '../../../../src/ui/sheets/storage.js';
+import { saveSheet } from '../../../../src/ui/sheets/storage.ts';
 import { restoreOpen } from '../../helpers/common.js';
 import { createStores } from '../../helpers/stores.js';
 

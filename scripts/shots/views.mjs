@@ -20,7 +20,7 @@ const SAGE = { job: 'SGE', cap: 123, sync: true, level: 100, tab: 'browse', math
 const WARRIOR = { job: 'WAR', cap: 123, sync: true, level: 90, tab: 'browse', mathTab: 'piece' };
 const BLUE_MAGE = { job: 'BLU', cap: 123, sync: true, level: 80, tab: 'browse', mathTab: 'piece' };
 
-/* A saved Sage sheet (the shape src/ui/sheets/storage.js reads): level 100, synced to 123, one set of crafted item level
+/* A saved Sage sheet (the shape src/ui/sheets/storage.ts reads): level 100, synced to 123, one set of crafted item level
    115 pieces with the weapon, hands and feet rows empty and every other row pinned, and an empty second set. */
 const SAGE_ROWS = [
   ['weapon'],

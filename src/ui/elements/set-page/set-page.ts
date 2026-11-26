@@ -15,6 +15,7 @@
    - Edit and Delete are asked of the Sheets screen, which owns those dialogs, with a `sheet-action` event (sheets/sheet-action.ts).
    Everything a menu, a popover or the question needs is an element of its own (the piece picker, the materia menu, the Food menu, the
    Auto-fill settings popover and the question's dialog), placed in this template. */
+import type { StatKey } from '../../../core/types.ts';
 import { LitElement, type PropertyValues, type TemplateResult, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
@@ -544,7 +545,7 @@ export class GsaSetPage extends LitElement {
         .all=${menus.matAll}
         @materia-shown=${(event: CustomEvent<HTMLElement>) => menus.keepMenuInView(event.detail, menus.matAnchor)}
         @materia-close=${() => menus.closeMateria()}
-        @stone-pick=${(event: CustomEvent<{ stat: string; grade: number }>) => menus.pickStone(event.detail)}
+        @stone-pick=${(event: CustomEvent<{ stat: StatKey; grade: number }>) => menus.pickStone(event.detail)}
         @stone-remove=${() => menus.dropStone()}
         @grades-toggle=${() => menus.toggleAllGrades()}></gsa-materia-menu>
     </div></div>`;

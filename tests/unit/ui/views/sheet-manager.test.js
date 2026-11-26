@@ -5,7 +5,7 @@ process.env.TZ = 'UTC';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../src/core/tables.ts';
-import { UNAVAILABLE_MESSAGE } from '../../../../src/ui/sheets/storage.js';
+import { UNAVAILABLE_MESSAGE } from '../../../../src/ui/sheets/storage.ts';
 import { sheetManagerView } from '../../../../src/ui/views/sheet-manager.js';
 import {
   firstSortDir,

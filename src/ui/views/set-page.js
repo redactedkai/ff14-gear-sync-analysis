@@ -2,9 +2,9 @@
    (the stat block, the table, the totals, the Auto-fill and Apply buttons), the Auto-fill button, the chip for an empty pool and the
    goal line. Pure builders: no DOM, no store; the page's element (elements/set-page/set-page.ts) calls them once per change. */
 import { makeJobContext } from '../../core/job-context.ts';
-import { fillPlan } from '../sheets/fill.js';
-import { fillSettingsOf, goalText } from '../sheets/fill-settings.js';
-import { holdsPiece } from '../sheets/saved-set.js';
+import { fillPlan } from '../sheets/fill.ts';
+import { fillSettingsOf, goalText } from '../sheets/fill-settings.ts';
+import { holdsPiece } from '../sheets/saved-set.ts';
 import { deepFreeze, viewCache } from '../view-cache.ts';
 import { draftView, samePieces } from './set-draft.js';
 import { mealBestKeys } from './meal-menu.js';
@@ -29,7 +29,7 @@ export const NO_PIECES_TEXT = 'No piece matches Gear to search.';
 export const NO_PIECES_SHORT = 'No pieces to search';
 
 /* A number per object, for a cache key that names a draft or a suggestion without serializing it (0 for none). Both are
-   replaced on every change, never changed in place (the edits in sheets/set-edits.js and setTake return new objects),
+   replaced on every change, never changed in place (the edits in sheets/set-edits.ts and setTake return new objects),
    so the same object always holds the same set. */
 const objectNumbers = new WeakMap();
 let nextObjectNumber = 1;

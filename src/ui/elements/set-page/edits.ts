@@ -1,9 +1,10 @@
 /* A set page's edits by hand: the manual draft (a second GearSet in memory from the first edit to Apply or Discard) and the pins, which
    are saved at once and kept in an open draft. Part of the page's session (session.ts). The draft (a GearSet in memory from the first
    edit by hand to Apply or Discard, null without one) is in the store: `session.draft` reads it, `pages.setDraft` changes it. */
+import type { StatKey } from '../../../core/types.ts';
 import { frozenCopy } from '../../view-cache.ts';
 import { draftNote, draftView, samePieces } from '../../views/set-draft.js';
-import { editableCopy, placePiece, withMeal, withMealPin, withPin, withStone, withoutStone } from '../../sheets/set-edits.js';
+import { editableCopy, placePiece, withMeal, withMealPin, withPin, withStone, withoutStone } from '../../sheets/set-edits.ts';
 import type { PageSession } from './session.ts';
 import type { PageGearSet } from './session-types.ts';
 
@@ -50,7 +51,7 @@ export class PageEdits {
     session.menus.closeOpenMenu();
   }
 
-  setStone(index: number, slot: number, stat: string, grade: number): void {
+  setStone(index: number, slot: number, stat: StatKey, grade: number): void {
     const { session } = this;
     this.edit(set => withStone(session.job, set, index, slot, { stat, grade }));
     session.menus.closeOpenMenu();

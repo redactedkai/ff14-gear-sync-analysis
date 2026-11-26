@@ -1,6 +1,6 @@
 /* A set page's Auto-fill on real gear (src/core/recipe.ts runRecipe, evaluated by src/core/set.ts evaluateSet): the gear it
    searches and its filters, the totals in character panel numbers, Target GCD, food and rank by tier, against the
-   core's own searches and the brute force. The recipe is a set's (its Auto-fill settings, sheets/fill-settings.js fillRecipe), on
+   core's own searches and the brute force. The recipe is a set's (its Auto-fill settings, sheets/fill-settings.ts fillRecipe), on
    store-shaped state (helpers/views.js). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

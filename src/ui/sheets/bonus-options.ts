@@ -9,7 +9,7 @@ const NO_PARTY_TEXT = 'No party bonus';
 
 /* The text of the Party bonus entry for `roles` unique roles: "No party bonus" for 0, "1 unique role (1%)", "2 unique
    roles (2%)" ... 1% per role. */
-export function partyText(roles) {
+export function partyText(roles: number): string {
   if (roles === 0) {
     return NO_PARTY_TEXT;
   }

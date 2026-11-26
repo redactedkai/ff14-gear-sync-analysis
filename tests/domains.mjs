@@ -64,7 +64,7 @@ export const DOMAINS = {
     title: 'Auto-fill on the page: settings, run, cancel, worker, suggestion',
     src: [
       'src/ui/{solve,solver,solver-worker}.js',
-      'src/ui/sheets/{fill,fill-settings}.js',
+      'src/ui/sheets/{fill,fill-settings}.ts',
       'src/ui/elements/set-page/{fill-run,fill-settings-edit}.ts',
       'src/ui/views/set-suggestion.js',
       'scripts/perf/browser.mjs',
@@ -78,7 +78,7 @@ export const DOMAINS = {
       'src/ui/elements/set-page/{edits,leave-guard,menus,session,session-types}.ts',
       'src/ui/elements/set-page/{food-menu,food-menu-model,materia-menu,piece-picker,piece-picker-names,rank-note,set-page,set-page-types,settings-popover}.ts',
       'src/ui/store/set-page-actions.ts',
-      'src/ui/sheets/{saved-set,set-edits}.js',
+      'src/ui/sheets/{saved-set,set-edits}.ts',
       'src/ui/views/limit-rows.ts',
       'src/ui/views/{meal-menu,piece-menu,set-draft,set-meal-menu,set-page,set-rows,set-totals,stone-menu}.js',
       'src/ui/draw-in-steps.ts',
@@ -91,7 +91,8 @@ export const DOMAINS = {
     src: [
       // the Lit elements of the Sheets screens: the sheet manager, a sheet's page and the caret menus that switch sheet or gear set
       'src/ui/elements/sheets/**',
-      'src/ui/sheets/{bonus-options,dialogs,ops,storage,store-shared}.js',
+      'src/ui/sheets/{bonus-options,dialogs,ops,storage,store-shared}.ts',
+      'src/ui/sheets/saved-types.ts',
       'src/ui/store/{sheets-actions,sheets-facade}.ts',
       'src/ui/views/sheet-text.ts',
       'src/ui/views/{sheet-forms,sheet-manager,sheet-sets}.js',

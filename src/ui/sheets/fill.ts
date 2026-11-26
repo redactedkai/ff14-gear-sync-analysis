@@ -15,10 +15,13 @@
      included: the count is 0 and the button is off. Every piece pinned and the meal open is a fill of the meal alone. */
 import { hasPins } from '../../core/recipe.ts';
 import { joinNames, oneOrMany, plural } from '../text.ts';
-import { usedRows } from './saved-set.js';
+import { usedRows } from './saved-set.ts';
+import type { GearSet as CoreGearSet, JobContext, SetPiece, SlotType, Stone } from '../../core/types.ts';
+import type { Pins } from '../../core/recipe.ts';
+import type { SavedGearSet, SavedRow } from './saved-types.ts';
 
 /* The meal of `gearSet` that Auto-fill keeps: its meal while the meal is pinned and there is one, else null. */
-function pinnedMealOf(gearSet) {
+function pinnedMealOf(gearSet: Pick<SavedGearSet, 'pinned' | 'meal'>): string | null {
   return gearSet.pinned?.meal && gearSet.meal ? gearSet.meal : null;
 }
 
@@ -30,10 +33,10 @@ function pinnedMealOf(gearSet) {
    - count: openRows.length, plus 1 when mealOpen; label: "Auto-fill 12 slots" ("Auto-fill 1 slot", "Auto-fill 0
      slots");
    - disabled: true when no slot is open (everything, the meal included, is pinned). */
-export function fillPlan(job, gearSet) {
+export function fillPlan(job: JobContext, gearSet: SavedGearSet) {
   const flagged = new Set(gearSet.pinned?.pieces ?? []);
-  const pinnedRows = [];
-  const openRows = [];
+  const pinnedRows: number[] = [];
+  const openRows: number[] = [];
   for (const { index, row } of usedRows(job, gearSet)) {
     if (flagged.has(index) && row.gameId != null) {
       pinnedRows.push(index);
@@ -46,11 +49,11 @@ export function fillPlan(job, gearSet) {
   const count = openRows.length + (mealOpen ? 1 : 0);
   const pieces = pinnedRows.map(i => ({
     slot: gearSet.pieces[i].slot,
-    gameId: gearSet.pieces[i].gameId,
+    gameId: gearSet.pieces[i].gameId as number, // a pinned row holds a piece
     stones: [...(gearSet.pieces[i].stones ?? [])],
   }));
   return {
-    pins: hasPins({ pieces, meal }) ? { pieces, meal } : null,
+    pins: (hasPins({ pieces, meal }) ? { pieces, meal } : null) as Pins | null,
     pinnedRows,
     openRows,
     mealOpen,
@@ -66,17 +69,17 @@ export function fillPlan(job, gearSet) {
    The result lists a slot type's pieces with the pinned ones first (a pinned ring before the free one), so the open
    rows of a type take the result's pieces after the pinned ones, in row order. An open row the result leaves empty (a
    piece in another slot covers it) becomes {slot}. */
-export function applyFill(job, gearSet, result) {
+export function applyFill(job: JobContext, gearSet: SavedGearSet, result: Pick<CoreGearSet, 'pieces' | 'meal'>) {
   const plan = fillPlan(job, gearSet);
   const pinned = new Set(plan.pinnedRows);
   const open = new Set(plan.openRows);
-  const resultByType = new Map();
+  const resultByType = new Map<SlotType, SetPiece[]>();
   for (const piece of result.pieces) {
     resultByType.set(piece.slot, [...(resultByType.get(piece.slot) ?? []), piece]);
   }
 
   // 1. per slot type, the result's pieces left for the open rows once the pinned rows of that type have had theirs
-  const free = new Map();
+  const free = new Map<SlotType, SetPiece[]>();
   for (const [type, list] of resultByType) {
     const pinnedOfType = plan.pinnedRows.filter(i => gearSet.pieces[i].slot === type).length;
     free.set(type, list.slice(pinnedOfType));
@@ -91,7 +94,7 @@ export function applyFill(job, gearSet, result) {
     if (!next || next.gameId == null) {
       return { slot: row.slot };
     }
-    return { slot: row.slot, gameId: next.gameId, stones: next.stones.map(s => s && { ...s }) };
+    return { slot: row.slot, gameId: next.gameId, stones: (next.stones as readonly (Stone | null)[]).map(s => s && { ...s }) };
   });
   const meal = pinnedMealOf(gearSet) ?? result.meal ?? null;
   return { pieces, meal };
@@ -106,8 +109,8 @@ export const PINS_CONFLICT_TEXT = 'The pinned pieces cannot be worn together.';
    is missing, in the wrong slot, one the job cannot wear or eat), by the table's names ("Head", "Ring 2", MEAL_ROW_LABEL);
    `relicNames` the rows unpinned because the piece is a relic whose substats the player allocates. Names no reason: the
    rows are open again, so Auto-fill can fill them. Returns '' when nothing was unpinned. */
-export function unpinnedText(names, relicNames) {
-  const lines = [];
+export function unpinnedText(names: string[], relicNames: string[]): string {
+  const lines: string[] = [];
   if (names.length) {
     lines.push(`${joinNames(names)} unpinned. Auto-fill again to fill ${oneOrMany(names.length, 'it', 'them')}.`);
   }
@@ -120,7 +123,7 @@ export function unpinnedText(names, relicNames) {
 /* The plain line for a problem of the pins that names no row, `reason` as runRecipe's found.badPins gives it: the pins as a
    whole ('conflict') or an unknown reason. null for the problems that name a row (a piece or meal that cannot be used, a
    relic): the line under the header says those (unpinnedText). */
-function badPinText(reason) {
+function badPinText(reason: string): string | null {
   switch (reason) {
     case 'missing':
     case 'slot':
@@ -138,18 +141,18 @@ function badPinText(reason) {
 /* One plain line per problem of the pins that names no row, in the order given. `badPins`: runRecipe's found.badPins,
    [{index (into pins.pieces, or null for the pins as a whole), reason}]. Returns an array of strings, empty when every problem
    names a row. */
-export function badPinMessages(badPins) {
-  return badPins.map(({ reason }) => badPinText(reason)).filter(Boolean);
+export function badPinMessages(badPins: readonly { index: number | null; reason: string }[]): string[] {
+  return badPins.map(({ reason }) => badPinText(reason)).filter(Boolean) as string[];
 }
 
 /* The pins left after dropping the ones named by `badPins` (runRecipe's found.badPins, indexes into fillPlan's pins.pieces).
    A problem with the meal ('meal') drops the meal pin; any other problem of the pins as a whole (index null: 'conflict')
    drops nothing. Returns {pieces: row indexes still pinned, dropped: row indexes dropped, relicRows: the dropped rows whose
    piece is a relic, mealDropped: whether the meal pin is dropped}, for the sheet to save and to say which pins it dropped. */
-export function dropBadPins(job, gearSet, badPins) {
+export function dropBadPins(job: JobContext, gearSet: SavedGearSet, badPins: readonly { index: number | null; reason: string }[]) {
   const plan = fillPlan(job, gearSet);
-  const dropped = badPins.filter(b => b.index != null).map(b => plan.pinnedRows[b.index]);
+  const dropped = badPins.filter(b => b.index != null).map(b => plan.pinnedRows[b.index as number]);
   const kept = (gearSet.pinned?.pieces ?? []).filter(i => !dropped.includes(i));
-  const relicRows = badPins.filter(b => b.index != null && b.reason === 'relic').map(b => plan.pinnedRows[b.index]);
+  const relicRows = badPins.filter(b => b.index != null && b.reason === 'relic').map(b => plan.pinnedRows[b.index as number]);
   return { pieces: kept, dropped, relicRows, mealDropped: badPins.some(b => b.reason === 'meal') };
 }

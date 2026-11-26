@@ -1,6 +1,7 @@
 /* The open menus of a set page (a piece picker, a materia menu, the Food menu): which one is open, where it sits in the window, and the
    views of the picker and the materia menu. The picker, the materia menu and the Food menu are Lit elements; the page names the button
    they hang under and gives them their view. Part of the page's session (session.ts). */
+import type { StatKey } from '../../../core/types.ts';
 import { jobGear } from '../../../core/items.ts';
 import { drawInSteps } from '../../draw-in-steps.ts';
 import { FIRST_ROWS, limitRows, ROWS_PER_STEP } from '../../views/limit-rows.ts';
@@ -195,7 +196,7 @@ export class PageMenus {
   }
 
   /* A stone chosen in the materia menu (`pick`: {stat, grade}, the element's stone-pick event) for the slot it is open for. */
-  pickStone(pick: { stat: string; grade: number }): void {
+  pickStone(pick: { stat: StatKey; grade: number }): void {
     const open = this.matOpen;
     if (open) {
       this.session.edits.setStone(open.row, open.slot, pick.stat, pick.grade);

@@ -1,4 +1,4 @@
-/* The recipe an Auto-fill (and the Gear to search line) sends, built from a set's Auto-fill settings (src/ui/sheets/fill-settings.js
+/* The recipe an Auto-fill (and the Gear to search line) sends, built from a set's Auto-fill settings (src/ui/sheets/fill-settings.ts
    fillRecipe, fillSettingsOf): every Auto-fill setting reaches the request, nothing else does. Replaces the old optimizerKey test of the removed Gear tab ("every
    optimizer setting changes the key, the menu-only state does not"). Expected values are the field lists of the
    settings themselves, and the Food default the owner chose (off). */
@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { solverRequest } from '../../../../src/ui/solver.js';
-import { defaultFillSettings, fillRecipe, fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.js';
+import { defaultFillSettings, fillRecipe, fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.ts';
 import { sageSet } from '../../helpers/sheet-fixtures.js';
 
 const SGE = makeJobContext('SGE');

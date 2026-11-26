@@ -31,6 +31,7 @@
      on the Sheets tab, which has no panel, does nothing; `openTab` counts requests so only the newest shows. */
 import { makeJobContext } from '../../core/job-context.ts';
 import { DEFAULT_ROUTE, formatRoute } from '../router/routes.ts';
+import type { SavedSheet } from '../sheets/saved-types.ts';
 import { Store } from './store.ts';
 
 /* One tab's Job and sync panel: the job's id, the item level cap (null: none), whether item level sync is on, the synced level. */
@@ -100,30 +101,18 @@ export interface MathState {
   tiersLevel: number | null;
 }
 
-/* A gear set as saved (sheets/ops.js newGearSet): the fields the store reads are typed, the rest pass through. */
+/* A gear set as the store reads it (a saved set is SavedGearSet, sheets/saved-types.ts; a draft or a test may hold less): the fields the
+   store reads are typed. */
 export interface GearSet {
   id: string;
   name: string;
   bestMeals?: string[] | null;
-  [field: string]: unknown;
 }
 
-/* A sheet as saved (sheets/ops.js newSheet): its gear sets inside. The fields the store reads are typed, the rest pass through. */
-export interface Sheet {
-  id: string;
-  name: string;
-  description: string;
-  job: string;
-  level: number;
-  sync: { on: boolean; cap: number };
-  clan?: string | null;
-  partyRoles?: number;
-  sets: GearSet[];
-  updatedAt: number;
-  [field: string]: unknown;
-}
+/* A sheet as saved (sheets/ops.ts newSheet): its gear sets inside (sheets/saved-types.ts). */
+export type Sheet = SavedSheet;
 
-/* What storage.js loadSheets returns: the readable sheets in the user's order, the records that could not be read, and why the
+/* What storage.ts loadSheets returns: the readable sheets in the user's order, the records that could not be read, and why the
    index could not. */
 export interface SheetsData {
   available: boolean;
@@ -266,7 +255,7 @@ export function emptySetPage(): SetPageState {
 const NO_SET_PAGE: SetPageState = Object.freeze(emptySetPage());
 
 /* The state the page starts with: `restored` (state.ts restoreState of what loadSaved gave and the address's screen) and
-   `sheetsData` (the saved sheets as sheets/store-shared.js readSheets read them). */
+   `sheetsData` (the saved sheets as sheets/store-shared.ts readSheets read them). */
 export function initialState(restored: RestoredState, sheetsData: SheetsData): AppState {
   return {
     settings: settingsOf(restored),
@@ -336,7 +325,7 @@ export function persisted(state: AppState) {
   };
 }
 
-/* The saved sheets as last read or edited: {available, sheets, unreadable, indexProblem} (storage.js loadSheets' shape), plain
+/* The saved sheets as last read or edited: {available, sheets, unreadable, indexProblem} (storage.ts loadSheets' shape), plain
    data. */
 export function sheetList(state: AppState): SheetsData {
   return state.sheets.data;

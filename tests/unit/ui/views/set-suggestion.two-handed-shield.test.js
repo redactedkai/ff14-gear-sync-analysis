@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { poolItemById, slotInfo } from '../../../../src/core/items.ts';
 import { appliedFields, suggestionOf, suggestionView } from '../../../../src/ui/views/set-suggestion.js';
-import { SET_ROW_SLOTS } from '../../../../src/ui/sheets/storage.js';
+import { SET_ROW_SLOTS } from '../../../../src/ui/sheets/storage.ts';
 import { piece, sheetOf } from '../../helpers/sheet-fixtures.js';
 
 const WAND = 7818; // Tidal Wave Wand, White Mage, one-handed

@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { inProcessSolver } from '../../../../../src/ui/solver.js';
-import { fillRecipe } from '../../../../../src/ui/sheets/fill-settings.js';
+import { fillRecipe } from '../../../../../src/ui/sheets/fill-settings.ts';
 import { evaluateInSheet } from '../../../../../src/ui/views/set-totals.js';
 import { makeSession } from '../../../../../src/core/session.ts';
 import { gearToSearchView } from '../../../../../src/ui/solve.js';

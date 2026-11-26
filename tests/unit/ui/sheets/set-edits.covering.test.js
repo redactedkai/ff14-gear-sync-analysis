@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { poolItemById, slotInfo } from '../../../../src/core/items.ts';
 import { evaluateSet, makeSet } from '../../../../src/core/set.ts';
-import { placePiece, removedNote } from '../../../../src/ui/sheets/set-edits.js';
+import { placePiece, removedNote } from '../../../../src/ui/sheets/set-edits.ts';
 import { SAGE_IDS, sageSet } from '../../helpers/sheet-fixtures.js';
 
 const SGE = makeJobContext('SGE');

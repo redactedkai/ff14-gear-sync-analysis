@@ -1,4 +1,4 @@
-/* Partial fill for a saved gear set (src/ui/sheets/fill.js): the pins, the button's label and count, putting a solve's
+/* Partial fill for a saved gear set (src/ui/sheets/fill.ts): the pins, the button's label and count, putting a solve's
    result back on the rows, the bad-pin messages, and the pins reaching solveView through the solver's request.
    Real Sage items at the page's default recipe; the pinned solve itself is tested in core/recipe.pins.test.js. */
 import { test } from 'node:test';
@@ -9,8 +9,8 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { runRecipe } from '../../../../src/core/recipe.ts';
 import { makeSession } from '../../../../src/core/session.ts';
 import { makeSolverHandler, solverRequest } from '../../../../src/ui/solver.js';
-import { PINS_CONFLICT_TEXT, applyFill, badPinMessages, dropBadPins, fillPlan, unpinnedText } from '../../../../src/ui/sheets/fill.js';
-import { MEAL_ROW_LABEL } from '../../../../src/ui/sheets/saved-set.js';
+import { PINS_CONFLICT_TEXT, applyFill, badPinMessages, dropBadPins, fillPlan, unpinnedText } from '../../../../src/ui/sheets/fill.ts';
+import { MEAL_ROW_LABEL } from '../../../../src/ui/sheets/saved-set.ts';
 import { solveView } from '../../../../src/ui/solve.js';
 import { appState, hasNumber, piece } from '../../helpers/common.js';
 

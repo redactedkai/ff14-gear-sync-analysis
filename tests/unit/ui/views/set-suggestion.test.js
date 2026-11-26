@@ -7,9 +7,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { defaultFillSettings } from '../../../../src/ui/sheets/fill-settings.js';
-import { unpinnedText } from '../../../../src/ui/sheets/fill.js';
-import { MEAL_ROW_LABEL } from '../../../../src/ui/sheets/saved-set.js';
+import { defaultFillSettings } from '../../../../src/ui/sheets/fill-settings.ts';
+import { unpinnedText } from '../../../../src/ui/sheets/fill.ts';
+import { MEAL_ROW_LABEL } from '../../../../src/ui/sheets/saved-set.ts';
 import { evaluateInSheet, setFigures } from '../../../../src/ui/views/set-totals.js';
 import { setRowsView } from '../../../../src/ui/views/set-rows.js';
 import {

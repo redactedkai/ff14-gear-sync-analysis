@@ -49,7 +49,7 @@ One record per sheet: two browser tabs never overwrite each other's sheets, and 
 | Field | Meaning |
 |---|---|
 | `id`, `name`, `description` | as for a sheet; the description holds the set's notes |
-| `pieces` | always 12 rows, in `SET_ROW_SLOTS` order (`src/ui/sheets/storage.js`: weapon, off-hand, head to wrist, ring twice), for every job |
+| `pieces` | always 12 rows, in `SET_ROW_SLOTS` order (`src/ui/sheets/storage.ts`: weapon, off-hand, head to wrist, ring twice), for every job |
 | `meal` | an `allMeals` key (HQ), or null |
 | `bestMeals` | the meals tagged "best for goal", or null (note 1) |
 | `pinned` | `{ pieces: row numbers, meal: boolean }`: what Auto-fill keeps |
@@ -58,9 +58,9 @@ One record per sheet: two browser tabs never overwrite each other's sheets, and 
 
 1. `bestMeals`: the keys of the meals tied for the best result of the Auto-fill that was last applied whole, in `allMeals` order, or null (see below).
 
-A **piece row** is `{ slot, gameId, stones }`; an empty row is `{ slot }`. The game id is the identity: no name is saved. `stones` has one entry per meld slot, `{ stat, grade }` or null; a missing list counts as an empty one (`src/ui/sheets/saved-set.js` `sameRow`). A row the job does not use (the off-hand of a job without a shield) keeps what it holds, stored but not counted; White Mage and Black Mage use the Off-hand row at every level, so a shield stays when the sheet's level changes.
+A **piece row** is `{ slot, gameId, stones }`; an empty row is `{ slot }`. The game id is the identity: no name is saved. `stones` has one entry per meld slot, `{ stat, grade }` or null; a missing list counts as an empty one (`src/ui/sheets/saved-set.ts` `sameRow`). A row the job does not use (the off-hand of a job without a shield) keeps what it holds, stored but not counted; White Mage and Black Mage use the Off-hand row at every level, so a shield stays when the sheet's level changes.
 
-**Auto-fill settings** are `goal` (target stat, two tiebreaks, Target GCD and its mode, rank by tier, melds, food) and `searchCriteria` (expansions, "Gear categories" boxes, the market board switch, item level and equip level limits). `sheets/fill-settings.js` `fillRecipe` turns them into the recipe `core/recipe.ts` solves.
+**Auto-fill settings** are `goal` (target stat, two tiebreaks, Target GCD and its mode, rank by tier, melds, food) and `searchCriteria` (expansions, "Gear categories" boxes, the market board switch, item level and equip level limits). `sheets/fill-settings.ts` `fillRecipe` turns them into the recipe `core/recipe.ts` solves.
 
 **`bestMeals`** is a hint the page shows ("best for goal" on the Food row and the Food menu, [ui.md](ui.md#the-food-rows-menu)).
 
@@ -68,13 +68,13 @@ A **piece row** is `{ slot, gameId, stones }`; an empty row is `{ slot }`. The g
 - Kept: it stays whichever meal the set holds (`views/meal-menu.js` `mealBestKeys`). Pin changes keep it. Copy set keeps it, and Copy sheet keeps it only for the same job, level and sync. An Apply on a manual draft of the meal or the pins alone keeps it.
 - Dropped (set to null): by Apply on a manual draft that changes a piece or a stone, by any change of the set's Auto-fill settings, and by a change of the sheet's level or sync.
 - An Auto-fill with nothing to change saves it as soon as the Auto-fill ends. Apply is off, so nothing else is saved (`elements/set-page/fill-run.ts` `endFill`).
-- Reading: it is not checked when read. A damaged value is read as none and dropped (`sheets/ops.js` `repairSheet`); a record from before the field has none.
+- Reading: it is not checked when read. A damaged value is read as none and dropped (`sheets/ops.ts` `repairSheet`); a record from before the field has none.
 
 Never saved: totals, tiers, defense and the GCD (always `evaluateSet` with the sheet's job, level and sync), an Auto-fill suggestion, a manual draft, open menus, and the solver's session.
 
 ## Reading and writing
 
-`src/ui/sheets/storage.js` reads and writes the records; `src/ui/store/sheets-actions.ts` holds the actions over them and `src/ui/store/sheets-facade.ts` is the sheets facade, which hands out the sheets as plain data and has a `rev` that counts the changes. `src/ui/sheets/dialogs.js` is what the main button of the open dialog does, as plain code. `submitDialog` sends the dialog's fields to the store call of its kind (new, copy, edit sheet, edit set, delete). A refused form gets its error text and the field the text is about (`FORM_FIELD` in `ops.js`; none for a reason about the sheet), and is left as it is: a blank name stays blank (`shownName` is the name the box shows). Where the reason shows is in [ui.md, Dialogs](ui.md).
+`src/ui/sheets/storage.ts` reads and writes the records; `src/ui/store/sheets-actions.ts` holds the actions over them and `src/ui/store/sheets-facade.ts` is the sheets facade, which hands out the sheets as plain data and has a `rev` that counts the changes. `src/ui/sheets/dialogs.ts` is what the main button of the open dialog does, as plain code. `submitDialog` sends the dialog's fields to the store call of its kind (new, copy, edit sheet, edit set, delete). A refused form gets its error text and the field the text is about (`FORM_FIELD` in `ops.ts`; none for a reason about the sheet), and is left as it is: a blank name stays blank (`shownName` is the name the box shows). Where the reason shows is in [ui.md, Dialogs](ui.md).
 
 - Every record is checked field by field when it is read (`setProblem`, `rowProblem`). A record this build cannot read (not JSON, a newer `v`, an unknown job, a damaged row, pin, meal, time or Auto-fill settings) is skipped and listed in the sheet manager under "Could not be read". The list gives the cause and a Delete button that asks first. It is never deleted or rewritten on its own.
 - A record names its stats by the game's own keys (`mind`, `sps`, `ten`, ...): the Auto-fill settings' `target`, `tb` and `tb2` and each stone's `stat`. A record written before that named them by position (`main`, `spd`, `spec`). The reader turns such a key into the sheet's job's key at that position (`withCurrentStatKeys`, `src/core/stat-keys.ts` `currentStatKey`), so one record may hold either kind, and `v` stays 1. The record is rewritten with the game's keys at the sheet's next save.
@@ -86,7 +86,7 @@ Never saved: totals, tiers, defense and the GCD (always `evaluateSet` with the s
 
 Level and item level sync are edited on the sheet's page only, and change at once without a question: nothing is lost. A piece above the new level is synced down by the usual rules (`docs/mechanics/math.md` section 5); a synced piece's stones stay stored and count again if the cap or level goes back up. The set page shows the sheet's job, level and sync as a read-only line.
 
-A sheet's cap follows its level by the Job and sync panel's rule ([ui.md, section 5](ui.md#5-the-level-and-cap-fields); `limitCapToLevel`, shared through `sheetSettings` in `src/ui/sheets/ops.js`). While item level sync is on, a cap above what the level allows is lowered to it and never raised. The panel's flag appears in the field's label line ("Max 405", with the sentence "Lowered to 405, max for level 70." as its tooltip).
+A sheet's cap follows its level by the Job and sync panel's rule ([ui.md, section 5](ui.md#5-the-level-and-cap-fields); `limitCapToLevel`, shared through `sheetSettings` in `src/ui/sheets/ops.ts`). While item level sync is on, a cap above what the level allows is lowered to it and never raised. The panel's flag appears in the field's label line ("Max 405", with the sentence "Lowered to 405, max for level 70." as its tooltip).
 It applies in three places:
 
 - On the sheet page, when the level or cap is entered or its sync switched on.
@@ -101,7 +101,7 @@ The settings row of the sheet page has two more boxes, "Race / Clan" and "Party 
 
 - `store.setClan(name)` and `store.setPartyRoles(value)` (both through `editBonus`) save the open sheet like any setting: refused while an Auto-fill runs (`LOCKED_TEXT`), nothing written when the value is the one held, a failed save keeps the edit in memory. A clan that is not a clan's name is no clan; party roles are held to a whole number 0 to 5.
 - Copy sheet copies both, whatever job the copy is for: they belong to the player, not the job.
-- The entries of the two lists are built once by `src/ui/sheets/bonus-options.js`; the boxes are `<gsa-select>`s in `<gsa-sheet-page>`, which send a `sheet-action` event (`clan`, `party`) and never change their own value, so a change the store refuses leaves the saved value shown.
+- The entries of the two lists are built once by `src/ui/sheets/bonus-options.ts`; the boxes are `<gsa-select>`s in `<gsa-sheet-page>`, which send a `sheet-action` event (`clan`, `party`) and never change their own value, so a change the store refuses leaves the saved value shown.
 
 ## Names
 
@@ -117,7 +117,7 @@ Pieces the new job cannot wear are emptied in the copy and their pins dropped. T
 
 ## Pins and Auto-fill
 
-A pinned row or meal is one Auto-fill keeps. A piece or stone chosen by hand is pinned when the change is applied. Auto-fill searches the set's unpinned rows with the set's Auto-fill settings (`sheets/fill.js` `fillPlan`): the pinned pieces are worn with exactly their stones and count in the totals, the tiers and a Target GCD. A pin the search cannot keep (a missing item, a piece in the wrong slot or one the job cannot wear, pieces that cannot be worn together, a meal the job cannot eat) stops the Auto-fill with a plain message. An unusable piece or meal is unpinned (the row is unpinned and the meal pin cleared, saved when the Auto-fill ends), and one line names the rows with no reason (the meal as "Food"); a relic's row is unpinned with its reason; pieces that cannot be worn together get their own line and drop nothing.
+A pinned row or meal is one Auto-fill keeps. A piece or stone chosen by hand is pinned when the change is applied. Auto-fill searches the set's unpinned rows with the set's Auto-fill settings (`sheets/fill.ts` `fillPlan`): the pinned pieces are worn with exactly their stones and count in the totals, the tiers and a Target GCD. A pin the search cannot keep (a missing item, a piece in the wrong slot or one the job cannot wear, pieces that cannot be worn together, a meal the job cannot eat) stops the Auto-fill with a plain message. An unusable piece or meal is unpinned (the row is unpinned and the meal pin cleared, saved when the Auto-fill ends), and one line names the rows with no reason (the meal as "Food"); a relic's row is unpinned with its reason; pieces that cannot be worn together get their own line and drop nothing.
 
 ## Drafts and suggestions
 

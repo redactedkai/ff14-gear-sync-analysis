@@ -2,7 +2,7 @@
    settings, which make its recipe, so the solve takes the recipe and a solver session (session.ts) as plain inputs,
    never the page's store.
 
-   A recipe: a set's Auto-fill settings as one flat object (ui/sheets/fill-settings.js fillRecipe):
+   A recipe: a set's Auto-fill settings as one flat object (ui/sheets/fill-settings.ts fillRecipe):
      target, tb, tb2   the goal: a stat key to maximize, then up to two tiebreaks ('' for none)
      expOff, exclude, market, min, max, lvl
                        the filters under Gear to search: expansions switched off, "Gear categories" boxes left out

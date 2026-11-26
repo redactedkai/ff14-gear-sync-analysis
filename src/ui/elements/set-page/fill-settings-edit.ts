@@ -8,7 +8,7 @@ import { gearFilter } from '../../../core/items.ts';
 import { rankChoices, rankSwapNote, withRank } from '../../ranks.ts';
 import { TARGET_GCD_RANGE } from '../../job-sync-panel.ts';
 import { isCancelled, solverRequest } from '../../solver.js';
-import { fillRecipe } from '../../sheets/fill-settings.js';
+import { fillRecipe } from '../../sheets/fill-settings.ts';
 import { evaluateInSheet } from '../../views/set-totals.js';
 import type { StatKey } from '../../../core/types.ts';
 import type { GearToSearchAnswer } from '../../store/set-page-actions.ts';

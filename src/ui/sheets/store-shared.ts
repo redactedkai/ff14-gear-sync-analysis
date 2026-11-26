@@ -1,7 +1,8 @@
 /* The words and small helpers the Sheets tab's store shares with the page's other store (ui/store/sheets-actions.ts): the
    reasons an action is refused, the notes after a copy or a delete, and the one way the saved sheets are read. Pure: no DOM. */
-import { loadSheets } from './storage.js';
-import { repairSheet } from './ops.js';
+import { loadSheets } from './storage.ts';
+import { repairSheet } from './ops.ts';
+import type { SheetsData } from '../store/app-state.ts';
 
 /* Why an edit is refused while an Auto-fill runs. */
 export const LOCKED_TEXT = 'Nothing can be edited while Auto-fill is running.';
@@ -16,18 +17,18 @@ export const SHEET_GONE_TEXT = 'The sheet is gone.';
 
 /* A refusal: {ok: false, error (the reason, for the user)} and, when the reason is about one field of a form, `field` (a
    FORM_FIELD value: the dialog marks that field and shows the reason in its label row). */
-export function refuse(error, field) {
+export function refuse(error: string, field?: string): { ok: false; error: string; field?: string } {
   return field ? { ok: false, error, field } : { ok: false, error };
 }
 
 /* The note after a sheet or a gear set is copied: `name` is the copy's name. */
-export function copiedNote(name) {
+export function copiedNote(name: string): string {
   return `Copied as “${name}”.`;
 }
 
-/* loadSheets(storage) with each sheet's level and cap repaired (sheets/ops.js repairSheet): a saved cap above what its level
+/* loadSheets(storage) with each sheet's level and cap repaired (sheets/ops.ts repairSheet): a saved cap above what its level
    allows is lowered as the page lowers a typed one. The repair is written with the sheet's next edit. */
-export function readSheets(storage) {
+export function readSheets(storage: Storage | null): SheetsData {
   const loaded = loadSheets(storage);
   return { ...loaded, sheets: loaded.sheets.map(repairSheet) };
 }
@@ -38,11 +39,11 @@ export const NO_SHEET_OPEN_TEXT = 'No sheet is open.';
 export const SET_GONE_TEXT = 'The gear set is gone.';
 
 /* The note after the sheet called `name` is deleted. */
-export function deletedSheetNote(name) {
+export function deletedSheetNote(name: string): string {
   return `Deleted “${name}” sheet.`;
 }
 
 /* The note after the gear set called `name` is deleted. */
-export function deletedSetNote(name) {
+export function deletedSetNote(name: string): string {
   return `Deleted “${name}” gear set.`;
 }

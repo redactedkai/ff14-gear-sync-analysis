@@ -41,7 +41,7 @@ function damageKeyOf(id: string, mainKey: MainStatKey): DamageKey | null {
  *  weaponMode: '2h' (no shield; no Off-hand row), '1h+oh' (1H weapon and shield only: ONE_HANDED_JOBS) or 'mixed' (2H
  *  weapons, or 1H weapons with a shield, at every level: MIXED_WEAPON_JOBS). activeSlotTypes holds 'offhand' unless the
  *  mode is '2h'; slotPct.weapon is the 1H share for the two modes with a shield (what a hand-made weapon takes). */
-export function makeJobContext(jobId: string): JobContext {
+export function makeJobContext(jobId: string | null | undefined): JobContext {
   let jobIndex = JOBS.findIndex(j => j.id === jobId);
   if (jobIndex < 0) {
     jobIndex = JOBS.findIndex(j => j.id === DEFAULT_JOB);

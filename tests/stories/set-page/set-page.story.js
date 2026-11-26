@@ -4,7 +4,7 @@
 import { html } from 'lit';
 import '../../../src/ui/elements/set-page/set-page.ts';
 import { restoreState } from '../../../src/ui/state.ts';
-import { saveSheet } from '../../../src/ui/sheets/storage.js';
+import { saveSheet } from '../../../src/ui/sheets/storage.ts';
 import { createPageStore } from '../../../src/ui/store/page-store.ts';
 import { setHeaderView } from '../../../src/ui/views/sheet-sets.js';
 import { fakeStorage, sageSet, sheetOf } from '../../unit/helpers/sheet-fixtures.js';

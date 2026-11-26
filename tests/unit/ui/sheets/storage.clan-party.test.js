@@ -1,9 +1,9 @@
-/* A sheet's clan and party bonus in the saved record (src/ui/sheets/storage.js): a record from before them reads as no
+/* A sheet's clan and party bonus in the saved record (src/ui/sheets/storage.ts): a record from before them reads as no
    clan and no party bonus, a field of the wrong type makes the record unreadable like any other damaged field, a clan
    name this build does not know is not damage (it reads as no clan), and both fields survive a save and a read. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadSheets, parseSheet, saveSheet } from '../../../../src/ui/sheets/storage.js';
+import { loadSheets, parseSheet, saveSheet } from '../../../../src/ui/sheets/storage.ts';
 import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 
 /* The text of a saved record of a Sage sheet with `extra` fields added (or replaced). */

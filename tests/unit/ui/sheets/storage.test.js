@@ -1,4 +1,4 @@
-/* The saved sheets (src/ui/sheets/storage.js): the index and one record per sheet, read and written through a stand-in
+/* The saved sheets (src/ui/sheets/storage.ts): the index and one record per sheet, read and written through a stand-in
    for localStorage. The sheets are real: a Sage set solved from the item data, in a record shaped as
    docs/engineering/sheets.md describes. The broken records are the ways a record can fail. */
 import { test } from 'node:test';
@@ -15,12 +15,12 @@ import {
   saveOrder,
   saveSheet,
   sheetKey,
-} from '../../../../src/ui/sheets/storage.js';
-import { newGearSet } from '../../../../src/ui/sheets/ops.js';
+} from '../../../../src/ui/sheets/storage.ts';
+import { newGearSet } from '../../../../src/ui/sheets/ops.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { makeSolverHandler, solverRequest } from '../../../../src/ui/solver.js';
-import { applyFill } from '../../../../src/ui/sheets/fill.js';
-import { defaultFillSettings, fillRecipe } from '../../../../src/ui/sheets/fill-settings.js';
+import { applyFill } from '../../../../src/ui/sheets/fill.ts';
+import { defaultFillSettings, fillRecipe } from '../../../../src/ui/sheets/fill-settings.ts';
 import { localDate } from '../../../../src/ui/views/sheet-text.ts';
 import { createSheetsFacade } from '../../helpers/stores.js';
 

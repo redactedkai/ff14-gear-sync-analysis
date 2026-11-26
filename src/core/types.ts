@@ -163,7 +163,7 @@ export interface Stone {
    one entry per meld slot, [] for no melds. */
 export interface SetPiece {
   readonly slot: SlotType;
-  readonly gameId?: number;
+  readonly gameId?: number | null;
   readonly custom?: PoolItem;
   readonly stones?: readonly (Stone | null)[];
 }

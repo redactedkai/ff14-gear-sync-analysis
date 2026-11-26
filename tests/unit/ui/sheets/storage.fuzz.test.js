@@ -3,10 +3,10 @@
    evaluateInSheet, fillPlan and fillRecipe without throwing, and no total is NaN or negative. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fillPlan } from '../../../../src/ui/sheets/fill.js';
-import { fillRecipe, fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.js';
-import { repairSheet } from '../../../../src/ui/sheets/ops.js';
-import { loadSheets, parseSheet } from '../../../../src/ui/sheets/storage.js';
+import { fillPlan } from '../../../../src/ui/sheets/fill.ts';
+import { fillRecipe, fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.ts';
+import { repairSheet } from '../../../../src/ui/sheets/ops.ts';
+import { loadSheets, parseSheet } from '../../../../src/ui/sheets/storage.ts';
 import { sheetManagerView } from '../../../../src/ui/views/sheet-manager.js';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.js';
 import { rng } from '../../helpers/common.js';

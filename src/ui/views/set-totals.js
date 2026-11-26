@@ -11,7 +11,7 @@ import { averageItemLevel, evaluateSet, makeSet } from '../../core/set.ts';
 import { tierLadder } from '../../core/tiers.ts';
 import { plural } from '../text.ts';
 import { syncSettings } from '../job-sync-panel.ts';
-import { isUsed } from '../sheets/saved-set.js';
+import { isUsed } from '../sheets/saved-set.ts';
 
 /* The header's figures in order, by figure id. A stat figure's label is the job's short name for the stat (job.short);
    `main` and `spec` are the figures of the job's main stat (job.mainKey) and special substat (job.specKey, a figure only

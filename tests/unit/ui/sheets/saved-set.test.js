@@ -1,9 +1,9 @@
-/* The saved gear set's shared rules (src/ui/sheets/saved-set.js): the rows a job uses, ring numbering, and when two rows
+/* The saved gear set's shared rules (src/ui/sheets/saved-set.ts): the rows a job uses, ring numbering, and when two rows
    hold the same thing (sameRow), which the draft's change count and an Auto-fill suggestion's both go by. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { holdsPiece, isUsed, rowLabel, sameRow, usedRows } from '../../../../src/ui/sheets/saved-set.js';
+import { holdsPiece, isUsed, rowLabel, sameRow, usedRows } from '../../../../src/ui/sheets/saved-set.ts';
 import { draftChanges } from '../../../../src/ui/views/set-draft.js';
 import { suggestionView } from '../../../../src/ui/views/set-suggestion.js';
 import { THREE_CRIT_IV, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';

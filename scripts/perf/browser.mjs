@@ -27,7 +27,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 import { makeJobContext } from '../../src/core/job-context.ts';
 import { DEFAULT_EXCLUDE } from '../../src/ui/job-sync-panel.ts';
-import { SET_ROW_SLOTS } from '../../src/ui/sheets/storage.js';
+import { SET_ROW_SLOTS } from '../../src/ui/sheets/storage.ts';
 import { STORE_KEY } from '../../src/ui/store-key.ts';
 import { listOption, numberOption, option } from './args.mjs';
 
@@ -66,7 +66,7 @@ async function throttle(pg, rate) {
 const waitMeasure = (pg, name, count) =>
   pg.waitForFunction(`performance.getEntriesByName('${name}').length >= ${count}`, undefined, { timeout: TIMEOUT });
 
-/** `job`'s sheet as src/ui/sheets/storage.js saves it: level 100, no sync, one empty set per FILL_TARGETS goal. */
+/** `job`'s sheet as src/ui/sheets/storage.ts saves it: level 100, no sync, one empty set per FILL_TARGETS goal. */
 function sheetFor(job) {
   const ctx = makeJobContext(job);
   const targetKey = goal => {

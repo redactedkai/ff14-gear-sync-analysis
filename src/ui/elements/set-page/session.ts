@@ -19,7 +19,7 @@ import { makeJobContext } from '../../../core/job-context.ts';
 import type { Sheet, Suggestion } from '../../store/app-state.ts';
 import type { SheetsFacade } from '../../store/sheets-facade.ts';
 import type { SetPageActions } from '../../store/set-page-actions.ts';
-import { fillSettingsOf } from '../../sheets/fill-settings.js';
+import { fillSettingsOf } from '../../sheets/fill-settings.ts';
 import { PageEdits } from './edits.ts';
 import { PageFill } from './fill-run.ts';
 import { PageFillSettings } from './fill-settings-edit.ts';

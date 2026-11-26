@@ -1,7 +1,7 @@
 /* The layout stress tool's saved sheets (scripts/layout-stress/fixtures.mjs): every record is one the page reads, and the extremes are at the page's own limits. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseSheet } from '../../../../src/ui/sheets/storage.js';
+import { parseSheet } from '../../../../src/ui/sheets/storage.ts';
 import {
   DESCRIPTION_MAX,
   MANY_SETS,

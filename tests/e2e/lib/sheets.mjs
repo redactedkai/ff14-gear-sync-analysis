@@ -5,7 +5,7 @@ import { expect } from './expect.mjs';
 import { SET_SHEET } from './fixtures.mjs';
 import { waitReady, waitStateSaved } from './nav.mjs';
 
-/** Store `sheet` (a saved sheet, the shape src/ui/sheets/storage.js reads) as the only one, and reload on it. */
+/** Store `sheet` (a saved sheet, the shape src/ui/sheets/storage.ts reads) as the only one, and reload on it. */
 export async function seedSheet(pg, sheet) {
   await seedSheets(pg, [sheet]);
 }

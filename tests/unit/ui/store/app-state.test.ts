@@ -21,8 +21,8 @@ import {
 import type { RestoredState } from '../../../../src/ui/store/app-state.ts';
 import { createSheetsActions } from '../../../../src/ui/store/sheets-actions.ts';
 import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
-import { readSheets } from '../../../../src/ui/sheets/store-shared.js';
-import { saveSheet } from '../../../../src/ui/sheets/storage.js';
+import { readSheets } from '../../../../src/ui/sheets/store-shared.ts';
+import { saveSheet } from '../../../../src/ui/sheets/storage.ts';
 import { restoreOpen } from '../../helpers/common.js';
 
 const NO_SHEETS = { available: false, sheets: [], unreadable: [], indexProblem: null };

@@ -50,34 +50,7 @@ export interface SessionHost {
   requestUpdate(): void;
 }
 
-/* The goal part of a set's Auto-fill settings (sheets/fill-settings.js defaultFillSettings): the stat to maximize and two tiebreaks
-   ('' for none), the Target GCD typed ('' for any), whether it is exact or a limit, and the switches. */
-export interface FillGoal {
-  target: string;
-  tb: string;
-  tb2: string;
-  gcd: number | '';
-  gcdMode: string;
-  byTier: boolean;
-  melds: boolean;
-  food: boolean;
-}
-
-/* The Gear to search part: the filters (`min`, `max` and `lvl` are '' for no limit). */
-export interface FillSearchCriteria {
-  expOff: string[];
-  exclude: string[];
-  market: boolean;
-  min: number | '';
-  max: number | '';
-  lvl: number | '';
-}
-
-/* A set's Auto-fill settings (sheets/fill-settings.js fillSettingsOf). */
-export interface FillSettings {
-  goal: FillGoal;
-  searchCriteria: FillSearchCriteria;
-}
+export type { FillGoal, FillSearchCriteria, FillSettings } from '../../sheets/saved-types.ts';
 
 /* One option of a select (<gsa-select>): the value it sets and the label it shows. */
 export interface SelectOption {
@@ -85,28 +58,8 @@ export interface SelectOption {
   label: string;
 }
 
-/* One row of a gear set's pieces: the slot's code, and for a used row the piece's gameId (an empty slot has none) and its materia
-   (null: an empty materia slot). */
-export interface GearRow {
-  slot: string;
-  gameId?: number | null;
-  stones?: ({ stat: string; grade: number } | null)[];
-}
-
-/* The pins of a gear set: the rows an Auto-fill keeps (their indexes) and whether it keeps the meal. */
-export interface GearPins {
-  pieces: number[];
-  meal: boolean;
-}
-
-/* A gear set as the set page reads it (sheets/ops.js newGearSet): the store types the fields it reads (GearSet); these are the
-   ones the page's edits and Auto-fill read besides. */
-export interface PageGearSet extends GearSet {
-  pieces: GearRow[];
-  meal: string | null;
-  pinned?: GearPins;
-  fillSettings?: FillSettings | null;
-}
+/* One row of a gear set's pieces, the pins of a gear set, and a gear set as the set page reads it (sheets/saved-types.ts). */
+export type { SavedRow as GearRow, GearPins, SavedGearSet as PageGearSet } from '../../sheets/saved-types.ts';
 
 /* What the page makes of the solver's reply to an Auto-fill (views/set-suggestion.js fillAnswerView): a `suggestion` to show; a
    `badpin` (pins the set cannot keep: the lines to say, the rows that stay pinned and the ones dropped, whether the meal's pin is

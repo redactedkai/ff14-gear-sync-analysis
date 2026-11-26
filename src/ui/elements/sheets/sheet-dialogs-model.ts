@@ -3,9 +3,9 @@
    (`act`, one DialogAction at a time) and builds the view the element draws (`view`). The element (sheet-dialog.ts) reads nothing
    else; the page that hosts it calls the openers and `close`, and calls `afterClosed` once the element has removed its box.
    Rules: docs/engineering/sheets.md; the fields' checks and what the main button does are views/sheet-forms.js and
-   sheets/dialogs.js. */
-import { shownName, submitDialog } from '../../sheets/dialogs.js';
-import { NEW_SHEET_CAP, copyName, levelFor, ranges, sheetSettings } from '../../sheets/ops.js';
+   sheets/dialogs.ts. */
+import { shownName, submitDialog } from '../../sheets/dialogs.ts';
+import { NEW_SHEET_CAP, copyName, levelFor, ranges, sheetSettings } from '../../sheets/ops.ts';
 import type { SheetsFacade } from '../../store/sheets-facade.ts';
 import { deepFreeze } from '../../view-cache.ts';
 import { copySheetFormView, deleteQuestionView, editFormView, newSheetFormView } from '../../views/sheet-forms.js';
@@ -96,7 +96,7 @@ interface DeleteForm extends Refusal {
 }
 
 /* The open dialog's fields. */
-type DialogForm = NewForm | CopyForm | EditForm | DeleteForm;
+export type DialogForm = NewForm | CopyForm | EditForm | DeleteForm;
 /* The forms that choose a job, a level and a sync. */
 type SettingsForm = NewForm | CopyForm;
 
@@ -441,7 +441,7 @@ export class SheetDialogs {
     this.onChange();
   }
 
-  /* The form's cap lowered to what its job and level allow, as the sheet page lowers it (sheets/ops.js sheetSettings), keeping what it
+  /* The form's cap lowered to what its job and level allow, as the sheet page lowers it (sheets/ops.ts sheetSettings), keeping what it
      lowered for the cap field's note (a new object each time, so the field flashes); null when nothing was. The store checks the
      fields again on Create or Copy. */
   limitFormCap(form: SettingsForm | null = this.settingsForm()): void {
@@ -496,7 +496,7 @@ export class SheetDialogs {
 
   /* ---- the main button ---- */
 
-  /* The dialog's main button (sheets/dialogs.js submitDialog): a refused form stays open with the reason. */
+  /* The dialog's main button (sheets/dialogs.ts submitDialog): a refused form stays open with the reason. */
   submit(): void {
     const form = this.form;
     if (!form) {

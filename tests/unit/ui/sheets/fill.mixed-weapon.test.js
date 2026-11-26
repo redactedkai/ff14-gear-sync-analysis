@@ -1,5 +1,5 @@
 /* Auto-fill for a job that wields a 2H weapon or a 1H weapon with a shield (White Mage, Black Mage): the solve may pick a
-   wand and a shield, and the set's Off-hand row must keep that shield (src/ui/sheets/fill.js applyFill reaches rows
+   wand and a shield, and the set's Off-hand row must keep that shield (src/ui/sheets/fill.ts applyFill reaches rows
    through usedRows, which follows the job's activeSlotTypes). Before A18 the page dropped that shield. The solve at a
    sync cap of 13 (item level) picks a wand and shield for goal Mind; the expected shield is read from the solve, the
    claim tested is that the page keeps what the search chose. */
@@ -9,7 +9,7 @@ import { itemById } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { runRecipe } from '../../../../src/core/recipe.ts';
 import { makeSession } from '../../../../src/core/session.ts';
-import { applyFill, fillPlan } from '../../../../src/ui/sheets/fill.js';
+import { applyFill, fillPlan } from '../../../../src/ui/sheets/fill.ts';
 import { appState } from '../../helpers/common.js';
 
 const SLOT_OF_ROW = ['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring', 'ring'];

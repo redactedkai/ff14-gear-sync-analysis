@@ -5,7 +5,7 @@
 import { SLOT_LABEL, jobById } from '../../core/constants.ts';
 import { GEAR_GROUPS, gearGroupName } from '../../core/gear-groups.ts';
 import { oneOrMany, plural } from '../text.ts';
-import { DESCRIPTION_MAX_LENGTH, FORM_FIELD, NAME_MAX_LENGTH, defaultSheetName, piecesToClear, ranges } from '../sheets/ops.js';
+import { DESCRIPTION_MAX_LENGTH, FORM_FIELD, NAME_MAX_LENGTH, defaultSheetName, piecesToClear, ranges } from '../sheets/ops.ts';
 
 /* Where a refused form's reason shows, from the form's `error` (the reason, '' for none) and `errorField` (the FORM_FIELD
    it is about, '' for none). Returns {error (the reason), errors: {name, job, ack, title}}: `errors` holds the reason
@@ -22,7 +22,7 @@ export function errorPlaces({ error = '', errorField = '' }) {
 /* The New sheet dialog for `form` ({name, nameTyped (the user typed a name: it no longer follows the job), description,
    job ('' for none), level, sync: {on, cap}, error, errorField}). Returns {title, name (the name the box shows: the
    default name while none is typed), namePlaceholder, nameMax, descriptionMax,
-   level, cap (sheets/ops.js ranges), buttonText, error, errors (errorPlaces)}. */
+   level, cap (sheets/ops.ts ranges), buttonText, error, errors (errorPlaces)}. */
 export function newSheetFormView(form) {
   return {
     title: 'New sheet',
@@ -81,7 +81,7 @@ export function copyHelpView(ownJobId) {
    own job included, in the group's order; Blue Mage and Beastmaster are alone in theirs. Returns:
    - title ("Copy “Bahamut T13 Healer” sheet"), sheetName (the sheet's name, which the title shows clipped to one line), name, nameMax, buttonText, error, errors (errorPlaces);
    - jobs: [{id, name, checked}]; help (copyHelpView: the "?" panel);
-   - level, cap: the fields' ranges for the chosen job (sheets/ops.js ranges);
+   - level, cap: the fields' ranges for the chosen job (sheets/ops.ts ranges);
    - warning: null, or {title ("Astrologian cannot wear 1 piece."), text, items: [{key, setName, slotLabel, name}],
      ackText ("Clear this piece in the copy")} when the chosen job cannot wear some of the sheet's pieces;
    - disabled: the warning shows and its box is not ticked (Copy waits until it is). */

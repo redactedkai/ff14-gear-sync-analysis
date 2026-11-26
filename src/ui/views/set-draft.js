@@ -7,7 +7,7 @@ import { ROMAN } from '../../core/meld.ts';
 import { pieceName } from './set-rows.js';
 import { figuresAgainst, evaluateInSheet, setFigures } from './set-totals.js';
 import { plural } from '../text.ts';
-import { rowLabel, sameRow, usedRows } from '../sheets/saved-set.js';
+import { rowLabel, sameRow, usedRows } from '../sheets/saved-set.ts';
 
 /* A piece's stones with equal ones grouped, "CRT XII ×2, DET XI" ("none" without stones). */
 function stonesText(job, piece) {

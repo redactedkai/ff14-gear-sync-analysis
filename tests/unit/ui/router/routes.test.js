@@ -1,5 +1,5 @@
 /* The page's addresses (src/ui/router/routes.ts): what a hash names and the hash of a screen. The ids are the forms the page
-   makes (sheets/ops.js randomId: 's_' or 'g_', the time in base 36 and six letters) and the readable ones of the example
+   makes (sheets/ops.ts randomId: 's_' or 'g_', the time in base 36 and six letters) and the readable ones of the example
    sheets (ui/test-sheets.json). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

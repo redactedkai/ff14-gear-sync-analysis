@@ -1,10 +1,10 @@
-/* ui/sheets/dialogs.js over a real sheet store on stand-in storage: the dialog fields reach the store call of each kind,
+/* ui/sheets/dialogs.ts over a real sheet store on stand-in storage: the dialog fields reach the store call of each kind,
    a refused form gets the store's reason and the field it is about, and is left as it is (a blank name stays blank). */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { ACK_REQUIRED_TEXT, EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT, SHEET_GONE_TEXT } from '../../../../src/ui/sheets/store-shared.js';
-import { FORM_FIELD } from '../../../../src/ui/sheets/ops.js';
-import { shownName, submitDialog } from '../../../../src/ui/sheets/dialogs.js';
+import { ACK_REQUIRED_TEXT, EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT, SHEET_GONE_TEXT } from '../../../../src/ui/sheets/store-shared.ts';
+import { FORM_FIELD } from '../../../../src/ui/sheets/ops.ts';
+import { shownName, submitDialog } from '../../../../src/ui/sheets/dialogs.ts';
 import { WHM_CANE, fakeStorage, piece, sageSet } from '../../helpers/sheet-fixtures.js';
 import { createSheetsFacade } from '../../helpers/stores.js';
 

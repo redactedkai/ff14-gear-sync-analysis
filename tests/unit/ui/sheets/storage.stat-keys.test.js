@@ -1,10 +1,10 @@
-/* Saved sheets and the stat keys (src/ui/sheets/storage.js withCurrentStatKeys). A record written before the keys were the
+/* Saved sheets and the stat keys (src/ui/sheets/storage.ts withCurrentStatKeys). A record written before the keys were the
    game's own names the goal (target, tb, tb2) and the stones by position: `main`, `spd`, `spec`. The tolerant reader gives
    the sheet the job's own keys, whichever kind the record holds, and `v` stays 1. One v1 record per stat profile. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseSheet } from '../../../../src/ui/sheets/storage.js';
-import { fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.js';
+import { parseSheet } from '../../../../src/ui/sheets/storage.ts';
+import { fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 

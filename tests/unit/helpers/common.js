@@ -7,7 +7,7 @@ import { browseItems, poolItemFromRow } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { ITEMS, MAX_REAL } from '../../../src/core/tables.ts';
 import { restoreState } from '../../../src/ui/state.ts';
-import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.js';
+import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.ts';
 
 /* A seeded random number generator returning floats in [0, 1): the same seed gives the same sequence, so a failure
    names a case that can be reproduced. */
@@ -72,7 +72,7 @@ export function restoreOpen(saved) {
 
 /* A store-shaped state object, as the page's state holds it: a save restored by restoreState, plus the job context
    and the highest real item level, and `recipe`, a set's recipe at its Auto-fill settings' defaults for the job
-   (sheets/fill-settings.js fillRecipe), then `patch` on top. */
+   (sheets/fill-settings.ts fillRecipe), then `patch` on top. */
 export function appState(saved, patch = {}) {
   const s = restoreState(saved);
   const jobCtx = makeJobContext(s.job);

@@ -4,8 +4,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../src/core/tables.ts';
-import { DESCRIPTION_MAX_LENGTH, FORM_FIELD, NAME_MAX_LENGTH } from '../../../../src/ui/sheets/ops.js';
-import { ACK_REQUIRED_TEXT, EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT, SHEET_GONE_TEXT } from '../../../../src/ui/sheets/store-shared.js';
+import { DESCRIPTION_MAX_LENGTH, FORM_FIELD, NAME_MAX_LENGTH } from '../../../../src/ui/sheets/ops.ts';
+import { ACK_REQUIRED_TEXT, EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT, SHEET_GONE_TEXT } from '../../../../src/ui/sheets/store-shared.ts';
 import {
   copySheetFormView,
   deleteQuestionView,

@@ -1,12 +1,12 @@
-/* The edits a player makes by hand on a set page (src/ui/sheets/set-edits.js) on real items: a piece, a stone, the meal, a
+/* The edits a player makes by hand on a set page (src/ui/sheets/set-edits.ts) on real items: a piece, a stone, the meal, a
    pin. Expected values come from the items' published facts (slots, Unique rings, materia grades), not from the code. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { piecePickerView } from '../../../../src/ui/views/piece-menu.js';
 import { jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { placePiece, withMeal, withPin, withStone, withoutStone } from '../../../../src/ui/sheets/set-edits.js';
-import { rowLabel } from '../../../../src/ui/sheets/saved-set.js';
+import { placePiece, withMeal, withPin, withStone, withoutStone } from '../../../../src/ui/sheets/set-edits.ts';
+import { rowLabel } from '../../../../src/ui/sheets/saved-set.ts';
 import { hasParts } from '../../helpers/common.js';
 import { SAGE_IDS, THREE_CRIT_IV, sageSet } from '../../helpers/sheet-fixtures.js';
 

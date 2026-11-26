@@ -11,15 +11,15 @@ import {
   NO_PIECES_TEXT,
   RESULT_DISCARDED_TEXT,
 } from '../../../../../src/ui/views/set-page.js';
-import { LOCKED_TEXT } from '../../../../../src/ui/sheets/store-shared.js';
+import { LOCKED_TEXT } from '../../../../../src/ui/sheets/store-shared.ts';
 import { inProcessSolver } from '../../../../../src/ui/solver.js';
 import { makeSession } from '../../../../../src/core/session.ts';
 import { bind, heldSolver, lateSolver, refusingSolver, tick, twoToFill } from '../../../helpers/set-page-bind.js';
 import { hasNumber } from '../../../helpers/common.js';
 import { sageSet } from '../../../helpers/sheet-fixtures.js';
-import { MEAL_ROW_LABEL } from '../../../../../src/ui/sheets/saved-set.js';
+import { MEAL_ROW_LABEL } from '../../../../../src/ui/sheets/saved-set.ts';
 import { makeJobContext } from '../../../../../src/core/job-context.ts';
-import { defaultFillSettings } from '../../../../../src/ui/sheets/fill-settings.js';
+import { defaultFillSettings } from '../../../../../src/ui/sheets/fill-settings.ts';
 
 const HEAD = 2;
 const HANDS = 4;

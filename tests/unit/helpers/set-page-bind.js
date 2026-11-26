@@ -1,10 +1,10 @@
 /* Shared by the tests of a set page's logic (tests/unit/ui/elements/set-page/*.test.js): its session (elements/set-page/session.ts) bound to
    a real sheet store over a stand-in storage, with a stand-in for the element it serves, and solver stand-ins (held, refused, late
    replies). */
-import { saveSheet } from '../../../src/ui/sheets/storage.js';
+import { saveSheet } from '../../../src/ui/sheets/storage.ts';
 import { PageSession } from '../../../src/ui/elements/set-page/session.ts';
 import { inProcessSolver } from '../../../src/ui/solver.js';
-import { placePiece } from '../../../src/ui/sheets/set-edits.js';
+import { placePiece } from '../../../src/ui/sheets/set-edits.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { fillButtonView, noPiecesFlag, setPageViews } from '../../../src/ui/views/set-page.js';
 import { fakeStorage, sageSet, sheetOf } from './sheet-fixtures.js';

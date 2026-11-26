@@ -1,9 +1,9 @@
-/* The entries of the Clan and Party bonus boxes (src/ui/sheets/bonus-options.js): the 16 clans under their 8 races, the
+/* The entries of the Clan and Party bonus boxes (src/ui/sheets/bonus-options.ts): the 16 clans under their 8 races, the
    party texts "No party bonus" to "5 unique roles (5%)", and the sizing text that holds every entry. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { isClan } from '../../../../src/core/clan-bonus.ts';
-import { NO_CLAN_TEXT, bonusOptions, partyText } from '../../../../src/ui/sheets/bonus-options.js';
+import { NO_CLAN_TEXT, bonusOptions, partyText } from '../../../../src/ui/sheets/bonus-options.ts';
 
 test('the Clan list is the 16 clans under their 8 races, in the game order', () => {
   const { groups, noClanText } = bonusOptions();

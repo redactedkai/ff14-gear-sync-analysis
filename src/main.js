@@ -5,7 +5,7 @@ import { unsettled } from './ui/store/app-state.ts';
 import { createPageStore, sealFacade } from './ui/store/page-store.ts';
 import { startAutosave } from './ui/store/autosave.ts';
 import { watch } from './ui/store/watch.ts';
-import { defaultStorage } from './ui/sheets/storage.js';
+import { defaultStorage } from './ui/sheets/storage.ts';
 import { createRouter, windowPort } from './ui/router/router.ts';
 import { DEFAULT_ROUTE, parseRoute } from './ui/router/routes.ts';
 import { focusScreenHeading, isPlacingScroll } from './ui/router/focus.ts';

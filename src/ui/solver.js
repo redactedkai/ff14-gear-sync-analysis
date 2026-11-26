@@ -18,9 +18,9 @@ import { makeSession } from '../core/session.ts';
 import { gearToSearchView, solveView } from './solve.js';
 
 /** A solver request from an element's inputs: `kind` 'solve' (an Auto-fill's answer) or 'gearToSearch' (the line under Gear
-   to search); `inputs` {job: a JobContext, sync (job-sync-panel.ts syncSettings), level, recipe (sheets/fill-settings.js
+   to search); `inputs` {job: a JobContext, sync (job-sync-panel.ts syncSettings), level, recipe (sheets/fill-settings.ts
    fillRecipe)}; options: `key` (a string or number) names the caller, so that workerSolver keeps its requests apart
-   from other callers' (a gear set's id); `pins` (sheets/fill.js fillPlan's {pieces, meal}) the slots an Auto-fill keeps, sent
+   from other callers' (a gear set's id); `pins` (sheets/fill.ts fillPlan's {pieces, meal}) the slots an Auto-fill keeps, sent
    only when there are some. The JobContext goes as its id, rebuilt by the handler (makeJobContext is cached and pure).
    The other inputs must be plain data (no Proxy objects, no functions), or posting them to
    the worker throws.

@@ -11,7 +11,23 @@ import { remapStatKey } from '../../core/stat-keys.ts';
 import { DATA_SOURCE, MAX_REAL } from '../../core/tables.ts';
 import { clone } from '../text.ts';
 import { limitCapToLevel } from '../level-cap.ts';
-import { SET_ROW_SLOTS, SHEET_VERSION } from './storage.js';
+import { SET_ROW_SLOTS, SHEET_VERSION } from './storage.ts';
+import type { LoweredCap } from '../level-cap.ts';
+import type { JobContext, StatKey } from '../../core/types.ts';
+import type { SavedGearSet, SavedSheet } from './saved-types.ts';
+
+/* The fields of a sheet that its forms and its record share: the job, the level and the item level sync. */
+export interface SheetSettingsFields {
+  level: number;
+  sync: { on: boolean; cap: number };
+}
+
+/* The fields a new sheet is made from (newSheet): its name, description, job and settings, already checked. */
+export interface NewSheetFields extends SheetSettingsFields {
+  name: string;
+  description?: string;
+  job: string;
+}
 
 /* The most characters the name box of a sheet or a gear set takes (its `maxlength`; the owner accepted 60). Only the text boxes limit the
    text: the saved data has no limit, so a longer name or description (from another build, say) is read and kept as it is. */
@@ -25,12 +41,12 @@ export const FORM_FIELD = Object.freeze({ name: 'name', job: 'job', ack: 'ack' }
 
 /* A name as it is stored: trimmed. '' means the name is refused (an empty name is not allowed; the caller keeps the old
    one or says so). */
-export function cleanName(text) {
+export function cleanName(text: unknown): string {
   return String(text ?? '').trim();
 }
 
 /* A description as it is stored: line ends kept, trimmed at both ends. */
-export function cleanDescription(text) {
+export function cleanDescription(text: unknown): string {
   return String(text ?? '')
     .replace(/\r\n?/g, '\n')
     .trim();
@@ -38,7 +54,15 @@ export function cleanDescription(text) {
 
 /* The default name of a new sheet: "Sage Lv 100", with the item level cap when its sync is on ("Sage Lv 100 ilvl 123");
    '' with no job chosen. `fields`: {job, level, sync: {on, cap}}. */
-export function defaultSheetName({ job, level, sync }) {
+export function defaultSheetName({
+  job,
+  level,
+  sync,
+}: {
+  job: string;
+  level: number | string;
+  sync?: { on?: boolean; cap?: number | string } | null;
+}): string {
   const known = jobById(job);
   if (!known) {
     return '';
@@ -49,7 +73,7 @@ export function defaultSheetName({ job, level, sync }) {
 /* The name of a copy among siblings named `names`: "<name> (1)", then "(2)", the first number not used; a name that
    already ends in " (n)" is numbered again from its base, so a copy of "X (1)" is "X (2)", not "X (1) (1)". The base is
    cut, and trimmed, only as far as the whole copy name needs to fit NAME_MAX_LENGTH (the name box takes no more). */
-export function copyName(name, names) {
+export function copyName(name: string, names: readonly string[]): string {
   const base = name.replace(/ \(\d+\)$/, '');
   for (let n = 1; ; n++) {
     const tail = ` (${n})`;
@@ -61,7 +85,7 @@ export function copyName(name, names) {
 }
 
 /* A new gear set's default name: the smallest "Set N" no set of `sheet` uses. */
-export function defaultSetName(sheet) {
+export function defaultSetName(sheet: Pick<SavedSheet, 'sets'>): string {
   for (let n = 1; ; n++) {
     if (!sheet.sets.some(set => set.name === `Set ${n}`)) {
       return `Set ${n}`;
@@ -70,13 +94,13 @@ export function defaultSetName(sheet) {
 }
 
 /* A number as typed, rounded to a whole number; `fallback` for no number. */
-function wholeNumber(value, fallback) {
+function wholeNumber<Fallback>(value: unknown, fallback: Fallback): number | Fallback {
   const number = Math.round(Number(value));
   return value === '' || value == null || !Number.isFinite(number) ? fallback : number;
 }
 
 /* A level for job `jobId` as typed: a whole number held to 1..the job's level cap; `fallback` for no number. */
-export function levelFor(jobId, value, fallback) {
+export function levelFor<Fallback>(jobId: string | null, value: unknown, fallback: Fallback): number | Fallback {
   const number = wholeNumber(value, null);
   return number == null ? fallback : clamp(number, 1, makeJobContext(jobId).maxLevel);
 }
@@ -86,14 +110,14 @@ export const NEW_SHEET_CAP = MAX_REAL;
 
 /* The level and item level cap fields for job `jobId` (null: the default job's range), the one copy of their limits:
    {level: {max (the job's level cap)}, cap: {max (the highest real item level)}}. The fields draw their range texts from them. */
-export function ranges(jobId) {
+export function ranges(jobId: string | null): { level: { max: number }; cap: { max: number } } {
   return { level: { max: makeJobContext(jobId).maxLevel }, cap: { max: MAX_REAL } };
 }
 
 /* An item level cap as typed: a whole number held to 1..the highest real item level; `fallback` for no number. */
-export function capFor(value, fallback) {
+export function capFor(value: unknown, fallback?: number): number {
   const number = wholeNumber(value, null);
-  return number == null ? fallback : clamp(number, 1, MAX_REAL);
+  return number == null ? (fallback as number) : clamp(number, 1, MAX_REAL);
 }
 
 /* A sheet's level and item level sync for job `jobId` as the page keeps them, from `fields` ({level, sync: {on, cap}},
@@ -102,25 +126,29 @@ export function capFor(value, fallback) {
    one copy of it), and held to the highest real item level. `fallback` ({level, cap}) stands in for a field with no
    number: by default the job's level cap and NEW_SHEET_CAP. Returns {level, sync: {on, cap}, lowered: limitCapToLevel's
    {from, to, level} when it lowered the cap (the note: level-cap.ts capLoweredText), else null}. */
-export function sheetSettings(jobId, { level, sync }, fallback = {}) {
+export function sheetSettings(
+  jobId: string | null,
+  { level, sync }: { level: unknown; sync?: { on?: unknown; cap?: unknown } | null },
+  fallback: { level?: number; cap?: number } = {},
+): { level: number; sync: { on: boolean; cap: number }; lowered: LoweredCap | null } {
   const jobCtx = makeJobContext(jobId);
   const settings = {
     jobCtx,
-    level: levelFor(jobId, level, fallback.level ?? jobCtx.maxLevel),
+    level: levelFor(jobId, level, fallback.level ?? jobCtx.maxLevel) as number,
     sync: Boolean(sync?.on),
-    cap: Math.max(1, wholeNumber(sync?.cap, fallback.cap ?? NEW_SHEET_CAP)),
+    cap: Math.max(1, wholeNumber(sync?.cap, fallback.cap ?? NEW_SHEET_CAP) as number),
   };
   const lowered = limitCapToLevel(settings);
   return { level: settings.level, sync: { on: settings.sync, cap: capFor(settings.cap) }, lowered };
 }
 
 /* Whether `value` is a gear set's `bestMeals` as saved: a list of meal keys, or null. */
-const isBestMeals = value => value === null || (Array.isArray(value) && value.every(key => typeof key === 'string'));
+const isBestMeals = (value: unknown): boolean => value === null || (Array.isArray(value) && value.every(key => typeof key === 'string'));
 
 /* `sheet` (a saved Sheet) with its level and cap repaired by sheetSettings (a record saved before the cap followed the
    level, or edited by hand) and a damaged `bestMeals` of a gear set dropped (a hint, not worth refusing the sheet); the
    same object when nothing changes. */
-export function repairSheet(sheet) {
+export function repairSheet(sheet: SavedSheet): SavedSheet {
   const { level, sync } = sheetSettings(sheet.job, sheet, { level: sheet.level, cap: sheet.sync.cap });
   const sets = sheet.sets.map(gearSet =>
     gearSet.bestMeals === undefined || isBestMeals(gearSet.bestMeals) ? gearSet : { ...gearSet, bestMeals: null },
@@ -134,13 +162,13 @@ export function repairSheet(sheet) {
 
 /* The game data a new sheet is stamped with: the data source commit (short) and its date, {commit, date}; empty texts
    when the data names no source. */
-export function gameDataStamp(source = DATA_SOURCE) {
+export function gameDataStamp(source: { commit?: string; date?: string } | null = DATA_SOURCE): { commit: string; date: string } {
   return { commit: source?.commit?.slice(0, 7) ?? '', date: /^\d{4}-\d{2}-\d{2}/.exec(source?.date ?? '')?.[0] ?? '' };
 }
 
 /* A new sheet with no gear sets. `fields`: {name, description, job, level, sync: {on, cap}} (already checked); `id` its
    id; `at` the time in ms (created and changed). It has no clan and no party bonus (the sheet page sets them). */
-export function newSheet(fields, id, at) {
+export function newSheet(fields: NewSheetFields, id: string, at: number): SavedSheet {
   return {
     v: SHEET_VERSION,
     id,
@@ -159,7 +187,7 @@ export function newSheet(fields, id, at) {
 }
 
 /* A new, empty gear set: 12 empty rows, no meal, no tagged meals, no pins, no Auto-fill settings, named `name`. */
-export function newGearSet(name, id, at) {
+export function newGearSet(name: string, id: string, at: number): SavedGearSet {
   return {
     id,
     name,
@@ -176,14 +204,14 @@ export function newGearSet(name, id, at) {
 
 /* A copy of `gearSet` with id `id`, name `name` and the times `at`; everything else (pieces, stones, meal, the tagged
    best meals, pins, Auto-fill settings, description) is copied. */
-export function copyGearSet(gearSet, name, id, at) {
+export function copyGearSet(gearSet: SavedGearSet, name: string, id: string, at: number): SavedGearSet {
   return { ...clone(gearSet), id, name, createdAt: at, updatedAt: at };
 }
 
 /* The pieces of `sheet` a sheet for job `jobId` cannot wear, by the job mask (gear-groups.ts piecesJobCannotWear): every
    saved row, the off-hand row of a two-handed job included, since the copy keeps it. Returns [{setId, setName, index (the
    row), slot, name}], set by set in row order; [] when the job is the sheet's own. */
-export function piecesToClear(sheet, jobId) {
+export function piecesToClear(sheet: SavedSheet, jobId: string) {
   if (jobId === sheet.job) {
     return [];
   }
@@ -201,19 +229,19 @@ export function piecesToClear(sheet, jobId) {
 
 /* The stat keys of gear set `set` (a copy, changed in place) from job `from` to job `to`: the goal's target and
    tiebreaks, and each stone's stat (remapStatKey). */
-function remapStats(set, from, to) {
-  const move = stat => remapStatKey(from, to, stat);
+function remapStats(set: SavedGearSet, from: JobContext, to: JobContext): void {
+  const move = (stat: string) => remapStatKey(from, to, stat);
   const goal = set.fillSettings?.goal;
   if (goal) {
-    for (const k of ['target', 'tb', 'tb2']) {
+    for (const k of ['target', 'tb', 'tb2'] as const) {
       if (typeof goal[k] === 'string') {
-        goal[k] = move(goal[k]);
+        goal[k] = move(goal[k] as string);
       }
     }
   }
   for (const row of set.pieces) {
     if (row.stones) {
-      row.stones = row.stones.map(stone => stone && { ...stone, stat: move(stone.stat) });
+      row.stones = row.stones.map(stone => stone && { ...stone, stat: move(stone.stat) as StatKey });
     }
   }
 }
@@ -225,7 +253,7 @@ function remapStats(set, from, to) {
    (remapStatKey: the main stat to the main stat, speed to speed, the special substat to the special substat); a stat
    the new job lacks stays as it is and the set's Auto-fill settings put it back to their default (fillSettingsOf). The
    clan and the party bonus are the sheet's own: they belong to the player, not the job, and are copied. */
-export function copySheet(sheet, fields, id, at, setId) {
+export function copySheet(sheet: SavedSheet, fields: NewSheetFields, id: string, at: number, setId: () => string): SavedSheet {
   const copy = newSheet({ ...fields, description: sheet.description }, id, at);
   copy.clan = sheet.clan ?? null;
   copy.partyRoles = sheet.partyRoles ?? 0;
@@ -253,7 +281,7 @@ export function copySheet(sheet, fields, id, at, setId) {
 
 /* `list` with the item at `from` moved to `to` (both indexes in `list`); a new array. An index out of range returns
    the list as it is (copied). */
-export function moveItem(list, from, to) {
+export function moveItem<Item>(list: readonly Item[], from: number, to: number): Item[] {
   const out = [...list];
   if (from < 0 || from >= out.length || to < 0 || to >= out.length || from === to) {
     return out;
@@ -264,6 +292,6 @@ export function moveItem(list, from, to) {
 
 /* A fresh id with prefix `prefix` ("s_" for a sheet, "g_" for a gear set): the time in base 36 and random letters, so
    two tabs making one at the same moment do not collide. */
-export function randomId(prefix) {
+export function randomId(prefix: string): string {
   return `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
