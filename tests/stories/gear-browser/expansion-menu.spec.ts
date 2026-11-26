@@ -6,6 +6,7 @@ import { EXPANSIONS } from '../../../src/core/constants.ts';
 import { EXPANSION_LABEL, expansionSummary } from '../../../src/ui/elements/gear-browser/filter-menu-model.ts';
 import { expect, test } from '../fixtures.ts';
 import type { Default } from './expansion-menu.story.js';
+import { layerArmed } from '../layers.ts';
 import { expectForcedColoursLook, expectLookApart, partShows, tapOutside } from '../look.ts';
 
 const STORY = 'gear-browser/expansion-menu/Default';
@@ -118,6 +119,7 @@ test.describe('<gsa-expansion-menu>', () => {
     // Tab out of the last box closes it and the focus goes to the control after the menu
     await button.press('ArrowDown');
     await expect(menu).toBeVisible();
+    await layerArmed(page);
     await page.locator(box(SHORTS[SHORTS.length - 1])).focus();
     await page.keyboard.press('Tab');
     await expect(menu).toBeHidden();

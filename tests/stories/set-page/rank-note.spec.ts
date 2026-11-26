@@ -3,6 +3,7 @@
    focus back on the "?"), a press outside and the focus leaving it close it; the look of the "?" and the note in the dark scheme; axe. */
 import { RANK_NOTE_BUTTON_ID, RANK_NOTE_ID, RANK_NOTE_NAME, RANK_NOTE_TEXT } from '../../../src/ui/elements/set-page/rank-note.ts';
 import { expect, test } from '../fixtures.ts';
+import { layerArmed } from '../layers.ts';
 import { expectForcedColoursLook, styleOf, tapOutside, tokenColor } from '../look.ts';
 import type { Default, InSettings } from './rank-note.story.js';
 
@@ -59,10 +60,12 @@ test.describe('<gsa-rank-note>', () => {
     await expect(note).toBeVisible();
     await component.getByRole('button', { name: 'Before' }).click();
     await expect(note).toBeHidden();
+    await layerArmed(page); // Zag still handles that press a frame later: it would close the note opened next
 
     // the focus leaving the note closes it (a press on the note's text puts the focus in it; the next Tab leaves it)
     await button.click();
     await expect(note).toBeVisible();
+    await layerArmed(page); // Zag watches for the focus leaving the note a frame after the opening
     await note.click();
     await expect(note).toBeFocused();
     await page.keyboard.press('Tab');

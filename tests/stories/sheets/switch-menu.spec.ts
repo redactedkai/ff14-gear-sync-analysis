@@ -2,6 +2,7 @@
    Escape closes it with the focus on the caret, Tab walks its rows and closes it past either end, a plain click on a row is a pick, and axe. */
 import { test, expect } from '../fixtures.ts';
 import { BUTTON_NAME, MENU_NAME, type Default } from './switch-menu.story.js';
+import { layerArmed } from '../layers.ts';
 import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'sheets/switch-menu/Default';
@@ -40,6 +41,7 @@ test.describe('<gsa-switch-menu>', () => {
     // Tab walks every row of the open list and, past the last one, closes it and goes on to the next control
     await caret.click();
     await expect(list.getByRole('link', { name: 'Dungeons' })).toBeFocused(); // Zag moves the focus in a frame after it opens
+    await layerArmed(page); // and starts to watch for the focus leaving the list
     await page.keyboard.press('Tab');
     if (tabsToLinks) {
       await expect(list.getByRole('link', { name: 'Crafting' })).toBeFocused();
@@ -54,6 +56,7 @@ test.describe('<gsa-switch-menu>', () => {
     // Shift+Tab walks back up to the first row, then the caret, then out of the list (closing it)
     await caret.click();
     await expect(list.getByRole('link', { name: 'Dungeons' })).toBeFocused();
+    await layerArmed(page);
     await page.keyboard.press('Shift+Tab');
     if (tabsToLinks) {
       await expect(list.getByRole('link', { name: 'Raid' })).toBeFocused();

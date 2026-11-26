@@ -2,6 +2,7 @@
    pick, Escape and Tab out close it with the focus where the keyboard model puts it, a quick close leaves no error, and axe. */
 import { test, expect } from '../fixtures.ts';
 import { BUTTON_ID, MENU_ID, type Default } from './food-menu.story.js';
+import { layerArmed } from '../layers.ts';
 import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'set-page/food-menu/Default';
@@ -47,6 +48,7 @@ test.describe('<gsa-food-menu>', () => {
     // Tab out of the last control of the open menu closes it, and the focus goes on to the next control
     await button.click();
     await expect(menu).toBeVisible();
+    await layerArmed(page);
     await rows.last().focus();
     await page.keyboard.press('Tab');
     await expect(menu).toBeHidden();
