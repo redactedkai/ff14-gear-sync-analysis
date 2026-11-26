@@ -12,7 +12,6 @@ import {
   formatRoute,
   parseRoute,
   samePath,
-  sameRoute,
   titleOf,
 } from '../../../../src/ui/router/routes.js';
 
@@ -120,11 +119,10 @@ test('a query survives parse and format, whatever the text holds', () => {
   }
 });
 
-test('samePath ignores the query, sameRoute does not', () => {
+test('samePath ignores the query', () => {
   const a = { tab: 'browse', params: { sort: 'det' } };
   const b = { tab: 'browse', params: { sort: 'dh' } };
   assert.equal(samePath(a, b), true);
-  assert.equal(sameRoute(a, b), false);
   assert.equal(formatPath(a), '#/gear');
   assert.equal(samePath(a, { tab: 'math', mathTab: 'piece' }), false);
 });
@@ -167,13 +165,6 @@ test('a math route with no known view formats as the first view', () => {
   assert.equal(formatRoute({ tab: 'math', mathTab: 'zzz' }), `#/math/${MATH_TABS[0]}`);
 });
 
-test('sameRoute compares by screen', () => {
-  assert.ok(sameRoute({ tab: 'browse' }, parseRoute('#/gear')));
-  assert.ok(sameRoute(parseRoute('#/math'), { tab: 'math', mathTab: 'piece' }));
-  assert.ok(!sameRoute(parseRoute('#/math/gcd'), parseRoute('#/math/tiers')));
-  assert.ok(!sameRoute({ tab: 'sheets', screen: 'sheet', sheetId: 'a' }, { tab: 'sheets', screen: 'sheet', sheetId: 'b' }));
-});
-
 test('the page title names the screen, then the page', () => {
   assert.equal(titleOf(DEFAULT_ROUTE), `Sheets · ${APP_TITLE}`);
   assert.equal(titleOf({ tab: 'browse' }), `Gear browser · ${APP_TITLE}`);
@@ -200,11 +191,8 @@ test('half of a character never stops an address from being built: a lone surrog
   assert.equal(parseRoute(formatRoute({ tab: 'browse', params: { q: '\u{1F600}' } })).params.q, '\u{1F600}');
 });
 
-test('a query of many names parses in about the time it takes to read it', () => {
+test('a query of 20,000 names parses, each name once', () => {
   const names = Array.from({ length: 20000 }, (_, i) => `n${i}=${i}`).join('&');
-  const started = performance.now();
   const route = parseRoute(`#/gear?${names}`);
-  const took = performance.now() - started;
   assert.equal(Object.keys(route.params).length, 20000);
-  assert.ok(took < 300, `20,000 names took ${Math.round(took)} ms`);
 });

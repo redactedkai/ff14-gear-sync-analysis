@@ -152,11 +152,6 @@ export function formatRoute(route) {
   return formatPath(route) + (hasQuery ? formatQuery(route.params) : '');
 }
 
-/* Whether routes `a` and `b` name the same screen with the same settings (path and query equal). */
-export function sameRoute(a, b) {
-  return formatRoute(a) === formatRoute(b);
-}
-
 /* Whether routes `a` and `b` name the same screen, whatever settings their query names. */
 export function samePath(a, b) {
   return formatPath(a) === formatPath(b);
