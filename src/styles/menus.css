@@ -90,6 +90,17 @@ gsa-gear-sections,
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9.9997 15.1709L19.1921 5.97852L20.6063 7.39273L9.9997 17.9993L3.63574 11.6354L5.04996 10.2212L9.9997 15.1709Z'/%3E%3C/svg%3E")
     no-repeat center / contain;
 }
+/* forced colours turn the accent fill and the tick's colour (--accent-fg) into the canvas colour, so a ticked box would show no tick:
+   it is filled with the system highlight colour and the tick is drawn on it in the highlight's text colour */
+@media (forced-colors: active) {
+  .multi-opt input:checked {
+    border-color: Highlight;
+    background: Highlight;
+  }
+  .multi-opt input:checked::after {
+    background: HighlightText;
+  }
+}
 /* "Gear categories": a head (the market board switch at the left, All / None / Default at the right), a tab per section and the
    selected tab's boxes with what each covers. One layout at every window width (two columns). All the tabs' panels sit in
    one grid cell and the ones not selected are invisible, so the menu is as tall as the tallest tab and never changes size. */
@@ -159,6 +170,27 @@ gsa-gear-sections,
 .from-switch input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+/* forced colours turn the track's and the knob's fills into the canvas colour, so the switch would be invisible, on or off: the
+   track gets a border in the text colour with a knob in the text colour, and on it is filled with the system highlight colour with
+   the knob in the highlight's text colour (the border takes 1 px of the knob's room on each side) */
+@media (forced-colors: active) {
+  .from-switch input {
+    border: 1px solid ButtonText;
+  }
+  .from-switch input::before {
+    top: 1px;
+    left: 1px;
+    background: ButtonText;
+  }
+  .from-switch input:checked {
+    border-color: Highlight;
+    background: Highlight;
+  }
+  .from-switch input:checked::before {
+    left: 15px;
+    background: HighlightText;
+  }
 }
 .from-acts {
   grid-column: 2;

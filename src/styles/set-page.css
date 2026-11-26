@@ -654,6 +654,21 @@ gsa-materia-menu {
   background: var(--accent);
   color: var(--accent-fg);
 }
+/* forced colours replace the accent fill, so the worn stone would look like the others: it is filled with the system highlight colour
+   with its text in the highlight's text colour, and bold (the cap marks keep their own colours: the fill is explicit, so the colours
+   are not forced on it) */
+@media (forced-colors: active) {
+  .matgrid button.on {
+    forced-color-adjust: none;
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+    font-weight: 700;
+  }
+  .matgrid button.on:focus-visible {
+    outline-color: Highlight;
+  }
+}
 .matgrid button.na {
   border-style: dashed;
   background: transparent;

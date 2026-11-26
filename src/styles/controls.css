@@ -158,6 +158,20 @@ input[type="range"]::-moz-range-thumb {
   background: var(--accent-fg);
   transform: translateX(18px);
 }
+/* forced colours turn the knob's fill into the canvas colour, so the knob would not show, on or off: it is drawn in the text colour,
+   and on the track is filled with the system highlight colour with the knob in the highlight's text colour */
+@media (forced-colors: active) {
+  .switch::before {
+    background: ButtonText;
+  }
+  .switch:checked {
+    border-color: Highlight;
+    background: Highlight;
+  }
+  .switch:checked::before {
+    background: HighlightText;
+  }
+}
 button {
   font: inherit;
   font-size: 0.88rem;
