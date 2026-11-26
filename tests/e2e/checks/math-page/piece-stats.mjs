@@ -1,6 +1,6 @@
 // How the math works: Piece stats.
 
-import { check, expect, poll } from '../../lib/expect.mjs';
+import { check, expect } from '../../lib/expect.mjs';
 import { openPieceMenus, setNumber, showMath, tableRows } from '../../lib/nav.mjs';
 import { expectSelectValue, pickOption, selectOptions } from '../../lib/select.mjs';
 
@@ -95,7 +95,8 @@ export async function checkHelpDimsPage(pg) {
   await expect(pg.locator('#m-help-pop')).toBeHidden();
 }
 
-/** SGE, ilvl 130 head, Spell Speed / Piety = the ranked stats of a real item level 130 healer head piece. */
+/** SGE, ilvl 130 head, Spell Speed / Piety = the ranked stats of a real item level 130 healer head piece, on the real page: the
+ * four rows, the head's Mind at the cap, the explainer and the chart. */
 export async function checkPieceLab(pg) {
   await showMath(pg, 'piece');
   await pickOption(pg, '#p-slot', 'head');
@@ -109,26 +110,14 @@ export async function checkPieceLab(pg) {
   await expect(pg.locator('#p-out thead')).toHaveTextParts(['head', 130]);
   await expect(pg.locator('#p-out tbody tr')).toHaveCount(4);
   await expect(pg.locator('#p-s3')).toHaveCount(0); // no third rank: a third line exists only as healer Direct Hit
-  // columns: stat (name, then its share), this head (its value first), the ceiling at the cap, in the duty
+  // columns: stat (name, then its share), this head (its value first), the ceiling at the cap, in the duty: the head's Mind, 33 raw
+  // and 30 at the cap of 123 (the other numbers and the marked slices are `views/piece`'s and `views/piece-stats`')
   const rows = await tableRows(pg, '#p-out');
-  const byStat = Object.fromEntries(
-    rows.map(r => [r[0].split('\n')[0], { raw: parseInt(r[1], 10), ceiling: parseInt(r[2], 10), duty: parseInt(r[3], 10) }]),
-  );
-  const expected = { Mind: 33, Vitality: 32, 'Spell Speed': 31, Piety: 22 };
-  for (const [stat, v] of Object.entries(expected)) {
-    check(byStat[stat]?.raw === v, `Piece stats ilvl 130 head ${stat} raw ${byStat[stat]?.raw}, expected ${v}`);
-  }
-  // 130 is above the 123 cap: the head caps (29 substat, 30 main) are the ceiling, and the duty keeps the lower number
+  const mind = rows.find(r => r[0].split('\n')[0] === 'Mind');
   check(
-    byStat.Mind?.ceiling === 30 && byStat['Spell Speed']?.ceiling === 29 && byStat.Mind?.duty === 30 && byStat['Spell Speed']?.duty === 29,
-    `Piece stats ceiling / duty Mind ${byStat.Mind?.ceiling}/${byStat.Mind?.duty}, Spell Speed ${byStat['Spell Speed']?.ceiling}/${byStat['Spell Speed']?.duty}, expected 30/30 and 29/29`,
+    mind && parseInt(mind[1], 10) === 33 && parseInt(mind[2], 10) === 30 && parseInt(mind[3], 10) === 30,
+    `Piece stats ilvl 130 head Mind (raw, ceiling, duty) is ${mind?.slice(1, 4)}, expected 33, 30, 30`,
   );
-  // the slots that share the head's share are marked (expect() reads one element, so the marked slices are read together)
-  const marked = [/Head\s*8\.5%/, /Hands\s*8\.5%/, /Feet\s*8\.5%/];
-  await poll('the slices that share the head share', async () => {
-    const got = await pg.locator('#p-slices span.on').allTextContents();
-    return { ok: got.length === marked.length && marked.every((re, i) => re.test(got[i])), got };
-  });
   // the explainer: the item level 130 head against the melded item level 123 head, and the curve
   await expect(pg.locator('#p-vs tr[data-kind="melded"]')).toHaveCount(1);
   await expect(pg.locator('#p-vs b')).toBeVisible(); // the verdict

@@ -15,7 +15,7 @@ const DEFAULT_WINDOW = { width: 1000, height: 900 };
 const chipWords = (level, cap) => `${SYNC_CHIP_TEXT.level(level)}${SYNC_CHIP_TEXT.separator}${SYNC_CHIP_TEXT.itemLevel(cap)}`;
 
 /** Stat Allocation and Substat tiers each have their own job in the bar's Job box; GCD Scaling has no Job box; neither job touches
- * the Gear browser's, and a reload keeps both. Substat tiers' level is its job's level cap, whatever level Stat Allocation is at. */
+ * the Gear browser's, and a reload keeps both. (Substat tiers' level being its job's level cap is `checkTiers`' and `state.tiers-job`'s.) */
 export async function checkMathJobs(pg) {
   await pg.setViewportSize(DEFAULT_WINDOW);
   const jobName = () => pg.locator('#m-job-name').innerText();
@@ -28,8 +28,6 @@ export async function checkMathJobs(pg) {
   check((await jobName()) !== 'Black Mage', "Substat tiers took Stat Allocation's job");
   await setJob(pg, 'WAR');
   await expect(pg.locator('#m-job-name')).toHaveText('Warrior');
-  await expect(pg.locator('#t-level')).toHaveValue('100'); // the job's level cap, not Stat Allocation's level (the shared setup's 50)
-  await expect(pg.locator('#t-level-range')).toHaveText('1–100');
   await pg.click('[data-sub=piece]');
   await expect(pg.locator('#tab-piece')).toBeVisible();
   await expect(pg.locator('#m-job-name')).toHaveText('Black Mage');
@@ -58,9 +56,10 @@ export async function checkMathJobs(pg) {
 }
 
 /** The Sync settings chip says the synced level and item level in a few words, opens a popover with Level, Synced IL and the IL Sync
- * switch, and closes it on Escape with the focus on the chip. IL Sync off keeps level sync's item level as the cap (the greyed box shows
- * it; none at the level cap, where the chip says "Unsynced"); IL Sync on keeps it; an empty cap with IL Sync on is "Enter IL" in red;
- * the weapon's inferred level sync target carries a gold star over the chip. */
+ * switch, and closes it on Escape with the focus on the chip. IL Sync off puts level sync's item level in the greyed cap box, and a
+ * level change moves it; the weapon's inferred level sync target carries a gold star over the chip. The chip's other states (none at
+ * the level cap, "Enter IL" in red, the cap lowered) are `sync-explainer.chips`'s, the cap's rule `cap-follow` and
+ * `job-sync-panel.level-sync-cap`'s. */
 export async function checkSyncChip(pg) {
   await pg.setViewportSize(DEFAULT_WINDOW);
   await showMath(pg, 'piece');
@@ -87,23 +86,7 @@ export async function checkSyncChip(pg) {
   await expect(pg.locator('#p-cap')).toBeDisabled();
   await expect(pg.locator('#p-sync-text')).toHaveText(chipWords(50, 130));
   await expect(pg.locator('#p-sync-text .il.quiet')).toHaveCount(1);
-  // at the level cap there is no level sync: no cap, and the chip says so
-  await setNumber(pg, '#level', '100');
-  await expect(pg.locator('#p-cap')).toHaveValue('');
-  await expect(pg.locator('#p-sync-text')).toHaveText(SYNC_CHIP_TEXT.notSynced);
-  // IL Sync on with no item level
-  await pg.locator('#p-sync').check();
-  await expect(pg.locator('#p-sync-text')).toHaveText(`${SYNC_CHIP_TEXT.level(100)}${SYNC_CHIP_TEXT.separator}${SYNC_CHIP_TEXT.needCap}`);
-  await expect(pg.locator('#p-sync-text .il.error')).toHaveCount(1);
-  await setNumber(pg, '#cap', '690');
-  await expect(pg.locator('#p-sync-text')).toHaveText(chipWords(100, 690));
-  // switching off and on again keeps what is stored: off gives no cap at level 100, on starts empty
-  await pg.locator('#p-sync').uncheck();
-  await expect(pg.locator('#p-cap')).toHaveValue('');
-  await pg.locator('#p-sync').check();
-  await expect(pg.locator('#p-cap')).toHaveValue('');
   // a level change with IL Sync off moves the cap with it
-  await pg.locator('#p-sync').uncheck();
   await setNumber(pg, '#level', '85');
   await expect(pg.locator('#p-cap')).toHaveValue('536');
   await expect(pg.locator('#p-sync-text')).toHaveText(chipWords(85, 536));
