@@ -2,6 +2,7 @@
    by Escape (the focus back on its "?") or a press outside; axe. */
 import { test, expect } from '../fixtures.ts';
 import type { Default } from './stat-note.story.js';
+import { layerPlaced } from '../layers.ts';
 import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'math-page/stat-note/Default';
@@ -21,6 +22,7 @@ test.describe('<gsa-stat-note>', () => {
     await crit.click();
     await expect(page.getByRole('dialog', { name: 'Critical Hit' })).toBeVisible();
     expect(await axe()).toEqual([]);
+    await layerPlaced(note);
     const critBox = await crit.boundingBox();
     const noteBox = await note.boundingBox();
     expect(noteBox?.y).toBeGreaterThan((critBox?.y ?? 0) + (critBox?.height ?? 0));
@@ -29,8 +31,11 @@ test.describe('<gsa-stat-note>', () => {
     await det.click();
     await expect(page.getByRole('dialog', { name: 'Determination' })).toBeVisible();
     const detBox = await det.boundingBox();
-    const movedBox = await note.boundingBox();
-    expect(Math.abs((movedBox?.x ?? 0) - ((detBox?.x ?? 0) - 20))).toBeLessThan(2);
+    await expect
+      .poll(async () => Math.abs(((await note.boundingBox())?.x ?? 0) - ((detBox?.x ?? 0) - 20)), {
+        message: 'the note has moved under the second "?"',
+      })
+      .toBeLessThan(2);
 
     // the same "?" again closes it
     await det.click();
