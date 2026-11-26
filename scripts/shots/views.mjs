@@ -330,6 +330,25 @@ async function scrollToTopAndSettle(page) {
   );
 }
 
+/* Takes the sticky parts of the page (the set page's header and table header, the math bar, the ladder header, a menu's
+   group heading) out of the compositor's hands: each gets `position: relative` and no offsets (a `top` would move a relative
+   box), which puts it where `sticky` already has it, since the window is at the top and every sticky part sits at its own
+   place there. A sticky box at a fractional offset (the set page's header is at y 111.90625) is sometimes drawn into its own
+   layer and sometimes into the page's, and the text in it then lands on a slightly different subpixel: a few hundred pixels
+   of antialiasing differed between two runs of one commit (the set page's header and column names, most often with a dialog
+   open and four workers busy). A box with no sticky position has one way to be drawn. Call it with the window at the top,
+   after the last step. Returns a promise; `page` is a Playwright page. */
+async function leaveStickyPartsInPlace(page) {
+  await page.evaluate(() => {
+    for (const element of document.querySelectorAll('*')) {
+      if (getComputedStyle(element).position === 'sticky') {
+        element.style.position = 'relative';
+        element.style.inset = 'auto';
+      }
+    }
+  });
+}
+
 /* On a page that has just loaded: waits for the fonts, runs the view's steps, waits out any timed note, scrolls to the
    top, and leaves the pointer off everything, so the page is ready for its shot. */
 export async function openView(page, view) {
@@ -351,6 +370,7 @@ export async function openView(page, view) {
       }
     });
   }
+  await leaveStickyPartsInPlace(page);
   await page.evaluate(() => document.fonts.ready);
   await settle(page);
 }
