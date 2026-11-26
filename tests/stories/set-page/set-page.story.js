@@ -62,3 +62,19 @@ export const FillFails = ({ failure = 'rejects' } = {}) => {
   const ports = { store, sheets, solver: failing, maxReal: 795 };
   return html`<gsa-set-page .ports=${ports} .setId=${'g_1'} .header=${setHeaderView(sheets.currentSheet, sheets.currentSet)}></gsa-set-page>`;
 };
+
+/* The set page with a solver that never answers an Auto-fill (the counts still answer): the run stays on until Cancel, or until the
+   page is left (the cancel asks the stand-in, which has nothing to stop). */
+export const FillHeld = () => {
+  const held = {
+    ...solver,
+    request: async request => (request.kind === 'solve' ? new Promise(() => {}) : solver.request(request)),
+  };
+  const storage = fakeStorage();
+  saveSheet(sheetOf('SGE', [sageSet()]), storage);
+  const { store, sheets } = createPageStore({ restored: restoreState(null), storage });
+  sheets.openSheet('s_1');
+  sheets.openSet('g_1');
+  const ports = { store, sheets, solver: held, maxReal: 795 };
+  return html`<gsa-set-page .ports=${ports} .setId=${'g_1'} .header=${setHeaderView(sheets.currentSheet, sheets.currentSet)}></gsa-set-page>`;
+};

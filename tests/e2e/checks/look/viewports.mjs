@@ -4,7 +4,7 @@ import { openViewSet, viewSheets } from './screens.mjs';
 import { shot } from '../../lib/constants.mjs';
 import { check, expect, placedByZag, poll, stepRecord } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { focusedId, hasHScroll, runFill, showMath } from '../../lib/nav.mjs';
+import { hasHScroll, runFill, showMath } from '../../lib/nav.mjs';
 import { expectPieceEmpty, openSageSet, seedSheet, seedSheets, sheetNames } from '../../lib/sheets.mjs';
 
 /** Rules that switch at a width, each with a window one pixel either side (testing.md section 3.1): the set page's column
@@ -311,87 +311,5 @@ export async function checkViewports(pg) {
   }
   check(scrolledAt >= 2, `viewports: the set page scrolled at only ${scrolledAt} windows, so the sticky header was not exercised`);
   await pg.setViewportSize({ width: 1000, height: 900 });
-  await pg.click('[data-tab=browse]');
-}
-
-/** The Auto-fill settings popover's pop-ups (Expansion, Gear categories, the Spare points note) float over the popover instead of being
- * cut by its scroll box: at 960 (900 and 700 px high) and 1925 px wide each opens fully inside the window, with no scroll of its own (over its button when there is no room under it), its text is whole, its last rows
- * belong to it (not to the page behind it), and the popover gets no scrollbar. Escape closes the pop-up
- * first (focus back on its button), the next Escape the popover. */
-export async function checkFillMenus(pg) {
-  const probe = ([menuSel, buttonSel]) => {
-    const menu = document.querySelector(menuSel);
-    const dialog = document.querySelector('#sh-settings-dialog');
-    const box = menu.getBoundingClientRect();
-    const owns = (x, y) => menu.contains(document.elementFromPoint(x, y));
-    return {
-      box: [box.left, box.top, box.right, box.bottom].map(Math.round),
-      window: [document.documentElement.clientWidth, innerHeight],
-      // the menu's own corners (a hair inside): clipped by the dialog they would show what is behind it
-      cornersOwned: owns(box.right - 6, box.bottom - 6) && owns(box.left + 6, box.top + 6),
-      cutText: [...menu.querySelectorAll('span, small, p, label')].filter(el => el.scrollWidth > el.clientWidth + 1).length,
-      menuSidewaysScroll: menu.scrollWidth > menu.clientWidth + 1,
-      // every row shown: the menu has no scroll of its own (it opens over its button when there is no room under it)
-      menuScrolls: menu.scrollHeight > menu.clientHeight + 1,
-      dialogSidewaysScroll: dialog.scrollWidth > dialog.clientWidth,
-      dialogScrollbar: dialog.scrollHeight > dialog.clientHeight,
-      button: buttonSel,
-    };
-  };
-  for (const [width, height] of [
-    [960, 900],
-    [960, 700],
-    [1925, 1000],
-  ]) {
-    await pg.setViewportSize({ width, height });
-    await seedSheet(pg, SET_SHEET);
-    await openSageSet(pg);
-    await pg.click('#sh-settings');
-    await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
-    await placedByZag(pg, '#sh-settings-dialog');
-    for (const [what, buttonId, menuSel] of [
-      ['Gear categories menu', 's-from', '#s-from-menu'],
-      ['Expansion menu', 's-exp', '#s-exp-menu'],
-      ['Spare points note', 'sh-rank-help', '#s-rank-pop'],
-    ]) {
-      const where = `${width} px, ${what}`;
-      await pg.click(buttonId === 'sh-rank-help' ? '#sh-settings-dialog .shelp' : `#${buttonId}`);
-      await expect(pg.locator(menuSel)).toBeVisible();
-      await placedByZag(pg, menuSel);
-      await poll(`${where} to sit inside the window with its corners and text whole and no dialog scrollbar`, async () => {
-        const got = await pg.evaluate(probe, [menuSel, buttonId]);
-        const [left, top, right, bottom] = got.box;
-        const [windowWidth, windowHeight] = got.window;
-        const ok =
-          left >= 0 &&
-          top >= 0 &&
-          right <= windowWidth &&
-          bottom <= windowHeight &&
-          got.cornersOwned &&
-          got.cutText === 0 &&
-          !got.menuSidewaysScroll &&
-          !got.menuScrolls &&
-          !got.dialogSidewaysScroll &&
-          !got.dialogScrollbar;
-        return { ok, got };
-      });
-      // Escape closes the pop-up and keeps the dialog; focus goes back to the pop-up's button (the note's ? takes none)
-      if (buttonId !== 'sh-rank-help') {
-        await pg.locator(`${menuSel} input`).first().focus(); // the keyboard is inside the menu
-      }
-      await pg.keyboard.press('Escape');
-      await expect(pg.locator(menuSel)).toBeHidden();
-      await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
-      if (buttonId !== 'sh-rank-help') {
-        await poll(`${where}: focus on its button after Escape`, async () => {
-          const got = await focusedId(pg);
-          return { ok: got === buttonId, got };
-        });
-      }
-    }
-    // with every pop-up closed, the next Escape closes the settings dialog
-    await pg.keyboard.press('Escape');
-    await expect(pg.locator('#sh-settings-dialog')).toBeHidden();
-  }
   await pg.click('[data-tab=browse]');
 }

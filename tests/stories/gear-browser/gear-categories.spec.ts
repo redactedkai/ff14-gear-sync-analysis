@@ -79,6 +79,45 @@ test.describe('<gsa-gear-categories>', () => {
     expect(fit).toEqual({ inside: true, sideways: false, menuScrolls: false });
     expect(await axe(), 'open').toEqual([]);
   });
+
+  test('in a window shorter than the menu the wheel scrolls the menu to its last row, and the scroll does not put it back at the top', async ({
+    mount,
+    page,
+  }) => {
+    await page.setViewportSize({ width: 960, height: 300 });
+    try {
+      await mount<typeof Default>(STORY);
+      await page.locator('#b-from').click();
+      const menu = page.locator(MENU);
+      await expect(menu).toBeVisible();
+      const sizes = () =>
+        menu.evaluate(element => ({ top: Math.round(element.scrollTop), height: element.scrollHeight, client: element.clientHeight }));
+      const start = await sizes();
+      expect(start.height, 'the window is short enough that the menu scrolls').toBeGreaterThan(start.client + 1);
+      const box = await menu.boundingBox();
+      await page.mouse.move((box?.x ?? 0) + (box?.width ?? 0) / 2, (box?.y ?? 0) + Math.min(box?.height ?? 0, 300 - (box?.y ?? 0)) / 2);
+      await page.mouse.wheel(0, 120);
+      await expect.poll(async () => (await sizes()).top, { message: 'one wheel tick moves the menu off the top' }).toBeGreaterThan(0);
+      // on to the end a tick at a time (more ticks would scroll the page behind, which moves the menu with its button)
+      for (let tick = 0; tick < 30; tick++) {
+        const now = await sizes();
+        if (now.top + now.client >= now.height - 1) {
+          break;
+        }
+        await page.mouse.wheel(0, 60);
+        await expect.poll(async () => (await sizes()).top).not.toBe(now.top);
+      }
+      const lastRowBelowBox = () =>
+        menu.evaluate(element => {
+          const bottom = element.getBoundingClientRect().bottom;
+          const rows = [...element.querySelectorAll('.multi-opt')];
+          return Math.round(Math.max(...rows.map(row => row.getBoundingClientRect().bottom)) - bottom);
+        });
+      await expect.poll(lastRowBelowBox, { message: 'the last row ends inside the menu after wheeling to the end' }).toBeLessThanOrEqual(0);
+    } finally {
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
+  });
 });
 
 test.describe('<gsa-gear-categories> with touch', () => {

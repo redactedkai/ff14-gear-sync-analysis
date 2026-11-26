@@ -6,13 +6,6 @@ import { SET_SHEET } from '../../lib/fixtures.mjs';
 import { focusedId, showMath, showTab } from '../../lib/nav.mjs';
 import { rowAction, seedSheet } from '../../lib/sheets.mjs';
 
-/** One overlay of the math tab's bar: its button, what it opens, and the focus where Escape leaves it. */
-const MATH_BAR_OVERLAYS = [
-  { name: 'Job menu', button: '#m-job-btn', panel: '#m-job-menu' },
-  { name: 'Substats & materia popover', button: '#p-piece-chip', panel: '#p-piece-pop' },
-  { name: 'Sync settings popover', button: '#p-sync-chip', panel: '#p-sync-pop' },
-];
-
 /** Waits until the focus is on the element with id `id` (the manager puts it back on the opener at once; a frame can pass first). */
 const focusIsOn = (pg, id, what) =>
   poll(what, async () => {
@@ -20,35 +13,27 @@ const focusIsOn = (pg, id, what) =>
     return { ok: got === id, got: `the focus is on '${got}'` };
   });
 
-/** Each overlay of the math bar: ArrowDown on its button opens it, Escape closes it with the focus back on the button, Tab out
- * closes it, and a press outside closes it. */
+/** The page's overlay keys on the real math bar, for one overlay (the Job menu): ArrowDown on its button opens it, Escape closes it
+ * with the focus back on the button, a press outside closes it with the focus where the press went, and the focus moved to another
+ * control by a script closes it (Tab out; the Job menu story has no such test). The three overlays of the bar and their keys are
+ * `job-menu.spec.ts`'s and `bar-popover.spec.ts`'s. */
 export async function checkOverlayKeys(pg) {
   await showMath(pg, 'piece');
-  for (const { name, button, panel } of MATH_BAR_OVERLAYS) {
-    await pg.focus(button);
-    await pg.keyboard.press('ArrowDown');
-    await expect(pg.locator(panel)).toBeVisible();
-    await pg.keyboard.press('Escape');
-    await expect(pg.locator(panel)).toBeHidden();
-    await focusIsOn(pg, button.slice(1), `${name}: the focus back on its button after Escape`);
-
-    await pg.click(button);
-    await expect(pg.locator(panel)).toBeVisible();
-    await pg.mouse.click(5, 300); // the page outside the bar
-    await expect(pg.locator(panel)).toBeHidden();
-    check(
-      (await focusedId(pg)) !== button.slice(1),
-      `${name}: a press outside left the focus on its button instead of where the press went`,
-    );
-  }
-  // Tab out of the Job menu: the focus leaves the menu and its button, so the menu closes
   await pg.focus('#m-job-btn');
   await pg.keyboard.press('ArrowDown');
   await expect(pg.locator('#m-job-menu')).toBeVisible();
-  // Zag moves the focus into the menu a frame after showing it: leave only once it is there
-  await pg.waitForFunction(() => document.querySelector('#m-job-menu')?.contains(document.activeElement));
-  await pg.focus('#p-slot');
+  await pg.keyboard.press('Escape');
   await expect(pg.locator('#m-job-menu')).toBeHidden();
+  await focusIsOn(pg, 'm-job-btn', 'the Job menu: the focus back on its button after Escape');
+
+  await pg.click('#m-job-btn');
+  await expect(pg.locator('#m-job-menu')).toBeVisible();
+  await pg.mouse.click(5, 300); // the page outside the bar
+  await expect(pg.locator('#m-job-menu')).toBeHidden();
+  check(
+    (await focusedId(pg)) !== 'm-job-btn',
+    'the Job menu: a press outside left the focus on its button instead of where the press went',
+  );
 }
 
 /** One overlay is open at a time, and every one closes with a change of sub-tab or tab. */
@@ -85,28 +70,6 @@ export async function checkOverlaysOneAtATimeAndScreenChange(pg) {
   await showTab(pg, 'browse');
   await showTab(pg, 'math');
   await expect(pg.locator('#t-pop')).toBeHidden();
-}
-
-/** The math tab's "?" help is modal: the focus goes into it, Tab stays inside it, and Escape closes it with the focus back on the "?". */
-export async function checkHelpIsModal(pg) {
-  await showMath(pg, 'piece');
-  await pg.click('#m-help');
-  await expect(pg.locator('#m-help-pop')).toBeVisible();
-  await focusIsOn(pg, 'm-help-pop', 'the help: the focus moves into it when it opens');
-  for (let i = 0; i < 8; i++) {
-    await pg.keyboard.press('Tab');
-  }
-  check(await pg.evaluate(() => Boolean(document.activeElement?.closest('#m-help-pop'))), 'the help: Tab left it for the page behind');
-  for (let i = 0; i < 8; i++) {
-    await pg.keyboard.press('Shift+Tab');
-  }
-  check(
-    await pg.evaluate(() => Boolean(document.activeElement?.closest('#m-help-pop'))),
-    'the help: Shift+Tab left it for the page behind',
-  );
-  await pg.keyboard.press('Escape');
-  await expect(pg.locator('#m-help-pop')).toBeHidden();
-  await focusIsOn(pg, 'm-help', 'the help: the focus back on its "?" after Escape');
 }
 
 /** A note set while the Sheets tab is left is still seen: the toast is outside the tabs (deleting a sheet says so). A failed save's

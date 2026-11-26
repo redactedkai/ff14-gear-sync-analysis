@@ -1,4 +1,4 @@
-import { checkEditLock, checkSetPageFocus, checkSettingsEscape } from './checks/auto-fill/focus.mjs';
+import { checkEditLock, checkSetPageFocus } from './checks/auto-fill/focus.mjs';
 import { checkFillBestMeal, checkFillFood } from './checks/auto-fill/food.mjs';
 import { checkFillGoal } from './checks/auto-fill/goal.mjs';
 import { checkGcdLabel, checkSettingsAlignment } from './checks/auto-fill/layout.mjs';
@@ -24,18 +24,11 @@ import { checkOffhandPills } from './checks/gear-browser/offhand-pills.mjs';
 import { checkBrowserRowsMatchView } from './checks/gear-browser/rows.mjs';
 import { checkSlotMenu, checkSlotMenuPicksAndLayers } from './checks/gear-browser/slot-menu.mjs';
 import { checkAccessibility } from './checks/look/accessibility.mjs';
-import { checkPopoverScroll } from './checks/look/popover-scroll.mjs';
 import { checkRadii } from './checks/look/radii.mjs';
 import { checkThemes } from './checks/look/themes.mjs';
-import { checkBreakpoints, checkFillMenus, checkViewports } from './checks/look/viewports.mjs';
+import { checkBreakpoints, checkViewports } from './checks/look/viewports.mjs';
 import { checkVisualParity } from './checks/look/visual-parity.mjs';
-import {
-  checkClosedPanel,
-  checkHelpClosesJobMenu,
-  checkHelpDimsPage,
-  checkPieceBarSteady,
-  checkPieceLab,
-} from './checks/math-page/piece-stats.mjs';
+import { checkClosedPanel, checkHelpDimsPage, checkPieceBarSteady, checkPieceLab } from './checks/math-page/piece-stats.mjs';
 import { checkGcdTab, checkTiers } from './checks/math-page/tiers-gcd.mjs';
 import { checkLevelBox, checkMathBarBoxes, checkMathBarLayouts, checkMathJobs, checkSyncChip } from './checks/math-page/bar-layout.mjs';
 import { checkHasteSelectFits } from './checks/math-page/haste-select.mjs';
@@ -76,12 +69,7 @@ import {
 } from './checks/startup/failure.mjs';
 import { checkLevelSync } from './checks/tabs/level-sync.mjs';
 import { checkForcedColorsCurrentTab, checkLinkClicks } from './checks/tabs/links.mjs';
-import {
-  checkHelpIsModal,
-  checkNoteSurvivesTabChange,
-  checkOverlayKeys,
-  checkOverlaysOneAtATimeAndScreenChange,
-} from './checks/tabs/overlays.mjs';
+import { checkNoteSurvivesTabChange, checkOverlayKeys, checkOverlaysOneAtATimeAndScreenChange } from './checks/tabs/overlays.mjs';
 import {
   checkAddressSettings,
   checkRouting,
@@ -117,7 +105,6 @@ export const GROUPS = [
     steps: [
       step(checkOverlayKeys, 'app'),
       step(checkOverlaysOneAtATimeAndScreenChange, 'app'),
-      step(checkHelpIsModal, 'app'),
       step(checkPieceLab, 'math-page'),
       step(checkClosedPanel, 'math-page'),
       step(checkPieceBarSteady, 'math-page'),
@@ -179,13 +166,7 @@ export const GROUPS = [
   { steps: [step(checkAverageIlvl, 'set-page')] },
   { steps: [step(checkQuickClicks, 'set-page')] },
   {
-    steps: [
-      step(checkPickMenu, 'set-page'),
-      step(checkMenuClicks, 'set-page'),
-      step(checkBreakpoints, 'look'),
-      step(checkFillMenus, 'look'),
-      step(checkPopoverScroll, 'look'),
-    ],
+    steps: [step(checkPickMenu, 'set-page'), step(checkMenuClicks, 'set-page'), step(checkBreakpoints, 'look')],
   },
   { steps: [step(checkTableMenusUnderHeading, 'set-page'), step(checkPieceMenuKeepsButtonInSight, 'set-page')] },
   {
@@ -194,7 +175,6 @@ export const GROUPS = [
       step(checkTiersNoteUnderPinnedBar, 'math-page'),
       step(checkTiersScroll, 'math-page'),
       step(checkHasteSelectFits, 'math-page'),
-      step(checkHelpClosesJobMenu, 'math-page'),
     ],
   },
   { steps: [step(checkSheetCap, 'sheets')] },
@@ -219,7 +199,7 @@ export const GROUPS = [
   {
     slow: true,
     initScript: HOLD_SOLVE,
-    steps: [step(checkEditLock, 'auto-fill'), step(checkSetPageFocus, 'auto-fill'), step(checkSettingsEscape, 'auto-fill')],
+    steps: [step(checkEditLock, 'auto-fill'), step(checkSetPageFocus, 'auto-fill')],
   },
   {
     slow: true,

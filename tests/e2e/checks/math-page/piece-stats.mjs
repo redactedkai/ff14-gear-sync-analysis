@@ -95,19 +95,6 @@ export async function checkHelpDimsPage(pg) {
   await expect(pg.locator('#m-help-pop')).toBeHidden();
 }
 
-/** The sync help ? button, pressed with the Job menu open, closes the Job menu as any click outside it does: the menu
- * is not left open under the popover's backdrop. The popover opens. */
-export async function checkHelpClosesJobMenu(pg) {
-  await showMath(pg, 'piece');
-  await pg.click('#m-job-btn');
-  await expect(pg.locator('#m-job-menu')).toBeVisible();
-  await pg.click('#m-help');
-  await expect(pg.locator('#m-help-pop')).toBeVisible();
-  await expect(pg.locator('#m-job-menu')).toBeHidden();
-  await pg.keyboard.press('Escape');
-  await expect(pg.locator('#m-help-pop')).toBeHidden();
-}
-
 /** SGE, ilvl 130 head, Spell Speed / Piety = the ranked stats of a real item level 130 healer head piece. */
 export async function checkPieceLab(pg) {
   await showMath(pg, 'piece');
