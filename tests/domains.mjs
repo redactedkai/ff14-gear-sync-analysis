@@ -132,7 +132,7 @@ export const DOMAINS = {
       'tests/unit/ui/views/level-sync.test.js',
       'tests/unit/startup-failure.test.js',
       'tests/unit/helpers/{fuzz,views}.js',
-      'tests/unit/helpers/{store-adapters.ts,stores.js,revision-reads.ts}',
+      'tests/unit/helpers/{stores.js,revision-reads.ts}',
       'tests/unit/ui/store/no-direct-writes.test.js',
     ],
   },

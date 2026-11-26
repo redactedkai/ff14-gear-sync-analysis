@@ -14,7 +14,7 @@ import {
   SHEET_GONE_TEXT,
   copiedNote,
 } from '../../../../src/ui/sheets/store-shared.js';
-import { createSheetStore } from '../../helpers/store-adapters.ts';
+import { createSheetsFacade } from '../../helpers/stores.js';
 import { FORM_FIELD, NEW_SHEET_CAP } from '../../../../src/ui/sheets/ops.js';
 import { WHM_CANE, fakeStorage, piece, quotaError, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 
@@ -22,7 +22,7 @@ import { WHM_CANE, fakeStorage, piece, quotaError, sageSet, sheetOf } from '../.
 function makeStore(storage = fakeStorage()) {
   let clock = Date.UTC(2026, 10, 9, 12);
   let next = 0;
-  return createSheetStore({ storage, now: () => (clock += 1000), makeId: prefix => `${prefix}${++next}` });
+  return createSheetsFacade({ storage, now: () => (clock += 1000), makeId: prefix => `${prefix}${++next}` });
 }
 const FIELDS = { name: 'Bahamut', description: 'Week 1', job: 'SGE', level: 100, sync: { on: true, cap: 123 } };
 
@@ -231,7 +231,7 @@ test('reordering: a drop moves the row and saves the order; the keyboard says wh
 test('while an Auto-fill runs every edit is refused; opening screens still works', () => {
   const store = makeStore();
   const { id } = store.createSheet(FIELDS);
-  store.busy = true;
+  store.setBusy(true);
   const refused = { ok: false, error: LOCKED_TEXT };
   assert.deepEqual(store.createSheet(FIELDS), refused);
   assert.deepEqual(store.editSheet(id, { name: 'x' }), refused);
@@ -328,10 +328,10 @@ test('leaving a set page asks its leave guard first; other screens never ask', (
   const { id } = store.createSheet(FIELDS);
   const asked = [];
   let hold = true;
-  store.leaveGuard = move => {
+  store.setLeaveGuard(move => {
     asked.push(move);
     return hold;
-  };
+  });
   store.openManager();
   assert.equal(asked.length, 0, 'not on a set page');
   store.openSheet(id);

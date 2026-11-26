@@ -30,7 +30,6 @@
    - Behaviours kept on purpose, odd as they are: opening a tab that is already open still applies a math sub-tab; a job change
      on the Sheets tab, which has no panel, does nothing; `openTab` counts requests so only the newest shows. */
 import { makeJobContext } from '../../core/job-context.js';
-import { syncSettings } from '../job-sync-panel.js';
 import { DEFAULT_ROUTE, formatRoute } from '../router/routes.js';
 import { Store } from './store.ts';
 
@@ -323,12 +322,6 @@ export function panelOf(state: AppState, tab: string) {
 /* The JobContext of `tab`'s panel (makeJobContext caches it: the same object each time, so a Select needs no shallowEq). */
 export function jobCtxOf(state: AppState, tab: string) {
   return panelOf(state, tab).jobCtx;
-}
-
-/* The sync settings the core takes ({cap, sync, level}) for `tab`'s panel (job-sync-panel.js syncSettings). A new object on
-   each call. */
-export function syncSettingsOf(state: AppState, tab: string) {
-  return syncSettings(panelOf(state, tab));
 }
 
 /* The saved fields: each tab's panel inside its group (piece for the math tab), then

@@ -1,20 +1,20 @@
-/* The app state's actions (src/ui/store/app-actions.ts), driven from Node through the store interface the tests were first written for (store-adapters.ts). */
+/* The app state's actions (src/ui/store/app-actions.ts), driven from Node through the app facade the screens read (app-facade.ts). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createAppStore } from '../../helpers/store-adapters.ts';
+import { createAppFacade, createStores } from '../../helpers/stores.js';
 import { restoreOpen } from '../../helpers/common.js';
 
 /* A store for `job` with the Gear browser open. */
-const storeFor = job => createAppStore(restoreOpen({ job, tab: 'browse' }));
+const storeFor = job => createAppFacade(restoreOpen({ job, tab: 'browse' }));
 
 /* Roadmap A1: a job switch keeps every setting that is not tied to the job. */
 test('switching to another job keeps the settings the new job can use and resets the rest (audit 11 #2)', () => {
   const store = storeFor('SGE');
-  store.browse.exclude = ['crafted'];
-  store.browse.sort = 'det';
-  store.browse.type = 'ring';
-  store.cap = 200;
+  store.setField('browse.exclude', ['crafted']);
+  store.setField('browse.sort', 'det');
+  store.setField('browse.type', 'ring');
+  store.setField('cap', 200);
   store.setJob('WHM');
   assert.equal(store.job, 'WHM');
   assert.equal(store.jobCtx.jobId, 'WHM');
@@ -23,14 +23,14 @@ test('switching to another job keeps the settings the new job can use and resets
   assert.equal(store.browse.type, 'ring');
   assert.equal(store.cap, 200); // not job-specific: kept
   // to a tank: Determination stays; Spell Speed would not
-  store.browse.sort = 'sps';
+  store.setField('browse.sort', 'sps');
   store.setJob('WAR');
   assert.equal(store.browse.sort, 'ilvl');
   assert.deepEqual(store.browse.exclude, ['crafted']); // "Gear categories" boxes are not job-specific: kept
 });
 
 test("switching to a job with a lower level cap clamps the synced level and the open tab's equip level filter to it", () => {
-  const store = createAppStore(restoreOpen({ job: 'SGE', level: 90, tab: 'browse', browse: { lvl: 100 } }));
+  const store = createAppFacade(restoreOpen({ job: 'SGE', level: 90, tab: 'browse', browse: { lvl: 100 } }));
   store.setJob('BLU');
   assert.equal(store.level, 80);
   assert.equal(store.browse.lvl, 80);
@@ -43,8 +43,8 @@ test("switching to a job with a lower level cap clamps the synced level and the 
   assert.equal(store.browse.lvl, 50);
   store.setJob('WAR'); // a higher cap keeps the lower level
   assert.equal(store.level, 50);
-  store.level = 40;
-  store.browse.lvl = '';
+  store.setField('level', 40);
+  store.setField('browse.lvl', '');
   store.setJob('BST'); // below the cap, and an empty filter: untouched
   assert.equal(store.level, 40);
   assert.equal(store.browse.lvl, '');
@@ -52,7 +52,7 @@ test("switching to a job with a lower level cap clamps the synced level and the 
 
 test('choosing the current job again changes nothing', () => {
   const store = storeFor('DRG');
-  store.browse.sort = 'crit';
+  store.setField('browse.sort', 'crit');
   store.setJob('DRG');
   assert.equal(store.browse.sort, 'crit');
 });
@@ -60,9 +60,9 @@ test('choosing the current job again changes nothing', () => {
 test("reset to defaults: the open tab's settings back to their defaults (Paladin, the default job); the other tabs stay", () => {
   const store = storeFor('SGE');
   store.setJob('WAR');
-  Object.assign(store, { cap: 123, level: 50, sync: true });
-  store.browse.q = 'Dread';
-  store.browse.min = 100;
+  store.editPanel({ cap: 123, level: 50, sync: true });
+  store.setField('browse.q', 'Dread');
+  store.setField('browse.min', 100);
   store.resetAll();
   const want = restoreOpen(null);
   const got = store.persisted();
@@ -74,7 +74,7 @@ test("reset to defaults: the open tab's settings back to their defaults (Paladin
   assert.equal(got.piece.job, 'SGE');
   // the math tab's reset takes its own and nothing else
   store.showTab('math');
-  store.piece.slot = 'ring';
+  store.setField('piece.slot', 'ring');
   store.resetAll();
   assert.equal(store.persisted().piece.job, 'PLD');
   assert.equal(store.persisted().piece.slot, want.piece.slot);
@@ -97,7 +97,7 @@ test('openTab: a newer request replaces one still waiting, so the older tab is n
   const realRaf = globalThis.requestAnimationFrame;
   globalThis.requestAnimationFrame = callback => frames.push(callback);
   try {
-    const store = createAppStore(restoreOpen({ job: 'PLD', tab: 'sheets' }));
+    const { app: store, store: raw } = createStores(restoreOpen({ job: 'PLD', tab: 'sheets' }));
     store.openTab('browse');
     store.openTab('sheets'); // the player went Back before the first frame
     assert.equal(store.pendingTab, 'sheets');
@@ -107,7 +107,7 @@ test('openTab: a newer request replaces one still waiting, so the older tab is n
     await new Promise(resolve => setTimeout(resolve, 10));
     // the older request never showed its tab: one tab was shown, by the newer request
     assert.deepEqual(
-      store.store.log.filter(name => name === 'screen/showTab'),
+      raw.log.filter(name => name === 'screen/showTab'),
       ['screen/showTab'],
     );
     assert.equal(store.tab, 'sheets');

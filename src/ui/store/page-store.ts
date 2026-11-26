@@ -6,13 +6,12 @@ import { readSheets } from '../sheets/store-shared.js';
 import { createAppActions } from './app-actions.ts';
 import type { AppActionOptions } from './app-actions.ts';
 import { createAppFacade } from './app-facade.ts';
-import { STATE_PARTS, initialState } from './app-state.ts';
+import { createAppStore } from './app-state.ts';
 import type { RestoredState, SheetsData } from './app-state.ts';
 import { createSetPageActions } from './set-page-actions.ts';
 import { createSheetsActions } from './sheets-actions.ts';
 import type { SheetsActionOptions } from './sheets-actions.ts';
 import { createSheetsFacade } from './sheets-facade.ts';
-import { Store } from './store.ts';
 
 /* The saved sheets of a page with no storage: none, and none can be saved. */
 const NO_SHEETS: SheetsData = { available: false, sheets: [], unreadable: [], indexProblem: null };
@@ -27,8 +26,7 @@ export interface PageStoreOptions extends AppActionOptions, SheetsActionOptions 
 /* The page's store: {store, appActions, sheetsActions, setPageActions, app (the app facade), sheets (the sheets facade)}. */
 export function createPageStore(options: PageStoreOptions) {
   const storage = options.storage === undefined ? defaultStorage() : options.storage;
-  const state = initialState(options.restored, storage ? (readSheets(storage) as SheetsData) : NO_SHEETS);
-  const store = new Store(state, { parts: STATE_PARTS });
+  const store = createAppStore(options.restored, storage ? (readSheets(storage) as SheetsData) : NO_SHEETS);
   const appActions = createAppActions(store, options);
   const sheetsActions = createSheetsActions(store, { ...options, storage });
   const setPageActions = createSetPageActions(store);

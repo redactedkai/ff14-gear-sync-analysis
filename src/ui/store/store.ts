@@ -14,12 +14,9 @@ export type Listener = () => void;
    ('browse') or two keys joined by a dot ('panels.browse'). A part's revision counts the actions after which the part holds
    different values (its fields compared one by one with `Object.is`, an object or array inside counting as changed when it is
    another object), so a reader of one part is run again only when that part changed. Every key of a slice with parts must
-   be covered by a part (the constructor throws on one that is not), so a field added to the state cannot be left out.
-   onUpdate(key, revision): called inside `update`, as soon as the action has counted, with a revision key (a slice's name or a
-   part's 'slice.path') and its new revision; a reader that cannot wait for the tick's notification can hear it at once. */
+   be covered by a part (the constructor throws on one that is not), so a field added to the state cannot be left out. */
 export interface StoreOptions {
   parts?: Readonly<Record<string, readonly string[]>>;
-  onUpdate?: (key: string, revision: number) => void;
 }
 
 /* The slice an action name belongs to: the text before the first slash ('settings/editBrowse' is slice 'settings'). */
@@ -97,13 +94,11 @@ export class Store<State extends Record<string, object>> {
 
   #listeners = new Set<Listener>();
   #notifyQueued = false;
-  #onUpdate: ((key: string, revision: number) => void) | undefined;
   #parts: Readonly<Record<string, readonly string[]>>;
 
   /* A store over `state`: the object is used as it is (not copied), so the caller keeps no other way to change it. */
   constructor(state: State, options: StoreOptions = {}) {
     this.state = state;
-    this.#onUpdate = options.onUpdate;
     this.#parts = options.parts ?? {};
     for (const [slice, paths] of Object.entries(this.#parts)) {
       requireCovered(slice, state[slice], paths);
@@ -160,11 +155,10 @@ export class Store<State extends Record<string, object>> {
     return this.#listeners.size;
   }
 
-  /* Add one to the revision `key` and tell `onUpdate`. */
+  /* Add one to the revision `key`. */
   #count(key: string): void {
     const revs: Record<string, number> = this.revs;
     revs[key] += 1;
-    this.#onUpdate?.(key, revs[key]);
   }
 
   /* Schedule the one notification of this tick, unless one is already waiting. */

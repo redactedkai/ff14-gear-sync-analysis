@@ -50,7 +50,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 21 | 12 |
 | `gear-browser` | the Gear browser tab and its filter menus | 6 | 16 |
 | `math-page` | How the math works: Piece stats, Substat tiers, GCD | 12 | 15 |
-| `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 44 | 47 |
+| `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 43 | 47 |
 | `look` | shared CSS: tokens, themes, layout at the five windows, radii | 3 | 8 |
 | `tooling` | the build, the test runners, the layout stress tool and the repo's code rules | 21 | 0 |
 
@@ -190,15 +190,14 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/state.tiers-job | Substat tiers' saved job: default, restore repair, a save with none |
 | ui/state.panels | each reference tab's own Job and sync panel on restore; an old save's optimizer settings dropped |
 | ui/state.split-panel | the saved settings with the Job and sync panel split between the Gear browser and the math tab and the old `opt` dropped |
-| ui/store/page-store.seal (`.test.ts`) | the two facades as the page registers them (`sealFacade`): defineProperty, delete, a plain assignment, a new member and setPrototypeOf are all refused on each, while reads, actions and the engine's use of them work |
 | ui/store/store (`.test.ts`) | the new store: 1,000 updates in a tick give one notification, a revision per slice, the log of 50 action names, listeners, big data kept by reference |
 | ui/store/select (`.test.ts`) | `Select` over a fake host: renders only on a change of what it selected, unsubscribes on disconnect (1,000 cycles leave none), `shallowEq` |
 | ui/store/watch (`.test.ts`) | `watch`: once per tick, previous value, `equals`, stop |
 | ui/store/autosave (`.test.ts`) | the save 150 ms after the last change on a fake clock, one write for 1,000 changes, `pagehide` flush, a throwing storage ignored |
 | ui/store/app-state (`.test.ts`) | the five slices, actions that change nothing are not counted, `panelOf`, `persisted` in the saved shape, gear set pages, `routeOf` against the router's routes |
-| ui/store/app-actions, `.panels`, `.sheets-tab`, `.tiers-job` | the scenarios of the app store's first tests (job switch and reset, the two panels, the Sheets tab has no panel, Substat tiers' own job) run against the actions through `tests/unit/helpers/store-adapters.ts` |
+| ui/store/app-actions, `.panels`, `.sheets-tab`, `.tiers-job` | the app actions through the app facade the screens read: a job switch and Reset, the two panels, the Sheets tab has no panel, Substat tiers' own job |
 | ui/store/app-actions.parts (`.test.ts`) | every app action: the parts it counts are the parts that changed |
-| ui/store/sheets-actions, `.clan-party` | the sheets' store over a storage stand-in (note 15), run against the actions through the same adapter |
+| ui/store/sheets-actions, `.clan-party` | the sheets' actions through the sheets facade, over a storage stand-in (note 15) |
 | ui/store/app-facade, sheets-facade (`.test.ts`) | the two facades the elements read (`app`, `sheets`): each getter reads the revision of its slice, nothing can be assigned to, the number boxes' `setField`, the set page's guard, `unsettled` through `hasUnsettled`, `commitSheet` |
 | ui/store/set-page-actions (`.test.ts`) | the gear set pages' actions: the draft, the Auto-fill's status (idle, running, waiting, failed, cancelled), a stale answer ignored by its search id, the Gear to search count, `unsettled` over several pages, two pages open at once |
 | ui/store/no-direct-writes | a search of `src/` for any write to a facade that is not an action call: `app.<field> =`, `Object.assign(app...)`, `sheets.<field> =` |

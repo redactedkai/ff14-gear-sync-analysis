@@ -1,9 +1,10 @@
-/* The two reference tabs' own Job and sync panels in the store (store.js): the panel edits the open tab's job, cap, sync and
-   level; switching tabs swaps them; panel(tab) reads any tab's; persisted() puts each into its own group. */
+/* The two reference tabs' own Job and sync panels, through the app facade (src/ui/store/app-facade.ts): the panel edits the open
+   tab's job, cap, sync and level; the facade's job, cap, sync and level read the open tab's; panel(tab) reads any tab's;
+   persisted() puts each into its own group. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createAppStore } from '../../helpers/store-adapters.ts';
+import { createAppFacade } from '../../helpers/stores.js';
 import { restoreOpen } from '../../helpers/common.js';
 
 /* A save in the new shape: a different job, level and sync on each tab (a Warrior at item level 705 for the browser, a
@@ -16,7 +17,7 @@ const SAVE = {
 };
 
 test("each tab opens with its own panel; the open tab's is the store's job, cap, sync and level", () => {
-  const store = createAppStore(restoreOpen(SAVE));
+  const store = createAppFacade(restoreOpen(SAVE));
   assert.deepEqual([store.job, store.cap, store.sync, store.level], ['WAR', 705, false, 90]);
   assert.equal(store.jobCtx.jobId, 'WAR');
   assert.deepEqual(
@@ -28,9 +29,9 @@ test("each tab opens with its own panel; the open tab's is the store's job, cap,
 });
 
 test("changing the open tab's panel leaves the other tabs' alone, and switching tabs swaps the panel", () => {
-  const store = createAppStore(restoreOpen(SAVE));
+  const store = createAppFacade(restoreOpen(SAVE));
   store.setJob('DRG');
-  Object.assign(store, { cap: 650, sync: true, level: 80 });
+  store.editPanel({ cap: 650, sync: true, level: 80 });
   assert.equal(store.panel('math').job, 'BLM');
   assert.equal(store.panel('math').cap, 300);
   store.showTab('math');
@@ -46,20 +47,20 @@ test("changing the open tab's panel leaves the other tabs' alone, and switching 
 });
 
 test("a job change resets only the open tab's own selections", () => {
-  const store = createAppStore(restoreOpen(SAVE));
+  const store = createAppFacade(restoreOpen(SAVE));
   store.setJob('WHM'); // the browser: the sort by Determination stays; the piece is untouched
   assert.equal(store.browse.sort, 'det');
   assert.equal(store.piece.slot, 'ring');
   store.showTab('math');
   store.setJob('WAR');
   assert.equal(store.piece.slot, 'ring');
-  assert.equal(store.browse.job, 'WHM', 'the browser group keeps the job it was left with');
+  assert.equal(store.panel('browse').job, 'WHM', 'the browser panel keeps the job it was left with');
   assert.equal(store.browse.q, 'axe');
 });
 
 test("persisted: each tab's panel in its own group, the open tab's edits included, nothing written to the store", () => {
-  const store = createAppStore(restoreOpen(SAVE));
-  store.cap = 710;
+  const store = createAppFacade(restoreOpen(SAVE));
+  store.setField('cap', 710);
   const saved = store.persisted();
   assert.deepEqual(Object.keys(saved).sort(), ['browse', 'piece', 'sheetFigures', 'tiers']);
   assert.equal(saved.browse.cap, 710);
@@ -68,7 +69,7 @@ test("persisted: each tab's panel in its own group, the open tab's edits include
   // the open tab and math view are not saved (the address names them)
   assert.equal('tab' in saved || 'mathTab' in saved, false);
   // and it restores to the same tabs
-  const again = createAppStore(restoreOpen(JSON.parse(JSON.stringify(saved))));
+  const again = createAppFacade(restoreOpen(JSON.parse(JSON.stringify(saved))));
   assert.deepEqual(
     ['browse', 'math'].map(tab => [again.panel(tab).job, again.panel(tab).cap]),
     [

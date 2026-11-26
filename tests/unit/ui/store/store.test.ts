@@ -34,22 +34,6 @@ test('1,000 updates in one tick notify the listener once', async () => {
   assert.equal(notified, 2, 'the next tick notifies again');
 });
 
-test('onUpdate hears each action as it counts: the slice and its new revision, before the tick ends', () => {
-  const heard: [string, number][] = [];
-  const store = new Store<DemoState>(
-    { settings: { count: 0 }, screen: { tab: 'sheets' } },
-    { onUpdate: (slice, revision) => heard.push([slice, revision]) },
-  );
-  store.update('settings/count', () => {});
-  store.update('screen/tab', () => {});
-  store.update('settings/count', () => {});
-  assert.deepEqual(heard, [
-    ['settings', 1],
-    ['screen', 1],
-    ['settings', 2],
-  ]);
-});
-
 test('a revision per slice: an action bumps the slice its name starts with and no other', () => {
   const store = demoStore();
   store.update('settings/count', state => {
@@ -173,13 +157,9 @@ test('a part has a revision that counts only the actions that changed it, found 
   interface PartState extends Record<string, object> {
     settings: { filters: { q: string; kinds: string[] }; panels: { a: { level: number }; b: { level: number } }; title: string };
   }
-  const heard: [string, number][] = [];
   const store = new Store<PartState>(
     { settings: { filters: { q: '', kinds: [] }, panels: { a: { level: 1 }, b: { level: 1 } }, title: 'x' } },
-    {
-      parts: { settings: ['filters', 'panels.a', 'panels.b', 'title'] },
-      onUpdate: (key, revision) => heard.push([key, revision]),
-    },
+    { parts: { settings: ['filters', 'panels.a', 'panels.b', 'title'] } },
   );
   assert.deepEqual(store.revisionKeys(), ['settings', 'settings.filters', 'settings.panels.a', 'settings.panels.b', 'settings.title']);
   store.update('settings/q', state => {
@@ -206,11 +186,6 @@ test('a part has a revision that counts only the actions that changed it, found 
     [4, 2, 0, 1, 0],
     'an equal value is no change; a new array is one',
   );
-  assert.deepEqual(heard.slice(0, 3), [
-    ['settings', 1],
-    ['settings.filters', 1],
-    ['settings', 2],
-  ]);
 });
 
 test('a part is counted even when the action throws after changing it', () => {

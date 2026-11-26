@@ -15,7 +15,6 @@ import {
   routeOf,
   setPageOf,
   sheetHref,
-  syncSettingsOf,
   unsettled,
   unsettledKind,
 } from '../../../../src/ui/store/app-state.ts';
@@ -79,22 +78,6 @@ test('an action that changes nothing is not counted: the same tab, the same job,
   assert.equal(store.rev, 1, 'only setBusy(true)');
 });
 
-test('1,000 actions in a tick are one notification', async () => {
-  const store = start();
-  const actions = createAppActions(store);
-  let notified = 0;
-  store.subscribe(() => {
-    notified += 1;
-  });
-  for (let i = 0; i < 1000; i++) {
-    actions.editBrowse({ q: `axe ${i}` });
-  }
-  await new Promise(resolve => setTimeout(resolve, 0));
-  assert.equal(notified, 1);
-  assert.equal(store.revs.settings, 1000);
-  assert.equal(store.log.length, 50);
-});
-
 test('panelOf: a tab with a panel, Substat tiers (a job only, at its level cap) and a tab with none', () => {
   const store = start({ browse: { job: 'WAR', cap: 705, sync: true, level: 100 }, tiers: { job: 'BLU' }, tab: 'browse' });
   assert.deepEqual((({ job, cap, sync, level }) => ({ job, cap, sync, level }))(panelOf(store.state, 'browse')), {
@@ -106,7 +89,6 @@ test('panelOf: a tab with a panel, Substat tiers (a job only, at its level cap) 
   const tiers = panelOf(store.state, 'tiers');
   assert.deepEqual([tiers.job, tiers.cap, tiers.sync, tiers.level, tiers.jobCtx.jobId], ['BLU', null, false, 80, 'BLU']);
   assert.throws(() => panelOf(store.state, 'sheets'), /no Job and sync panel/);
-  assert.deepEqual(syncSettingsOf(store.state, 'browse'), { cap: 705, sync: true, level: 100 });
 });
 
 test('persisted is the old shape: the groups hold their panels, nothing else of the state is in it', () => {
