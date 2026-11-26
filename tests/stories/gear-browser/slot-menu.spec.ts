@@ -2,7 +2,7 @@
    focus rules (back on the button after a pick or Escape, on to the next control after Tab), the list's place in short windows
    and axe. The touch story does not run in Firefox: Playwright's Firefox fails to close a touch context under parallel workers. */
 import { test, expect } from '../fixtures.ts';
-import type { Page } from 'playwright/test';
+import type { Locator, Page } from 'playwright/test';
 import {
   APP_MENU_LABEL,
   CHOICES,
@@ -144,6 +144,67 @@ test.describe('<gsa-slot-menu>', () => {
 
     await component.update({ value: 'ring' });
     expect(await component.getByRole('button', { name: slotButtonName('Ring') }).evaluate(width)).toBeCloseTo(closedWidth, 0);
+  });
+
+  /* The Slot button and its open menu, in px: the widths, where the menu starts against the button, whether a row is clipped, and
+     where the menu ends. */
+  async function fitOf(page: Page) {
+    return page.evaluate(() => {
+      const button = document.querySelector('gsa-slot-menu .slot-btn') as HTMLElement;
+      const menu = document.querySelector('#b-slots') as HTMLElement;
+      const buttonBox = button.getBoundingClientRect();
+      const menuBox = menu.getBoundingClientRect();
+      return {
+        buttonWidth: buttonBox.width,
+        menuWidth: menuBox.width,
+        menuLeft: menuBox.left - buttonBox.left,
+        menuRight: menuBox.right,
+        rowsClipped: [...menu.querySelectorAll('.multi-opt')].some(row => row.scrollWidth > row.clientWidth),
+        sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      };
+    });
+  }
+
+  for (const { width, height } of [
+    { width: 960, height: 900 },
+    { width: 1280, height: 900 },
+    { width: 1920, height: 1080 },
+  ]) {
+    test(`at ${width} px the open menu is as wide and as far left as its button, also when every count is 88,888`, async ({
+      mount,
+      page,
+    }) => {
+      await page.setViewportSize({ width, height });
+      try {
+        const widest = CHOICES.map(choice => ({ ...choice, count: 88888, countText: '88,888' }));
+        const seen = [];
+        for (const choices of [CHOICES, widest]) {
+          const component = await mount<typeof Default>(STORY, { choices });
+          await component.getByRole('button', { name: slotButtonName(ANY_SLOT_LABEL) }).click();
+          await expect(page.locator('#b-slots')).toBeVisible();
+          const fit = await fitOf(page);
+          expect(fit.menuWidth, 'the open menu is as wide as its button').toBeCloseTo(fit.buttonWidth, 0);
+          expect(Math.abs(fit.menuLeft), 'the open menu starts where its button starts').toBeLessThan(1);
+          expect(fit.rowsClipped, 'no row is clipped').toBe(false);
+          expect(fit.menuRight, 'the menu ends inside the window').toBeLessThanOrEqual(width);
+          expect(fit.sideways, 'the page does not scroll sideways').toBe(false);
+          seen.push(fit);
+          await page.keyboard.press('Escape');
+        }
+        // the widest counts change neither the button nor the menu: the button is sized for them from the start
+        expect(seen[1].buttonWidth).toBeCloseTo(seen[0].buttonWidth, 0);
+        expect(seen[1].menuWidth).toBeCloseTo(seen[0].menuWidth, 0);
+      } finally {
+        await page.setViewportSize({ width: 1280, height: 720 });
+      }
+    });
+  }
+
+  test('the bar has the one border: 1 px on the bar, none on the Slot button', async ({ mount, page }) => {
+    const component = await mount<typeof Default>(STORY);
+    const borderOf = (locator: Locator) => locator.evaluate(element => getComputedStyle(element).borderTopWidth);
+    expect(await borderOf(page.locator('.searchbar'))).toBe('1px');
+    expect(await borderOf(component.getByRole('button', { name: slotButtonName(ANY_SLOT_LABEL) }))).toBe('0px');
   });
 
   test('the open menu keeps its place above the page while the pointer lights the rows', async ({ mount, page }) => {

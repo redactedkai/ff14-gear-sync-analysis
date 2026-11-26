@@ -22,7 +22,7 @@ import { checkGearFrom } from './checks/gear-browser/gear-from.mjs';
 import { checkGearFromCountsBrowser, checkGearFromCountsFill } from './checks/gear-browser/piece-counts.mjs';
 import { checkOffhandPills } from './checks/gear-browser/offhand-pills.mjs';
 import { checkBrowserRowsMatchView } from './checks/gear-browser/rows.mjs';
-import { checkSlotMenu, checkSlotMenuPicksAndLayers, checkSlotMenuShortWindow } from './checks/gear-browser/slot-menu.mjs';
+import { checkSlotMenu, checkSlotMenuPicksAndLayers } from './checks/gear-browser/slot-menu.mjs';
 import { checkAccessibility } from './checks/look/accessibility.mjs';
 import { checkPopoverScroll } from './checks/look/popover-scroll.mjs';
 import { checkRadii } from './checks/look/radii.mjs';
@@ -139,13 +139,7 @@ export const GROUPS = [
   { steps: [step(checkBrowserPages, 'gear-browser'), step(checkBrowserRowsMatchView, 'gear-browser')] },
   { steps: [step(checkBrowserColumnsStay, 'gear-browser'), step(checkBrowserColumnHover, 'gear-browser')] },
   { steps: [step(checkBrowserFourDigits, 'gear-browser')] },
-  {
-    steps: [
-      step(checkSlotMenu, 'gear-browser'),
-      step(checkSlotMenuPicksAndLayers, 'gear-browser'),
-      step(checkSlotMenuShortWindow, 'gear-browser'),
-    ],
-  },
+  { steps: [step(checkSlotMenu, 'gear-browser'), step(checkSlotMenuPicksAndLayers, 'gear-browser')] },
   { steps: [step(checkTabPanels, 'app')] },
   { steps: [step(checkStoresSealed, 'app')] },
   { steps: [step(checkRouting, 'app')] },
