@@ -1,6 +1,6 @@
 /* Stories of <gsa-rank-note>: the "?" opens the note under itself with its right edge on the button's (and keeps it there when the
    page scrolls or the window narrows: the note is fixed to the window), names it and says the sentence; the "?" again, Escape (the
-   focus back on the "?"), a press outside and a Tab out close it; the look of the "?" and the note in the dark scheme; axe. */
+   focus back on the "?"), a press outside and the focus leaving it close it; the look of the "?" and the note in the dark scheme; axe. */
 import { RANK_NOTE_BUTTON_ID, RANK_NOTE_ID, RANK_NOTE_NAME, RANK_NOTE_TEXT } from '../../../src/ui/elements/set-page/rank-note.ts';
 import { expect, test } from '../fixtures.ts';
 import { styleOf, tokenColor } from '../look.ts';
@@ -66,8 +66,9 @@ test.describe('<gsa-rank-note>', () => {
     await note.click();
     await expect(note).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'After' })).toBeFocused();
     await expect(note).toBeHidden();
+    // where the focus lands after the Tab differs by engine (Firefox restarts at the first control of the page), so only "not in the note" is asserted
+    expect(await page.evaluate(selector => document.querySelector(selector)?.contains(document.activeElement), NOTE)).toBe(false);
   });
 
   test('the note goes with its "?" when the page scrolls and when the window narrows', async ({ mount, page }) => {
