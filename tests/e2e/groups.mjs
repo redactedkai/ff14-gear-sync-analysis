@@ -50,7 +50,6 @@ import { checkJobStrip } from './checks/settings/job-strip.mjs';
 import { checkCapFlag } from './checks/sheets/cap-flag.mjs';
 import { checkClanParty } from './checks/sheets/clan-party.mjs';
 import { checkSetListColumns } from './checks/sheets/columns.mjs';
-import { checkDialogErrors } from './checks/sheets/dialog-errors.mjs';
 import { checkSheetEdges } from './checks/sheets/edges.mjs';
 import { checkSheetCap, checkSheetForms } from './checks/sheets/forms.mjs';
 import { checkSheets } from './checks/sheets/manager.mjs';
@@ -151,7 +150,6 @@ export const GROUPS = [
   { fresh: true, steps: [step(checkBackAfterScriptScroll, 'app')] },
   { steps: [step(checkSheets, 'sheets')] },
   { steps: [step(checkSheetForms, 'sheets')] },
-  { steps: [step(checkDialogErrors, 'sheets')] },
   { steps: [step(checkSheetEdges, 'sheets')] },
   { steps: [step(checkSetListSort, 'sheets')] },
   { steps: [step(checkSetListColumns, 'sheets')] },

@@ -47,7 +47,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `solver` | the search for the best gear set, in the core (with the long sweep) | 25 | 0 |
 | `auto-fill` | Auto-fill on the page: settings, run, cancel, worker, suggestion | 12 | 16 |
 | `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 20 | 14 |
-| `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 21 | 12 |
+| `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 21 | 11 |
 | `gear-browser` | the Gear browser tab and its filter menus | 5 | 15 |
 | `math-page` | How the math works: Piece stats, Substat tiers, GCD | 12 | 14 |
 | `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 43 | 46 |
@@ -392,7 +392,7 @@ Notes on the longer rows:
 - **Note c, Sheets.**
   - At 960 px, with no Job and sync panel: the empty state, New sheet, Edit name and description (an empty name refused), the level and cap fields. Also New set and the set page's settings line, set notes, reordering by keyboard (the live region) and by drag. Also Copy sheet (and its list of pieces to clear, from a seeded White Mage cane), Delete, a reload keeping it all.
   - The dialogs' blank names and focus, the switch menu.
-  - `checkDialogErrors`: at 960 px, the four refusals of New sheet and Copy sheet (no job, a blank name, the tick box, the sheet gone) sit in the label row of their field (or the title row), at the right of the label text, with the field marked and naming the reason, the buttons exactly where they were, a blank name left empty, and an edit clearing the reason. Structure and boxes only, never the sentences.
+  - The place of a refused dialog's reason (label row, right of the label text, field marked and named, buttons not moving, the title row for a reason about no field) is two stories of `<gsa-sheet-dialog>` at 960 px (`sheet-dialog.spec.ts`: New sheet and Copy sheet); `forms.mjs` keeps a refusal on the real page.
   - An unreadable record and its Delete question, the level range of Blue Mage and Beastmaster, Copy and Delete from a set page.
   - The widths where a rule switches (1099 and 1100 px, 1299 and 1301 px); no sideways scroll.
 - **Note d, two browser tabs, both color schemes and five windows.**
