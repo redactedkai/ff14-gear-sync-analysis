@@ -174,3 +174,34 @@ test('the screen follows what it draws from: an edit, the open page, the edit lo
     'the tab',
   );
 });
+
+test('New sheet in the caret menu opens its dialog over the manager and the redraw that follows keeps it open', () => {
+  const { model, sheets } = bind();
+  addSheet(sheets);
+  model.follow();
+  assert.equal(sheets.screen, 'sheet');
+  model.onSwitchPick({ kind: 'new', opener: { isConnected: true, focus() {} } });
+  assert.equal(sheets.screen, 'sheets', 'the manager is behind the dialog');
+  assert.equal(model.dialogs.isOpen, true);
+  model.follow();
+  assert.equal(model.dialogs.isOpen, true, 'the move to the manager is the pick itself, not a change that closes the dialog');
+  sheets.createSheet({ name: 'T', job: 'SGE', level: 100, sync: { on: false, cap: 795 } });
+  model.follow();
+  assert.equal(model.dialogs.isOpen, false, 'a later change of page still closes it');
+});
+
+test('New sheet in the caret menu opens no dialog while the leave question holds the move to the manager', () => {
+  const { model, sheets } = bind();
+  addSheet(sheets);
+  sheets.newSet();
+  model.follow();
+  const asked = [];
+  sheets.setLeaveGuard(move => {
+    asked.push(move);
+    return true;
+  });
+  model.onSwitchPick({ kind: 'new', opener: { isConnected: true, focus() {} } });
+  assert.equal(asked.length, 1, 'the leave question was asked');
+  assert.equal(sheets.screen, 'set', 'still on the set page');
+  assert.equal(model.dialogs.isOpen, false);
+});

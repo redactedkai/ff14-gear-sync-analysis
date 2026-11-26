@@ -82,12 +82,22 @@ export class SheetsScreenModel implements AnswerPort {
      router owns the focus then. Back and Forward close it too (the element's popstate listener calls `dialogs.close(false)`).
      Called before each draw. */
   follow(): void {
-    const place = `${this.app.tab}|${this.sheets.sheetId}|${this.sheets.setId}`;
-    const moved = this.lastPlace !== null && place !== this.lastPlace;
-    this.lastPlace = place;
+    const moved = this.lastPlace !== null && this.place() !== this.lastPlace;
+    this.lastPlace = this.place();
     if (moved) {
       this.dialogs.close(false);
     }
+  }
+
+  /* Takes the current place as the one the page is at, so a move made just before a dialog opens (New sheet in the caret menu goes
+     to the manager first) is not taken for a change of page that closes the dialog. */
+  syncPlace(): void {
+    this.lastPlace = this.place();
+  }
+
+  /* The tab, the open sheet and the open gear set, as one string. */
+  private place(): string {
+    return `${this.app.tab}|${this.sheets.sheetId}|${this.sheets.setId}`;
   }
 
   /* The screen to draw: 'missing' (not found) while an address names a sheet or set that is not saved; else the open sheet or set's,

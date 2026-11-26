@@ -79,6 +79,17 @@ export async function checkSheetForms(pg) {
   await pg.keyboard.press('Escape');
   await expect(pg.locator('#sh-sheet-menu')).toBeHidden();
 
+  // New sheet in the switch menu goes to the manager and opens its dialog there; the draw that follows keeps it open
+  await pg.click('#sh-sheet-switch');
+  await pg.locator('#sh-sheet-menu .setnew').click();
+  await expect(pg.locator('#sh-dialog')).toBeVisible();
+  await pg.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done))));
+  await expect(pg.locator('#sh-dialog')).toBeVisible();
+  await expect(pg.locator('#sh-list')).toBeVisible();
+  await pg.keyboard.press('Escape');
+  await expect(pg.locator('#sh-dialog')).toHaveCount(0);
+  await pg.locator('#sh-list a.sname', { hasText: 'White Mage Lv 100 (1)' }).click();
+
   // a new set's page: the breadcrumb and the sheet's settings
   await pg.click('#sh-new-set-first');
   await expect(pg.locator('#sh-set .setcrumb')).toContainText('White Mage Lv 100 (1)');

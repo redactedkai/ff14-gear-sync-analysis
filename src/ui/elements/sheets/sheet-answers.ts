@@ -14,6 +14,7 @@ export interface AnswerPort {
   app: AppFacade;
   dialogs: SheetDialogs;
   goMissing(): void;
+  syncPlace(): void;
 }
 
 /* The answer to each action, by its `action` name: `port` is the screen's model, `detail` the event's detail. An action with a
@@ -64,6 +65,11 @@ export function pickSheet(port: AnswerPort, pick: SwitchPick): void {
     }
   } else {
     sheets.openManager();
-    dialogs.openNewSheet(pick.opener);
+    // the set page's leave question may hold the move: then the sheet stays open and no dialog opens
+    if (sheets.sheetId === null) {
+      // the move to the manager is this pick, not a change of page that closes the dialog on the next draw
+      port.syncPlace();
+      dialogs.openNewSheet(pick.opener);
+    }
   }
 }
