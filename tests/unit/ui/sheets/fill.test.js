@@ -3,7 +3,7 @@
    Real Sage items at the page's default recipe; the pinned solve itself is tested in core/recipe.pins.test.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allMeals } from '../../../../src/core/food.js';
+import { allMeals } from '../../../../src/core/food.ts';
 import { jobGear } from '../../../../src/core/items.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { runRecipe } from '../../../../src/core/recipe.js';

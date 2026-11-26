@@ -6,7 +6,7 @@ import { makeJobContext } from '../../../src/core/job-context.js';
 import { browseItems, kindFactors, poolItemById, rowStats, slotInfo, slotLabel } from '../../../src/core/items.js';
 import { evaluateSet } from '../../../src/core/set.js';
 import { ROW } from '../../../src/core/constants.ts';
-import { predictRaw, syncStats } from '../../../src/core/formulas.js';
+import { predictRaw, syncStats } from '../../../src/core/formulas.ts';
 import { optimize } from '../../../src/core/optimizer/index.js';
 import { effStats } from '../../../src/core/piece.js';
 import { exhaustive, gamePool, loadoutCount } from '../helpers/exhaustive.js';

@@ -2,7 +2,7 @@
    the unit tests; nothing in src/ imports it. */
 import { RAW_SUBSTAT_IDX, ROW } from '../../../src/core/constants.ts';
 import { IL, ITEMS } from '../../../src/core/tables.ts';
-import { offhandParts, predictRaw, statLine } from '../../../src/core/formulas.js';
+import { offhandParts, predictRaw, statLine } from '../../../src/core/formulas.ts';
 import { rowStats } from '../../../src/core/items.js';
 
 /* The item level range the stat model's patterns were measured on (substat shares, stat factors, the Direct Hit line).

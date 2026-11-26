@@ -416,7 +416,7 @@ The remaining time is mostly building the candidate lists (meld versions and dom
 | Concept | File |
 | --- | --- |
 | The stages, holds, meals and seeds; each stage's proven maximum | `src/core/tier-rank.js` (`rankByTier`, `provenMost`) |
-| Tier per stat for ranking, tier start | `src/core/tiers.js` (`rankTierOf`, `tierStart`) |
+| Tier per stat for ranking, tier start | `src/core/tiers.ts` (`rankTierOf`, `tierStart`) |
 | A speed band per meal | `src/core/target-gcd.js` (`gearBand`) |
 | Minimums on any stat, seeds | `src/core/optimizer/index.js` (`prepare`, `solve`) |
 | Pruning with limits; meld versions built once per ranking | `src/core/optimizer/candidates.js` (`pruneForLimits`, `itemVersions` with `versionCache`) |

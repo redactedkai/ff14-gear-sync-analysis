@@ -1,5 +1,5 @@
 /* Which item level a piece is synced to: the duty's item level cap, the item level its level allows, or none.
-   See docs/mechanics/math.md, section 5 ("Which pieces are synced"). How a stat is capped at that item level is formulas.js. */
+   See docs/mechanics/math.md, section 5 ("Which pieces are synced"). How a stat is capped at that item level is formulas.ts. */
 import { ROW } from './constants.ts';
 import { levelParams } from './level-params.ts';
 import { ITEMS } from './tables.ts';

@@ -1,10 +1,10 @@
 /* How the math works, Substat tiers: every substat of the job as a card of tiers (a ladder), every tier from the
-   substat's base up to the most a box takes (core/tiers.js tierLadder), each row the range of character panel values
+   substat's base up to the most a box takes (core/tiers.ts tierLadder), each row the range of character panel values
    that give its effect. Values are character panel numbers: each starts at the substat's base (tierValues), and the
    user types or clicks others. The tiers follow the job and the sub-tab's own level (the synced level until the user
    types another); item level sync does not change them. The view object is built here; the template only shows it. */
 import { clamp } from '../../core/clamp.ts';
-import { rowIndexAt, tierLadder, tierSizes, statEffectKinds } from '../../core/tiers.js';
+import { rowIndexAt, tierLadder, tierSizes, statEffectKinds } from '../../core/tiers.ts';
 import { hasteFor } from '../../core/speed.ts';
 import { statBase } from '../../core/base-stats.ts';
 import { levelParams } from '../../core/level-params.ts';

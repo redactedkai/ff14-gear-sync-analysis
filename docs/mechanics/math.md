@@ -606,7 +606,7 @@ Like the GCD, every other substat's effect moves in steps (critical rate, Determ
 - **The target:** since every effect only rises with more points, the highest raw target total is always in the highest reachable step. Proved from the formulas and confirmed on 736 optimizer runs on full pools.
 - **Tiebreaks:** in 200 of 572 runs with a target and one tiebreak, another gear set keeps the target's step and puts the tiebreak a step higher. This happens mostly at level 100, where steps are 14 to 25 points wide, and rarely at level 50 (cap 123), where they are 1 to 3. It nearly always needs different gear, not different melds ([materia.md](materia.md)).
 - **What the tool does:** by default it ranks by step (tier ranking, [tier-ranking.md](../engineering/tier-ranking.md)): it holds the target and each tiebreak at the start of its best step plus one point, in order, then ranks the raw totals. With the Spare points to tiebreaks switch off it ranks raw totals only. Either way, under the result it shows each substat's effect (from gear, and with food when Food is on), the points above the start of its step and the points to the next.
-- **Substat tiers sub-tab:** How the math works shows every step of each substat from its base up to the most a box takes (`tierLadder` in `src/core/tiers.js`), each row as the range of panel values that give its effect. Where a substat has two effects, a step ends where either changes. The most is the same gear for every substat, the most speed any job can have at the level (`MAX_SPEED`); for the substats other than speed that is a guess, since each draws on the same pieces and melds, so a substat that can go a little higher is held to it.
+- **Substat tiers sub-tab:** How the math works shows every step of each substat from its base up to the most a box takes (`tierLadder` in `src/core/tiers.ts`), each row as the range of panel values that give its effect. Where a substat has two effects, a step ends where either changes. The most is the same gear for every substat, the most speed any job can have at the level (`MAX_SPEED`); for the substats other than speed that is a guess, since each draws on the same pieces and melds, so a substat that can go a little higher is held to it.
   - Critical Hit's rate and what a critical hit adds (40% plus the rate's step, so always the rate + 35%) step together.
   - Tenacity's damage and healing (112) and damage taken (200) step apart, so its steps are 1 to 14 points at level 100.
   - Critical Hit, Determination and Tenacity's first effect apply to outgoing healing too, Direct Hit to damage only (AkhMorning, checked 2026-10-17).
@@ -715,14 +715,14 @@ The status of each claim about the stat model (item stats, stat factors, substat
 | Level caps of the limited jobs, with their sources | `src/core/constants.ts` (`JOB_LEVEL_CAPS`) |
 | Gear above the job's level cap left out | `src/core/items.js` (`browseItems`, `wearable`) |
 | An item's stat factors (from its kind) | `src/core/items.js` |
-| Rounding, slot budget, piece stats (`buildPiece`), caps (`capValue`, `capsFor`), sync clamp, step-by-step derivation, real-piece prediction (`predictRaw`) | `src/core/formulas.js` |
+| Rounding, slot budget, piece stats (`buildPiece`), caps (`capValue`, `capsFor`), sync clamp, step-by-step derivation, real-piece prediction (`predictRaw`) | `src/core/formulas.ts` |
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js`; for pool items `itemSyncIlvl` in `src/core/piece.js` |
 | The ceiling $\text{top}(L)$ on gear made for a higher level, and the cap lowered to it | `src/core/sync-target.js` (`capCeiling`, used by `syncTarget`); `src/ui/level-cap.js` (`limitCapToLevel`, called by the item level field, `src/ui/elements/app/cap-field.ts`); `src/ui/job-sync-panel.js` (`shownSync` for How the math works) |
 | The cap shown on How the math works; level sync off at the job's cap | `src/ui/job-sync-panel.js` (`shownSync`, `levelSyncOn`) |
 | GCD, tick multiplier, GCD tiers, haste, speed for a target GCD | `src/core/speed.ts` (`gcdFor`, `hasteFor`, `speedForGcd`); haste table `HASTE` in `src/core/constants.ts` |
 | The 1.50 s GCD floor | `src/core/constants.ts` (`GCD_FLOOR_MS`) |
 | Target GCD: meals and gear together | `src/core/target-gcd.js` (`optimizeGcd`) |
-| Food: bonus, choices per job, best meal for a goal, gear needed for a total | `src/core/food.js`; meals in `src/data/food.json` |
+| Food: bonus, choices per job, best meal for a goal, gear needed for a total | `src/core/food.ts`; meals in `src/data/food.json` |
 | A character's base stat at a level (`statBase`), main stat base `LEVEL_MAIN` | `src/core/base-stats.ts` |
 | Weapon damage and defense: synced values, a gear set's defense, mitigation | `src/core/damage-defense.ts`; budgets, factors and shares (`SHARES`) in `src/data/item-level.json`; the job's weapon damage `damageKey` in `src/core/job-context.js` |
 | Accuracy against real items, Wiki 475 check | `tests/unit/helpers/model-validation.js` |

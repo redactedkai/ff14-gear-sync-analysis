@@ -3,7 +3,7 @@
    Expected numbers are summed from the raw item data and the level 100 constants, not from the code under test. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allMeals } from '../../../../src/core/food.js';
+import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { evaluateInSheet, figureChange, figuresAgainst, setFigures, setTotalsView } from '../../../../src/ui/views/set-totals.js';
 import { hasNumber } from '../../helpers/common.js';

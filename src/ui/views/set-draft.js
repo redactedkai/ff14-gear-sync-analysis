@@ -2,7 +2,7 @@
    header's Now and After figures with their delta lines, the Apply button's text and the notes. Nothing proposed is saved
    until Apply (docs/engineering/sheets.md, "Drafts and suggestions"), so the draft is a second GearSet in memory; these
    builders take both (sheets.md, "Saved data") and return plain view objects. Pure: no store. */
-import { allMeals } from '../../core/food.js';
+import { allMeals } from '../../core/food.ts';
 import { ROMAN } from '../../core/meld.js';
 import { pieceName } from './set-rows.js';
 import { figuresAgainst, evaluateInSheet, setFigures } from './set-totals.js';

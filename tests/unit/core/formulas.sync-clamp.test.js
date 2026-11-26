@@ -1,9 +1,9 @@
-/* The sync clamp (syncStats, src/core/formulas.js) at its edges: at, below and one above the cap, on a real piece, with
+/* The sync clamp (syncStats, src/core/formulas.ts) at its edges: at, below and one above the cap, on a real piece, with
    the caps derived from the raw ItemLevel rows; plus the Wiki's item level 475 caps for Paladin's weapon and shield. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.js';
-import { capsFor, syncStats } from '../../../src/core/formulas.js';
+import { capsFor, syncStats } from '../../../src/core/formulas.ts';
 import { browseItems, poolItemFromRow } from '../../../src/core/items.js';
 import { IL } from '../../../src/core/tables.ts';
 import { SLOT_PERMILLE } from '../helpers/common.js';

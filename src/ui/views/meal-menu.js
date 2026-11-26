@@ -1,7 +1,7 @@
 /* The Food row's menu of a set page: every meal the job can use, by expansion, with a search box, stat pills and, while
    a pill is on, a Sort row (elements/set-page/food-menu.ts is its element). Pure view builders over plain data: no store, so Node can test them. */
 import { EXPANSIONS } from '../../core/constants.ts';
-import { allMeals, foodBonus, foodLabel } from '../../core/food.js';
+import { allMeals, foodBonus, foodLabel } from '../../core/food.ts';
 import { expansionOf, searchMatches } from '../../core/items.js';
 
 /* The Food row's menu on gear with the totals `gearTotals` (a stat map: core/set.js evaluateSet's `gear`), `shown` the

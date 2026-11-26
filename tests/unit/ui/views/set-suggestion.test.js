@@ -5,7 +5,7 @@
    level 120), changes the head's stones and adds a meal. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allMeals } from '../../../../src/core/food.js';
+import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { defaultFillSettings } from '../../../../src/ui/sheets/fill-settings.js';
 import { unpinnedText } from '../../../../src/ui/sheets/fill.js';

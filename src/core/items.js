@@ -20,7 +20,7 @@ import {
 } from './constants.ts';
 import { levelParams } from './level-params.ts';
 import { ITEMS, MP } from './tables.ts';
-import { buildPiece } from './formulas.js';
+import { buildPiece } from './formulas.ts';
 
 let nextId = 1;
 function newId() {
@@ -85,7 +85,7 @@ export function dbStats(job, raw) {
 const kindCache = new Map();
 /* The stat factors of a database item kind (a row's statFactor) by the job's stat keys: MP[stat][kind] / 100
    (Vitality 0.9 on Int/Mind gear; every main stat 0.9 on pieces that carry all four). Null for an unknown kind, which
-   means the job's own factors (jobFactor in formulas.js). Frozen and cached per job and kind. A piece whose main stat is
+   means the job's own factors (jobFactor in formulas.ts). Frozen and cached per job and kind. A piece whose main stat is
    the generic Main Attribute still takes its kind's factor for the job's main stat under sync: Azeyma's Earrings
    (kind 0) synced to item level 430 show main 71 in game (xivgear's test notes), the 0.9 cap, not the full 78. */
 export function kindFactors(job, kind) {
@@ -355,7 +355,7 @@ export function meldInfo(item) {
 
 /* A pool item's slot share (pct, thousandths), the slot types it leaves empty (blocks) and its stat factors (factors,
    kindFactors). A database piece has those of its slot code and item kind; any other piece those of the job: a weapon
-   on a two-handed job (weaponMode '2h') blocks the off-hand, and factors null means the job's own (jobFactor in formulas.js). */
+   on a two-handed job (weaponMode '2h') blocks the off-hand, and factors null means the job's own (jobFactor in formulas.ts). */
 export function slotInfo(job, item) {
   const f = rowFacts(item);
   if (f) {

@@ -8,7 +8,7 @@
 import { bonusStats, clanOffset, isClan, partyRoles } from '../../core/clan-bonus.js';
 import { makeJobContext } from '../../core/job-context.js';
 import { averageItemLevel, evaluateSet, makeSet } from '../../core/set.js';
-import { tierLadder } from '../../core/tiers.js';
+import { tierLadder } from '../../core/tiers.ts';
 import { plural } from '../text.ts';
 import { syncSettings } from '../job-sync-panel.js';
 import { isUsed } from '../sheets/saved-set.js';

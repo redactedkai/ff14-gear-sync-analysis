@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { IL, MAX_REAL } from '../../../../src/core/tables.ts';
-import { capsFor } from '../../../../src/core/formulas.js';
+import { capsFor } from '../../../../src/core/formulas.ts';
 import { meldInfo, mkItem } from '../../../../src/core/items.js';
 import { gcdFor } from '../../../../src/core/speed.ts';
 import { meldSlotChoices, meldSlotsOf } from '../../../../src/ui/job-sync-panel.js';

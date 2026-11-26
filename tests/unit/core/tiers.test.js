@@ -1,4 +1,4 @@
-/* Substat tiers (src/core/tiers.js). Expected values worked by hand from AkhMorning's formulas with ParamGrow's
+/* Substat tiers (src/core/tiers.ts). Expected values worked by hand from AkhMorning's formulas with ParamGrow's
    LevelModifier (2780 at level 100, 341 at level 50; AKH_LEVEL in helpers/common.js), not from the code under test:
    Critical Hit rate floor(200 g / div + 50) / 10 %, Direct Hit floor(550 g / div) / 10 %, Determination
    floor(140 g / div) per mille, Tenacity floor(112 g / div), Piety floor(150 g / div) MP per tick. */
@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { JOBS } from '../../../src/core/constants.ts';
-import { statEffectKinds, statTier, tierLadder, tierSizes } from '../../../src/core/tiers.js';
+import { statEffectKinds, statTier, tierLadder, tierSizes } from '../../../src/core/tiers.ts';
 import { AKH_LEVEL } from '../helpers/common.js';
 
 const sge = makeJobContext('SGE');

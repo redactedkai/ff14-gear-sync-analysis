@@ -7,7 +7,7 @@ import { makeJobContext } from '../../../src/core/job-context.js';
 import { IL, ITEMS } from '../../../src/core/tables.ts';
 import { JOBS } from '../../../src/core/constants.ts';
 import { capCeiling, levelSyncIlvl, syncTarget } from '../../../src/core/sync-target.js';
-import { capsFor } from '../../../src/core/formulas.js';
+import { capsFor } from '../../../src/core/formulas.ts';
 import { browseItems, dbStats, kindFactors, parseRow, poolItemFromRow } from '../../../src/core/items.js';
 import { optimize } from '../../../src/core/optimizer/index.js';
 import { effStats, itemSyncIlvl } from '../../../src/core/piece.js';

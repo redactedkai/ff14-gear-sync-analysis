@@ -4,7 +4,7 @@
    356 Vitality at the level 100 base of 462 and 484) and the Sage set's (279 Mind, 257 Vitality at 506 and 440). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allMeals } from '../../../../src/core/food.js';
+import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { sheetPageView } from '../../../../src/ui/views/sheet-sets.js';
 import { bonusNote, evaluateInSheet, setFigures, setTotalsView } from '../../../../src/ui/views/set-totals.js';

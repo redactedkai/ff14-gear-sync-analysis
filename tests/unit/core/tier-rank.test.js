@@ -3,11 +3,11 @@
    tests/sweep/ (npm run test:full). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { foodChoices } from '../../../src/core/food.js';
+import { foodChoices } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { optimize } from '../../../src/core/optimizer/index.js';
 import { rankByTier } from '../../../src/core/tier-rank.js';
-import { rankTierOf, tierStart } from '../../../src/core/tiers.js';
+import { rankTierOf, tierStart } from '../../../src/core/tiers.ts';
 import { rng } from '../helpers/common.js';
 import { smallPool } from '../helpers/exhaustive.js';
 import { asVector, checkGcd, checkNoGcd, tierLex } from '../helpers/tier-reference.js';

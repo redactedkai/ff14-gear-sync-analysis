@@ -22,12 +22,12 @@ import { SLOT_LABEL } from './constants.ts';
 import { mitigationPct, setDefense } from './damage-defense.ts';
 import { statBase } from './base-stats.ts';
 import { bonusStats, characterStat, clanOffset, isClan, partyRoles } from './clan-bonus.js';
-import { allMeals, foodBonus, withFood } from './food.js';
+import { allMeals, foodBonus, withFood } from './food.ts';
 import { categoryOf, equipLevel, expansionOf, poolItemById, slotInfo, slotLabel } from './items.js';
 import { applyStones, meldStones, meldText } from './meld.js';
 import { itemCaps, itemSyncIlvl } from './piece.js';
 import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor } from './speed.ts';
-import { statTier } from './tiers.js';
+import { statTier } from './tiers.ts';
 
 /* A set (see above) from `pieces` and `meal`, frozen to the stones, so it can be kept and shared as it is. */
 export function makeSet(pieces, meal = null) {

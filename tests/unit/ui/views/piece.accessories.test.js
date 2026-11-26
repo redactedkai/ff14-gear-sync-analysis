@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ACCESSORY_SLOTS, SLOT_LABEL } from '../../../../src/core/constants.ts';
 import { makeJobContext } from '../../../../src/core/job-context.js';
-import { capsFor } from '../../../../src/core/formulas.js';
+import { capsFor } from '../../../../src/core/formulas.ts';
 import { slotGroups } from '../../../../src/ui/views/piece.js';
 import { gearOf, explainerViewOf, makeApp, pieceViewOf } from '../../helpers/views.js';
 

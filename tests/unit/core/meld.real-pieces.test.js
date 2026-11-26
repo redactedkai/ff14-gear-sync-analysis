@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS } from '../../../src/core/constants.ts';
-import { capsFor } from '../../../src/core/formulas.js';
+import { capsFor } from '../../../src/core/formulas.ts';
 import { jobGear, slotInfo } from '../../../src/core/items.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { applyStones, bestMeld, meldStones } from '../../../src/core/meld.js';

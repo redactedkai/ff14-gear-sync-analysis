@@ -317,7 +317,7 @@ export const ITEM_STAT_ORDER = Object.freeze(ITEM_FORMAT.stats.map(s => s.key)) 
 export const RAW_MAIN_IDX = Object.freeze((['str', 'dex', 'int', 'mind'] as const).map(k => ITEM_STAT_ORDER.indexOf(k)));
 export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');
 /* Mind's position in a row's raw stats: the old healer gear whose only main stat is Mind carries a fixed Direct Hit line
-   (formulas.js fixedDirectHitShare). */
+   (formulas.ts fixedDirectHitShare). */
 export const RAW_MIND_IDX = ITEM_STAT_ORDER.indexOf('mind');
 /* The game's generic "Main Attribute" (pre-order earrings): the wearer's main stat (see items.js dbStats, which also
    maps the generic "Secondary Attribute"). */

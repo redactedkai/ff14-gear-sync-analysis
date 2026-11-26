@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ACTIVITIES, JOBS } from '../../../src/core/constants.ts';
 import { statBase } from '../../../src/core/base-stats.ts';
-import { allMeals, bestFood, foodChoices } from '../../../src/core/food.js';
+import { allMeals, bestFood, foodChoices } from '../../../src/core/food.ts';
 import { allocatedRelic, browseItems, itemRoutes, mkItem, poolItemFromRow, poolKey, withActivities } from '../../../src/core/items.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { optimize } from '../../../src/core/optimizer/index.js';
@@ -14,7 +14,7 @@ import { sameMeals } from '../../../src/core/same-result.js';
 import { gcdFor, hasteFor } from '../../../src/core/speed.ts';
 import { optimizeGcd } from '../../../src/core/target-gcd.js';
 import { rankByTier } from '../../../src/core/tier-rank.js';
-import { statTier } from '../../../src/core/tiers.js';
+import { statTier } from '../../../src/core/tiers.ts';
 import { DEFAULT_EXCLUDE, syncSettings } from '../../../src/ui/job-sync-panel.js';
 import { exhaustive, gamePool } from '../helpers/exhaustive.js';
 import {

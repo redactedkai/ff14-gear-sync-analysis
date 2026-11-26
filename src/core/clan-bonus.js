@@ -63,7 +63,7 @@ export function bonusStats(job) {
 /* A stat's number as the character panel shows it, with the bonuses: `parts` is {base (statBase), gear (the pieces'
    points after sync and stones), meal (the meal's points, 0 for none), clan (a clan name or null), roles (unique party
    roles, 0 for no party bonus)}. The main stat and Vitality are floor((base + clan + gear) x party) + meal; every other
-   stat is base + gear + meal. `meal` must be the meal's bonus on base + clan + gear (food.js foodBonus), not on the
+   stat is base + gear + meal. `meal` must be the meal's bonus on base + clan + gear (food.ts foodBonus), not on the
    party-boosted value. */
 export function characterStat(job, stat, { base, gear, meal = 0, clan = null, roles = 0 }) {
   if (!bonusStats(job).includes(stat)) {

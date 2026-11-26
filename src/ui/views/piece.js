@@ -2,9 +2,9 @@
    Pure view builder, so Node can load and test it. */
 import { ACCESSORIES_LABEL, ACCESSORY_SLOTS, JOBS, SLOT_LABEL, SUB_WEIGHTS } from '../../core/constants.ts';
 import { makeJobContext } from '../../core/job-context.js';
-import { capDerivation, clampIlvl, isOffhand, statDerivation } from '../../core/formulas.js';
+import { capDerivation, clampIlvl, isOffhand, statDerivation } from '../../core/formulas.ts';
 import { MAX_REAL } from '../../core/tables.ts';
-import { statEffectKinds } from '../../core/tiers.js';
+import { statEffectKinds } from '../../core/tiers.ts';
 import { shownSync } from '../job-sync-panel.js';
 import { withRank } from '../ranks.js';
 

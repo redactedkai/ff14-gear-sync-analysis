@@ -1,6 +1,6 @@
 /* The Food row's menu of a set page: the shared Food menu (meal-menu.js) for the set shown. Takes plain data and returns
    plain data; the template only displays it. Pure: no store. */
-import { allMeals } from '../../core/food.js';
+import { allMeals } from '../../core/food.ts';
 import { mealMenu } from './meal-menu.js';
 
 /* The Food row's menu for `gearSet` evaluated by evaluateInSheet (`context`): meal-menu.js mealMenu's {groups, pills,

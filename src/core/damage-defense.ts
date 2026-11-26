@@ -8,7 +8,7 @@
    842 → 837 and 481 → 478 Defense) and assumed for the rest; weapon damage under sync is a guess (the tools clamp it
    the same way; no in-game measurement was found). */
 import { DB_SLOT_TYPE } from './constants.ts';
-import { capFromBudget, clampIlvl } from './formulas.js';
+import { capFromBudget, clampIlvl } from './formulas.ts';
 import { damageDefenseFacts } from './items.js';
 import { levelParams } from './level-params.ts';
 import { IL, MP, SHARES } from './tables.ts';

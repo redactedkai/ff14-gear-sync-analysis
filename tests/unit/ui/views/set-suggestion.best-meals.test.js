@@ -2,7 +2,7 @@
    what the Food row shows of them (set-rows.js). Real Sage meals and pieces. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allMeals } from '../../../../src/core/food.js';
+import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { setRowsView } from '../../../../src/ui/views/set-rows.js';
 import { appliedFields, suggestionOf } from '../../../../src/ui/views/set-suggestion.js';

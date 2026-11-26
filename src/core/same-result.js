@@ -14,10 +14,10 @@
    Rows share their spare points: two swaps that are each fine alone can push a tier down together. So every check is
    made against the pieces the other rows show at that moment, never against the optimizer's set alone. */
 import { WD_KEY } from './damage-defense.ts';
-import { foodBonus, withFood } from './food.js';
+import { foodBonus, withFood } from './food.ts';
 import { equipLevel, slotInfo } from './items.js';
 import { vectorDims } from './optimizer/index.js';
-import { rankTierOf } from './tiers.js';
+import { rankTierOf } from './tiers.ts';
 
 /* What a set does, from gear totals ({stat key: points}, and weapon damage under WD_KEY) with the meal's bonus:
    {main, wd, goal, tiers}: its main stat; its weapon damage (null for a job that does not rank it); the goal stat's

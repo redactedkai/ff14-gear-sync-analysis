@@ -13,7 +13,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.js';
-import { capsFor } from '../../../src/core/formulas.js';
+import { capsFor } from '../../../src/core/formulas.ts';
 import { genericItems, rowStats } from '../../../src/core/items.js';
 import { ROW } from '../../../src/core/constants.ts';
 import { optimize } from '../../../src/core/optimizer/index.js';

@@ -3,7 +3,7 @@
    loadout is the best one is the exhaustive tests' job (core/optimizer/index.exhaustive.test.js). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { foodBonus, foodChoices } from '../../../src/core/food.js';
+import { foodBonus, foodChoices } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { mkItem } from '../../../src/core/items.js';
 import { prepare, solve } from '../../../src/core/optimizer/index.js';

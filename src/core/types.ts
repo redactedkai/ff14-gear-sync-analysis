@@ -111,7 +111,7 @@ export interface RowIndex {
 }
 
 /* A meal of src/data/food.json: [name, item level, [[raw stat key, HQ percent, HQ maximum], ...], [Vitality HQ percent,
-   Vitality HQ maximum] or null] (food.js allMeals). */
+   Vitality HQ maximum] or null] (food.ts allMeals). */
 export type FoodRow = readonly [
   name: string,
   ilvl: number,
@@ -167,3 +167,7 @@ export interface SetPiece {
   readonly custom?: PoolItem;
   readonly stones?: readonly (Stone | null)[];
 }
+
+/* Gear totals by key: the stat keys, and weapon damage under 'wd' (the optimizer's dimensions, DimKey). A key it lacks
+   counts as 0. */
+export type Totals = Partial<Record<DimKey, number>>;

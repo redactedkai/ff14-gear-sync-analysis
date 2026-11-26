@@ -73,7 +73,7 @@ test('changed files: the picked domains come in registry order, one line per pat
   const picked = domainsOfChanges([
     { path: 'tests/unit/ui/views/set-rows.test.js' },
     { path: 'src/ui/views/gcd.js' },
-    { path: 'src/core/formulas.js' },
+    { path: 'src/core/formulas.ts' },
     { path: 'docs/roadmap.md' },
     { path: 'notes.txt' },
   ]);

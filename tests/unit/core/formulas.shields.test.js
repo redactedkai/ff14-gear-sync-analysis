@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ROW } from '../../../src/core/constants.ts';
-import { predictRaw } from '../../../src/core/formulas.js';
+import { predictRaw } from '../../../src/core/formulas.ts';
 import { rowStats } from '../../../src/core/items.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { ITEMS } from '../../../src/core/tables.ts';

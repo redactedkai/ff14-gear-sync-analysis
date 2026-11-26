@@ -6,7 +6,7 @@
    gearNeeded. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { foodChoices } from '../../../src/core/food.js';
+import { foodChoices } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { optimize, prepare, solve } from '../../../src/core/optimizer/index.js';
 import { gcdFor, gcdTierAt, hasteFor } from '../../../src/core/speed.ts';

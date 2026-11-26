@@ -12,7 +12,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.js';
-import { capValue, capsFor, pieceValue, syncStats } from '../../../src/core/formulas.js';
+import { capValue, capsFor, pieceValue, syncStats } from '../../../src/core/formulas.ts';
 import { browseItems, kindFactors, poolItemFromRow, rowStats } from '../../../src/core/items.js';
 import { ITEM_STAT_ORDER, ROW } from '../../../src/core/constants.ts';
 import { IL, ITEMS, MAX_REAL } from '../../../src/core/tables.ts';

@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { ITEMS, IL, MP } from '../../../src/core/tables.ts';
 import { ALL_JOBS_ACCESSORY_FACTORS, JOBS, ITEM_STAT_ORDER, RAW_MAIN_IDX, ROW } from '../../../src/core/constants.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
-import { predictRaw, syncStats, capsFor, jobFactor } from '../../../src/core/formulas.js';
+import { predictRaw, syncStats, capsFor, jobFactor } from '../../../src/core/formulas.ts';
 import { kindFactors, browseItems, poolItemFromRow, rowStats } from '../../../src/core/items.js';
 import { effStats } from '../../../src/core/piece.js';
 import { MODEL_MIN_ILVL } from '../helpers/model-validation.js';

@@ -3,7 +3,7 @@
    change of level or sync dropping it (docs/engineering/sheets.md, "Saved data"). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allMeals } from '../../../../src/core/food.js';
+import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { copyGearSet, copySheet, newGearSet, repairSheet } from '../../../../src/ui/sheets/ops.js';
 import { parseSheet } from '../../../../src/ui/sheets/storage.js';

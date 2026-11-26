@@ -17,7 +17,7 @@
 
    Pins are no part of a recipe either: they are the set's own pieces and meal that a solve must keep (runRecipe's
    `pins`; pinProblems). A set's pinned rows are pins, the other rows are what the solve fills. */
-import { allMeals, bestFood, foodChoices } from './food.js';
+import { allMeals, bestFood, foodChoices } from './food.ts';
 import { activityCounts, allocatedRelic, filterGear, gearFilter, itemRoutes, poolItemById, wearable, withActivities } from './items.js';
 import { buildCandidates, fixedCandidate, optimize, pinProblem } from './optimizer/index.js';
 import { realSlotType } from './optimizer/slot-index.js';

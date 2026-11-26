@@ -26,7 +26,7 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { JOBS } from '../../src/core/constants.ts';
 import { statBase } from '../../src/core/base-stats.ts';
-import { allMeals, foodBonus } from '../../src/core/food.js';
+import { allMeals, foodBonus } from '../../src/core/food.ts';
 import { browseItems, equipLevel, poolItemFromRow } from '../../src/core/items.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { optimize } from '../../src/core/optimizer/index.js';

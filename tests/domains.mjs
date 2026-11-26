@@ -4,7 +4,7 @@
 //
 // Which domain is a test in?
 //   - A unit test follows its module: tests/unit/ui/views/gcd.test.js mirrors src/ui/views/gcd.js, so it takes that file's
-//     domain (a `.concern` after the module name is dropped: core/formulas.sync-clamp.test.js mirrors core/formulas.js).
+//     domain (a `.concern` after the module name is dropped: core/formulas.sync-clamp.test.js mirrors core/formulas.ts).
 //     Nothing to register. A test that mirrors no module goes in a domain's `tests` list below.
 //   - A smoke step names its domain in tests/e2e/groups.mjs, by what the step checks (not by the folder of its file).
 //   - A Python generator test (tests/data/) is `data`.
@@ -24,7 +24,8 @@ export const DOMAINS = {
   model: {
     title: 'The game number rules: item stats, sync, speed, tiers, food, materia',
     src: [
-      'src/core/{clan-bonus,food,formulas,meld,piece,sync-target,tiers}.js',
+      'src/core/{clan-bonus,meld,piece,sync-target}.js',
+      'src/core/{food,formulas,tiers}.ts',
       'src/core/{damage-defense,speed}.ts',
       'src/core/{base-stats,clamp,level-params}.ts',
       'scripts/validate/**',

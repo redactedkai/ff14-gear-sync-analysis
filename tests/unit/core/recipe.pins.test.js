@@ -3,7 +3,7 @@
    keep says so. Real Sage items; the optimizer's own pin coverage is core/optimizer/index.pinned.test.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allMeals } from '../../../src/core/food.js';
+import { allMeals } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { gcdRange, resolvePins, runRecipe } from '../../../src/core/recipe.js';
 import { jobGear } from '../../../src/core/items.js';

@@ -1,8 +1,8 @@
-/* Food (src/core/food.js): the bonus formula, the job's food choices, the best meal for a goal,
+/* Food (src/core/food.ts): the bonus formula, the job's food choices, the best meal for a goal,
    and the property the optimizer relies on (gear plus food rises with every gear point). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allMeals, bestFood, foodBonus, foodChoices, gearNeeded, mealRank, withFood } from '../../../src/core/food.js';
+import { allMeals, bestFood, foodBonus, foodChoices, gearNeeded, mealRank, withFood } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { mkItem } from '../../../src/core/items.js';
 import { optimize } from '../../../src/core/optimizer/index.js';

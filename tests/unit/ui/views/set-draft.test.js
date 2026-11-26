@@ -2,7 +2,7 @@
    with delta lines (and their colours as data), the Apply text and the notes. Real Sage pieces and stones. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allMeals } from '../../../../src/core/food.js';
+import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { changeText, draftChanges, draftNote, draftView } from '../../../../src/ui/views/set-draft.js';
 import { evaluateInSheet, setFigures } from '../../../../src/ui/views/set-totals.js';

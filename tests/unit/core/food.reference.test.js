@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS } from '../../../src/core/constants.ts';
-import { allMeals, bestFood, foodBonus, foodChoices, gearNeeded, withFood } from '../../../src/core/food.js';
+import { allMeals, bestFood, foodBonus, foodChoices, gearNeeded, withFood } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { rng } from '../helpers/common.js';
 import { foodAdd } from '../helpers/exhaustive.js';

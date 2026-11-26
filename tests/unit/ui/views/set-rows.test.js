@@ -3,7 +3,7 @@
    compared with the raw item data and the materia values. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allMeals } from '../../../../src/core/food.js';
+import { allMeals } from '../../../../src/core/food.ts';
 import { poolItemById } from '../../../../src/core/items.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { pieceName, rankBadges, setRowsView } from '../../../../src/ui/views/set-rows.js';

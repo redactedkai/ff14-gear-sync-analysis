@@ -6,7 +6,7 @@ import { makeJobContext } from '../../../src/core/job-context.js';
 import { equipLevel, mkItem } from '../../../src/core/items.js';
 import { resultOf, sameOutcome, sameResult } from '../../../src/core/same-result.js';
 import { dotMult, gcdFor } from '../../../src/core/speed.ts';
-import { rankTierOf, statTier } from '../../../src/core/tiers.js';
+import { rankTierOf, statTier } from '../../../src/core/tiers.ts';
 import { makeApp, solveOf } from '../helpers/views.js';
 
 const sge = makeJobContext('SGE');

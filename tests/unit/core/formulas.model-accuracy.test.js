@@ -1,4 +1,4 @@
-/* The item stat model (predictRaw, src/core/formulas.js) against the real game data: the Wiki's item level 475 caps,
+/* The item stat model (predictRaw, src/core/formulas.ts) against the real game data: the Wiki's item level 475 caps,
    the share of exact pieces in each item level band, and each special case of the model on the pieces that need it
    (docs/mechanics/validation.md). */
 import { test } from 'node:test';
@@ -14,7 +14,7 @@ import {
   REDUCED_STAT_PIECES,
   ROW,
 } from '../../../src/core/constants.ts';
-import { predictRaw } from '../../../src/core/formulas.js';
+import { predictRaw } from '../../../src/core/formulas.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { rowStats } from '../../../src/core/items.js';
 import { itemRow } from '../helpers/common.js';

@@ -14,11 +14,11 @@
    - With a Target GCD the meal's speed band holds in every search (gearBand, as optimizeGcd).
    - Each stage that finishes proves the most of its key under its limits; every later search of the meal gets that
      proof (solve's `proven`) and cuts by it (optimizer/regain.js). */
-import { gearNeeded, mealsFor, mealTotals, pickMeal } from './food.js';
+import { gearNeeded, mealsFor, mealTotals, pickMeal } from './food.ts';
 import { prepare, solve } from './optimizer/index.js';
 import { speedForGcd } from './speed.ts';
 import { fastestGcd, foodFields, gearBand, goalSettings } from './target-gcd.js';
-import { rankTierOf, tierStart } from './tiers.js';
+import { rankTierOf, tierStart } from './tiers.ts';
 
 /* What a finished stage search `result` proves for a meal's `state` (rankByTier's): {stat, most, minStats, speed}, the
    most gear points of `stat` under the state's minimums and speed band (optimizer/regain.js). */
