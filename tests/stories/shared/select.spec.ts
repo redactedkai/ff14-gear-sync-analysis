@@ -2,6 +2,7 @@
    focus moves on, a press outside closes), the groups, and axe. */
 import { expect, test } from '../fixtures.ts';
 import { BUTTON_ID, NONE_LABEL, SELECT_LABEL, type Default } from './select.story.js';
+import { focusInside } from '../layers.ts';
 import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'shared/select/Default';
@@ -67,6 +68,7 @@ test.describe('<gsa-select>', () => {
     await button.focus(); // WebKit does not focus a button on click
     await page.keyboard.press('ArrowDown');
     await expect(list.getByRole('option', { name: 'Midlander' })).toHaveAttribute('data-highlighted', '');
+    await focusInside(list); // Zag moves the focus to the list a frame later; a key before that goes to the button
     await page.keyboard.press('Home');
     await expect(none).toHaveAttribute('data-highlighted', '');
     const noneId = (await none.getAttribute('id')) ?? '';
@@ -151,6 +153,7 @@ test.describe('<gsa-select> in forced colours', () => {
     const list = page.locator(`#${BUTTON_ID}-list`);
     await page.locator(`#${BUTTON_ID}`).click();
     await expect(list).toBeVisible();
+    await focusInside(list);
     await page.keyboard.press('ArrowDown'); // the light moves off the chosen option
     const options = list.getByRole('option');
     await expect(options.and(page.locator('[data-highlighted]'))).not.toHaveAttribute('aria-selected', 'true');
