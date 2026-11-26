@@ -3,15 +3,81 @@
    and keeps the tab; Tab closes it) and the menu's place in a 960 px row, in three engines. The page's smoke test covers the rest
    of the menu (texts, counts, All / None / Default) in Chromium. */
 import { test, expect } from '../fixtures.ts';
+import { ACTIVITIES } from '../../../src/core/constants.ts';
 import type { Default } from './gear-categories.story.js';
 import { layerArmed, layerPlaced } from '../layers.ts';
-import { expectForcedColoursLook, expectLookApart, partShows, settled, tapOutside } from '../look.ts';
+import { expectForcedColoursLook, expectLookApart, partShows, settled, tapOutside, tokenColor } from '../look.ts';
 
 const STORY = 'gear-browser/gear-categories/Default';
 const MENU = '#b-from-menu';
 const TAB_IDS = ['b-from-tab-everyday', 'b-from-tab-side-content', 'b-from-tab-hard-content'];
 
 test.describe('<gsa-gear-categories>', () => {
+  test('every box shows its piece count at the end of its title line: thousands separators, aria-hidden, one width, a gold bold 0, nothing dimmed', async ({
+    mount,
+    page,
+  }) => {
+    await page.setViewportSize({ width: 960, height: 720 });
+    try {
+      // a 0, a 1 and numbers over 999 with a thousands separator
+      const countOf = (at: number) => (at < 2 ? at : 1380 * at);
+      const counts = Object.fromEntries(ACTIVITIES.map((activity, at) => [activity.key, countOf(at)]));
+      await mount<typeof Default>(STORY, { counts });
+      await page.locator('#b-from').click();
+      await expect(page.locator(MENU)).toBeVisible();
+      const gold = await tokenColor(page, '--gold');
+      const muted = await tokenColor(page, '--muted');
+      const boxes = await page.evaluate(menuSelector => {
+        return [...document.querySelectorAll(`${menuSelector} input[data-activity]`)].map(input => {
+          const row = input.closest('label') as HTMLElement;
+          const count = row.querySelector('.from-count') as HTMLElement;
+          const name = row.querySelector('.from-name') as HTMLElement;
+          const describedBy = (input.getAttribute('aria-describedby') ?? '').split(' ');
+          return {
+            key: (input as HTMLElement).dataset.activity as string,
+            text: (count.textContent ?? '').trim(),
+            hidden: count.getAttribute('aria-hidden') === 'true',
+            color: getComputedStyle(count).color,
+            weight: Number(getComputedStyle(count).fontWeight),
+            title: row.getAttribute('title'),
+            described: describedBy.map(id => (document.getElementById(id)?.textContent ?? '').trim()),
+            opacity: getComputedStyle(input).opacity,
+            nameColor: getComputedStyle(name).color,
+            nameLines: name.getBoundingClientRect().height / Number.parseFloat(getComputedStyle(name).lineHeight),
+            width: count.getBoundingClientRect().width,
+          };
+        });
+      }, MENU);
+      expect(boxes.map(box => box.key).sort()).toEqual(ACTIVITIES.map(activity => activity.key).sort());
+      expect(new Set(boxes.map(box => box.nameColor)).size, 'the box names are one colour (nothing dimmed)').toBe(1);
+      for (const box of boxes) {
+        const n = counts[box.key];
+        const where = box.key;
+        expect(box.text, where).toBe(n.toLocaleString('en-US'));
+        expect(box.hidden, `${where}: the visible number is aria-hidden`).toBe(true);
+        expect(box.opacity, `${where}: the box is not dimmed`).toBe('1');
+        expect(box.width, `${where}: one width for every number`).toBeCloseTo(boxes[0].width, 0);
+        expect(box.nameLines, `${where}: the title takes one line`).toBeLessThan(1.5);
+        const sentence =
+          n === 0
+            ? 'No pieces in this category for this job and filters.'
+            : `${box.text} ${n === 1 ? 'piece' : 'pieces'} in this category under the current filters.`;
+        expect(box.title, where).toBe(sentence);
+        expect(
+          box.described.length === 2 && box.described[1] === sentence && box.described[0].length > 0,
+          `${where}: ${JSON.stringify(box.described)}`,
+        ).toBe(true);
+        if (n === 0) {
+          expect([box.color, box.weight >= 700], `${where}: a 0 is gold and bold`).toEqual([gold, true]);
+        } else {
+          expect([box.color, box.weight < 700], `${where}: a number is muted and regular`).toEqual([muted, true]);
+        }
+      }
+    } finally {
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
+  });
+
   test('the arrows, Home and End move between the tabs and select them; Tab goes from the selected tab into its boxes', async ({
     mount,
     page,
