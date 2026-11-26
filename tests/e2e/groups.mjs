@@ -48,6 +48,7 @@ import { checkPieceMenuKeepsButtonInSight, checkTableMenusUnderHeading } from '.
 import { checkMenuClicks, checkMenuSteps, checkPickMenu } from './checks/set-page/menus.mjs';
 import { checkCloakPick, checkOffhandRow, checkPinnedShield, checkTwoHandedPick } from './checks/set-page/mixed-weapon.mjs';
 import { checkOvermeldOdds } from './checks/set-page/overmeld-odds.mjs';
+import { checkMateriaPick, checkMealPick } from './checks/set-page/pick-totals.mjs';
 import { checkQuickClicks } from './checks/set-page/quick-clicks.mjs';
 import { checkSetPage, checkTabGuard } from './checks/set-page/set-page.mjs';
 import { checkDefaults, checkJobLevelCap, checkJobSwitch } from './checks/settings/defaults.mjs';
@@ -179,6 +180,7 @@ export const GROUPS = [
   { steps: [step(checkCapFlag, 'sheets')] },
   { steps: [step(checkSetPageColumns, 'set-page')] },
   { steps: [step(checkOvermeldOdds, 'set-page')] },
+  { steps: [step(checkMateriaPick, 'set-page'), step(checkMealPick, 'set-page')] },
   { steps: [step(checkAverageIlvl, 'set-page')] },
   { steps: [step(checkQuickClicks, 'set-page')] },
   {

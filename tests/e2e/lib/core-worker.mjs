@@ -10,7 +10,7 @@ import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.js';
 import { statBase } from '../../../src/core/base-stats.js';
 import { runRecipe } from '../../../src/core/recipe.js';
 import { makeSession } from '../../../src/core/session.js';
-import { evaluateSet } from '../../../src/core/set.js';
+import { evaluateSet, makeSet } from '../../../src/core/set.js';
 
 // "Gear categories" boxes left out by default, in a set's Auto-fill settings and the browser (owner's decision); the checks use them too.
 export { DEFAULT_EXCLUDE };
@@ -90,6 +90,15 @@ export function coreRecipe(jobId, sync, fields) {
   return { status: 'ok', totals, bonus, gcd: `${evaluated.gcd.gcd.toFixed(2)}s`, meal: evaluated.meal?.key ?? null };
 }
 
+/** The character panel's number of every stat for the set `set` ({pieces: [{slot, gameId, stones}], meal: a meal key or null}, as a
+ * saved set holds them) worn by `jobId` under `sync` ({cap, sync, level}): the Total row of a set page, with no clan or party bonus. */
+export function coreSet(jobId, sync, set) {
+  const job = makeJobContext(jobId);
+  const level = sync.level ?? 100;
+  const evaluated = evaluateSet(job, makeSet(set.pieces, set.meal ?? null), sync, level);
+  return Object.fromEntries(job.stats.map(stat => [stat, evaluated.panel[stat]]));
+}
+
 /** The job's main, speed and special stat keys ({main, speed, spec}, spec null for none), for a step that names a stat
  * column or option of the page. */
 export function coreKeys(jobId) {
@@ -104,7 +113,7 @@ export function coreRings(jobId, ilvlMin, ilvlMax, lvlMax) {
   return { count: rows.length, x2: rows.filter(r => !r.unique).length };
 }
 
-const FUNCTIONS = { coreGear, coreFiltered, coreRecipe, coreRings, coreKeys };
+const FUNCTIONS = { coreGear, coreFiltered, coreRecipe, coreRings, coreKeys, coreSet };
 
 if (!isMainThread) {
   parentPort.on('message', ({ id, fn, args }) => {

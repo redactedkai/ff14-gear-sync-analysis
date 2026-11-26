@@ -46,7 +46,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `data` | the game data and job facts, and the pipeline that generates them (with the Python tests) | 11 | 0 |
 | `solver` | the search for the best gear set, in the core (with the long sweep) | 23 | 0 |
 | `auto-fill` | Auto-fill on the page: settings, run, cancel, worker, suggestion | 12 | 17 |
-| `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 20 | 15 |
+| `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 20 | 17 |
 | `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 21 | 12 |
 | `gear-browser` | the Gear browser tab and its filter menus | 5 | 16 |
 | `math-page` | How the math works: Piece stats, Substat tiers, GCD | 12 | 15 |
@@ -382,7 +382,7 @@ Notes on the longer rows:
   - The popover's own behaviour: its role and name with no `aria-modal` and no backdrop, Goal before Gear to search, no start or Save button in it, the Tab order and no trap, clicks inside its menus and boxes keeping it open, the X, the gear button and a click outside closing it (the focus on the gear button except after a click outside), and the bar's states (a draft has Apply and Discard only).
   - Each control saves into the set's `fillSettings` and changes what Auto-fill finds by what the core finds.
   - Cancel (clicked in the same task as Auto-fill, so no machine speed matters) ends the worker and leaves the set as it was, and the next Auto-fill is answered.
-  - Also checked: the edit lock while an Auto-fill runs (a worker held by a stand-in that never answers), focus on a set page, the same-result piece menu at 960 x 700, the overmeld odds row.
+  - Also checked: the edit lock while an Auto-fill runs (a worker held by a stand-in that never answers), focus on a set page, the same-result piece menu at 960 x 700, the overmeld odds row, and a stone picked in the materia menu and a meal picked in the Food menu reaching the Total row (equal to the core's for the same set).
   - With no `Worker`, or a worker that fails to load (two groups of their own), an Auto-fill runs on the page's thread with the core's numbers. A changed goal is searched again, Cancel right after Auto-fill drops the search, no worker is left, and the next Auto-fill works.
 - **Note b, Across the tabs.** Every tab for eight jobs: caps at 123, no bad text, no sideways scroll at 960 px. A set page of each is also checked: its rows, the special substat column, the Gear to search count, an Auto-fill with food against the core, the Food and Defense rows.
 - **Note c, Sheets.**

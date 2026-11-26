@@ -47,3 +47,5 @@ export const coreRecipe = (...a) => core('coreRecipe', ...a);
 export const coreRings = (...a) => core('coreRings', ...a);
 
 export const coreKeys = (...a) => core('coreKeys', ...a);
+
+export const coreSet = (...a) => core('coreSet', ...a);
