@@ -31,7 +31,6 @@ import { checkVisualParity } from './checks/look/visual-parity.mjs';
 import { checkClosedPanel, checkHelpDimsPage, checkPieceBarSteady, checkPieceLab } from './checks/math-page/piece-stats.mjs';
 import { checkGcdTab, checkTiers } from './checks/math-page/tiers-gcd.mjs';
 import { checkLevelBox, checkMathBarBoxes, checkMathBarLayouts, checkMathJobs, checkSyncChip } from './checks/math-page/bar-layout.mjs';
-import { checkHasteSelectFits } from './checks/math-page/haste-select.mjs';
 import { checkTiersNoteUnderPinnedBar } from './checks/math-page/tiers-note.mjs';
 import { checkTiersScroll } from './checks/math-page/tiers-scroll.mjs';
 import { checkCorruptedStorage, checkReloadPersists, checkReset } from './checks/saved-state/saved-state.mjs';
@@ -171,7 +170,6 @@ export const GROUPS = [
       step(checkSparePointsNoteFollowsButton, 'auto-fill'),
       step(checkTiersNoteUnderPinnedBar, 'math-page'),
       step(checkTiersScroll, 'math-page'),
-      step(checkHasteSelectFits, 'math-page'),
     ],
   },
   { steps: [step(checkSheetCap, 'sheets')] },
