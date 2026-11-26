@@ -13,7 +13,7 @@ import { fakeStorage, sageSet, sheetOf } from '../../unit/helpers/sheet-fixtures
 export const HEAD_ROW = 2;
 
 /* The solver stand-in: counts answer at once with a line for the Gear to search count; nothing else is asked. */
-const solver = {
+export const solver = {
   blocksPage: false,
   cancel: () => false,
   request: async () => ({
