@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS, ROW } from '../../../../src/core/constants.js';
-import { copyTargets } from '../../../../src/core/gear-groups.js';
+import { GEAR_GROUPS } from '../../../../src/core/gear-groups.js';
 import { itemById, jobGear } from '../../../../src/core/items.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { copySheet, piecesToClear } from '../../../../src/ui/sheets/ops.js';
@@ -68,7 +68,7 @@ test('Copy sheet keeps what the new job can wear, moves the goal and stones to i
     };
     const frozen = JSON.stringify(sheet);
 
-    for (const to of copyTargets(job.jobId)) {
+    for (const to of GEAR_GROUPS.find(group => group.includes(job.jobId)).filter(id => id !== job.jobId)) {
       const newJob = jobs.find(candidate => candidate.jobId === to);
       const label = `${job.jobId} to ${to}`;
       const copy = copySheet(sheet, { name: 'copy', job: to, level: newJob.maxLevel, sync: SYNC }, `s_c${n}`, 2, setId);

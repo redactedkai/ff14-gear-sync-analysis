@@ -8,13 +8,6 @@ import { itemById } from './items.js';
 /* GEAR_GROUPS: [[job id, ...], ...], every job in exactly one group. */
 export const GEAR_GROUPS = Object.freeze(GEAR_GROUPS_FILE.groups.map(group => Object.freeze([...group])));
 
-/* The job ids a sheet for job `jobId` can be copied to: the other jobs of its gear group, in job order (empty for a job
-   alone in its group, Blue Mage and Beastmaster, or an unknown id). */
-export function copyTargets(jobId) {
-  const group = GEAR_GROUPS.find(g => g.includes(jobId));
-  return group ? group.filter(id => id !== jobId) : [];
-}
-
 /* The role name of the gear group of `jobId` ("Healers"), for the Copy sheet note: the job picker's row label
    (constants.js JOB_ROWS) when every job of the group is in that one row, else null (a group that spans rows, or a job
    alone in its group, Blue Mage and Beastmaster, takes no name). */

@@ -525,7 +525,7 @@ Notes:
 | Stat labels; level caps | `src/core/constants.js` (`STAT_LABEL`, `STAT_SHORT`; `JOB_LEVEL_CAPS`) |
 | Saved position keys | `src/core/stat-keys.js` (`currentStatKey`, `remapStatKey`) |
 | Raw row to stat keys, item filters, pool item ids | `src/core/items.js` (`dbStats`, `browseItems`, `gearFilter`, `filterGear`, `poolItemFromRow`) |
-| Gear groups (which jobs share gear) and the pieces a job cannot wear, by job mask | `src/core/gear-groups.js` (`GEAR_GROUPS`, `copyTargets`, `piecesJobCannotWear`) |
+| Gear groups (which jobs share gear) and the pieces a job cannot wear, by job mask | `src/core/gear-groups.js` (`GEAR_GROUPS`, `gearGroupName`, `piecesJobCannotWear`) |
 | Piece identity: a database piece by its game id; the same piece from several sources | `src/core/items.js` (`itemById`, `poolItemById`; `poolKey`) |
 | A piece under sync | `src/core/piece.js` (`itemSyncIlvl`, `effStats`, `itemCaps`, `meldCaps`, `keepsMelds`) |
 | A gear set and what it adds up to; a given list of stones on a piece | `src/core/set.js` (`makeSet`, `setFromPicks`, `evaluateSet`); `src/core/meld.js` (`applyStones`) |
