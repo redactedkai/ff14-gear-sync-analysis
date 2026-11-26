@@ -69,23 +69,6 @@ function failure(error) {
     : { ok: false, reason: 'unavailable', message: UNAVAILABLE_MESSAGE };
 }
 
-/* Whether `storage` can be written to and read back (a probe key, removed at once). False for null and for a storage
-   that throws. Reading alone is not enough: some private modes read fine and refuse every write. */
-export function storageAvailable(storage = defaultStorage()) {
-  if (!storage) {
-    return false;
-  }
-  try {
-    const probe = `${STORE_KEY}:probe`;
-    storage.setItem(probe, '1');
-    const back = storage.getItem(probe);
-    storage.removeItem(probe);
-    return back === '1';
-  } catch {
-    return false;
-  }
-}
-
 const isObject = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 /* The latest time, in ms since 1970, a JavaScript Date holds (8.64e15, either side of 1970): beyond it
    Intl.DateTimeFormat.format throws a RangeError, as the Sheets tab's date columns would. */

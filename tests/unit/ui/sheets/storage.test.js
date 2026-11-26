@@ -15,7 +15,6 @@ import {
   saveOrder,
   saveSheet,
   sheetKey,
-  storageAvailable,
 } from '../../../../src/ui/sheets/storage.js';
 import { newGearSet } from '../../../../src/ui/sheets/ops.js';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.js';
@@ -255,14 +254,11 @@ test('storage that is missing or throws: unavailable, never an exception', () =>
     removeItem: refuse,
   };
   for (const storage of [null, blocked]) {
-    assert.equal(storageAvailable(storage), false);
     assert.deepEqual(loadSheets(storage), { available: false, sheets: [], unreadable: [], indexProblem: null });
     assert.deepEqual(saveSheet(makeSheet('s_a'), storage), { ok: false, reason: 'unavailable', message: UNAVAILABLE_MESSAGE });
     assert.equal(deleteSheet('s_a', storage).reason, 'unavailable');
     assert.equal(saveOrder([], storage).reason, 'unavailable');
   }
-  assert.equal(storageAvailable(fakeStorage()), true);
-  assert.equal(storageAvailable(fakeStorage({ failWith: quotaError() })), false);
 });
 
 test('parseSheet takes a record text and the id of its key', () => {
