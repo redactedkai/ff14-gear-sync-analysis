@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { makeApp, solveOf } from '../helpers/views.ts';
 
 test('a speed tier that starts at 0 points is held at 0: tier ranking loses no Strength to the plain ranking', () => {
-  const gearTotals = byTier => {
+  const gearTotals = (byTier: boolean) => {
     const app = makeApp('DRK', { level: 100, cap: 790 });
     Object.assign(app.recipe, { target: 'crit', tb: 'sks', tb2: 'str', gcd: 2.5, gcdMode: 'exact', melds: true, food: false, byTier });
     const solve = solveOf(app);

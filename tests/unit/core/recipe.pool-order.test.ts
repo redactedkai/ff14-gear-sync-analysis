@@ -10,6 +10,8 @@
    shows it on three real cases. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { JobContext, PoolItem } from '../../../src/core/types.ts';
+import type { Recipe } from '../../../src/core/recipe.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { jobGear } from '../../../src/core/items.ts';
 import { runRecipe } from '../../../src/core/recipe.ts';
@@ -22,12 +24,16 @@ const ORDER_SEEDS = [11, 222, 3333]; // the pool orders tried besides the databa
 
 /* Solves `recipe` for `jobId` under `cap` and `level` with the job's gear in the database's order and in each seeded order.
    Returns [{label, result}] (the first is the database's order); fails the test when a solve is not ok. */
-function solveInEveryOrder(jobId, cap, level, change) {
+type RecipeChange = (job: JobContext) => Partial<Recipe>;
+function solveInEveryOrder(jobId: string, cap: number | null, level: number, change: RecipeChange) {
   const job = makeJobContext(jobId);
   const sync = syncSettings({ cap, sync: cap != null, level });
   const recipe = { ...fillRecipe(defaultFillSettings(job)), ...change(job) };
   const gear = jobGear(job);
-  const orders = [['database order', gear], ...ORDER_SEEDS.map(seed => [`order ${seed}`, shuffled(gear, seed)])];
+  const orders: [label: string, pool: readonly PoolItem[]][] = [
+    ['database order', gear],
+    ...ORDER_SEEDS.map((seed): [string, readonly PoolItem[]] => [`order ${seed}`, shuffled(gear, seed)]),
+  ];
   const solved = orders.map(([label, pool]) => {
     const result = runRecipe(job, sync, level, recipe, makeSession({ gear: () => pool }));
     assert.equal(result.status, 'ok', `${jobId} cap ${cap}, ${label}: ${result.status}`);
@@ -38,7 +44,7 @@ function solveInEveryOrder(jobId, cap, level, change) {
 
 /* Goals with ties on purpose (no tiebreak, a stat that sync caps, tier ranking, food, melds, a Target GCD), over roles and
    sync settings. A GCD of 2.50 or faster is reachable for every job at these levels. */
-const RANKED_CASES = [
+const RANKED_CASES: [jobId: string, cap: number | null, level: number, change: RecipeChange][] = [
   ['SGE', 123, 50, () => ({ tb: '', byTier: false, melds: false, food: false })],
   ['PLD', 660, 90, () => ({ target: 'crit', tb: 'det', byTier: true, melds: true, food: true })],
   ['BRD', 123, 50, () => ({ target: 'crit', tb: 'det', tb2: 'dh', byTier: false, melds: true, food: true })],
@@ -65,7 +71,7 @@ test('the ranked totals of an Auto-fill do not depend on the order of the pool',
 
 /* Top gear with no sync, where one set has the most of the goal and its tiebreaks: SGE and BRD with melds and food, DRG
    without. */
-const SINGLE_OPTIMUM_CASES = [
+const SINGLE_OPTIMUM_CASES: [jobId: string, cap: number | null, level: number, change: RecipeChange][] = [
   ['SGE', null, 100, () => ({ tb: '', byTier: false, melds: true, food: true })],
   ['SGE', null, 100, () => ({ tb: 'crit', byTier: true, melds: true, food: true })],
   ['DRG', null, 100, () => ({ tb: 'crit', byTier: false, melds: false, food: true })],

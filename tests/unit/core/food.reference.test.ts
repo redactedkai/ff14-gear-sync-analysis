@@ -5,6 +5,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS } from '../../../src/core/constants.ts';
+import type { FoodChoice } from '../../../src/core/food.ts';
+import type { Totals } from '../../../src/core/types.ts';
 import { allMeals, bestFood, foodBonus, foodChoices, gearNeeded, withFood } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { rng } from '../helpers/common.ts';
@@ -15,7 +17,7 @@ const CASES_PER_JOB = 120;
 
 test('every meal of every job: the bonus is the formula and never negative', () => {
   const rand = rng(777);
-  const int = count => Math.floor(rand() * count);
+  const int = (count: number) => Math.floor(rand() * count);
   for (const { id } of JOBS) {
     const job = makeJobContext(id);
     const meals = allMeals(job);
@@ -23,7 +25,12 @@ test('every meal of every job: the bonus is the formula and never negative', () 
       const level = 1 + int(job.maxLevel);
       const totals = Object.fromEntries(job.stats.map(stat => [stat, int(4500)]));
       for (const meal of meals) {
-        for (const [stat, { bonus }] of Object.entries(foodBonus(job, meal, totals, level))) {
+        const bonuses = foodBonus(job, meal, totals, level);
+        for (const stat of job.stats) {
+          const bonus = bonuses[stat]?.bonus;
+          if (bonus === undefined) {
+            continue;
+          }
           assert.equal(
             bonus,
             foodAdd(job, meal, stat, totals[stat], level),
@@ -38,7 +45,7 @@ test('every meal of every job: the bonus is the formula and never negative', () 
 
 test('the best meal of the pruned choices ranks as high as the best of every meal', () => {
   const rand = rng(778);
-  const int = count => Math.floor(rand() * count);
+  const int = (count: number) => Math.floor(rand() * count);
   for (const { id } of JOBS) {
     const job = makeJobContext(id);
     const meals = allMeals(job);
@@ -50,7 +57,7 @@ test('the best meal of the pruned choices ranks as high as the best of every mea
         .filter((key, i, all) => all.indexOf(key) === i)
         .slice(0, 1 + int(3));
       // the rank rule: the ranked stats with food, then the points the meal adds to substats
-      const rankOf = meal => {
+      const rankOf = (meal: FoodChoice) => {
         const bonus = foodBonus(job, meal, totals, level);
         const withMeal = withFood(totals, bonus);
         const substatPoints = Object.entries(bonus).reduce((sum, [stat, v]) => (stat === 'vit' ? sum : sum + v.bonus), 0);
@@ -70,7 +77,7 @@ test('the best meal of the pruned choices ranks as high as the best of every mea
 
 test('gearNeeded is the least gear that reaches the total with the meal', () => {
   const rand = rng(779);
-  const int = count => Math.floor(rand() * count);
+  const int = (count: number) => Math.floor(rand() * count);
   for (const { id } of JOBS) {
     const job = makeJobContext(id);
     const meals = allMeals(job);
@@ -78,9 +85,10 @@ test('gearNeeded is the least gear that reaches the total with the meal', () => 
       const level = 1 + int(job.maxLevel);
       const meal = meals[int(meals.length)];
       const line = meal.stats[int(meal.stats.length)];
+      assert.ok(line);
       const target = int(5000);
       let least = 0;
-      while (least + foodBonus(job, { stats: [line] }, { [line.stat]: least }, level)[line.stat].bonus < target) {
+      while (least + (foodBonus(job, { stats: [line] }, { [line.stat]: least }, level)[line.stat]?.bonus ?? 0) < target) {
         least++;
       }
       assert.equal(

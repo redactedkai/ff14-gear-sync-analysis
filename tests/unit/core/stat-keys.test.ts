@@ -34,7 +34,9 @@ test("currentStatKey: an old position key is the job's stat at that position; ev
   // a job with no special substat has nothing at that position: the value stays, and every reader drops it
   assert.equal(currentStatKey(blm, 'spec'), 'spec');
   // the game's own keys, other stats and non-keys come back as they are
-  for (const k of ['mind', 'str', 'sps', 'piety', 'crit', 'det', 'dh', 'vit', '', 'x', undefined, null, 7]) {
+  const notKeys: unknown[] = ['mind', 'str', 'sps', 'piety', 'crit', 'det', 'dh', 'vit', '', 'x', undefined, null, 7];
+  for (const k of notKeys) {
+    // @ts-expect-error undefined, null and a number are no key text, passed on purpose
     assert.equal(currentStatKey(sge, k), k);
   }
   // inherited object keys are no position keys
@@ -75,7 +77,7 @@ const KEY_USE = new RegExp(`(['"\`])(${GAME_KEYS})\\1|\\b(${GAME_KEYS}):|\\.(${G
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 /* The .js and .ts files under `dir` (relative to `base`: the repo root, or a tree a test plants). */
-function sourceFiles(dir, base = root) {
+function sourceFiles(dir: string, base = root): string[] {
   return readdirSync(path.join(base, dir)).flatMap(name => {
     const rel = `${dir}/${name}`;
     if (statSync(path.join(base, rel)).isDirectory()) {
@@ -86,14 +88,14 @@ function sourceFiles(dir, base = root) {
 }
 /* The code of a file with its comments taken out (block comments, then // to the end of a line, not after a colon so that
    https:// in a string stays whole), lines kept so a hit can be named. */
-function codeOf(rel, base = root) {
+function codeOf(rel: string, base = root) {
   const text = readFileSync(path.join(base, rel), 'utf8');
   return text.replace(/\/\*[\s\S]*?\*\//g, match => match.replace(/[^\n]/g, '')).replace(/(^|[^:])\/\/.*$/gm, '$1');
 }
 
 /* The lines of shared code (src/core, src/ui/views) under `base` that name a job-specific stat, as "file:line: text". */
 function keyHits(base = root) {
-  const hits = [];
+  const hits: string[] = [];
   for (const rel of [...sourceFiles('src/core', base), ...sourceFiles('src/ui/views', base)]) {
     if (ALLOWED.has(rel)) {
       continue;

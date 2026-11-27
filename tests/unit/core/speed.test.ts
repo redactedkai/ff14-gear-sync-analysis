@@ -99,7 +99,7 @@ test('GCD equals AkhMorning speed table at level 100, every speed and recast', (
    90 and 100, MNK 2.12 at level 70 (15%, UCoB/UWU sets 2.09-2.12). Levels from the official job guides (HASTE in
    constants.ts). */
 test('hasted GCD with no gear speed matches the published tiers', () => {
-  const noSpeed = (job, level) => gcdFor(0, level, 2500, hasteFor(job, level)?.pct ?? 0);
+  const noSpeed = (job: string, level: number) => gcdFor(0, level, 2500, hasteFor(job, level)?.pct ?? 0);
   for (const level of [90, 100]) {
     assert.equal(noSpeed('NIN', level), 2.12);
     assert.equal(noSpeed('VPR', level), 2.12);
@@ -111,7 +111,7 @@ test('hasted GCD with no gear speed matches the published tiers', () => {
 });
 
 test('haste starts at the levels in the official job guides', () => {
-  const pct = (job, level) => hasteFor(job, level)?.pct ?? 0;
+  const pct = (job: string, level: number) => hasteFor(job, level)?.pct ?? 0;
   assert.deepEqual(
     [44, 45].map(l => pct('NIN', l)),
     [0, 15],
@@ -130,13 +130,13 @@ test('haste starts at the levels in the official job guides', () => {
   );
   assert.equal(hasteFor('SGE', 100), null);
   assert.equal(hasteFor('WHM', 100), null); // Presence of Mind is a short buff: not counted (owner's decision)
-  assert.equal(hasteFor('SAM', 100).name, 'Fuka');
+  assert.equal(hasteFor('SAM', 100)?.name, 'Fuka');
   // what grants each step, as the job guides name it (Fuka comes from Shifu, a level 18 combo action)
   assert.deepEqual(
     [hasteFor('SAM', 18), hasteFor('SAM', 78), hasteFor('MNK', 76), hasteFor('NIN', 45), hasteFor('VPR', 20)].map(h => [
-      h.level,
-      h.pct,
-      h.source,
+      h?.level,
+      h?.pct,
+      h?.source,
     ]),
     [
       [18, 10, 'Shifu'],
@@ -173,15 +173,16 @@ test('speed for a target GCD: the band ends give the GCD, one point outside does
       for (const gcd of [top, top - 0.01, top - 0.05, top - 0.13, top - 0.3]) {
         const g = Math.round(gcd * 100) / 100;
         const b = speedForGcd(g, level, 'exact', haste);
-        const at = s => gcdFor(s, level, 2500, haste);
+        const at = (s: number) => gcdFor(s, level, 2500, haste);
         assert.ok(b, `${g} at ${level} haste ${haste}`);
+        assert.ok(b.max !== null, `${g} has a speed maximum`);
         assert.equal(at(b.min), g);
         assert.equal(at(b.max), g);
         if (b.min > 0) {
           assert.ok(at(b.min - 1) > g);
         }
         assert.ok(at(b.max + 1) < g);
-        assert.equal(speedForGcd(g, level, 'min', haste).min, b.min);
+        assert.equal(speedForGcd(g, level, 'min', haste)?.min, b.min);
       }
     }
   }
@@ -234,6 +235,7 @@ test('the GCD stops at 1.50 s, at every level and haste', () => {
   assert.equal(gcdFor(0, 1), 2.5);
   // a Target GCD of exactly 1.50 has no speed maximum; below 1.50 none can be had
   const b = speedForGcd(1.5, 1, 'exact');
+  assert.ok(b);
   assert.equal(gcdFor(b.min, 1), 1.5);
   assert.ok(gcdFor(b.min - 1, 1) > 1.5);
   assert.equal(b.max, 100000);

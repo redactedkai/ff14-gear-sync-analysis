@@ -2,6 +2,8 @@
    picks by gameId, and that a warm session gives what a fresh one does without solving again what it already holds. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { SlotPick, Sync } from '../../../src/core/types.ts';
+import type { Recipe, RecipeSuccess } from '../../../src/core/recipe.ts';
 import { ACTIVITIES } from '../../../src/core/constants.ts';
 import { allMeals } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
@@ -12,30 +14,33 @@ import { itemRoutes } from '../../../src/core/items.ts';
 import { appState } from '../helpers/common.ts';
 
 const sge = makeJobContext('SGE');
-const SYNC = { cap: 123, sync: true, level: 100 };
+const SYNC: Sync = { cap: 123, sync: true, level: 100 };
 /* A set's recipe for Sage (its Auto-fill settings at their defaults) with `patch` on top. */
-const recipe = (patch = {}) => ({ ...appState({ job: 'SGE' }).recipe, ...patch });
+const recipe = (patch: Partial<Recipe> = {}): Recipe => ({ ...appState({ job: 'SGE' }).recipe, ...patch });
 
 test('runRecipe: the set by gameId, the record with the goal as asked, and no set when nothing passes the filters', () => {
-  const asked = recipe({ target: 'mind', tb: 'crit', food: true });
+  const exclude = [...(recipe().exclude ?? [])];
+  const asked = recipe({ target: 'mind', tb: 'crit', food: true, exclude });
   const run = runRecipe(sge, SYNC, 100, asked, makeSession());
-  assert.equal(run.status, 'ok');
+  assert.ok(run.status === 'ok');
   assert.ok(Object.isFrozen(run.set) && Object.isFrozen(run.record));
   assert.equal(run.set.pieces.length, 11);
   for (const [i, piece] of run.set.pieces.entries()) {
-    const pick = run.found.picks[i];
+    const pick: SlotPick | undefined = run.found.picks[i];
+    assert.ok(pick, `row ${i} has a pick`);
     assert.equal(piece.gameId, pick.item?.gameId, `row ${i}`);
     if (pick.item) {
-      assert.equal(piece.name, undefined);
+      assert.equal(Reflect.get(piece, 'name'), undefined);
     }
   }
+  assert.ok(run.found.food);
   assert.equal(run.set.meal, run.found.food.shown.key);
   // the record is a frozen copy: a later change to the recipe handed in does not reach it
   assert.deepEqual(run.record, { job: 'SGE', sync: SYNC, level: 100, recipe: asked });
   asked.target = 'det';
-  asked.exclude.push('crafted');
+  exclude.push('crafted');
   assert.equal(run.record.recipe.target, 'mind');
-  assert.ok(!run.record.recipe.exclude.includes('crafted'));
+  assert.ok(!run.record.recipe.exclude?.includes('crafted'));
   // every box off and no market board
   const none = runRecipe(sge, SYNC, 100, recipe({ exclude: ACTIVITIES.map(a => a.key), market: false }), makeSession());
   assert.deepEqual([none.status, none.set], ['excluded', null]);
@@ -45,13 +50,14 @@ test('runRecipe: a piece picked by gameId is shown where it gives the same resul
   const asked = recipe({ target: 'mind', tb: 'crit' });
   const session = makeSession();
   const run = runRecipe(sge, SYNC, 100, asked, session);
+  assert.ok(run.status === 'ok');
   // the first other piece of some row's menu that the row takes (a menu lists the pieces that fit the rows as shown,
   // which a pick is checked against again)
-  let shown = null;
+  let shown: { row: number; picked: RecipeSuccess } | null = null;
   for (const [row, options] of run.found.options.entries()) {
-    for (const c of options.filter(o => o.item !== run.found.picks[row].item)) {
-      const picked = runRecipe(sge, SYNC, 100, asked, session, { pieces: { [row]: c.item.gameId } });
-      if (picked.set.pieces[row].gameId === c.item.gameId) {
+    for (const c of options.filter(o => o.item !== run.found.picks[row]?.item)) {
+      const picked = runRecipe(sge, SYNC, 100, asked, session, { pieces: { [row]: c.item.gameId ?? null } });
+      if (picked.status === 'ok' && picked.set.pieces[row]?.gameId === c.item.gameId) {
         shown = { row, picked };
       }
       if (shown) {
@@ -82,7 +88,8 @@ test('runRecipe: a session that has solved before gives what a fresh one does, w
     const choices = i === 5 ? { meal } : {};
     const warm = runRecipe(sge, sync, 80, r, session, choices);
     const fresh = runRecipe(sge, sync, 80, r, makeSession(), choices);
-    assert.equal(warm.status, 'ok', `step ${i}`);
+    assert.ok(warm.status === 'ok', `step ${i}`);
+    assert.ok(fresh.status === 'ok', `step ${i} fresh`);
     assert.deepEqual(warm.set, fresh.set, `step ${i}`);
     assert.deepEqual([warm.found.gcd, warm.found.held, warm.found.truncated], [fresh.found.gcd, fresh.found.held, fresh.found.truncated]);
   }
@@ -91,8 +98,8 @@ test('runRecipe: a session that has solved before gives what a fresh one does, w
 /* The pieces each "Gear categories" box holds in a set's Auto-fill pool: Sage's real gear under the Auto-fill filters. */
 test('gearFromCounts: the pieces per box in the Auto-fill pool, whatever boxes and the market board are ticked', () => {
   const gear = makeSession().gear(sge);
-  const counts = patch => gearFromCounts(sge, recipe(patch), gear);
-  const nonzero = patch => Object.fromEntries(Object.entries(counts(patch)).filter(([, n]) => n));
+  const counts = (patch: Partial<Recipe>) => gearFromCounts(sge, recipe(patch), gear);
+  const nonzero = (patch: Partial<Recipe>) => Object.fromEntries(Object.entries(counts(patch)).filter(([, n]) => n));
   // item level 790 to 795: the Savage and augmented tomestone sets (nine armor pieces and a weapon each), the hunt seal route
   // of the augmented armor, the Ultimate weapon and the Phantom relic weapon whose substats are fixed (Occultum, whose substats the
   // player allocates, is left out of the pool)
