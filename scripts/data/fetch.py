@@ -73,13 +73,26 @@ def job_icon_numbers(csv_dir):
     return {j: FRAMED_JOB_ICON + rows[j] for j in load_format()['jobs']}
 
 
+def download_icon(url, dest):
+    """Download the PNG at `url` to `dest`. It is written to `dest` + '.part' first and renamed only when it is a whole 64 x
+    64 PNG, so a failed or cut-short download never replaces a good icon (and the generator never sees half a file). Exits
+    with a message naming the file when the download is not a whole icon."""
+    part = dest.with_name(dest.name + '.part')
+    req = urllib.request.Request(url, headers={'User-Agent': USER_AGENT})  # the default one is refused
+    with urllib.request.urlopen(req, timeout=30) as r:
+        data = r.read()
+    size = gen_job_icons.SIZE
+    if gen_job_icons.png_size(data) != (size, size) or not gen_job_icons.is_complete_png(data):
+        sys.exit(f'{dest.name}: the download from {url} is not a whole {size} x {size} PNG; nothing was replaced.')
+    part.write_bytes(data)
+    part.replace(dest)
+
+
 def fetch_icons(csv_dir):
     ICON_DIR.mkdir(parents=True, exist_ok=True)
     icons = job_icon_numbers(csv_dir).items()
     for job, icon in progress.bar(icons, 'Downloading the job icons', unit='icon'):
-        req = urllib.request.Request(icon_url(icon), headers={'User-Agent': USER_AGENT})  # the default one is refused
-        with urllib.request.urlopen(req, timeout=30) as r:
-            (ICON_DIR / f'{job}.png').write_bytes(r.read())
+        download_icon(icon_url(icon), ICON_DIR / f'{job}.png')
     # the endpoint has no version: the job icon generator writes this date and each icon's sha256 into its header
     (ICON_DIR / gen_job_icons.FETCH_RECORD).write_text(datetime.now(UTC).date().isoformat() + '\n', encoding='utf-8')
 

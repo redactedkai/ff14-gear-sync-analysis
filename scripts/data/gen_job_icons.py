@@ -25,6 +25,7 @@ from item_format import ROOT, SchemaError, load_format, run_main
 
 SIZE = 64
 PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
+PNG_END = b'\x00\x00\x00\x00IEND\xaeB`\x82'  # the last chunk of every PNG (length 0, type IEND, its CRC)
 FETCH_RECORD = 'fetched.txt'  # in the icon folder: the UTC date fetch.py downloaded the icons (YYYY-MM-DD)
 
 
@@ -58,6 +59,11 @@ def png_size(data):
     return struct.unpack('>II', data[16:24])
 
 
+def is_complete_png(data):
+    """Whether `data` ends with the PNG end chunk (IEND), which a download cut short lacks even when its header is fine."""
+    return data.endswith(PNG_END)
+
+
 def main(icon_dir, out):
     icon_dir = Path(icon_dir)
     icons, hashes, problems = {}, {}, []
@@ -70,6 +76,9 @@ def main(icon_dir, out):
         size = png_size(data)
         if size != (SIZE, SIZE):
             problems.append(f'{job}: {path.name} is ' + (f'{size[0]} x {size[1]}' if size else 'not a PNG') + f', expected {SIZE} x {SIZE}')
+            continue
+        if not is_complete_png(data):
+            problems.append(f'{job}: {path.name} is cut short (no PNG end chunk)')
             continue
         icons[job] = 'data:image/png;base64,' + base64.b64encode(data).decode('ascii')
         hashes[job] = hashlib.sha256(data).hexdigest()
