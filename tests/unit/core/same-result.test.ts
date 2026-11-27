@@ -2,6 +2,8 @@
    without changing what the result does, and which one it shows. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { Candidate, Eff, FilledPick, JobContext, SlotType, StatKey, StatMap, Totals } from '../../../src/core/types.ts';
+import type { ResultContext, SameRow } from '../../../src/core/same-result.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { equipLevel, mkItem } from '../../../src/core/items.ts';
 import { resultOf, sameOutcome, sameResult } from '../../../src/core/same-result.ts';
@@ -9,23 +11,49 @@ import { dotMult, gcdFor } from '../../../src/core/speed.ts';
 import { rankTierOf, statTier } from '../../../src/core/tiers.ts';
 import { makeApp, solveOf } from '../helpers/views.ts';
 
+/* The first points of the tier of `stat` at `points` (statTier's start); the stat must have tiers. */
+function tierStart(job: JobContext, stat: StatKey, points: number, level: number): number {
+  const tier = statTier(job, stat, points, level);
+  assert.ok(tier, `${stat} has tiers`);
+  return tier.start;
+}
+/* A row of sameResult by index, which must exist. */
+function rowAt(rows: readonly SameRow[], index: number): SameRow {
+  const row = rows[index];
+  assert.ok(row, `row ${index}`);
+  return row;
+}
+/* The piece a row shows, which must not be an empty slot. */
+function shownOf(row: SameRow): FilledPick {
+  const pick = row.pick;
+  assert.ok(pick.item, 'a row that shows a piece');
+  return pick;
+}
+/* solveOf for a solve that finds a set: its run, evaluated set and panel numbers, none of them null. */
+function okSolve(...args: Parameters<typeof solveOf>) {
+  const solved = solveOf(...args);
+  assert.ok(solved.run.status === 'ok', `the solve found a set (${solved.run.status})`);
+  assert.ok(solved.set);
+  return { ...solved, run: solved.run, set: solved.set };
+}
+
 const sge = makeJobContext('SGE');
-const CTX = { level: 100, food: null, haste: 0 };
+const CTX: ResultContext = { level: 100, food: null, haste: 0 };
 
 /* A hand-made candidate (the shape buildCandidates gives): every job stat, 0 unless given. Each has a made-up gameId,
    as a database piece has, so a row's menu can pick it. */
 let nextGameId = 1;
-function cand(name, type, stats, blocks = []) {
+function cand(name: string, type: SlotType, stats: StatMap, blocks: readonly SlotType[] = []): Candidate {
   const item = mkItem(name, type, 700, {}, { gameId: nextGameId++ });
-  const eff = Object.fromEntries(sge.stats.map(s => [s, stats[s] || 0]));
-  return { item, eff, copies: 1, blocks, meld: null };
+  const eff: Eff = Object.fromEntries(sge.stats.map(s => [s, stats[s] || 0]));
+  return { item, eff, copies: 1, blocks, meld: null, score: 0, sum: 0 };
 }
-const pickOf = (type, c) => ({ type, item: c.item, eff: c.eff, meld: null });
+const pickOf = (type: SlotType, c: Candidate): FilledPick => ({ type, item: c.item, eff: c.eff, meld: null });
 
 /* Two rows whose Critical Hit is 1 point above a tier start, and for each a piece with 1 point less: either swap alone
    keeps the tier, both together lose it. */
 function sharedSpare() {
-  const start = statTier(sge, 'crit', 1000, 100).start;
+  const start = tierStart(sge, 'crit', 1000, 100);
   const head = cand('Head A', 'head', { mind: 100, crit: start + 1 - 50 });
   const head2 = cand('Head B', 'head', { mind: 100, crit: start - 50 });
   const body = cand('Body A', 'body', { mind: 200, crit: 50 });
@@ -41,8 +69,8 @@ function sharedSpare() {
 }
 
 test('resultOf: points within a tier give the same result, a tier lost or a main stat point does not', () => {
-  const start = statTier(sge, 'crit', 1000, 100).start;
-  const at = crit => resultOf(sge, { mind: 300, crit }, CTX);
+  const start = tierStart(sge, 'crit', 1000, 100);
+  const at = (crit: number) => resultOf(sge, { mind: 300, crit }, CTX);
   assert.deepEqual(at(start), at(start + 1));
   assert.notDeepEqual(at(start - 1), at(start));
   assert.notDeepEqual(resultOf(sge, { mind: 301, crit: start }, CTX), at(start));
@@ -54,7 +82,7 @@ test('resultOf: speed keeps its GCD; its DoT/HoT tick scaling may drop a step (o
   while (gcdFor(spd, 100) !== gcdFor(spd - 1, 100) || dotMult(spd, 100) === dotMult(spd - 1, 100)) {
     spd++;
   }
-  const at = points => resultOf(sge, { mind: 300, sps: points }, CTX);
+  const at = (points: number) => resultOf(sge, { mind: 300, sps: points }, CTX);
   assert.deepEqual(at(spd - 1), at(spd));
   // a GCD step lost is a different result
   let step = 400;
@@ -66,10 +94,12 @@ test('resultOf: speed keeps its GCD; its DoT/HoT tick scaling may drop a step (o
 
 test('resultOf: Tenacity keeps its mitigation step (200); its damage step (112) may drop (owner, 2026-10-16)', () => {
   const war = makeJobContext('WAR');
-  const at = (ten, mitigation) => sameOutcome(resultOf(war, { str: 300, ten }, CTX), resultOf(war, { str: 300, ten: mitigation }, CTX));
+  const at = (ten: number, mitigation: number) =>
+    sameOutcome(resultOf(war, { str: 300, ten }, CTX), resultOf(war, { str: 300, ten: mitigation }, CTX));
   // the first Tenacity above 400 where one step moves and the other doesn't, each way
   const mit = rankTierOf(war, 'ten', 100);
-  const dmg = p => statTier(war, 'ten', p, 100).effect;
+  assert.ok(mit);
+  const dmg = (p: number) => statTier(war, 'ten', p, 100)?.effect;
   let a = 400;
   while (mit(a) === mit(a - 1) || dmg(a) !== dmg(a - 1)) {
     a++;
@@ -83,8 +113,8 @@ test('resultOf: Tenacity keeps its mitigation step (200); its damage step (112) 
 });
 
 test('resultOf: the goal stat keeps its exact points when asked (the plain optimizer), only its tier without (tier ranking)', () => {
-  const start = statTier(sge, 'crit', 1000, 100).start;
-  const at = (crit, goal) => resultOf(sge, { mind: 300, crit }, { ...CTX, goal });
+  const start = tierStart(sge, 'crit', 1000, 100);
+  const at = (crit: number, goal: StatKey | null) => resultOf(sge, { mind: 300, crit }, { ...CTX, goal });
   assert.notDeepEqual(at(start, 'crit'), at(start + 5, 'crit'));
   assert.deepEqual(at(start, null), at(start + 5, null));
 });
@@ -101,27 +131,28 @@ test('each swap alone fits, so both rows list their other piece; the shown set k
   );
   // equal equip and item levels: the optimizer's own pick stays
   assert.deepEqual(
-    rows.map(r => r.pick.item.name),
+    rows.map(r => shownOf(r).item.name),
     ['Head A', 'Body A'],
   );
 });
 
 test('rows share their spare points: after one swap, the other row no longer offers its swap', () => {
   const { picks, cands, head2 } = sharedSpare();
-  const rows = sameResult(sge, picks, cands, CTX, { 0: head2.item.gameId });
-  assert.equal(rows[0].pick.item.name, 'Head B');
+  const rows = sameResult(sge, picks, cands, CTX, { 0: head2.item.gameId ?? null });
+  assert.equal(shownOf(rowAt(rows, 0)).item.name, 'Head B');
   assert.deepEqual(
-    rows[1].options.map(c => c.item.name),
+    rowAt(rows, 1).options.map(c => c.item.name),
     ['Body A'],
   );
-  const totals = Object.fromEntries(sge.stats.map(s => [s, rows.reduce((n, r) => n + r.pick.eff[s], 0)]));
-  assert.deepEqual(resultOf(sge, totals, CTX), resultOf(sge, { mind: 300, crit: statTier(sge, 'crit', 1000, 100).start }, CTX));
+  const totals = Object.fromEntries(sge.stats.map(s => [s, rows.reduce((n, r) => n + (shownOf(r).eff[s] ?? 0), 0)]));
+  assert.deepEqual(resultOf(sge, totals, CTX), resultOf(sge, { mind: 300, crit: tierStart(sge, 'crit', 1000, 100) }, CTX));
 });
 
 test('a pick that no longer fits is ignored', () => {
   const { picks, cands } = sharedSpare();
+  // @ts-expect-error a game id that is not a number, passed on purpose
   const rows = sameResult(sge, picks, cands, CTX, { 1: 'no such piece' });
-  assert.equal(rows[1].pick.item.name, 'Body A');
+  assert.equal(shownOf(rowAt(rows, 1)).item.name, 'Body A');
 });
 
 test('a piece that leaves another slot empty never replaces one that does not (a cloak for a body)', () => {
@@ -129,7 +160,7 @@ test('a piece that leaves another slot empty never replaces one that does not (a
   const cloak = cand('Cloak', 'body', body.eff, ['head']);
   const rows = sameResult(sge, picks, { ...cands, body: [body, cloak] }, CTX);
   assert.deepEqual(
-    rows[1].options.map(c => c.item.name),
+    rowAt(rows, 1).options.map(c => c.item.name),
     ['Body A'],
   );
 });
@@ -151,8 +182,7 @@ function ownerCase() {
 }
 
 test("the owner's case: every row has others, shows the lowest equip level, and the result is unchanged", () => {
-  const { run, set, panel } = solveOf(ownerCase());
-  assert.equal(run.status, 'ok');
+  const { run, set, panel } = okSolve(ownerCase());
   const { picks, options } = run.found;
   assert.ok(options.every(list => list.length > 1));
   // the result (gear and food) is the search's: Mind 356 from gear plus Sage's base 232 at level 50 (202 x 115%)
@@ -161,19 +191,24 @@ test("the owner's case: every row has others, shows the lowest equip level, and 
     [588, '2.50', null, null, '29.1%', '+16.3%', '0.0%', '2.50s', '+0 MP'],
   );
   for (const [row, list] of options.entries()) {
-    const shown = picks[row].item;
+    const shown = picks[row]?.item;
+    assert.ok(shown, `row ${row} shows a piece`);
     assert.ok(
       list.some(c => c.item === shown),
       shown.name,
     );
-    assert.equal(equipLevel(shown), Math.min(...list.map(c => equipLevel(c.item))), shown.name);
+    assert.equal(equipLevel(shown) ?? 0, Math.min(...list.map(c => equipLevel(c.item) ?? 0)), shown.name);
   }
 });
 
 test("the owner's case: a Unique ring is never in both ring rows, nor in the other row's options", () => {
-  const { run } = solveOf(ownerCase());
+  const { run } = okSolve(ownerCase());
   const rings = run.found.picks.map((p, row) => ({ p, row })).filter(({ p }) => p.type === 'ring');
-  const [r1, r2] = rings.map(({ p, row }) => ({ item: p.item, names: run.found.options[row].map(c => c.item.name) }));
+  const [r1, r2] = rings.map(({ p, row }) => {
+    assert.ok(p.item, `ring row ${row} shows a piece`);
+    return { item: p.item, names: (run.found.options[row] ?? []).map(c => c.item.name) };
+  });
+  assert.ok(r1 && r2, 'two ring rows');
   assert.equal(r1.item.copies, 1, 'the easiest ring is Unique, so the rule matters here');
   assert.notEqual(r1.item, r2.item);
   assert.ok(!r2.names.includes(r1.item.name));
@@ -182,11 +217,12 @@ test("the owner's case: a Unique ring is never in both ring rows, nor in the oth
 
 test("the owner's case: a piece picked from a row's options is shown, and the result stays the same", () => {
   const app = ownerCase();
-  const before = solveOf(app);
-  const other = before.run.found.options[0].find(c => c.item !== before.run.found.picks[0].item);
-  const after = solveOf(app, undefined, { pieces: { 0: other.item.gameId } });
-  assert.equal(after.run.found.picks[0].item.name, other.item.name);
-  const effects = v => v.set.tiers.map(t => t?.effect ?? null);
+  const before = okSolve(app);
+  const other = before.run.found.options[0]?.find(c => c.item !== before.run.found.picks[0]?.item);
+  assert.ok(other, 'another piece in the first row');
+  const after = okSolve(app, undefined, { pieces: { 0: other.item.gameId ?? null } });
+  assert.equal(after.run.found.picks[0]?.item?.name, other.item.name);
+  const effects = (v: typeof before) => v.set.tiers.map(t => t?.effect ?? null);
   assert.deepEqual(effects(after), effects(before));
   assert.equal(after.panel('mind'), before.panel('mind'));
 });

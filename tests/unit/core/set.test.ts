@@ -6,6 +6,9 @@
    must show the same. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { JobContext, SetPiece, StatKey, Stone } from '../../../src/core/types.ts';
+import type { EmptyRow, SetEvaluation, WornRow } from '../../../src/core/set.ts';
+import { SLOT_TYPES } from '../../../src/core/constants.ts';
 import { browseItems, mkItem, poolItemById } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { meldText } from '../../../src/core/meld.ts';
@@ -17,25 +20,49 @@ const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'
 
 /* A meld as the page shows it ("CRT XII ×2, DET XI, 2 slots empty") as one entry per slot: {stat, grade} or null;
    '' is no melds ([]). */
-function stonesOf(job, text) {
+function stonesOf(job: JobContext, text: string): (Stone | null)[] {
   if (!text) {
     return [];
   }
-  const statOf = short => job.stats.find(s => job.short[s] === short);
-  return text.split(', ').flatMap(part => {
+  const statOf = (short: string): StatKey => {
+    const stat = job.stats.find(s => job.short[s] === short);
+    assert.ok(stat, `a stat named ${short}`);
+    return stat;
+  };
+  return text.split(', ').flatMap((part): (Stone | null)[] => {
     const empty = part.match(/^(\d+) slots? empty$/);
     if (empty) {
-      return Array(Number(empty[1])).fill(null);
+      return Array<null>(Number(empty[1])).fill(null);
     }
-    const [, short, roman, n] = part.match(/^(\S+) (\S+?)(?: ×(\d+))?$/);
-    return Array(Number(n || 1)).fill({ stat: statOf(short), grade: ROMAN.indexOf(roman) + 1 });
+    const stone = part.match(/^(\S+) (\S+?)(?: ×(\d+))?$/);
+    assert.ok(stone, `a meld part: ${part}`);
+    const [, short = '', roman = '', n] = stone;
+    return Array<Stone>(Number(n || 1)).fill({ stat: statOf(short), grade: ROMAN.indexOf(roman) + 1 });
   });
 }
 
+/* The row of an evaluated set at `index` that shows a piece. */
+function wornRow(set: SetEvaluation, index: number): WornRow {
+  const row = set.rows[index];
+  assert.ok(row?.item, `row ${index} shows a piece`);
+  return row;
+}
+/* The row of an evaluated set at `index` that is an empty slot. */
+function emptyRow(set: SetEvaluation, index: number): EmptyRow {
+  const row = set.rows[index];
+  assert.ok(row && row.item === null, `row ${index} is an empty slot`);
+  return row;
+}
+
 /* A recorded case's set: its pieces by game id with their stones, and its meal. */
-function caseSet(job, c) {
+function caseSet(job: JobContext, c: (typeof CASES)[number]) {
   return makeSet(
-    c.pieces.map(([slot, gameId, , meld]) => (gameId == null ? { slot } : { slot, gameId, stones: stonesOf(job, meld) })),
+    c.pieces.map(([slotName, gameId, , meld]): SetPiece => {
+      const slot = SLOT_TYPES.find(type => type === slotName);
+      assert.ok(slot, `a slot type: ${slotName}`);
+      assert.ok(typeof meld === 'string' && (gameId === null || typeof gameId === 'number'), `a recorded piece: ${slotName}`);
+      return gameId == null ? { slot } : { slot, gameId, stones: stonesOf(job, meld) };
+    }),
     c.meal,
   );
 }
@@ -45,8 +72,8 @@ test('evaluateSet shows what the optimizer view showed for 14 real results, numb
     const job = makeJobContext(c.job);
     const set = evaluateSet(job, caseSet(job, c), c.sync, c.sync.level);
     const want = c.expect;
-    const at = what => `${c.key}: ${what}`;
-    const filled = set.rows.filter(r => r.item);
+    const at = (what: string) => `${c.key}: ${what}`;
+    const filled = set.rows.filter((r): r is WornRow => r.item !== null);
     assert.deepEqual(
       set.rows.map(r => r.label),
       want.labels,
@@ -66,7 +93,7 @@ test('evaluateSet shows what the optimizer view showed for 14 real results, numb
     );
     assert.deepEqual(
       set.rows.map(r =>
-        r.item ? job.stats.map(s => Number(c.scored.includes(s) && Boolean(r.stats[s]) && r.stats[s] >= r.caps[s])).join('') : null,
+        r.item ? job.stats.map(s => Number(c.scored.includes(s) && Boolean(r.stats[s]) && (r.stats[s] ?? 0) >= r.caps[s])).join('') : null,
       ),
       want.atCap,
       at('at cap marks'),
@@ -82,9 +109,10 @@ test('evaluateSet shows what the optimizer view showed for 14 real results, numb
       at('Total row'),
     );
     if (c.meal) {
+      assert.ok(set.meal, at('a meal'));
       assert.equal(set.meal.name, c.meal, at('meal'));
       assert.deepEqual(
-        job.stats.map(s => set.withFood[s] + set.base[s]),
+        job.stats.map(s => (set.withFood[s] ?? 0) + set.base[s]),
         want.withFood,
         at('With food row'),
       );
@@ -121,7 +149,11 @@ test("evaluateSet of an optimizer result's picks: the optimizer's own totals, ac
     const job = makeJobContext(id);
     const pool = browseItems(job, { ilvlMin: 15 })
       .filter(r => r.ilvl >= 400)
-      .map(r => poolItemById(job, r.gameId));
+      .map(r => {
+        const item = poolItemById(job, r.gameId);
+        assert.ok(item, `a pool item for game id ${r.gameId}`);
+        return item;
+      });
     for (const sync of syncs) {
       const res = optimize(job, pool, sync, { target: job.substats[0], tiebreak: [job.substats[1]], melds: true });
       assert.ok(res.ok, id);
@@ -136,9 +168,9 @@ test("evaluateSet of an optimizer result's picks: the optimizer's own totals, ac
           return;
         }
         for (const s of job.stats) {
-          assert.equal(set.rows[i].stats[s], p.eff[s], `${id} ${p.item.name} ${s}`);
+          assert.equal(wornRow(set, i).stats[s], p.eff[s], `${id} ${p.item.name} ${s}`);
         }
-        assert.equal(set.rows[i].meldText, meldText(job, p.meld), p.item.name);
+        assert.equal(wornRow(set, i).meldText, meldText(job, p.meld), p.item.name);
       });
     }
   }
@@ -146,59 +178,58 @@ test("evaluateSet of an optimizer result's picks: the optimizer's own totals, ac
 
 test('a set is frozen plain data: pieces by game id with the name beside it, a custom piece, empty slots', () => {
   const sge = makeJobContext('SGE');
+  const named: SetPiece & { name: string } = {
+    slot: 'head',
+    gameId: 49628,
+    name: 'Augmented Bygone Brass Calot of Healing',
+    stones: [{ stat: 'det', grade: 12 }, null],
+  };
   const set = makeSet(
-    [
-      { slot: 'head', gameId: 49628, name: 'Augmented Bygone Brass Calot of Healing', stones: [{ stat: 'det', grade: 12 }, null] },
-      { slot: 'body', custom: mkItem('Hand-made robe', 'body', 700, { mind: 500, crit: 300 }), stones: [] },
-      { slot: 'ring' },
-    ],
+    [named, { slot: 'body', custom: mkItem('Hand-made robe', 'body', 700, { mind: 500, crit: 300 }), stones: [] }, { slot: 'ring' }],
     'Popoto Potage',
   );
+  const headPiece = set.pieces[0];
+  assert.ok(headPiece?.stones);
   assert.ok(
-    Object.isFrozen(set) &&
-      Object.isFrozen(set.pieces) &&
-      Object.isFrozen(set.pieces[0].stones) &&
-      Object.isFrozen(set.pieces[0].stones[0]),
+    Object.isFrozen(set) && Object.isFrozen(set.pieces) && Object.isFrozen(headPiece.stones) && Object.isFrozen(headPiece.stones[0]),
   );
-  assert.deepEqual(JSON.parse(JSON.stringify(set.pieces[0])), {
+  assert.deepEqual(JSON.parse(JSON.stringify(headPiece)), {
     slot: 'head',
     gameId: 49628,
     name: 'Augmented Bygone Brass Calot of Healing',
     stones: [{ stat: 'det', grade: 12 }, null],
   });
   const ev = evaluateSet(sge, set, { cap: null, sync: false, level: 100 }, 100);
-  assert.equal(ev.rows[0].item.name, 'Augmented Bygone Brass Calot of Healing');
-  assert.equal(ev.rows[0].meldText, 'DET XII'); // the empty slot is not named (audit 11 #8)
+  assert.equal(wornRow(ev, 0).item.name, 'Augmented Bygone Brass Calot of Healing');
+  assert.equal(wornRow(ev, 0).meldText, 'DET XII'); // the empty slot is not named (audit 11 #8)
   // a custom piece counts its own stats; it has no database facts (no melds, no equip level, no gear category)
-  assert.deepEqual([ev.rows[1].stats.crit, ev.rows[1].from, ev.rows[1].category, ev.rows[1].meld], [300, null, null, null]);
-  assert.deepEqual([ev.rows[2].label, ev.rows[2].item, ev.rows[2].blockedBy], ['Ring 1', null, '']);
-  assert.equal(ev.meal.name, 'Popoto Potage');
+  assert.deepEqual([wornRow(ev, 1).stats.crit, wornRow(ev, 1).from, wornRow(ev, 1).category, wornRow(ev, 1).meld], [300, null, null, null]);
+  assert.deepEqual([emptyRow(ev, 2).label, emptyRow(ev, 2).item, emptyRow(ev, 2).blockedBy], ['Ring 1', null, '']);
+  assert.equal(ev.meal?.name, 'Popoto Potage');
 });
 
 test('evaluateSet: stones a piece cannot keep, points past the cap, a game id the data no longer has', () => {
   const war = makeJobContext('WAR');
   // Kirin's Osode of Fending (24850): Determination 77 under a cap of 110; synced at cap 290, it keeps no stones
-  const set = makeSet([
-    {
-      slot: 'body',
-      gameId: 24850,
-      name: "Kirin's Osode of Fending",
-      stones: [
-        { stat: 'det', grade: 6 },
-        { stat: 'det', grade: 6 },
-        { stat: 'det', grade: 5 },
-      ],
-    },
-    { slot: 'head', gameId: 999999999, stones: [] },
-  ]);
+  const osode: SetPiece & { name: string } = {
+    slot: 'body',
+    gameId: 24850,
+    name: "Kirin's Osode of Fending",
+    stones: [
+      { stat: 'det', grade: 6 },
+      { stat: 'det', grade: 6 },
+      { stat: 'det', grade: 5 },
+    ],
+  };
+  const set = makeSet([osode, { slot: 'head', gameId: 999999999, stones: [] }]);
   const free = evaluateSet(war, set, { cap: null, sync: false, level: 100 }, 100);
-  assert.deepEqual([free.rows[0].stats.det, free.rows[0].lost, free.lost.det], [110, { det: 5 }, 5]);
-  assert.equal(free.rows[1].item, null);
+  assert.deepEqual([wornRow(free, 0).stats.det, wornRow(free, 0).lost, free.lost.det], [110, { det: 5 }, 5]);
+  assert.equal(free.rows[1]?.item, null);
   const synced = evaluateSet(war, set, { cap: 290, sync: true, level: 100 }, 100);
   assert.deepEqual(
-    synced.rows[0].removed.map(x => x.reason),
+    wornRow(synced, 0).removed.map(x => x.reason),
     ['sync', 'sync', 'sync'],
   );
-  assert.equal(synced.rows[0].target, 290);
+  assert.equal(wornRow(synced, 0).target, 290);
   assert.equal(synced.melded, 0);
 });
