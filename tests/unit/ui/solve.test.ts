@@ -82,7 +82,7 @@ test('gearToSearchView: the count line, the pieces per Gear categories box and t
   assert.equal(count.searched + count.left, gearOf(job).length);
   assert.equal(v.searched, count.searched);
   // a filter nothing passes (item level from above the highest piece) leaves no piece: the page turns Auto-fill off on 0
-  assert.equal(gearToSearchView(job, sync, level, { ...recipe, min: '9999' }, testSession).searched, 0);
+  assert.equal(gearToSearchView(job, sync, level, { ...recipe, min: 9999 }, testSession).searched, 0);
   // the pieces per "Gear categories" box: a plain object, a number for every box, not tied to the ticked boxes
   assert.deepEqual(
     Object.keys(v.fromCounts),
@@ -91,7 +91,7 @@ test('gearToSearchView: the count line, the pieces per Gear categories box and t
   assert.ok(Object.values(v.fromCounts).every(n => Number.isInteger(n) && n >= 0));
   assert.equal('emptyBoxes' in v, false);
   assert.deepEqual(structuredClone(v.fromCounts), v.fromCounts, 'clone-safe: the worker posts it');
-  assert.ok(Object.values(gearToSearchView(job, sync, level, { ...recipe, min: '9999' }, testSession).fromCounts).every(n => n === 0));
+  assert.ok(Object.values(gearToSearchView(job, sync, level, { ...recipe, min: 9999 }, testSession).fromCounts).every(n => n === 0));
   assert.deepEqual(gearToSearchView(job, sync, level, { ...recipe, exclude: [], market: false }, testSession).fromCounts, v.fromCounts);
   assert.match(v.gcdLabel.range, /^\d\.\d\d–\d\.\d\d$/);
   assert.equal(v.gcdLabel.haste, null);

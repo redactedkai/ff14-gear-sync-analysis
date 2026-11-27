@@ -43,12 +43,12 @@ export interface Recipe {
   expOff: readonly string[];
   exclude?: readonly string[];
   market?: boolean;
-  min: unknown;
-  max: unknown;
-  lvl: unknown;
+  min: number | '';
+  max: number | '';
+  lvl: number | '';
   melds?: boolean;
   food?: boolean;
-  gcd?: unknown;
+  gcd?: number | '';
   gcdMode?: GcdMode;
   byTier?: boolean;
 }
@@ -164,7 +164,7 @@ function askedGcd(job: JobContext, recipe: Recipe): number | null {
   if (recipe.target === job.speedKey || recipe.gcd === '' || recipe.gcd == null) {
     return null;
   }
-  const g = Number(recipe.gcd);
+  const g = recipe.gcd;
   return Number.isFinite(g) && g > 0 ? Math.round(g * 100) / 100 : null;
 }
 

@@ -50,8 +50,8 @@ const RANKED_CASES: [jobId: string, cap: number | null, level: number, change: R
   ['BRD', 123, 50, () => ({ target: 'crit', tb: 'det', tb2: 'dh', byTier: false, melds: true, food: true })],
   ['DRG', 475, 80, () => ({ target: 'det', tb: 'crit', byTier: true, melds: false, food: false })],
   ['WHM', 123, 50, job => ({ target: job.speedKey, tb: 'crit', byTier: false, melds: true, food: true })],
-  ['BLM', 660, 90, () => ({ tb: 'crit', byTier: false, melds: true, food: false, gcd: '2.50', gcdMode: 'min' })],
-  ['WAR', 290, 60, () => ({ tb: 'det', byTier: true, melds: true, food: true, gcd: '2.50', gcdMode: 'min' })],
+  ['BLM', 660, 90, () => ({ tb: 'crit', byTier: false, melds: true, food: false, gcd: 2.5, gcdMode: 'min' })],
+  ['WAR', 290, 60, () => ({ tb: 'det', byTier: true, melds: true, food: true, gcd: 2.5, gcdMode: 'min' })],
 ];
 
 test('the ranked totals of an Auto-fill do not depend on the order of the pool', () => {

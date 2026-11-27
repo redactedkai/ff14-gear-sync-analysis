@@ -126,8 +126,8 @@ test('build: the solver worker answers a series of requests with the same pieces
   // a Target GCD (2.50 s or faster) without tier ranking, then with it, on a caster
   const black = (change: Partial<Recipe>, label: string) =>
     bothAnswer(solverRequest('solve', inputsFor('BLM', 475, 80, { tb: 'crit', melds: true, ...change })), label);
-  okOf(await black({ byTier: false, gcd: '2.50', gcdMode: 'min', food: true }, 'Black Mage Target GCD'));
-  await black({ byTier: true, gcd: '2.50', gcdMode: 'min', food: true }, 'Black Mage Target GCD with tier ranking');
+  okOf(await black({ byTier: false, gcd: 2.5, gcdMode: 'min', food: true }, 'Black Mage Target GCD'));
+  await black({ byTier: true, gcd: 2.5, gcdMode: 'min', food: true }, 'Black Mage Target GCD with tier ranking');
 
   // the second job on the same worker, a different role, and a goal that ties on the stats nobody ranked
   await bothAnswer(solverRequest('solve', inputsFor('DRG', 123, 50, { target: 'det', byTier: false, melds: true, food: true })), 'Dragoon');

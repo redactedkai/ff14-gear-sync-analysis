@@ -475,8 +475,8 @@ export function activityCounts(routeLists: readonly (readonly number[])[]): Reco
 
 /* The gear filters as the page's settings hold them, {expOff, min, max, lvl} (the browser's or a recipe's; '' for no
    limit), as browseItems and filterGear take them: {expOff, ilvlMin, ilvlMax, lvlMax}, 0 for no limit. */
-export function gearFilter(f: { expOff: readonly string[]; min: unknown; max: unknown; lvl: unknown }): GearFilter {
-  return { expOff: f.expOff, ilvlMin: Number(f.min) || 0, ilvlMax: Number(f.max) || 0, lvlMax: Number(f.lvl) || 0 };
+export function gearFilter(f: { expOff: readonly string[]; min: number | ''; max: number | ''; lvl: number | '' }): GearFilter {
+  return { expOff: f.expOff, ilvlMin: f.min || 0, ilvlMax: f.max || 0, lvlMax: f.lvl || 0 };
 }
 
 /* Pool items matching the gear filters {expOff, ilvlMin, ilvlMax, lvlMax}: browseItems' filters, for pool items (the

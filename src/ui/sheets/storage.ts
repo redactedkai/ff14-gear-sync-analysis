@@ -289,6 +289,22 @@ function withCurrentStatKeys(sheet: SavedSheet): SavedSheet {
   return { ...sheet, sets };
 }
 
+/* `sheet` (a record that passed sheetProblem) with every Target GCD read as a number: an older record may hold the typed text
+   ("2.40"), which becomes 2.4 (text that is no number becomes '', for any GCD). A number and '' stay. A new object; `sheet` is
+   not changed. */
+function withNumericGcd(sheet: SavedSheet): SavedSheet {
+  const sets = sheet.sets.map(set => {
+    const goal = set.fillSettings?.goal;
+    if (!goal || typeof goal.gcd !== 'string' || !set.fillSettings) {
+      return set;
+    }
+    const typed = goal.gcd.trim() === '' ? NaN : Number(goal.gcd);
+    const gcd: number | '' = Number.isFinite(typed) ? typed : '';
+    return { ...set, fillSettings: { ...set.fillSettings, goal: { ...goal, gcd } } };
+  });
+  return { ...sheet, sets };
+}
+
 /* `sheet` (a record that passed sheetProblem) with a clan name this build does not know read as no clan (null). A missing
    `clan` or `partyRoles` stays missing: it means none, and every reader takes it so (`?? null`, `?? 0`), so a record from
    before them is read as it was written. A new object; `sheet` is not changed. */
@@ -298,7 +314,7 @@ function withKnownClan(sheet: SavedSheet): SavedSheet {
 
 /* The sheet in the record text `text` of the sheet with `id`: {sheet}, or {cause} (text for the "Could not be read"
    list) when the text is not valid JSON or is not a sheet this build reads. The sheet has the game's stat keys
-   (withCurrentStatKeys), whichever kind the record held, and a clan this build does not know read as none (withKnownClan). */
+   (withCurrentStatKeys), whichever kind the record held, every Target GCD as a number or '' (withNumericGcd), and a clan this build does not know read as none (withKnownClan). */
 export function parseSheet(text: string, id: string): ParsedSheet {
   let value: unknown;
   try {
@@ -307,7 +323,7 @@ export function parseSheet(text: string, id: string): ParsedSheet {
     return { cause: 'not valid JSON' };
   }
   const cause = sheetProblem(value, id);
-  return cause ? { cause } : { sheet: withKnownClan(withCurrentStatKeys(value as SavedSheet)) };
+  return cause ? { cause } : { sheet: withKnownClan(withNumericGcd(withCurrentStatKeys(value as SavedSheet))) };
 }
 
 /* The ids in the index, in order and without repeats; [] when there is no index or it cannot be read. `problem` is why

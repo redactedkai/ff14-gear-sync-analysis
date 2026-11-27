@@ -64,7 +64,7 @@ test('Auto-fill is repeatable and survives pinning and picking its own result', 
     recipe.melds = rand() < 0.7;
     recipe.food = rand() < 0.6;
     if (rand() < 0.3) {
-      recipe.gcd = (2.2 + rand() * 0.3).toFixed(2);
+      recipe.gcd = Number((2.2 + rand() * 0.3).toFixed(2));
       recipe.gcdMode = pick<GcdMode>(['exact', 'min']);
     }
     const label = `${job.jobId} ${JSON.stringify(sync)} ${JSON.stringify(recipe)}`;

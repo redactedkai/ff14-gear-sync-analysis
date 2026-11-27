@@ -103,7 +103,7 @@ test('gearFromCounts: the pieces per box in the Auto-fill pool, whatever boxes a
   // item level 790 to 795: the Savage and augmented tomestone sets (nine armor pieces and a weapon each), the hunt seal route
   // of the augmented armor, the Ultimate weapon and the Phantom relic weapon whose substats are fixed (Occultum, whose substats the
   // player allocates, is left out of the pool)
-  const top = { min: '790', max: '795' };
+  const top = { min: 790, max: 795 };
   assert.deepEqual(nonzero(top), { savage_current: 20, tomes_current: 10, hunts: 9, ultimate: 1, relics: 1 });
   // ticking boxes or the market board changes nothing in the numbers
   assert.deepEqual(counts({ ...top, exclude: ACTIVITIES.map(a => a.key), market: false }), counts(top));
@@ -122,12 +122,12 @@ test('gearFromCounts: the pieces per box in the Auto-fill pool, whatever boxes a
     'Sage has nothing from the Gold Saucer',
   );
   // the filters of the recipe narrow the pool: an item level range, an equip level, an expansion left out
-  assert.ok(counts({ min: '700' }).crafted < all.crafted);
-  assert.ok(counts({ min: '700' }).savage_current > 0);
-  assert.deepEqual([counts({ lvl: '50' }).savage_current, counts({ lvl: '50' }).quests > 0], [0, true], 'no Savage gear at level 50');
+  assert.ok(counts({ min: 700 }).crafted < all.crafted);
+  assert.ok(counts({ min: 700 }).savage_current > 0);
+  assert.deepEqual([counts({ lvl: 50 }).savage_current, counts({ lvl: 50 }).quests > 0], [0, true], 'no Savage gear at level 50');
   assert.deepEqual([counts({ expOff: ['DT'] }).savage_current, counts({ expOff: ['DT'] }).quests > 0], [0, true]);
   assert.ok(
-    Object.values(counts({ min: '9999' })).every(n => n === 0),
+    Object.values(counts({ min: 9999 })).every(n => n === 0),
     'nothing passes: every box 0',
   );
 });

@@ -72,7 +72,7 @@ test('a pinned piece is kept with exactly its stones and counts in the totals', 
 
 test('pinned speed stones count toward a Target GCD, exact or minimum, with and without tier ranking', () => {
   const pins: Pins = { pieces: [shirtPin], meal: null };
-  for (const gcd of ['2.40', '2.45']) {
+  for (const gcd of [2.4, 2.45]) {
     for (const byTier of [false, true]) {
       for (const gcdMode of ['exact', 'min'] as const) {
         const label = `${gcd} ${gcdMode} byTier ${byTier}`;
@@ -152,7 +152,7 @@ test('resolvePins: usable pieces become candidates, with their stones under sync
 test('a warm session gives a pinned solve what a fresh one does, and pins do not leak into an unpinned solve', () => {
   const session = makeSession();
   const pins: Pins = { pieces: [shirtPin], meal: null };
-  const asked = recipe({ food: true, gcd: '2.45', gcdMode: 'exact', byTier: false });
+  const asked = recipe({ food: true, gcd: 2.45, gcdMode: 'exact', byTier: false });
   const first = solved(sge, SYNC, 100, asked, session, {}, pins);
   const plain = solved(sge, SYNC, 100, asked, session);
   const second = solved(sge, SYNC, 100, asked, session, {}, pins);
