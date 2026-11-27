@@ -24,8 +24,50 @@ import { effStats, itemSyncIlvl } from '../../../src/core/piece.ts';
 import { levelSyncIlvl } from '../../../src/core/sync-target.ts';
 import { ITEMS } from '../../../src/core/tables.ts';
 import { ROW } from '../../../src/core/constants.ts';
+import type { ParsedRow } from '../../../src/core/items.ts';
+import type { JobContext, PoolItem, StatKey } from '../../../src/core/types.ts';
 
-const THEIR_KEY = {
+/* One of our pieces a job can wear. */
+type Piece = { row: ParsedRow; item: PoolItem };
+
+/* A job: its context, our stat key -> their stat key, and our wearable pieces by game id. */
+type JobInfo = { ctx: JobContext; map: Partial<Record<StatKey, string>>; pieces: Map<number, Piece> };
+
+/* One difference kept as an example. */
+type Example = {
+  tag: string;
+  id: number;
+  name: string;
+  slot: number;
+  ilvl: number;
+  equipLevel: number;
+  kind: number;
+  stat: string;
+  raw: number;
+  ours: number;
+  theirs: number;
+  ourTarget: number | null;
+  theirTarget: number | null;
+};
+
+/* The running result of one setting (a job at a level and cap); finishSetting closes it. */
+type Setting = {
+  job: string;
+  level: number;
+  cap: number | null;
+  pieces: number;
+  stats: number;
+  equal: number;
+  tags: Record<string, number>;
+  offBy: Record<string, Record<string, number>>;
+  maxOff: Record<string, number>;
+  examples: Example[];
+  seen: Set<number>;
+  theirsOnly: number;
+  corrected: Record<string, number>;
+};
+
+const THEIR_KEY: Partial<Record<StatKey, string>> = {
   str: 'strength',
   dex: 'dexterity',
   int: 'intelligence',
@@ -41,7 +83,7 @@ const THEIR_KEY = {
 };
 const EXAMPLES = 25; // differences kept per tag and setting
 const UNEXPLAINED = 200; // unexplained differences kept per setting
-const OFF_BUCKETS = [
+const OFF_BUCKETS: [number, string][] = [
   [1, '1'],
   [2, '2'],
   [5, '3-5'],
@@ -49,16 +91,16 @@ const OFF_BUCKETS = [
   [Infinity, '11+'],
 ];
 
-const jobs = new Map();
+const jobs = new Map<string, JobInfo>();
 
 /* The job's level cap, our stat key -> their stat key, and our wearable pieces by game id. */
-function job(jobId) {
+function job(jobId: string): JobInfo {
   let j = jobs.get(jobId);
   if (!j) {
     const ctx = makeJobContext(jobId);
-    const map = Object.fromEntries(ctx.stats.map(s => [s, THEIR_KEY[s]]));
+    const map: Partial<Record<StatKey, string>> = Object.fromEntries(ctx.stats.map(s => [s, THEIR_KEY[s]]));
     const bit = 1 << ctx.jobIndex;
-    const pieces = new Map();
+    const pieces = new Map<number, Piece>();
     for (const r of ITEMS) {
       if (!(r[ROW.jobMask] & bit)) {
         continue;
@@ -76,12 +118,12 @@ function job(jobId) {
 }
 
 /* For their test: the job's level cap and the stat keys to read, in our stat key order. */
-export function jobInfo(jobId) {
+export function jobInfo(jobId: string): { maxLevel: number; stats: [string, string | undefined][]; pieces: number } {
   const j = job(jobId);
   return { maxLevel: j.ctx.maxLevel, stats: Object.entries(j.map), pieces: j.pieces.size };
 }
 
-export function startSetting(jobId, level, cap) {
+export function startSetting(jobId: string, level: number, cap: number | null): Setting {
   return {
     job: jobId,
     level,
@@ -103,15 +145,21 @@ export function startSetting(jobId, level, cap) {
    (an item level, or null for not synced) when a correction changes theirs, else undefined. Their rule
    (datamanager_new.ts, loadData): the cap when below the item level, else the level's item level when the equip level
    is above the synced level, else none. Only pieces that are compared (ours, wearable by the job) are corrected. */
-export function fixTarget(res, gameId, ilvl, equipLvl, theirTarget) {
+export function fixTarget(
+  res: Setting,
+  gameId: number,
+  ilvl: number,
+  equipLvl: number,
+  theirTarget: number | null,
+): number | null | undefined {
   const row = job(res.job).pieces.get(gameId)?.row;
   if (!row) {
     return undefined;
   }
   const { level, cap } = res;
   const lv = levelSyncIlvl(level);
-  let target = null,
-    fix = null;
+  let target: number | null = null,
+    fix: string | null = null;
   if (row.scales && lv < ilvl) {
     target = cap != null && cap < ilvl ? Math.min(cap, lv) : lv;
     fix = 'X2';
@@ -128,8 +176,17 @@ export function fixTarget(res, gameId, ilvl, equipLvl, theirTarget) {
   return target;
 }
 
-function tag(j, p, s, ours, theirs, ourTarget, theirTarget, level) {
-  const lowered = t => (t != null && t < p.row.ilvl ? t : null);
+function tag(
+  j: JobInfo,
+  p: Piece,
+  s: StatKey,
+  ours: number,
+  theirs: number,
+  ourTarget: number | null,
+  theirTarget: number | null,
+  level: number,
+): string {
+  const lowered = (t: number | null): number | null => (t != null && t < p.row.ilvl ? t : null);
   if (lowered(ourTarget) !== lowered(theirTarget)) {
     // both synced by level only, to their level item level vs ours (checked first: scaling gear can hit it too)
     if (ourTarget === levelSyncIlvl(level) && theirTarget != null && p.row.lvl > level) {
@@ -157,7 +214,7 @@ function tag(j, p, s, ours, theirs, ourTarget, theirTarget, level) {
 
 /* One piece of theirs at the current setting: theirStats {their key: effective amount}, theirTarget their synced item
    level or null. Pieces we do not have (not in our database, or not wearable by the job here) are counted only. */
-export function compareItem(res, gameId, theirStats, theirTarget) {
+export function compareItem(res: Setting, gameId: number, theirStats: Record<string, number>, theirTarget: number | null): void {
   const j = job(res.job);
   const p = j.pieces.get(gameId);
   if (!p) {
@@ -168,8 +225,12 @@ export function compareItem(res, gameId, theirStats, theirTarget) {
   res.pieces++;
   const sync = { cap: res.cap, sync: res.cap != null, level: res.level };
   const ours = effStats(j.ctx, p.item, sync);
-  let ourTarget;
-  for (const [s, k] of Object.entries(j.map)) {
+  let ourTarget: number | null | undefined;
+  for (const s of j.ctx.stats) {
+    const k = j.map[s];
+    if (k === undefined) {
+      continue;
+    }
     res.stats++;
     const o = ours[s] || 0;
     const t = theirStats[k] || 0;
@@ -180,14 +241,14 @@ export function compareItem(res, gameId, theirStats, theirTarget) {
     if (ourTarget === undefined) {
       ourTarget = itemSyncIlvl(p.item, sync);
     }
-    const k2 = tag(j, p, s, o, t, ourTarget, theirTarget, res.level);
+    const reachedTarget = ourTarget ?? null;
+    const k2 = tag(j, p, s, o, t, reachedTarget, theirTarget, res.level);
     res.tags[k2] = (res.tags[k2] || 0) + 1;
     const gap = Math.abs(o - t);
-    const b = OFF_BUCKETS.find(([max]) => gap <= max)[1];
-    if (!res.offBy[k2]) {
-      res.offBy[k2] = {};
-    }
-    res.offBy[k2][b] = (res.offBy[k2][b] || 0) + 1;
+    const b = OFF_BUCKETS.find(([max]) => gap <= max)?.[1] ?? '11+';
+    const buckets = res.offBy[k2] ?? {};
+    res.offBy[k2] = buckets;
+    buckets[b] = (buckets[b] || 0) + 1;
     res.maxOff[k2] = Math.max(res.maxOff[k2] || 0, gap);
     const kept = res.examples.filter(e => e.tag === k2).length;
     if (kept < (k2 === 'unexplained' || k2 === 'target' ? UNEXPLAINED : EXAMPLES)) {
@@ -204,7 +265,7 @@ export function compareItem(res, gameId, theirStats, theirTarget) {
         raw: p.item.stats[s] || 0,
         ours: o,
         theirs: t,
-        ourTarget,
+        ourTarget: reachedTarget,
         theirTarget,
       });
     }
@@ -212,10 +273,10 @@ export function compareItem(res, gameId, theirStats, theirTarget) {
 }
 
 /* Close a setting: pieces of ours they did not serve, then a plain object for JSON. */
-export function finishSetting(res) {
+export function finishSetting(res: Setting): Omit<Setting, 'seen'> & { oursOnly: number; oursOnlyExamples: string[] } {
   const j = job(res.job);
   let oursOnly = 0;
-  const oursOnlyExamples = [];
+  const oursOnlyExamples: string[] = [];
   for (const [id, p] of j.pieces) {
     if (res.seen.has(id)) {
       continue;

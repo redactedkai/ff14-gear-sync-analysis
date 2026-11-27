@@ -18,11 +18,28 @@ Run: python scripts/validate/gearing/fetch.py (once), then node scripts/validate
 import * as esbuild from 'esbuild';
 import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
+import type { Server } from 'node:http';
 import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { chromium } from 'playwright';
 import ITEM_FORMAT from '../../../src/core/item-format.json' with { type: 'json' };
+import type { Browser } from 'playwright';
+import type { CapsResult, CompareResult, SetupCounts, TheirGame, TheirStore } from './ours.ts';
+
+declare global {
+  interface Window {
+    /* ffxiv-gearing's own page puts its store and game data on window; this tool reads them. */
+    store: TheirStore;
+    game: TheirGame;
+  }
+}
+
+/* The result for one job: the counts of setup and a result for each sync setting. */
+type JobResult = SetupCounts & { settings: CompareResult[] };
+
+/* The report this script writes. */
+type Report = { site: string; url: string; dataVersion: string; jobs: Record<string, JobResult>; caps?: CapsResult };
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const CLONE = join(ROOT, 'data', 'ffxiv-gearing');
@@ -35,7 +52,7 @@ const TIMEOUT = 120_000;
 // D3 (level-scaling gear) fixed on our side; D4 (tank Main Attribute) and D6 (bonus stats) corrected on theirs
 const PASS_TAGS = new Set(['D1', 'D2', 'D5']);
 
-const MIME = {
+const MIME: Record<string, string> = {
   '.html': 'text/html',
   '.js': 'text/javascript',
   '.css': 'text/css',
@@ -61,9 +78,9 @@ async function bundle() {
 }
 
 /** Serve `directory` on a free local port. Returns { server, url }. */
-async function serve(directory) {
+async function serve(directory: string): Promise<{ server: Server; url: string }> {
   const server = createServer((req, res) => {
-    let path = normalize(join(directory, decodeURIComponent(new URL(req.url, 'http://x').pathname)));
+    let path = normalize(join(directory, decodeURIComponent(new URL(req.url ?? '/', 'http://x').pathname)));
     if (!path.startsWith(directory + sep) && path !== directory) {
       path = join(directory, 'index.html');
     }
@@ -77,13 +94,17 @@ async function serve(directory) {
     res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
     createReadStream(path).pipe(res);
   });
-  await new Promise(r => server.listen(0, '127.0.0.1', r));
-  return { server, url: `http://127.0.0.1:${server.address().port}/` };
+  await new Promise<void>(done => server.listen(0, '127.0.0.1', done));
+  const address = server.address();
+  if (!address || typeof address === 'string') {
+    throw new Error('the local server has no port');
+  }
+  return { server, url: `http://127.0.0.1:${address.port}/` };
 }
 
-async function openPage(browser, url) {
+async function openPage(browser: Browser, url: string) {
   const pg = await browser.newPage();
-  const errors = [];
+  const errors: string[] = [];
   pg.on('pageerror', e => errors.push(String(e.message ?? e)));
   await pg.goto(url);
   await pg.waitForFunction('window.store !== undefined && window.game !== undefined', null, { timeout: TIMEOUT });
@@ -95,13 +116,14 @@ async function openPage(browser, url) {
   return { pg, errors };
 }
 
-async function runJob(browser, url, job) {
+async function runJob(browser: Browser, url: string, job: string): Promise<JobResult> {
   const { pg, errors } = await openPage(browser, url);
   const counts = await pg.evaluate(jobId => OURS.setup(window.store, window.game, jobId), job);
   const settings = await pg.evaluate(jobId => OURS.settings(window.game, jobId), job);
-  const results = [];
+  const results: CompareResult[] = [];
   for (const [level, cap] of settings) {
-    results.push(await pg.evaluate(([jobId, l, c]) => OURS.compare(window.store, jobId, l, c), [job, level, cap]));
+    const args: [string, number, number | null] = [job, level, cap];
+    results.push(await pg.evaluate(([jobId, l, c]) => OURS.compare(window.store, jobId, l, c), args));
   }
   await pg.close();
   if (errors.length) {
@@ -110,8 +132,8 @@ async function runJob(browser, url, job) {
   return { ...counts, settings: results };
 }
 
-function summarize(report) {
-  const tags = {};
+function summarize(report: Report): { tags: Record<string, number>; stats: number; equal: number; pieces: number; bonus: number } {
+  const tags: Record<string, number> = {};
   let stats = 0;
   let equal = 0;
   let pieces = 0;
@@ -130,9 +152,9 @@ function summarize(report) {
   return { tags, stats, equal, pieces, bonus };
 }
 
-const n = v => v.toLocaleString('en-US');
+const n = (v: number): string => v.toLocaleString('en-US');
 /** A JSON value as Python prints it (the output of this script is the same as run.py's was). */
-function py(v) {
+function py(v: unknown): string {
   if (v === null) {
     return 'None';
   }
@@ -143,29 +165,30 @@ function py(v) {
     return `'${v}'`;
   }
   if (Array.isArray(v)) {
-    return `[${v.map(py).join(', ')}]`;
+    return `[${v.map(item => py(item)).join(', ')}]`;
   }
-  if (typeof v === 'object') {
+  if (typeof v === 'object' && v !== null) {
     return `{${Object.entries(v)
       .map(([k, x]) => `${py(k)}: ${py(x)}`)
       .join(', ')}}`;
   }
   return String(v);
 }
-const dictRepr = o => (Object.keys(o).length ? py(o) : 'none');
+const dictRepr = (o: Record<string, number>): string => (Object.keys(o).length ? py(o) : 'none');
 
-async function main() {
+async function main(): Promise<number> {
   const { values } = parseArgs({
     options: { site: { type: 'string', default: 'local' }, jobs: { type: 'string', default: JOBS.join(',') } },
   });
-  if (!['local', 'live'].includes(values.site)) {
+  const site = values.site ?? 'local';
+  if (!['local', 'live'].includes(site)) {
     throw new Error('--site must be local or live');
   }
-  const jobs = values.jobs.split(',');
+  const jobs = (values.jobs ?? JOBS.join(',')).split(',');
   await bundle();
-  let server = null;
-  let url;
-  if (values.site === 'local') {
+  let server: Server | null = null;
+  let url: string;
+  if (site === 'local') {
     if (!existsSync(join(CLONE, 'dist', 'index.html'))) {
       console.error('No local build of ffxiv-gearing. Run: python scripts/validate/gearing/fetch.py');
       return 1;
@@ -174,11 +197,11 @@ async function main() {
   } else {
     url = LIVE_URL;
   }
-  const report = { site: values.site, url, dataVersion: DATA_VERSION, jobs: {} };
+  const report: Report = { site, url, dataVersion: DATA_VERSION, jobs: {} };
   const browser = await chromium.launch();
   try {
     const { pg } = await openPage(browser, url);
-    const caps = await pg.evaluate('OURS.capsSweep(window.game)');
+    const caps = await pg.evaluate<CapsResult>('OURS.capsSweep(window.game)');
     report.caps = caps;
     await pg.close();
     console.log(
@@ -188,7 +211,7 @@ async function main() {
     for (const job of jobs) {
       const r = await runJob(browser, url, job);
       report.jobs[job] = r;
-      const t = {};
+      const t: Record<string, number> = {};
       for (const s of r.settings) {
         for (const [k, v] of Object.entries(s.tags)) {
           t[k] = (t[k] ?? 0) + v;
@@ -203,7 +226,7 @@ async function main() {
     await browser.close();
     server?.close();
   }
-  const out = join(OUT, `gearing-${values.site}.json`);
+  const out = join(OUT, `gearing-${site}.json`);
   writeFileSync(out, JSON.stringify(report), 'utf-8');
   const { tags, stats, equal, pieces, bonus } = summarize(report);
   console.log(`\n${n(pieces)} piece checks, ${n(stats)} stats compared, ${n(equal)} equal (${((equal / stats) * 100).toFixed(4)}%)`);
@@ -213,11 +236,11 @@ async function main() {
   }
   const bad = Object.fromEntries(Object.entries(tags).filter(([k]) => !PASS_TAGS.has(k)));
   console.log(Object.keys(bad).length ? `FAIL: ${py(bad)}` : 'PASS: every difference has a known cause');
-  const otherName = `gearing-${values.site === 'live' ? 'local' : 'live'}.json`;
+  const otherName = `gearing-${site === 'live' ? 'local' : 'live'}.json`;
   const other = join(OUT, otherName);
   if (existsSync(other)) {
     const o = JSON.parse(readFileSync(other, 'utf-8'));
-    const same = jobs.every(j => JSON.stringify(o.jobs[j]?.settings) === JSON.stringify(report.jobs[j].settings));
+    const same = jobs.every(j => JSON.stringify(o.jobs[j]?.settings) === JSON.stringify(report.jobs[j]?.settings));
     console.log(`${otherName}: ${same ? 'same results' : 'DIFFERENT results'} for these jobs`);
   }
   return Object.keys(bad).length ? 1 : 0;
