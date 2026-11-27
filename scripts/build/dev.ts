@@ -2,15 +2,16 @@
 /* Local development: rebuild dist/index.html on every change under src/ and serve it.
    Run: npm run dev   then open the printed URL. Output is not minified. */
 import * as esbuild from 'esbuild';
+import type { Plugin, PluginBuild } from 'esbuild';
 import { watch } from 'node:fs';
 import { join } from 'node:path';
 import { esbuildOptions, writePage, SRC, DIST } from './build.ts';
 
-const writeOnEnd = {
+const writeOnEnd: Plugin = {
   name: 'write-page',
-  setup(build) {
+  setup(build: PluginBuild) {
     build.onEnd(result => {
-      if (result.errors.length) {
+      if (result.errors.length || !result.outputFiles) {
         return;
       }
       const size = writePage(result.outputFiles);
@@ -20,7 +21,7 @@ const writeOnEnd = {
 };
 
 const options = esbuildOptions({ minify: false });
-const ctx = await esbuild.context({ ...options, plugins: [...options.plugins, writeOnEnd] });
+const ctx = await esbuild.context({ ...options, plugins: [...(options.plugins ?? []), writeOnEnd] });
 await ctx.watch();
 // esbuild only watches files it imports; the HTML template and the startup script are read separately
 watch(join(SRC, 'index.html'), () => ctx.rebuild().catch(() => {}));

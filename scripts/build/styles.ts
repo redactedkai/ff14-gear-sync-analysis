@@ -19,8 +19,8 @@ const IMPORT_LINE = /^@import\s+"\.\/([\w.-]+\.css)"(?:\s+layer\(([\w.-]+)\))?\s
  * the entry's `@layer a, b;` order statements where they stand. Every other line of the entry (comments) is left out.
  * Each file ends with one newline, with no blank line after its last rule. `readFile` is a function from a file name to its text.
  */
-export function expandStyles(entryText, readFile) {
-  const parts = [];
+export function expandStyles(entryText: string, readFile: (name: string) => string): string {
+  const parts: string[] = [];
   for (const line of entryText.split('\n')) {
     const imported = IMPORT_LINE.exec(line);
     if (imported) {
@@ -35,7 +35,7 @@ export function expandStyles(entryText, readFile) {
 }
 
 /** The whole stylesheet as one string: the files src/styles/entry.css imports, in order (see expandStyles). */
-export function readStyles() {
-  const read = name => readFileSync(join(STYLES_DIR, name), 'utf8');
+export function readStyles(): string {
+  const read = (name: string): string => readFileSync(join(STYLES_DIR, name), 'utf8');
   return expandStyles(read(ENTRY_FILE), read);
 }

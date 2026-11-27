@@ -27,18 +27,26 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const configPath = join(root, 'tests', 'visual', 'playwright.config.ts');
 
 /* The image tag after the colon of PINNED_IMAGE, which the CI job gives to this script as GSA_VISUAL_IMAGE. */
-export function pinnedTag() {
-  return PINNED_IMAGE.split(':')[1];
+export function pinnedTag(): string {
+  return PINNED_IMAGE.slice(PINNED_IMAGE.indexOf(':') + 1);
 }
 
 /* True when `folder` holds at least one baseline image. */
-export function hasBaselines(folder) {
+export function hasBaselines(folder: string): boolean {
   return existsSync(folder) && readdirSync(folder).some(file => file.endsWith('.png'));
 }
 
 /* What to do for the given environment and options: { run: false, message } or { run: true, update }. `snapshotFolder`
    is where the baselines are read from (or written to, with `update`). */
-export function plan({ env, argv, snapshotFolder }) {
+export function plan({
+  env,
+  argv,
+  snapshotFolder,
+}: {
+  env: Record<string, string | undefined>;
+  argv: string[];
+  snapshotFolder: string;
+}): { run: false; message: string } | { run: true; update: boolean } {
   const inImage = env[IMAGE_ENV] === pinnedTag();
   const local = argv.includes('--local');
   const update = argv.includes('--update');
@@ -65,7 +73,7 @@ export function plan({ env, argv, snapshotFolder }) {
 }
 
 /* Runs Playwright's test runner on the visual config with the options that are not ours. */
-function main() {
+function main(): number {
   const argv = process.argv.slice(2);
   const snapshotFolder = resolve(process.env.GSA_VISUAL_SNAPSHOTS || join(root, 'tests', 'visual', '__screenshots__'));
   const decision = plan({ env: process.env, argv, snapshotFolder });

@@ -7,15 +7,23 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const readJson = path => JSON.parse(readFileSync(path, 'utf8'));
+
+// The parts of package.json and package-lock.json that are read here.
+type Manifest = { version?: string; dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
+type Lock = { packages: Record<string, Manifest | undefined> };
+
+// The JSON file at `path`, with the type the caller expects of it.
+function readJson<T>(path: string): T {
+  return JSON.parse(readFileSync(path, 'utf8'));
+}
 
 /* The installed version of package `name`, found as Node finds it: node_modules here, else in a folder above (a git
    worktree inside the repo uses the main checkout's); null when it is not installed. */
-function installedVersion(name) {
+function installedVersion(name: string): string | null {
   for (let dir = ROOT; ; dir = dirname(dir)) {
     const manifest = resolve(dir, 'node_modules', name, 'package.json');
     if (existsSync(manifest)) {
-      return readJson(manifest).version;
+      return readJson<Manifest>(manifest).version ?? null;
     }
     if (dirname(dir) === dir) {
       return null;
@@ -23,10 +31,10 @@ function installedVersion(name) {
   }
 }
 
-const lock = readJson(resolve(ROOT, 'package-lock.json'));
-const own = lock.packages[''];
+const lock = readJson<Lock>(resolve(ROOT, 'package-lock.json'));
+const own = lock.packages[''] ?? {};
 const names = Object.keys({ ...own.dependencies, ...own.devDependencies });
-const mismatches = [];
+const mismatches: string[] = [];
 for (const name of names) {
   const locked = lock.packages[`node_modules/${name}`]?.version;
   const installed = installedVersion(name);

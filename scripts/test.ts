@@ -36,11 +36,40 @@ import {
 
 const BOOLEAN_OPTIONS = ['--fast', '--py', '--sweep', '--smoke', '--full', '--list', '--changed'];
 
+// The options of one run, as parseArguments reads them from the command line.
+export type RunOptions = {
+  domains: string[];
+  domainsGiven: boolean;
+  fast: boolean;
+  py: boolean;
+  sweep: boolean;
+  smoke: boolean;
+  list: boolean;
+  changed: boolean;
+  nodeFlags: string[];
+};
+
+// The options that only switch a flag on, by their name on the command line.
+const SWITCHES = new Map<string, 'fast' | 'py' | 'sweep' | 'smoke' | 'list' | 'changed'>([
+  ['--fast', 'fast'],
+  ['--py', 'py'],
+  ['--sweep', 'sweep'],
+  ['--smoke', 'smoke'],
+  ['--list', 'list'],
+  ['--changed', 'changed'],
+]);
+
+// A changed path and whether git reports it as deleted.
+export type ChangedPath = { path: string; deleted?: boolean };
+
+// The domains one changed path points to, why, and whether no domain owns it.
+export type PathDomains = { path: string; domains: string[]; reason: string; unowned?: true };
+
 // Reads the command line. Returns { domains, fast, py, sweep, smoke, list, changed, nodeFlags }, or { error } for a bad
 // option or an unknown domain (the message lists the valid names). `--full` sets py, sweep and smoke; without `--domain`
 // all domains run; with `--changed` the domains come from git later (see `domainsOfChanges`), and `--domain` is an error.
-export function parseArguments(args) {
-  const options = {
+export function parseArguments(args: string[]): RunOptions | { error: string } {
+  const options: RunOptions = {
     domains: DOMAIN_NAMES,
     domainsGiven: false,
     fast: false,
@@ -62,14 +91,15 @@ export function parseArguments(args) {
       try {
         options.domains = parseDomains(own[++i] ?? '');
       } catch (e) {
-        return { error: e.message };
+        return { error: e instanceof Error ? e.message : String(e) };
       }
       options.domainsGiven = true;
-    } else if (BOOLEAN_OPTIONS.includes(arg)) {
-      if (arg === '--full') {
-        Object.assign(options, { py: true, sweep: true, smoke: true });
-      } else {
-        options[arg.slice(2)] = true;
+    } else if (arg === '--full') {
+      Object.assign(options, { py: true, sweep: true, smoke: true });
+    } else if (SWITCHES.has(arg)) {
+      const key = SWITCHES.get(arg);
+      if (key) {
+        options[key] = true;
       }
     } else {
       return { error: `unknown option ${arg}; options: --domain <names>, ${BOOLEAN_OPTIONS.join(', ')}, -- <node --test flags>` };
@@ -90,13 +120,13 @@ const TOOLING_CONFIG_PATTERNS = ['package.json', 'package-lock.json', 'biome.jso
 
 // The changed paths in the output of `git status --porcelain -uall`: one per changed, added, renamed (the new name) or
 // untracked file, as { path, deleted }. Quoted names (spaces) lose their quotes.
-export function changedPathsOf(porcelain) {
+export function changedPathsOf(porcelain: string): ChangedPath[] {
   return porcelain
     .split('\n')
     .filter(line => line.length > 3)
     .map(line => {
       const status = line.slice(0, 2);
-      const path = line.slice(3).split(' -> ').pop().replace(/^"|"$/g, '');
+      const path = (line.slice(3).split(' -> ').pop() ?? '').replace(/^"|"$/g, '');
       return { path, deleted: status.includes('D') };
     });
 }
@@ -105,11 +135,11 @@ export function changedPathsOf(porcelain) {
 // and `reason` says why in a few words. A test file follows the registry's test rules (its module, or its `tests` list);
 // a file of src/ or scripts/ follows the `src` lists; the repo's build settings are `tooling`; documentation and Claude
 // settings map to nothing on purpose; any other path is unowned (`domains` empty and `unowned` true), which the caller prints as a warning, not an error.
-export function domainsOfChange({ path, deleted = false }) {
+export function domainsOfChange({ path, deleted = false }: { path: string; deleted?: boolean }): PathDomains {
   if (NO_DOMAIN_PREFIXES.some(prefix => path.startsWith(prefix)) || /^[^/]+\.md$/.test(path)) {
     return { path, domains: [], reason: 'documentation or settings, no tests' };
   }
-  let domains = [];
+  let domains: string[] = [];
   let reason = '';
   if (TOOLING_CONFIG_PATTERNS.some(pattern => matchesPattern(path, pattern))) {
     domains = ['tooling'];
@@ -133,7 +163,7 @@ export function domainsOfChange({ path, deleted = false }) {
 
 // The domain names (in registry order) that the changed paths point to, with one printed line per path.
 // Returns { lines, domains, unowned } where `unowned` is the paths no domain owns.
-export function domainsOfChanges(changes) {
+export function domainsOfChanges(changes: ChangedPath[]): { lines: string[]; domains: string[]; unowned: string[] } {
   const mapped = changes.map(domainsOfChange);
   const domains = DOMAIN_NAMES.filter(name => mapped.some(entry => entry.domains.includes(name)));
   return {
@@ -144,7 +174,7 @@ export function domainsOfChanges(changes) {
 }
 
 // Reads `git status` and prints which domains the changed files select. Returns { domains } or { error }.
-function pickChangedDomains() {
+function pickChangedDomains(): { domains: string[] } | { error: string } {
   const result = spawnSync('git', ['status', '--porcelain', '-uall'], { cwd: ROOT, encoding: 'utf8' });
   if (result.status !== 0) {
     return { error: `git status failed: ${result.stderr || result.error}` };
@@ -158,24 +188,26 @@ function pickChangedDomains() {
 }
 
 // Runs a command with the output shown. Returns its exit code (1 when it could not start).
-function run(command, args, env = {}) {
+function run(command: string, args: string[], env: Record<string, string> = {}): number {
   const result = spawnSync(command, args, { cwd: ROOT, stdio: 'inherit', env: { ...process.env, ...env } });
   return result.status ?? 1;
 }
 
 // Prints the selection of each domain, as the run would take it.
-async function listSelection(options) {
+async function listSelection(options: RunOptions): Promise<void> {
   const { GROUPS } = await import('../tests/e2e/groups.ts');
+  const titles = new Map(Object.entries(DOMAINS).map(([name, domain]) => [name, domain.title]));
   for (const name of options.domains) {
     const stepsHere = GROUPS.flatMap(group => group.steps).filter(step => step.domain === name).length;
     const groupsHere = GROUPS.filter(group => group.steps.some(step => step.domain === name)).length;
-    console.log(`${name}: ${DOMAINS[name].title}`);
+    console.log(`${name}: ${titles.get(name)}`);
     console.log(`  smoke: ${stepsHere} steps in ${groupsHere} groups`);
-    for (const [kind, files] of [
+    const selections: [string, string[]][] = [
       ['unit', unitFilesOf([name], { fast: options.fast })],
       ['sweep', sweepFilesOf([name])],
       ['python', pythonFilesOf([name])],
-    ]) {
+    ];
+    for (const [kind, files] of selections) {
       if (files.length) {
         console.log(`  ${kind}: ${files.length} files\n${files.map(file => `    ${file}`).join('\n')}`);
       }
@@ -184,7 +216,7 @@ async function listSelection(options) {
 }
 
 // Builds the page into a folder of its own, runs the smoke test on it, and removes the folder. Returns the exit code.
-async function runSmoke(options) {
+async function runSmoke(options: RunOptions): Promise<number> {
   const [esbuild, build] = await Promise.all([import('esbuild'), import('./build/build.ts')]);
   const privateFolder = mkdtempSync(join(tmpdir(), 'ff14-smoke-'));
   try {
@@ -201,15 +233,15 @@ async function runSmoke(options) {
 }
 
 // Runs what the options select, in the order unit, sweep, Python, smoke; stops at the first failure. Returns the exit code.
-export async function main(args) {
+export async function main(args: string[]): Promise<number> {
   const options = parseArguments(args);
-  if (options.error) {
+  if ('error' in options) {
     console.error(options.error);
     return 2;
   }
   if (options.changed) {
     const picked = pickChangedDomains();
-    if (picked.error) {
+    if ('error' in picked) {
       console.error(picked.error);
       return 2;
     }

@@ -5,6 +5,7 @@
    Run from anywhere:  node scripts/build/build.ts   (or: npm run build)
    scripts/build/dev.ts reuses the exports below for watch + serve. */
 import * as esbuild from 'esbuild';
+import type { BuildOptions, OutputFile, Plugin, PluginBuild } from 'esbuild';
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -33,10 +34,10 @@ export const BROWSER_TARGETS = ['chrome130', 'firefox132', 'safari18.2'];
    first (the files keep one row per line for readable diffs). The text is also exported (`text`), for the optimizer's
    worker (solverWorker): the page hands it the same strings instead of carrying a second copy of the data. */
 const DATA_FILE = /[\\/]src[\\/]data[\\/][^\\/]+\.json$/;
-const compactText = path => JSON.stringify(JSON.parse(readFileSync(path, 'utf8')));
-export const jsonParseData = {
+const compactText = (path: string): string => JSON.stringify(JSON.parse(readFileSync(path, 'utf8')));
+export const jsonParseData: Plugin = {
   name: 'json-parse-data',
-  setup(build) {
+  setup(build: PluginBuild) {
     build.onLoad({ filter: DATA_FILE }, ({ path }) => ({
       contents: `export const text = ${JSON.stringify(compactText(path))};\nexport default JSON.parse(text);`,
       loader: 'js',
@@ -50,10 +51,10 @@ const WORKER_DATA_GLOBAL = '__solverData';
 
 /* esbuild plugin for the worker bundle only: each data file is `JSON.parse` of the text the page posted (in
    self[WORKER_DATA_GLOBAL]), not a copy of it. `names` collects the file names the worker imports. */
-function workerData(names) {
+function workerData(names: string[]): Plugin {
   return {
     name: 'worker-data',
-    setup(build) {
+    setup(build: PluginBuild) {
       build.onLoad({ filter: DATA_FILE }, ({ path }) => {
         const name = basename(path);
         names.push(name);
@@ -71,13 +72,13 @@ function workerData(names) {
    - WORKER_DATA: {file name: text} of each data file the worker imports, the same strings the page's own data modules
      parse (jsonParseData's `text`), so the page holds the data once; the worker parses its copy on its own thread.
    The worker's source files are watched too (npm run dev). */
-export const solverWorker = {
+export const solverWorker: Plugin = {
   name: 'solver-worker',
-  setup(build) {
+  setup(build: PluginBuild) {
     build.onResolve({ filter: /^solver-worker:bundle$/ }, ({ path }) => ({ path, namespace: 'solver-worker' }));
     build.onLoad({ filter: /.*/, namespace: 'solver-worker' }, async () => {
       // 1. the worker's own bundle, its data modules reading the posted texts
-      const names = [];
+      const names: string[] = [];
       const result = await esbuild.build({
         entryPoints: [join(SRC, 'ui', 'solver-worker.ts')],
         bundle: true,
@@ -118,9 +119,9 @@ export const solverWorker = {
 
 /* esbuild plugin: the module `styles:bundle` (imported by main.js) is the page's stylesheet: src/styles/entry.css, which
    imports the files of src/styles/ in cascade order (esbuild bundles the imports and watches them in `npm run dev`). */
-export const pageStyles = {
+export const pageStyles: Plugin = {
   name: 'page-styles',
-  setup(build) {
+  setup(build: PluginBuild) {
     build.onResolve({ filter: /^styles:bundle$/ }, ({ path }) => ({ path, namespace: 'page-styles' }));
     build.onLoad({ filter: /.*/, namespace: 'page-styles' }, () => ({
       contents: `@import "./${ENTRY_FILE}";`,
@@ -152,8 +153,13 @@ export function bundledLicenseNotices() {
 
 /* The options of the page's esbuild build. `minify`: whether to minify; `info`: the branch and commit being built (buildInfo), which
    decide the marks of a test build (buildMarks), handed to the page's code as the constant `__BUILD_MARKS__`. */
-/** @returns {import('esbuild').BuildOptions & { write: false }} */
-export function esbuildOptions({ minify = true, info = buildInfo() } = {}) {
+export function esbuildOptions({
+  minify = true,
+  info = buildInfo(),
+}: {
+  minify?: boolean;
+  info?: BuildInfo;
+} = {}): BuildOptions & { write: false } {
   return {
     plugins: [jsonParseData, solverWorker, pageStyles],
     entryPoints: [join(SRC, 'main.js')],
@@ -172,8 +178,11 @@ export function esbuildOptions({ minify = true, info = buildInfo() } = {}) {
 
 /* The branch and short commit being built: GitHub Actions' variables when set, else git. Either is null when unknown
    (no git, or a detached HEAD). */
-export function buildInfo() {
-  const git = args => {
+/* The branch and short commit of a build; either is null when unknown. */
+export type BuildInfo = { branch: string | null; commit: string | null };
+
+export function buildInfo(): BuildInfo {
+  const git = (args: string[]): string | null => {
     try {
       return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
     } catch {
@@ -189,7 +198,7 @@ export function buildInfo() {
    has); on any other branch {label, where}: the "DEV" badge and the branch and commit for the footer, so a test build is never
    mistaken for the live one. The page's root element draws them (src/ui/build-marks.ts reads them from the constant esbuildOptions
    defines). */
-export function buildMarks({ branch, commit }) {
+export function buildMarks({ branch, commit }: BuildInfo): { label: string; where: string } | null {
   if (!branch || branch === 'main') {
     return null;
   }
@@ -218,8 +227,8 @@ export function startupScript() {
 
 /* Inline the bundle outputs into the HTML template and write the page to `outFile` (dist/index.html by default).
    Returns the byte size. */
-export function writePage(outputFiles, outFile = join(DIST, 'index.html')) {
-  const pick = ext =>
+export function writePage(outputFiles: OutputFile[], outFile: string = join(DIST, 'index.html')): number {
+  const pick = (ext: string): string =>
     outputFiles
       .filter(f => f.path.endsWith(ext))
       .map(f => f.text)
@@ -251,7 +260,7 @@ export function writePage(outputFiles, outFile = join(DIST, 'index.html')) {
 
 /* Build the page as the live one looks (no DEV badge or branch line, as on main) into `outFile`, leaving dist/ alone:
    for the screenshot script, whose shots must not differ between branches. Returns the byte size. */
-export async function buildReleasePage(outFile) {
+export async function buildReleasePage(outFile: string): Promise<number> {
   const result = await esbuild.build(esbuildOptions({ info: { branch: null, commit: buildInfo().commit } }));
   return writePage(result.outputFiles, outFile);
 }
