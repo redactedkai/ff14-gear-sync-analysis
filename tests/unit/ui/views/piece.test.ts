@@ -45,7 +45,7 @@ test('Piece stats view: every real item level 130 Sage head piece with three sub
       .sort((a, b) => head.stats[b] - head.stats[a])
       .slice(0, 2);
     assert.ok(!subs.includes('dh'), head.name);
-    app.piece = { ilvl: 130, slot: 'head', subs };
+    app.piece = { ...app.piece, ilvl: 130, slot: 'head', subs };
     const v = pieceViewOf(app);
     const want = ['mind', 'vit', ...subs].map(s => [s, head.stats[s], Math.min(head.stats[s], CAP[s] ?? CAP.sub)]);
     assert.deepEqual(
@@ -75,7 +75,7 @@ test('Piece stats view: every real item level 130 Sage head piece with three sub
 
 test('sync off: Piece stats leaves stats as they are and shows no ceiling', () => {
   const app = makeApp('SGE', { cap: 123, sync: false });
-  app.piece = { ilvl: 130, slot: 'head', subs: ['sps', 'piety'] };
+  app.piece = { ...app.piece, ilvl: 130, slot: 'head', subs: ['sps', 'piety'] };
   const v = pieceViewOf(app);
   assert.equal(v.status, 'off');
   assert.ok(v.rows.every(r => r.syn === r.raw && r.cap == null && r.ownKept));
@@ -91,7 +91,7 @@ test('sync off: Piece stats leaves stats as they are and shows no ceiling', () =
    ceiling); the ceiling's arithmetic is capValue's own order (the factor first, the slot share floored in tenths). */
 test('Piece stats: each stat against its ceiling, with the sentences and the arithmetic', () => {
   const app = makeApp('SGE', { cap: 130, sync: true, level: 100 });
-  app.piece = { ilvl: 170, slot: 'head', subs: ['crit', 'sps'] };
+  app.piece = { ...app.piece, ilvl: 170, slot: 'head', subs: ['crit', 'sps'] };
   const v = pieceViewOf(app);
   assert.equal(v.status, 'above');
   assert.deepEqual(
@@ -140,7 +140,7 @@ test('Piece stats: each stat against its ceiling, with the sentences and the ari
 
 test('Piece stats: an off-hand is the two-handed value minus the one-handed one, its ceiling too', () => {
   const app = makeApp('PLD', { cap: 130, sync: true, level: 100 });
-  app.piece = { ilvl: 170, slot: 'offhand', subs: ['crit', 'det'] };
+  app.piece = { ...app.piece, ilvl: 170, slot: 'offhand', subs: ['crit', 'det'] };
   const v = pieceViewOf(app);
   const crit = v.rows.find(r => r.stat === 'crit');
   assert.ok(hasParts(crit.ownText, 'two-handed', 'one-handed'), crit.ownText);
@@ -228,7 +228,7 @@ test('Slot menu: slots with the same budget share are one choice; a shield job h
 
 test('Piece stats slices: an accessory marks all four accessory slices, both rings included', () => {
   const app = makeApp('SGE', { cap: 130, sync: true, level: 100 });
-  app.piece = { ilvl: 170, slot: 'ear', subs: ['crit', 'sps'] };
+  app.piece = { ...app.piece, ilvl: 170, slot: 'ear', subs: ['crit', 'sps'] };
   assert.deepEqual(
     pieceViewOf(app)
       .slices.filter(s => s.on)
