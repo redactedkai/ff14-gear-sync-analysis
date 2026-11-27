@@ -310,6 +310,8 @@ td.defense {
 /* The Slot menu is the element <gsa-slot-menu> (src/ui/elements/gear-browser/slot-menu.ts), drawn in light DOM: it is the bar's
    first part, a grid whose one cell holds the button and the hidden copy of the rows. */
 gsa-slot-menu {
+  /* the weight of the chosen row, and of every row of the hidden copy: bold text is the widest a row gets */
+  --slot-chosen-weight: 600;
   position: relative;
   flex: none;
   display: grid;
@@ -375,7 +377,7 @@ gsa-slot-menu [data-part="positioner"] {
   background: var(--surface2);
 }
 .slot-menu .multi-opt[aria-checked="true"] {
-  font-weight: 600;
+  font-weight: var(--slot-chosen-weight);
 }
 /* the row lit by the arrow keys: the focus ring of the page's other controls, inset so the menu's edge does not clip it (the tint
    alone is too faint to follow). A row lit by the pointer keeps the tint, as the page's other menus do. */
@@ -414,7 +416,8 @@ gsa-slot-menu[data-input="key"] .slot-btn:focus {
   color: var(--muted);
 }
 /* the menu's rows again, unseen, in the button's grid cell: the button is as wide as the widest row (so the open menu, which is
-   as wide as the button, has the width its rows need) */
+   as wide as the button, has the width its rows need). Each row has the weight of the chosen row, since any row can be the chosen
+   one and the bold one is wider. */
 .slot-sizer {
   grid-area: 1 / 1;
   position: static;
@@ -424,6 +427,9 @@ gsa-slot-menu[data-input="key"] .slot-btn:focus {
   overflow: hidden;
   visibility: hidden;
   pointer-events: none;
+}
+.slot-sizer .multi-opt {
+  font-weight: var(--slot-chosen-weight);
 }
 /* Reset filters, at the end of the title line while a filter is changed: a pill-shaped button with a funnel-and-x icon drawn in
    the text colour */

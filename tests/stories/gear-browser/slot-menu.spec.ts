@@ -170,7 +170,7 @@ test.describe('<gsa-slot-menu>', () => {
     { width: 1280, height: 900 },
     { width: 1920, height: 1080 },
   ]) {
-    test(`at ${width} px the open menu is as wide and as far left as its button, also when every count is 88,888`, async ({
+    test(`at ${width} px the open menu is as wide and as far left as its button, whichever slot is chosen and also when every count is 88,888`, async ({
       mount,
       page,
     }) => {
@@ -178,22 +178,28 @@ test.describe('<gsa-slot-menu>', () => {
       try {
         const widest = CHOICES.map(choice => ({ ...choice, count: 88888, countText: '88,888' }));
         const seen = [];
+        // the chosen row is bold, which is wider than the other rows' weight: each slot is chosen in turn
         for (const choices of [CHOICES, widest]) {
-          const component = await mount<typeof Default>(STORY, { choices });
-          await component.getByRole('button', { name: slotButtonName(ANY_SLOT_LABEL) }).click();
-          await expect(page.locator('#b-slots')).toBeVisible();
-          const fit = await fitOf(page);
-          expect(fit.menuWidth, 'the open menu is as wide as its button').toBeCloseTo(fit.buttonWidth, 0);
-          expect(Math.abs(fit.menuLeft), 'the open menu starts where its button starts').toBeLessThan(1);
-          expect(fit.rowsClipped, 'no row is clipped').toBe(false);
-          expect(fit.menuRight, 'the menu ends inside the window').toBeLessThanOrEqual(width);
-          expect(fit.sideways, 'the page does not scroll sideways').toBe(false);
-          seen.push(fit);
-          await page.keyboard.press('Escape');
+          for (const chosen of choices) {
+            const where = `${chosen.label} chosen, counts of ${choices[0].countText}`;
+            const component = await mount<typeof Default>(STORY, { choices, value: chosen.key });
+            await component.getByRole('button', { name: slotButtonName(chosen.label) }).click();
+            await expect(page.locator('#b-slots')).toBeVisible();
+            const fit = await fitOf(page);
+            expect(fit.menuWidth, `the open menu is as wide as its button (${where})`).toBeCloseTo(fit.buttonWidth, 0);
+            expect(Math.abs(fit.menuLeft), `the open menu starts where its button starts (${where})`).toBeLessThan(1);
+            expect(fit.rowsClipped, `no row is clipped (${where})`).toBe(false);
+            expect(fit.menuRight, `the menu ends inside the window (${where})`).toBeLessThanOrEqual(width);
+            expect(fit.sideways, `the page does not scroll sideways (${where})`).toBe(false);
+            seen.push(fit);
+            await page.keyboard.press('Escape');
+          }
         }
-        // the widest counts change neither the button nor the menu: the button is sized for them from the start
-        expect(seen[1].buttonWidth).toBeCloseTo(seen[0].buttonWidth, 0);
-        expect(seen[1].menuWidth).toBeCloseTo(seen[0].menuWidth, 0);
+        // neither the widest counts nor the choice change the button or the menu: the button is sized for them from the start
+        for (const fit of seen) {
+          expect(fit.buttonWidth).toBeCloseTo(seen[0].buttonWidth, 0);
+          expect(fit.menuWidth).toBeCloseTo(seen[0].menuWidth, 0);
+        }
       } finally {
         await page.setViewportSize({ width: 1280, height: 720 });
       }

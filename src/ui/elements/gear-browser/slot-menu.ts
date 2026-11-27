@@ -3,8 +3,9 @@
    - its parent gives it properties (`choices`, `value`, `label`) and listens for `slot-change`; the element
      never reads a store;
    - the button is as wide as the longest row: a hidden copy of the rows (`.slot-sizer`, with the widest count the list can
-     show) shares the button's grid cell, so the button, and the open menu, which is as wide as the button (the CSS gives
-     the positioner the button's width, so it has it before Zag has placed it), keep one width whatever the choice and the numbers;
+     show and every row in the bold weight of the chosen row) shares the button's grid cell, so the button, and the open menu,
+     which is as wide as the button (the CSS gives the positioner the button's width, so it has it before Zag has placed it),
+     keep one width whatever the choice and the numbers;
    - Zag's menu opens on the arrow keys, moves with the arrows, picks with Enter and Space and closes on Escape or a press
      outside, each time with the focus back on the button. Tab closes it too and the focus moves on (Zag's menu would hold it);
    - the open layer is registered with the page's overlay manager (the bridge), so opening the Expansion or Gear categories menu
