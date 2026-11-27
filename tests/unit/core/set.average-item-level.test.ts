@@ -102,7 +102,7 @@ test('Blue Mage: no weapon, 10 slots; nine pieces of item level 530 give 4770 / 
 });
 
 test('all 23 jobs: an empty set has no average and nothing throws', () => {
-  for (const id of Object.keys(JOBS)) {
+  for (const { id } of JOBS) {
     const job = makeJobContext(id);
     const result = averageItemLevel(job, evaluateSet(job, makeSet(SLOTS.map(slot => ({ slot }))), NO_SYNC, job.maxLevel).rows);
     assert.equal(result, null, id);
