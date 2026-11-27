@@ -12,24 +12,25 @@ import {
   makeMemo,
   shortListsFirst,
 } from '../../../../src/core/optimizer/search.ts';
-import { rng } from '../../helpers/common.ts';
+import type { Lagrange, LimitTable } from '../../../../src/core/optimizer/search.ts';
+import type { SearchSlot } from '../../../../src/core/optimizer/slot-index.ts';
+import type { Candidate, Limit, SlotType } from '../../../../src/core/types.ts';
+import { rng, mustFind } from '../../helpers/common.ts';
+import { syntheticCandidate as cand } from '../../helpers/synthetic-candidates.ts';
 
-let nextId = 0;
-/* A synthetic candidate: its score, stats and the slot types it blocks. */
-function cand(score, eff, blocks = []) {
-  return { item: { id: `c${nextId++}` }, eff, score, blocks, copies: 1 };
-}
+/* One brute-force completion: the picks' score, speed and Determination totals, and the picks. */
+type Completion = { score: number; sks: number; det: number; picks: Candidate[] };
 
 /* Three slots of random candidates with speed and Determination, none blocking: every loadout fills each slot once. */
-function randomLists(rand, size = 4) {
-  const int = n => Math.floor(rand() * n);
+function randomLists(rand: () => number, size = 4): Candidate[][] {
+  const int = (n: number): number => Math.floor(rand() * n);
   return Array.from({ length: 3 }, () =>
     Array.from({ length: size }, () => cand(int(100), { sks: int(30), det: int(30) })).sort((x, y) => y.score - x.score),
   );
 }
 
 /* Every way to pick one candidate per list from position `pos` on: [{score, sks, det, picks}]. */
-function completions(posList, pos = 0) {
+function completions(posList: readonly (readonly Candidate[])[], pos = 0): Completion[] {
   if (pos === posList.length) {
     return [{ score: 0, sks: 0, det: 0, picks: [] }];
   }
@@ -43,7 +44,7 @@ function completions(posList, pos = 0) {
   );
 }
 
-const SLOTS = ['head', 'body', 'neck'];
+const SLOTS: SearchSlot[] = ['head', 'body', 'neck'];
 
 test('limitTables: a minimum, and a band, give the brute-force best of the slots left at every total so far', () => {
   const rand = rng(8);
@@ -51,10 +52,11 @@ test('limitTables: a minimum, and a band, give the brute-force best of the slots
     const posList = randomLists(rand);
     const min = 20 + Math.floor(rand() * 40);
     const max = min + Math.floor(rand() * 20);
-    for (const [label, table, fits] of [
-      ['minimum', limitTables(SLOTS, posList, c => c.eff.sks, min, null), total => total >= min],
-      ['band', limitTables(SLOTS, posList, c => c.eff.sks, min, max), total => total >= min && total <= max],
-    ]) {
+    const cases: { label: string; table: LimitTable; fits: (total: number) => boolean }[] = [
+      { label: 'minimum', table: mustFind(limitTables(SLOTS, posList, c => c.eff.sks, min, null), 'minimum table'), fits: total => total >= min },
+      { label: 'band', table: mustFind(limitTables(SLOTS, posList, c => c.eff.sks, min, max), 'band table'), fits: total => total >= min && total <= max },
+    ];
+    for (const { label, table, fits } of cases) {
       for (let pos = 0; pos <= SLOTS.length; pos++) {
         const rest = completions(posList, pos);
         // every total the slots before pos can have
@@ -78,20 +80,20 @@ test('combinedLimitBound: the smallest of each limit table, with two and three b
   const rand = rng(9);
   const stats = ['sks', 'det', 'crit'];
   for (let t = 0; t < 10; t++) {
-    const int = n => Math.floor(rand() * n);
+    const int = (n: number): number => Math.floor(rand() * n);
     const posList = randomLists(rand).map(list => list.map(c => ({ ...c, eff: { ...c.eff, crit: int(30) } })));
     for (const count of [2, 3]) {
-      const limits = stats.slice(0, count).map(stat => {
+      const limits = stats.slice(0, count).map((stat): Limit => {
         const min = 10 + int(40);
         return { stat, min, max: min + int(20) };
       });
       const totals = new Float64Array(count).map(() => int(15));
-      const bound = combinedLimitBound(SLOTS, posList, limits, totals, null);
-      const tables = limits.map(l => limitTables(SLOTS, posList, c => c.eff[l.stat], l.min, l.max));
+      const bound = mustFind(combinedLimitBound(SLOTS, posList, limits, totals, null), 'combined bound');
+      const tables = limits.map(l => mustFind(limitTables(SLOTS, posList, c => c.eff[l.stat], l.min, l.max), `table of ${l.stat}`));
       const add = limits.map(() => int(5));
       for (let pos = 0; pos <= SLOTS.length; pos++) {
         assert.equal(bound.top(pos), Math.min(...tables.map(table => table.top(pos))), `${count} bands top ${pos}`);
-        const least = withAdd => Math.min(...tables.map((table, k) => table(pos, totals[k] + (withAdd ? add[k] : 0))));
+        const least = (withAdd: boolean): number => Math.min(...tables.map((table, k) => table(pos, totals[k] + (withAdd ? add[k] : 0))));
         assert.equal(bound.at(pos, null), least(false), `${count} bands at ${pos}`);
         assert.equal(bound.at(pos, add), least(true), `${count} bands at ${pos} with add`);
       }
@@ -105,18 +107,19 @@ test('lagrangeBound and fixByReducedCost: the bound is at least the best set mee
   for (let t = 0; t < 30; t++) {
     const posList = randomLists(rand, 6);
     const sets = completions(posList);
-    const limits = [
+    const limits: Limit[] = [
       { stat: 'sks', min: 20 + Math.floor(rand() * 20), max: 60 + Math.floor(rand() * 20) },
       { stat: 'det', min: 20 + Math.floor(rand() * 30), max: null },
     ];
-    const meets = s => s.sks >= limits[0].min && s.sks <= limits[0].max && s.det >= limits[1].min;
+    const [speed, determination] = limits;
+    const meets = (s: Completion): boolean => s.sks >= speed.min && s.sks <= (speed.max ?? Infinity) && s.det >= determination.min;
     const feasible = sets.filter(meets).sort((x, y) => y.score - x.score);
     if (feasible.length < 2) {
       continue;
     }
     const best = feasible[0];
     const known = feasible.find(s => s.score < best.score)?.score ?? best.score; // the next best set in hand
-    const lagr = lagrangeBound(posList, limits, known);
+    const lagr: Lagrange = mustFind(lagrangeBound(posList, limits, known), 'Lagrangian bound');
     const root = lagr.slotAug.reduce((sum, most) => sum + most, 0) - lagr.terms.reduce((sum, term) => sum + term.coef * term.rhs, 0);
     const separable = posList.reduce((sum, list) => sum + Math.max(0, ...list.map(c => c.score)), 0);
     assert.ok(root >= best.score - 1e-6, `#${t}: bound ${root} below the best ${best.score}`);
@@ -135,9 +138,9 @@ test('lagrangeBound and fixByReducedCost: the bound is at least the best set mee
 });
 
 test('shortListsFirst: free slots by list size (rings count twice), blockable slots last; null when unchanged', () => {
-  const many = n => Array.from({ length: n }, () => cand(1, {}));
+  const many = (n: number): Candidate[] => Array.from({ length: n }, () => cand(1, {}));
   const cloak = cand(1, {}, ['head']);
-  const slotList = ['body', 'ring', 'ring', 'neck', 'head'];
+  const slotList: SearchSlot[] = ['body', 'ring', 'ring', 'neck', 'head'];
   const rings = many(2);
   const posList = [[cloak, ...many(4)], rings, rings, many(3), many(1)];
   // neck 3, ring 2 x 2 = 4, body 5; head (blockable) last
@@ -146,13 +149,13 @@ test('shortListsFirst: free slots by list size (rings count twice), blockable sl
 });
 
 test('makeMemo: equal states and dominated states are cut; a full key drops its oldest state', () => {
-  const slotList = ['head', 'body', 'neck'];
-  const limits = [
+  const slotList: SearchSlot[] = ['head', 'body', 'neck'];
+  const limits: Limit[] = [
     { stat: 'det', min: 10, max: null },
     { stat: 'crit', min: 10, max: null },
   ];
-  const at = (det, crit) => ({ chosen: [null, null, null], blockedMask: 0, limitTotals: Float64Array.of(det, crit) });
-  const run = memoFront => {
+  const at = (det: number, crit: number) => ({ chosen: [null, null, null], blockedMask: 0, limitTotals: Float64Array.of(det, crit) });
+  const run = (memoFront: number) => {
     const memo = makeMemo(slotList, limits, memoFront);
     const cuts = [
       memo.cut(at(5, 1), 1, 10),

@@ -4,8 +4,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SLOT_TYPES } from '../../../../src/core/constants.ts';
 import { blockableTypes, positionMask, slotPositions, typeMask } from '../../../../src/core/optimizer/slot-index.ts';
+import type { SearchSlot } from '../../../../src/core/optimizer/slot-index.ts';
+import type { SlotType } from '../../../../src/core/types.ts';
 
-const SLOT_LIST = ['weapon', 'body', 'hands', 'ring', 'ring', 'head'];
+const SLOT_LIST: SearchSlot[] = ['weapon', 'body', 'hands', 'ring', 'ring', 'head'];
 
 test('slotPositions: each type at its position, a ring at its second', () => {
   const positions = slotPositions(SLOT_LIST);
@@ -25,7 +27,7 @@ test('positionMask: one bit per position; a slot the loadout lacks adds nothing'
 });
 
 test('blockableTypes: every type some candidate leaves empty, once', () => {
-  const lists = [[{ blocks: ['offhand'] }, { blocks: [] }], [{ blocks: ['head'] }, { blocks: ['head'] }], []];
+  const lists: { blocks: SlotType[] }[][] = [[{ blocks: ['offhand'] }, { blocks: [] }], [{ blocks: ['head'] }, { blocks: ['head'] }], []];
   assert.deepEqual([...blockableTypes(lists)].sort(), ['head', 'offhand']);
   assert.equal(blockableTypes([]).size, 0);
 });
