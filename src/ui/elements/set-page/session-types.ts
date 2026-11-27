@@ -21,13 +21,17 @@ export interface SetPagePorts {
   maxReal: number;
 }
 
+/* An element of the page as the session and its helpers use it: they focus it, scroll it into view, measure it and read whether a
+   button is disabled. Only these members, so a unit test's stand-in is complete (a real element fits; only a button has `disabled`). */
+export type HostElement = Pick<HTMLElement, 'focus' | 'scrollIntoView' | 'getBoundingClientRect'> & { disabled?: boolean };
+
 /* What the session needs of the element it serves: whether it is in the page, whether a dialog of the Sheets tab is open, an element
    of the page by selector (or null), a callback run once the page has drawn the change just made (unless the page is gone by then),
    and a request to draw again. */
 export interface SessionHost {
   readonly isConnected: boolean;
   readonly dialogOpen: boolean;
-  query(selector: string): HTMLElement | null;
+  query(selector: string): HostElement | null;
   afterDraw(callback: () => void): void;
   requestUpdate(): void;
 }

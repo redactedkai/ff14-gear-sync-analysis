@@ -143,7 +143,7 @@ export class PageFill {
             return;
           }
           session.host.query('tr.changed')?.scrollIntoView({ block: 'nearest' });
-          const apply = session.host.query('#sh-apply') as HTMLButtonElement | null;
+          const apply = session.host.query('#sh-apply');
           const discard = session.host.query('#sh-discard');
           (apply?.disabled ? discard : apply)?.focus({ preventScroll: true });
         }),

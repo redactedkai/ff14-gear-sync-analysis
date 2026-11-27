@@ -150,7 +150,7 @@ export class PageSession {
   focusFill(): void {
     this.afterDraw(() => {
       // a click made right after the one that asked can already have changed the bar again
-      const fill = this.host.query('#sh-fill') as HTMLButtonElement | null;
+      const fill = this.host.query('#sh-fill');
       const gear = this.host.query('.gearbtn');
       (fill?.disabled ? gear : fill)?.focus({ preventScroll: true });
     });
