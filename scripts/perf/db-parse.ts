@@ -19,6 +19,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as esbuild from 'esbuild';
 import { chromium } from 'playwright';
+import type { Browser } from 'playwright';
 import { BROWSER_TARGETS, jsonParseData } from '../build/build.ts';
 import { listOption, numberOption } from './args.ts';
 
@@ -28,17 +29,17 @@ const PAGE = resolve(ROOT, 'dist', 'index.html');
 const OUT = resolve(ROOT, 'scripts', 'perf', 'out', 'db-parse');
 const RUN_MARK = '/*RUN*/'; // replaced by a comment naming the run, so no two runs share a script text
 
-const median = xs => {
+const median = (xs: number[]): number => {
   const s = [...xs].sort((a, b) => a - b);
   const m = s.length >> 1;
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  return s.length % 2 ? (s[m] ?? 0) : ((s[m - 1] ?? 0) + (s[m] ?? 0)) / 2;
 };
 
 const BEFORE = `<script>performance.mark('before')</script>`;
 const AFTER = `<script>performance.mark('after'); performance.measure('script', 'before', 'after')</script>`;
 
 /* A page with `script` between two marks; the measure 'script' spans them. */
-function timedPage(script) {
+function timedPage(script: string): string {
   if (/<\/script/i.test(script)) {
     throw new Error('the script contains "</script", which would end it early');
   }
@@ -47,7 +48,7 @@ function timedPage(script) {
 
 /* The item database alone, as a JSON import in an iife, minified for the build's browsers; with `plugins` the build's
    jsonParseData (the page), without them esbuild's own object literal. */
-async function dbScript(plugins = []) {
+async function dbScript(plugins: esbuild.Plugin[] = []): Promise<string> {
   const result = await esbuild.build({
     stdin: { contents: `import items from ${JSON.stringify(ITEMS)}; window.__db = items;`, resolveDir: ROOT, loader: 'js' },
     bundle: true,
@@ -58,12 +59,12 @@ async function dbScript(plugins = []) {
     write: false,
     logLevel: 'warning',
   });
-  return result.outputFiles[0].text;
+  return result.outputFiles[0]?.text ?? '';
 }
 
 /* dist/index.html with marks around its script (the inline script that holds the bundle; the build writes it as
    "<script>" and a line break, and checks that it holds no "</script"). */
-function pageWithMarks() {
+function pageWithMarks(): string {
   const html = readFileSync(PAGE, 'utf8');
   const at = html.indexOf('<script>\n');
   if (at < 0) {
@@ -74,7 +75,7 @@ function pageWithMarks() {
   return `${html.slice(0, at)}${BEFORE}<script>${RUN_MARK}${script}${AFTER}${html.slice(end)}`;
 }
 
-async function timeOnce(browser, html, rate, run) {
+async function timeOnce(browser: Browser, html: string, rate: number, run: number): Promise<number> {
   const file = resolve(OUT, `run-${run}.html`);
   writeFileSync(file, html.replace(RUN_MARK, `/* run ${run} */`));
   const ctx = await browser.newContext();
@@ -82,29 +83,29 @@ async function timeOnce(browser, html, rate, run) {
   const cdp = await ctx.newCDPSession(pg);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate }); // before navigation, so the script runs throttled
   await pg.goto(pathToFileURL(file).href, { waitUntil: 'load', timeout: 120_000 });
-  const ms = await pg.evaluate(`performance.getEntriesByName('script')[0].duration`);
+  const ms = await pg.evaluate<number>(`performance.getEntriesByName('script')[0].duration`);
   await ctx.close();
   return ms;
 }
 
-async function main() {
+async function main(): Promise<void> {
   const runs = numberOption('runs', 7);
   const rates = listOption('rates', ['1', '4', '6']).map(Number);
   mkdirSync(OUT, { recursive: true });
-  const variants = [
+  const variants: [string, string][] = [
     ['object literal (the page before)', timedPage(await dbScript())],
     ['JSON.parse (as the page has it)', timedPage(await dbScript([jsonParseData]))],
     ['page script, all of it', pageWithMarks()],
   ];
   console.log(`item database ${readFileSync(ITEMS).length.toLocaleString('en-US')} bytes; median and range of ${runs} runs`);
-  const results = [];
+  const results: { rate: number; variant: string; ms: number[] }[] = [];
   const browser = await chromium.launch();
   let run = 0;
   try {
     for (const rate of rates) {
       console.log(`\nCPU ${rate}x${rate === 1 ? ' (this machine)' : ' slower'}`);
       for (const [name, html] of variants) {
-        const times = [];
+        const times: number[] = [];
         for (let i = 0; i < runs; i++) {
           times.push(await timeOnce(browser, html, rate, run++));
         }

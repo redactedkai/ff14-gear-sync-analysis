@@ -6,23 +6,24 @@ import { optimize } from '../../src/core/optimizer/index.ts';
 import { listOption } from './args.ts';
 import { fullPool, JOB_IDS, job as ctx, objectivesFull, SYNCS } from './workloads.ts';
 
-if (!global.gc) {
+const collect = global.gc;
+if (!collect) {
   throw new Error('run with node --expose-gc');
 }
 const jobIds = listOption('jobs', JOB_IDS);
 const syncs = SYNCS.filter(s => ['off', 'cap 123', 'cap 660', 'lvl 90 cap 635'].includes(s.label));
-const heap = () => {
-  global.gc();
+const heap = (): number => {
+  collect();
   return process.memoryUsage().heapUsed / 2 ** 20;
 };
 
 const pools = new Map(jobIds.map(id => [id, fullPool(ctx(id))]));
-const sweep = () => {
+const sweep = (): void => {
   for (const id of jobIds) {
     const job = ctx(id);
     for (const sync of syncs) {
       for (const o of objectivesFull(job)) {
-        optimize(job, pools.get(id), sync, { ...o, melds: true });
+        optimize(job, pools.get(id) ?? [], sync, { ...o, melds: true });
       }
     }
   }
@@ -47,21 +48,21 @@ const reg = new FinalizationRegistry(() => {
   freed++;
 });
 {
-  const job = ctx(jobIds[0]);
+  const job = ctx(jobIds[0] ?? 'SGE');
   const p = fullPool(job);
   p.forEach(it => {
     reg.register(it, null);
     registered++;
   });
-  optimize(job, p, syncs[0], { target: job.substats[0], melds: true });
+  optimize(job, p, syncs[0] ?? { cap: null, sync: false }, { target: job.substats[0], melds: true });
 }
 for (let k = 0; k < 10 && freed < registered; k++) {
-  global.gc();
+  collect();
   await new Promise(r => setTimeout(r, 20));
 }
 console.log(`dropped pool: ${freed} of ${registered} items freed`);
 
-const fails = [];
+const fails: string[] = [];
 if (m2.memo !== m1.memo) {
   fails.push('second sweep added memo entries');
 }

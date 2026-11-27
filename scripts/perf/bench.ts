@@ -11,31 +11,61 @@ import { withActivities } from '../../src/core/items.ts';
 import { meldCacheStats } from '../../src/core/meld.ts';
 import { optimize } from '../../src/core/optimizer/index.ts';
 import { NODE_LIMIT } from '../../src/core/recipe.ts';
+import type { JobContext, PoolItem, StatKey, Sync } from '../../src/core/types.ts';
 import { flag, listOption, numberOption, option } from './args.ts';
 import { excludeMasks, fullPool, JOB_IDS, job as ctx, objectivesFull, objectivesLite, SYNCS } from './workloads.ts';
+import type { Objective } from './workloads.ts';
 
-const workload = option('workload', 'W1');
+const workload = option('workload', 'W1') ?? 'W1';
 const repeats = numberOption('repeats', 2);
 // more nodes than this in one run fails the bench; real pools stay far below it (optimizer.md, section 8)
 const MAX_NODES = 1000;
 const QUICK = ['SGE', 'WAR', 'PLD', 'BLM', 'DNC', 'SAM'];
 const jobIds = listOption('jobs', flag('quick') ? QUICK : JOB_IDS);
 
-function median(xs) {
+/* One timed run, one line of the output file. */
+type Row = {
+  job: string;
+  pool: number;
+  exclude?: string;
+  sync: string;
+  target: StatKey;
+  tiebreak: StatKey[];
+  melds: boolean;
+  first: number;
+  warm: number;
+  nodes: number;
+  truncated: boolean;
+  ok: boolean;
+};
+
+/* The figures of a group of runs: count, warm percentiles, the slowest first call, the most nodes and the truncated runs. */
+type Summary = {
+  label: string;
+  runs: number;
+  p50: number;
+  p95: number;
+  max: number;
+  firstMax: number;
+  nodesMax: number;
+  truncated: number;
+};
+
+function median(xs: number[]): number {
   const s = [...xs].sort((a, b) => a - b);
-  return s[Math.floor(s.length / 2)];
+  return s[Math.floor(s.length / 2)] ?? 0;
 }
-function pct(xs, p) {
+function pct(xs: number[], p: number): number {
   const s = [...xs].sort((a, b) => a - b);
-  return s[Math.min(s.length - 1, Math.ceil((p / 100) * s.length) - 1)];
+  return s[Math.min(s.length - 1, Math.ceil((p / 100) * s.length) - 1)] ?? 0;
 }
 
-function timeRun(job, pool, sync, o, melds) {
+function timeRun(job: JobContext, pool: readonly PoolItem[], sync: Sync, o: Objective, melds: boolean) {
   const opts = { target: o.target, tiebreak: o.tiebreak, nodeLimit: NODE_LIMIT, melds };
   let t0 = performance.now();
   const res = optimize(job, pool, sync, opts);
   const first = performance.now() - t0;
-  const warm = [];
+  const warm: number[] = [];
   for (let i = 0; i < repeats; i++) {
     t0 = performance.now();
     optimize(job, pool, sync, opts);
@@ -47,7 +77,7 @@ function timeRun(job, pool, sync, o, melds) {
 const OUT = `scripts/perf/out/${workload}.jsonl`;
 mkdirSync('scripts/perf/out', { recursive: true });
 writeFileSync(OUT, '');
-const rows = [];
+const rows: Row[] = [];
 const started = performance.now();
 for (const id of jobIds) {
   const job = ctx(id);
@@ -116,14 +146,14 @@ for (const id of jobIds) {
 mkdirSync('scripts/perf/out', { recursive: true });
 writeFileSync(`scripts/perf/out/${workload}.jsonl`, rows.map(r => JSON.stringify(r)).join('\n') + '\n');
 
-const fmt = x => x.toFixed(1);
-const summary = (label, rs) => {
+const fmt = (x: number): string => x.toFixed(1);
+const summary = (label: string, rs: Row[]): Summary | null => {
   if (!rs.length) {
     return null;
   }
   const w = rs.map(r => r.warm),
     f = rs.map(r => r.first);
-  const out = {
+  const out: Summary = {
     label,
     runs: rs.length,
     p50: median(w),
@@ -161,7 +191,7 @@ worst.forEach(r => {
 
 // Correctness gates, which always exit 1: a truncated run stopped at the node limit, so its set may not be the best,
 // and a run over MAX_NODES means the pruning got weaker. Both are counts, the same on every PC.
-const gateFails = [];
+const gateFails: string[] = [];
 const nodesMax = Math.max(...rows.map(r => r.nodes));
 if (nodesMax > MAX_NODES) {
   gateFails.push(`a run took more than ${MAX_NODES.toLocaleString()} nodes (${nodesMax})`);
@@ -173,8 +203,8 @@ if (truncatedRuns) {
 
 // Timing budgets (optimizer.md, section 8, "What the perf scripts measure"), information only: they depend on the PC,
 // and timing matters only above about 1 s. --strict makes a miss exit 1. "first" stands in for the cold budget.
-const timingMisses = [];
-const check = (ok, msg) => {
+const timingMisses: string[] = [];
+const check = (ok: boolean, msg: string): void => {
   if (!ok) {
     timingMisses.push(msg);
   }

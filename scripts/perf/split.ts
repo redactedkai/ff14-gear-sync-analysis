@@ -10,36 +10,45 @@ import { bestMeld } from '../../src/core/meld.ts';
 import { buildCandidates, makeScorer, pruneDominated, rankedKeys, vectorDims } from '../../src/core/optimizer/candidates.ts';
 import { effStats, itemSyncIlvl } from '../../src/core/piece.ts';
 import { branchAndBound } from '../../src/core/optimizer/search.ts';
+import { checkedKeys } from '../../src/core/guards.ts';
 import { NODE_LIMIT } from '../../src/core/recipe.ts';
+import type { Candidate, Eff, Meld, PoolItem, SlotType, StatKey } from '../../src/core/types.ts';
 import { flag, listOption, numberOption, option } from './args.ts';
 import { fullPool, job as ctx, SYNCS } from './workloads.ts';
+import type { LabeledSync } from './workloads.ts';
 
-const job = ctx(option('job', 'SGE'));
-const sync = SYNCS.find(s => s.label === option('sync', 'off'));
-const target = option('target', job.speedKey);
-const tiebreak = listOption('tb', []);
-const melds = flag('melds');
-const repeats = numberOption('repeats', 20);
-if (!sync) {
+const job = ctx(option('job', 'SGE') ?? 'SGE');
+const syncFound = SYNCS.find(s => s.label === option('sync', 'off'));
+if (!syncFound) {
   throw new Error(`unknown sync; one of: ${SYNCS.map(s => s.label).join(', ')}`);
 }
+const sync: LabeledSync = syncFound;
+const targetText = option('target', job.speedKey) ?? job.speedKey;
+const targetFound = job.stats.find(key => key === targetText);
+if (!targetFound) {
+  throw new Error(`unknown target ${targetText}; one of: ${job.stats.join(', ')}`);
+}
+const target: StatKey = targetFound;
+const tiebreak = checkedKeys(listOption('tb', []), job.stats, 'the --tb stats');
+const melds = flag('melds');
+const repeats = numberOption('repeats', 20);
 
 const pool = fullPool(job);
-const t = {};
-const lap = (name, t0) => {
+const t: Record<string, number> = {};
+const lap = (name: string, t0: number): number => {
   const now = performance.now();
   t[name] = (t[name] || 0) + now - t0;
   return now;
 };
 
-function replica() {
+function replica(): { slotList: SlotType[]; posList: Candidate[][]; nodes: number } {
   let t0 = performance.now();
   const dims = vectorDims(job);
   const keys = melds ? [target, ...tiebreak].slice(0, 3) : null;
-  const all = {};
+  const all: Partial<Record<SlotType, Candidate[]>> = {};
   // effStats and bestMeld timed apart: the replica of itemCandidate
-  const eff = new Map(),
-    meld = new Map();
+  const eff = new Map<PoolItem, Eff>(),
+    meld = new Map<PoolItem, Meld | null>();
   pool.forEach(it => {
     eff.set(it, effStats(job, it, sync));
   });
@@ -51,25 +60,26 @@ function replica() {
   SLOT_TYPES.forEach(ty => {
     all[ty] = pool
       .filter(i => i.type === ty)
-      .map(it => {
-        const e = eff.get(it),
-          m = meld.get(it),
-          v = {};
+      .map((it): Candidate => {
+        const e = eff.get(it) ?? {},
+          m = meld.get(it) ?? null,
+          v: Eff = {};
         job.stats.forEach(s => {
           v[s] = (e[s] || 0) + (m?.gain[s] || 0);
         });
         if (job.damageKey) {
           v[WD_KEY] = weaponDamage(job, it, itemSyncIlvl(it, sync));
         }
-        return { item: it, eff: v, copies: it.copies || 1, blocks: slotInfo(job, it).blocks, meld: m };
+        return { item: it, eff: v, copies: it.copies || 1, blocks: slotInfo(job, it).blocks, meld: m, score: 0, sum: 0 };
       });
   });
   t0 = lap('vectors', t0);
-  const blockable = new Set(SLOT_TYPES.flatMap(ty => all[ty].flatMap(a => a.blocks)));
+  const candidatesOf = (ty: SlotType): Candidate[] => all[ty] ?? [];
+  const blockable = new Set(SLOT_TYPES.flatMap(ty => candidatesOf(ty).flatMap(a => a.blocks)));
   const order = [...SLOT_TYPES.filter(ty => !blockable.has(ty)), ...SLOT_TYPES.filter(ty => blockable.has(ty))];
-  const slotList = [];
+  const slotList: SlotType[] = [];
   order.forEach(ty => {
-    if (!all[ty].length) {
+    if (!candidatesOf(ty).length) {
       return;
     }
     slotList.push(ty);
@@ -79,19 +89,19 @@ function replica() {
   });
   const score = makeScorer(
     rankedKeys(job, target, tiebreak),
-    slotList.map(ty => all[ty].map(a => a.eff)),
+    slotList.map(ty => candidatesOf(ty).map(a => a.eff)),
   );
   t0 = lap('scorer', t0);
-  const cand = {};
-  const sorted = {};
+  const cand: Partial<Record<SlotType, Candidate[]>> = {};
+  const sorted: Partial<Record<SlotType, Candidate[]>> = {};
   slotList.forEach(ty => {
     if (sorted[ty]) {
       return;
     }
-    const arr = all[ty];
+    const arr = candidatesOf(ty);
     arr.forEach(a => {
       a.score = score(a.eff);
-      a.sum = dims.reduce((x, d) => x + a.eff[d], 0);
+      a.sum = dims.reduce((x, d) => x + (a.eff[d] ?? 0), 0);
     });
     arr.sort((a, b) => b.score - a.score || b.sum - a.sum);
     sorted[ty] = arr;
@@ -101,10 +111,10 @@ function replica() {
     if (cand[ty]) {
       return;
     }
-    cand[ty] = pruneDominated(sorted[ty], dims, slotList.filter(x => x === ty).length, true);
+    cand[ty] = pruneDominated(sorted[ty] ?? [], dims, slotList.filter(x => x === ty).length, true);
   });
   t0 = lap('prune', t0);
-  const posList = slotList.map(ty => cand[ty]);
+  const posList = slotList.map(ty => cand[ty] ?? []);
   const r = branchAndBound({ slotList, posList, dims, nodeLimit: NODE_LIMIT });
   lap('search', t0);
   return { slotList, posList, nodes: r.nodes };
@@ -113,7 +123,8 @@ function replica() {
 // drift guard: same slots, same candidates (item and vector) in the same order
 const real = buildCandidates(job, pool, sync, { target, tiebreak }, { melds });
 const mine = replica();
-const sig = c => c.posList.map(l => l.map(a => `${a.item.id}:${Object.values(a.eff).join(',')}`).join(';')).join('|');
+const sig = (c: { posList: Candidate[][] }): string =>
+  c.posList.map(l => l.map(a => `${a.item.id}:${Object.values(a.eff).join(',')}`).join(';')).join('|');
 if (real.slotList.join() !== mine.slotList.join() || sig(real) !== sig(mine)) {
   console.error('DRIFT: the replica no longer matches buildCandidates; update split.ts');
   process.exit(1);

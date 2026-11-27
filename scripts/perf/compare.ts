@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { optimize } from '../../src/core/optimizer/index.ts';
+import type { PoolItem, SolveResult } from '../../src/core/types.ts';
 import { NODE_LIMIT } from '../../src/core/recipe.ts';
 import { buildCandidates, pruneDominated, vectorDims } from '../../src/core/optimizer/candidates.ts';
 import { flag, option } from './args.ts';
@@ -17,27 +18,31 @@ const base = option('baseline');
 if (!base) {
   throw new Error('--baseline <dir> is required');
 }
-const sha = p => createHash('sha256').update(readFileSync(p)).digest('hex');
+const sha = (p: string): string => createHash('sha256').update(readFileSync(p)).digest('hex');
 if (sha(`${base}/src/data/items.json`) !== sha('src/data/items.json')) {
   throw new Error('the baseline item data differs; compare against a baseline of the same data');
 }
 
-const imp = p => import(pathToFileURL(resolve(base, 'src', p)).href);
+const imp = (p: string): string => pathToFileURL(resolve(base, 'src', p)).href;
+const baselineOptimizer: typeof import('../../src/core/optimizer/index.ts') = await import(imp('core/optimizer/index.ts'));
+const baselineContext: typeof import('../../src/core/job-context.ts') = await import(imp('core/job-context.ts'));
 const B = {
-  optimize: (await imp('core/optimizer/index.ts')).optimize,
-  ctx: (await imp('core/job-context.ts')).makeJobContext,
+  optimize: baselineOptimizer.optimize,
+  ctx: baselineContext.makeJobContext,
 };
 const nodesMayDiffer = flag('nodes-may-differ');
 const jobIds = flag('quick') ? ['SGE', 'WAR', 'PLD', 'BLM'] : JOB_IDS;
 
 // the parts of a result that must be equal; items by pool key, so both module copies' objects compare
-const key = i => (i ? `${i.name}|${i.type}|${i.ilvl}` : null);
-const shape = r => ({
+const key = (i: PoolItem | undefined | null): string | null => (i ? `${i.name}|${i.type}|${i.ilvl}` : null);
+const shape = (r: SolveResult) => ({
   ok: r.ok,
   truncated: r.truncated,
-  totals: r.totals,
+  totals: r.ok ? r.totals : undefined,
   noMeldData: r.noMeldData,
-  picks: r.picks?.map(p => [p.type, key(p.item), key(p.blockedBy), p.meld?.stones ?? null, p.meld?.free ?? null]),
+  picks: r.ok
+    ? r.picks.map(p => [p.type, key(p.item), key(p.item ? undefined : p.blockedBy), p.meld?.stones ?? null, p.meld?.free ?? null])
+    : undefined,
 });
 
 let runs = 0,

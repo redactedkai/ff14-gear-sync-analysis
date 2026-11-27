@@ -25,9 +25,11 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
+import type { Browser, CDPSession, Page } from 'playwright';
 import { makeJobContext } from '../../src/core/job-context.ts';
 import { DEFAULT_EXCLUDE } from '../../src/ui/job-sync-panel.ts';
 import { SET_ROW_SLOTS } from '../../src/ui/sheets/storage.ts';
+import type { SavedGearSet, SavedSheet } from '../../src/ui/sheets/saved-types.ts';
 import { STORE_KEY } from '../../src/ui/store-key.ts';
 import { listOption, numberOption, option } from './args.ts';
 
@@ -48,47 +50,62 @@ try {
 } catch (e) {}
 `;
 
-const median = xs => {
+const median = (xs: number[]): number => {
   const s = [...xs].sort((a, b) => a - b);
   const m = s.length >> 1;
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  return s.length % 2 ? (s[m] ?? 0) : ((s[m - 1] ?? 0) + (s[m] ?? 0)) / 2;
 };
-const max = xs => Math.max(...(xs.length ? xs : [0]));
+const max = (xs: number[]): number => Math.max(...(xs.length ? xs : [0]));
 
-const measures = (pg, name) => pg.evaluate(`performance.getEntriesByName('${name}').map(e => e.duration)`);
+/* What one run measured; the warm fields only in the run that does the warm and memory steps. */
+type RunResult = {
+  cold_ms?: number;
+  load_to_result_ms?: number;
+  warm_ms?: number[];
+  settle_ms?: number[];
+  heap_mb?: [number, number];
+  save_ms?: number;
+  longtask_max_ms?: number;
+  longtask_search_max_ms?: number;
+};
 
-async function throttle(pg, rate) {
+const measures = (pg: Page, name: string): Promise<number[]> =>
+  pg.evaluate<number[]>(`performance.getEntriesByName('${name}').map(e => e.duration)`);
+
+async function throttle(pg: Page, rate: number): Promise<CDPSession> {
   const cdp = await pg.context().newCDPSession(pg);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate });
   return cdp;
 }
 
-const waitMeasure = (pg, name, count) =>
+const waitMeasure = (pg: Page, name: string, count: number) =>
   pg.waitForFunction(`performance.getEntriesByName('${name}').length >= ${count}`, undefined, { timeout: TIMEOUT });
 
 /** `job`'s sheet as src/ui/sheets/storage.ts saves it: level 100, no sync, one empty set per FILL_TARGETS goal. */
-function sheetFor(job) {
+function sheetFor(job: string): SavedSheet {
   const ctx = makeJobContext(job);
-  const targetKey = goal => {
+  const targetKey = (goal: string): string => {
     if (goal === 'main') {
       return ctx.mainKey;
     }
     return goal === 'speed' ? ctx.speedKey : goal;
   };
-  const sets = FILL_TARGETS.map(targetKey).map((target, i) => ({
-    id: `g_${target}`,
-    name: `Goal ${target}`,
-    description: '',
-    pieces: SET_ROW_SLOTS.map(slot => ({ slot })),
-    meal: null,
-    pinned: { pieces: [], meal: false },
-    fillSettings: {
-      goal: { target, tb: '', tb2: '', gcd: '', gcdMode: 'exact', byTier: true, melds: true, food: false },
-      searchCriteria: { expOff: [], exclude: [...DEFAULT_EXCLUDE], market: true, min: '', max: '', lvl: 100 },
-    },
-    createdAt: i,
-    updatedAt: i,
-  }));
+  const sets = FILL_TARGETS.map(targetKey).map(
+    (target, i): SavedGearSet => ({
+      id: `g_${target}`,
+      name: `Goal ${target}`,
+      description: '',
+      pieces: SET_ROW_SLOTS.map(slot => ({ slot })),
+      meal: null,
+      pinned: { pieces: [], meal: false },
+      fillSettings: {
+        goal: { target, tb: '', tb2: '', gcd: '', gcdMode: 'exact', byTier: true, melds: true, food: false },
+        searchCriteria: { expOff: [], exclude: [...DEFAULT_EXCLUDE], market: true, min: '', max: '', lvl: 100 },
+      },
+      createdAt: i,
+      updatedAt: i,
+    }),
+  );
   return {
     v: 1,
     id: `s_${job}`,
@@ -105,29 +122,32 @@ function sheetFor(job) {
 }
 
 /** Open the set with `setId` of the only sheet, from wherever the Sheets tab is. */
-async function openSet(pg, sheet, setId) {
+async function openSet(pg: Page, sheet: SavedSheet, setId: string): Promise<void> {
   await pg.click('[data-tab=sheets]');
   if (await pg.locator('#sh-manager').isVisible()) {
     await pg.locator('#sh-list a.sname').first().click();
   } else if (await pg.locator('#sh-set').isVisible()) {
     await pg.locator('#sh-set .setcrumb a:nth-of-type(2)').click();
   }
-  const name = sheet.sets.find(s => s.id === setId).name;
+  const name = sheet.sets.find(s => s.id === setId)?.name;
+  if (name === undefined) {
+    throw new Error(`the sheet has no set ${setId}`);
+  }
   await pg.locator('#sh-sets a.sname', { hasText: name }).click();
   await pg.locator('#sh-fill').waitFor({ state: 'visible' });
 }
 
 /** Press Auto-fill and wait for its result; returns the time from the press to the result shown (ms). */
-async function fill(pg) {
+async function fill(pg: Page): Promise<number> {
   const before = (await measures(pg, 'fill')).length;
-  const t0 = await pg.evaluate('performance.now()');
+  const t0 = await pg.evaluate<number>('performance.now()');
   await pg.click('#sh-fill');
   await waitMeasure(pg, 'fill', before + 1);
   await pg.locator('#sh-discard').waitFor({ state: 'visible' });
-  return (await pg.evaluate('performance.now()')) - t0;
+  return (await pg.evaluate<number>('performance.now()')) - t0;
 }
 
-async function coldAndWarm(browser, job, rate, warm) {
+async function coldAndWarm(browser: Browser, job: string, rate: number, warm: boolean): Promise<RunResult> {
   const sheet = sheetFor(job);
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   await ctx.addInitScript(LONGTASKS);
@@ -140,74 +160,81 @@ async function coldAndWarm(browser, job, rate, warm) {
   const cdp = await throttle(pg, rate); // before navigation, so page start-up is throttled too
   await pg.goto(PAGE);
   await pg.waitForSelector('#sh-list a.sname');
-  await openSet(pg, sheet, sheet.sets[0].id);
-  const openTasks = await pg.evaluate('window.__long.length'); // long tasks before the first Auto-fill
+  const firstSet = sheet.sets[0];
+  if (!firstSet) {
+    throw new Error('the sheet has no set');
+  }
+  await openSet(pg, sheet, firstSet.id);
+  const openTasks = await pg.evaluate<number>('window.__long.length'); // long tasks before the first Auto-fill
   await fill(pg);
-  const shown = await pg.evaluate('performance.now()'); // since navigation start
-  const out = { cold_ms: (await measures(pg, 'fill'))[0], load_to_result_ms: shown };
+  const shown = await pg.evaluate<number>('performance.now()'); // since navigation start
+  const out: RunResult = { cold_ms: (await measures(pg, 'fill'))[0], load_to_result_ms: shown };
   await pg.click('#sh-discard');
   let searchTasks = Infinity; // long tasks up to the memory step (its forced garbage collections block the thread too)
   if (warm) {
-    const runs = [];
-    const settles = [];
+    const runs: number[] = [];
+    const settles: number[] = [];
     for (const set of sheet.sets) {
       await openSet(pg, sheet, set.id);
       settles.push(await fill(pg));
-      runs.push((await measures(pg, 'fill')).at(-1));
+      runs.push((await measures(pg, 'fill')).at(-1) ?? 0);
       await pg.click('#sh-discard');
     }
     out.warm_ms = runs;
     out.settle_ms = settles;
     // memory: 100 more Fills, heap before and after garbage collection
-    searchTasks = await pg.evaluate('window.__long.length');
+    searchTasks = await pg.evaluate<number>('window.__long.length');
     await cdp.send('HeapProfiler.enable');
     await cdp.send('HeapProfiler.collectGarbage');
-    const h0 = await pg.evaluate('performance.memory.usedJSHeapSize');
+    const h0 = await pg.evaluate<number>('performance.memory.usedJSHeapSize');
     for (let i = 0; i < 100; i++) {
       if (i % 20 === 0) {
-        await openSet(pg, sheet, sheet.sets[(i / 20) % sheet.sets.length].id);
+        await openSet(pg, sheet, sheet.sets[(i / 20) % sheet.sets.length]?.id ?? firstSet.id);
       }
       await fill(pg);
       await pg.click('#sh-discard');
     }
     await cdp.send('HeapProfiler.collectGarbage');
-    const h1 = await pg.evaluate('performance.memory.usedJSHeapSize');
+    const h1 = await pg.evaluate<number>('performance.memory.usedJSHeapSize');
     out.heap_mb = [h0 / 2 ** 20, h1 / 2 ** 20];
     out.save_ms = max(await measures(pg, 'save'));
   }
-  const long = await pg.evaluate('window.__long');
+  const long = await pg.evaluate<number[]>('window.__long');
   out.longtask_max_ms = max(long);
   out.longtask_search_max_ms = max(long.slice(openTasks, searchTasks));
   await ctx.close();
   return out;
 }
 
-const fmt = xs => `median ${median(xs).toFixed(0)}, max ${Math.max(...xs).toFixed(0)}`;
+const fmt = (xs: number[]): string => `median ${median(xs).toFixed(0)}, max ${Math.max(...xs).toFixed(0)}`;
 
-async function main() {
+async function main(): Promise<void> {
   const runsN = numberOption('runs', 5);
   const jobs = listOption('jobs', ['PLD', 'SGE']);
   const rates = listOption('rates', ['1', '4', '6']).map(Number);
   mkdirSync(OUT, { recursive: true });
-  const results = [];
+  const results: { rate: number; job: string; runs: RunResult[] }[] = [];
   const browser = await chromium.launch();
   try {
     for (const rate of rates) {
       console.log(`\nCPU ${rate}x${rate === 1 ? ' (this machine)' : ' slower'}`);
       for (const job of jobs) {
-        const runs = [];
+        const runs: RunResult[] = [];
         for (let i = 0; i < runsN; i++) {
           runs.push(await coldAndWarm(browser, job, rate, i === 0));
         }
         const w = runs[0];
+        if (!w?.warm_ms || !w.settle_ms || !w.heap_mb || w.save_ms === undefined) {
+          throw new Error('the first run has no warm measures');
+        }
         console.log(
-          `  ${job}: cold Auto-fill ${fmt(runs.map(r => r.cold_ms))} ms; page open to result ${fmt(runs.map(r => r.load_to_result_ms))} ms`,
+          `  ${job}: cold Auto-fill ${fmt(runs.map(r => r.cold_ms ?? 0))} ms; page open to result ${fmt(runs.map(r => r.load_to_result_ms ?? 0))} ms`,
         );
         console.log(
           `  ${job}: warm Fills ${fmt(w.warm_ms)} ms; Auto-fill to result ${fmt(w.settle_ms)} ms; ` +
             `heap ${w.heap_mb[0].toFixed(1)} -> ${w.heap_mb[1].toFixed(1)} MB after 100 Fills; slowest save ${w.save_ms.toFixed(0)} ms; ` +
-            `longest blocked main thread ${max(runs.map(r => r.longtask_max_ms)).toFixed(0)} ms, ` +
-            `${max(runs.map(r => r.longtask_search_max_ms)).toFixed(0)} ms from the first Auto-fill on`,
+            `longest blocked main thread ${max(runs.map(r => r.longtask_max_ms ?? 0)).toFixed(0)} ms, ` +
+            `${max(runs.map(r => r.longtask_search_max_ms ?? 0)).toFixed(0)} ms from the first Auto-fill on`,
         );
         results.push({ rate, job, runs });
       }

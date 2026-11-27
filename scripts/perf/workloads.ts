@@ -4,17 +4,19 @@ import { ACTIVITIES, JOBS } from '../../src/core/constants.ts';
 import { DEFAULT_EXCLUDE } from '../../src/ui/job-sync-panel.ts';
 import { makeJobContext } from '../../src/core/job-context.ts';
 import { browseItems, poolItemFromRow } from '../../src/core/items.ts';
+import type { JobContext, PoolItem, StatKey, Sync } from '../../src/core/types.ts';
 
 export const JOB_IDS = JOBS.map(j => j.id);
 
 /* The job's full pool: every database piece it can equip (what "add all" gives with no filter). */
-export function fullPool(jobContext) {
+export function fullPool(jobContext: JobContext): PoolItem[] {
   return browseItems(jobContext, {}).map(r => poolItemFromRow(jobContext, r));
 }
 
 /* Sync settings {cap, sync, level, label}: off; item level caps at level 100 (incl. the materia gate edges 290, 690);
    level sync alone; and real duty pairs of level and item level cap. */
-export const SYNCS = [
+export type LabeledSync = Sync & { label: string };
+export const SYNCS: LabeledSync[] = [
   { label: 'off', cap: null, sync: false, level: 100 },
   ...[123, 290, 400, 530, 660, 690, 795].map(cap => ({ label: `cap ${cap}`, cap, sync: true, level: 100 })),
   ...[50, 60, 70, 80, 90].map(level => ({ label: `lvl ${level}`, cap: null, sync: false, level })),
@@ -28,7 +30,7 @@ export const SYNCS = [
 ];
 
 /* A small seeded generator, so every run of a script draws the same objectives. */
-export function rng(seed) {
+export function rng(seed: number): () => number {
   let s = seed >>> 0 || 1;
   return () => {
     s ^= s << 13;
@@ -39,8 +41,11 @@ export function rng(seed) {
 }
 
 /* O-lite: every single target; every target > tiebreak pair of substats; 12 three-key tuples; 2 with a repeated key. */
-export function objectivesLite(jobContext, seed = 7) {
-  const out = jobContext.stats.map(t => ({ target: t, tiebreak: [] }));
+/* An objective: the stat to maximize and the stats that break ties, in order. */
+export type Objective = { target: StatKey; tiebreak: StatKey[] };
+
+export function objectivesLite(jobContext: JobContext, seed = 7): Objective[] {
+  const out: Objective[] = jobContext.stats.map(t => ({ target: t, tiebreak: [] }));
   const subs = jobContext.substats;
   subs.forEach(a => {
     subs.forEach(b => {
@@ -50,7 +55,7 @@ export function objectivesLite(jobContext, seed = 7) {
     });
   });
   const r = rng(seed);
-  const pick = list => list[Math.floor(r() * list.length)];
+  const pick = <Item>(list: readonly Item[]): Item => list[Math.floor(r() * list.length)] as Item;
   for (let i = 0; i < 12; i++) {
     const a = pick(jobContext.stats);
     const rest = jobContext.stats.filter(s => s !== a);
@@ -63,13 +68,13 @@ export function objectivesLite(jobContext, seed = 7) {
 }
 
 /* O-full: every target x tiebreak 1 x tiebreak 2 (none included). */
-export function objectivesFull(jobContext) {
+export function objectivesFull(jobContext: JobContext): Objective[] {
   const opt = [null, ...jobContext.stats];
-  const out = [];
+  const out: Objective[] = [];
   jobContext.stats.forEach(t => {
     opt.forEach(a => {
       opt.forEach(b => {
-        out.push({ target: t, tiebreak: [a, b].filter(Boolean) });
+        out.push({ target: t, tiebreak: [a, b].filter((key): key is StatKey => key !== null) });
       });
     });
   });
@@ -79,7 +84,7 @@ export function objectivesFull(jobContext) {
 /* "Gear categories" settings to time, {off: ACTIVITIES keys left out, market}: every box, the defaults with and without the
    market board, the defaults plus each box they leave out (one at a time), and the defaults minus each big box. Every
    subset of 20 boxes would be a million runs; these cover the pool sizes a player meets. */
-export function excludeMasks() {
+export function excludeMasks(): { off: string[]; market: boolean }[] {
   const keys = ACTIVITIES.map(a => a.key);
   const out = [
     { off: [], market: true },
@@ -96,4 +101,4 @@ export function excludeMasks() {
   return out;
 }
 
-export const job = id => makeJobContext(id);
+export const job = (id: string): JobContext => makeJobContext(id);

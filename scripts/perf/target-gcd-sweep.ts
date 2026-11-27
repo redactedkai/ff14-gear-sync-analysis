@@ -15,8 +15,71 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Worker, isMainThread, parentPort } from 'node:worker_threads';
+import type { Prepared } from '../../src/core/optimizer/index.ts';
+import type { GcdFailure, GcdSuccess } from '../../src/core/target-gcd.ts';
+import type { PoolItem, SolveResult, StatKey } from '../../src/core/types.ts';
+import type { GcdMode } from '../../src/core/speed.ts';
+import type { LabeledSync } from './workloads.ts';
 
 const ROOT = new URL('../../', import.meta.url).href;
+
+/* One job x sync setting, the unit of work a worker takes: the job id, the index into SYNCS, and the setting. */
+type Task = { id: string; si: number; s: LabeledSync };
+
+/* One run of the sweep, one line of the output file. */
+type RunRow = {
+  id: string;
+  level: number;
+  cap: number | null;
+  sync: boolean;
+  haste: number;
+  target: string;
+  tiebreak: string;
+  stress: boolean;
+  mode: GcdMode;
+  gcd: number;
+  food: boolean;
+  ok: boolean;
+  reason: string | null;
+  got: number | null;
+  faster: boolean | null;
+  meal: string | null;
+  searches: number;
+  nodes: number;
+  truncated: boolean;
+  ms: number;
+  first: boolean;
+  plainNodes?: number;
+  checked?: 'plain';
+  mismatch?: boolean;
+  small?: undefined;
+};
+
+/* A small-pool check against the exhaustive search, one line of the output file. */
+type SmallRow = {
+  id: string;
+  level: number;
+  cap: number | null;
+  sync: boolean;
+  haste: number;
+  small: true;
+  target: string;
+  mode: GcdMode;
+  gcd: number;
+  ok: boolean;
+  reason: string | null;
+  checked: 'exhaustive';
+  mismatch?: boolean;
+};
+
+/* A line of the output file. */
+type Row = RunRow | SmallRow;
+
+/* The time of a run (0 for a small-pool check, which is not timed). */
+const msOf = (row: Row): number => (row.small ? 0 : row.ms);
+
+/* What a worker sends: that it is ready, or the rows of a task it finished. */
+type WorkerMessage = { ready: true } | { task: Task; rows: Row[] };
 
 if (isMainThread) {
   const { JOB_IDS, SYNCS } = await import('./workloads.ts');
@@ -25,7 +88,7 @@ if (isMainThread) {
   const jobs = listOption('jobs', JOB_IDS);
   mkdirSync(new URL('./out/', import.meta.url), { recursive: true });
   const outFile = new URL('./out/target-gcd-sweep.jsonl', import.meta.url);
-  const all = [];
+  const all: Row[] = [];
   if (flag('resume') && existsSync(outFile)) {
     for (const l of readFileSync(outFile, 'utf8').split('\n')) {
       if (l) {
@@ -35,28 +98,29 @@ if (isMainThread) {
   } else {
     writeFileSync(outFile, '');
   }
-  const taskKey = (id, s) => `${id}|${s.level}|${s.cap}|${s.sync}`;
+  const taskKey = (id: string, s: { level?: number | null; cap: number | null; sync: boolean }): string =>
+    `${id}|${s.level}|${s.cap}|${s.sync}`;
   const have = new Set(all.map(r => taskKey(r.id, r)));
   // cap 795 is the highest real item level, so it syncs nothing: every run repeats sync off
-  const tasks = jobs
+  const tasks: Task[] = jobs
     .flatMap(id => SYNCS.map((s, si) => ({ id, si, s })))
     .filter(t => t.s.label !== 'cap 795' && !have.has(taskKey(t.id, t.s)));
   const t0 = Date.now();
   let next = 0,
     done = 0,
-    worst = all.reduce((m, r) => Math.max(m, r.ms || 0), 0);
+    worst = all.reduce((m, r) => Math.max(m, msOf(r)), 0);
   console.log(`${tasks.length} tasks (job x sync), ${nWorkers} workers`);
-  await new Promise(resolve => {
+  await new Promise<void>(resolve => {
     let alive = nWorkers;
     for (let w = 0; w < nWorkers; w++) {
       const worker = new Worker(fileURLToPath(import.meta.url));
-      const feed = () => worker.postMessage(next < tasks.length ? tasks[next++] : null);
-      worker.on('message', m => {
-        if (m.rows) {
+      const feed = (): void => worker.postMessage(next < tasks.length ? tasks[next++] : null);
+      worker.on('message', (m: WorkerMessage) => {
+        if ('rows' in m) {
           appendFileSync(outFile, `${m.rows.map(r => JSON.stringify(r)).join('\n')}\n`);
           for (const r of m.rows) {
             all.push(r);
-            worst = Math.max(worst, r.ms || 0);
+            worst = Math.max(worst, msOf(r));
           }
           done++;
           const el = (Date.now() - t0) / 1000;
@@ -65,9 +129,7 @@ if (isMainThread) {
             `[${done}/${tasks.length}] ${m.task.id} sync#${m.task.si}: ${m.rows.length} rows; worst ${worst.toFixed(0)} ms, mismatches ${bad}; ${el.toFixed(0)} s, eta ${((el / done) * (tasks.length - done)).toFixed(0)} s`,
           );
         }
-        if (m.ready || m.rows) {
-          feed();
-        }
+        feed();
       });
       worker.on('error', e => console.log('worker error', e));
       worker.on('exit', () => --alive === 0 && resolve());
@@ -77,27 +139,39 @@ if (isMainThread) {
 } else {
   const { performance } = await import('node:perf_hooks');
   const { fullPool, job: ctx, rng, SYNCS } = await import('./workloads.ts');
-  const { withActivities } = await import(`${ROOT}src/core/items.ts`);
-  const { DEFAULT_EXCLUDE } = await import(`${ROOT}src/ui/job-sync-panel.ts`);
-  const { optimize, solve } = await import(`${ROOT}src/core/optimizer/index.ts`);
-  const { gcdFor, hasteFor, speedForGcd } = await import(`${ROOT}src/core/speed.ts`);
-  const { optimizeGcd } = await import(`${ROOT}src/core/target-gcd.ts`);
-  const { exhaustive } = await import(`${ROOT}tests/unit/helpers/exhaustive.js`);
-  const score = (r, keys) => (r?.ok ? keys.map(key => r.totals[key] || 0) : null);
+  const { withActivities }: typeof import('../../src/core/items.ts') = await import(`${ROOT}src/core/items.ts`);
+  const { DEFAULT_EXCLUDE }: typeof import('../../src/ui/job-sync-panel.ts') = await import(`${ROOT}src/ui/job-sync-panel.ts`);
+  const { optimize, solve }: typeof import('../../src/core/optimizer/index.ts') = await import(`${ROOT}src/core/optimizer/index.ts`);
+  const { gcdFor, hasteFor, speedForGcd }: typeof import('../../src/core/speed.ts') = await import(`${ROOT}src/core/speed.ts`);
+  const { optimizeGcd }: typeof import('../../src/core/target-gcd.ts') = await import(`${ROOT}src/core/target-gcd.ts`);
+  const { exhaustive }: typeof import('../../tests/unit/helpers/exhaustive.js') = await import(`${ROOT}tests/unit/helpers/exhaustive.js`);
+  const score = (r: SolveResult | GcdSuccess | GcdFailure, keys: readonly StatKey[]): number[] | null =>
+    r.ok ? keys.map(key => r.totals[key] || 0) : null;
   let k = 0;
-  parentPort.on('message', task => {
+  if (!parentPort) {
+    throw new Error('this branch runs in a worker');
+  }
+  const port = parentPort;
+  port.on('message', (task: Task | null) => {
     if (!task) {
       return process.exit(0);
     }
     const job = ctx(task.id);
     const s = SYNCS[task.si];
+    if (!s) {
+      throw new Error(`no sync setting ${task.si}`);
+    }
     const sync = { cap: s.cap, sync: s.sync, level: s.level };
+    if (s.level == null) {
+      throw new Error(`sync setting ${s.label} has no level`);
+    }
     const level = s.level;
     const haste = hasteFor(job.jobId, level)?.pct ?? 0;
     const pool = withActivities(fullPool(job), DEFAULT_EXCLUDE, true);
-    const rows = [];
+    const rows: Row[] = [];
     const base = { id: task.id, level, cap: s.cap, sync: s.sync, haste };
-    const fastSpd = optimize(job, pool, sync, { target: job.speedKey, melds: true }).totals?.[job.speedKey] ?? 0;
+    const fastest = optimize(job, pool, sync, { target: job.speedKey, melds: true });
+    const fastSpd = (fastest.ok ? fastest.totals[job.speedKey] : 0) ?? 0;
     const top = gcdFor(0, level, 2500, haste),
       bottom = gcdFor(fastSpd, level, 2500, haste);
     // six GCDs spread from the no-speed GCD to the fastest reachable, both ends included
@@ -106,18 +180,22 @@ if (isMainThread) {
     const subs = job.substats.filter(x => x !== job.speedKey);
     for (const target of [...subs, job.mainKey]) {
       const tbs = subs.filter(x => x !== target);
-      const objectives = [[], ...tbs.map(t => [t]), ...tbs.map((t, i) => [t, tbs[(i + 1) % tbs.length]]).filter(x => x[0] !== x[1])];
+      const objectives: StatKey[][] = [
+        [],
+        ...tbs.map(t => [t]),
+        ...tbs.map((t, i): StatKey[] => [t, tbs[(i + 1) % tbs.length] ?? t]).filter(x => x[0] !== x[1]),
+      ];
       for (const tiebreak of objectives) {
         const keys = [target, ...tiebreak];
-        for (const mode of ['exact', 'min']) {
-          let prep = null;
+        for (const mode of ['exact', 'min'] as const) {
+          let prep: Prepared | null = null;
           for (const gcd of gcds) {
-            for (const food of [null, 'best']) {
+            for (const food of [null, 'best'] as const) {
               const t = performance.now();
               const r = optimizeGcd(job, pool, sync, { target, tiebreak, melds: true, gcd, mode, food, nodeLimit: Infinity }, prep);
               const ms = performance.now() - t;
               prep = r.prep || prep;
-              const row = {
+              const row: RunRow = {
                 ...base,
                 target,
                 tiebreak: tiebreak.join('+'),
@@ -126,20 +204,28 @@ if (isMainThread) {
                 gcd,
                 food: Boolean(food),
                 ok: r.ok,
-                reason: r.reason ?? null,
-                got: r.gcd ?? null,
-                faster: r.faster ?? null,
-                meal: r.food?.name ?? null,
+                reason: r.ok ? null : r.reason,
+                got: r.ok ? r.gcd : null,
+                faster: r.ok ? r.faster : null,
+                meal: r.ok ? (r.food?.name ?? null) : null,
                 searches: r.searches ?? 0,
                 nodes: r.nodes ?? 0,
                 truncated: Boolean(r.truncated),
                 ms: Number(ms.toFixed(1)),
-                first: rows.filter(x => x.target === target && x.tiebreak === tiebreak.join('+') && x.mode === mode).length === 0,
+                first:
+                  rows.filter(x => !x.small && x.target === target && x.tiebreak === tiebreak.join('+') && x.mode === mode).length === 0,
               };
               // the plain search on the same candidates and band
-              if (!food && ++k % 4 === 0 && r.reason !== 'unreachable') {
+              if (!food && ++k % 4 === 0 && (r.ok || r.reason !== 'unreachable')) {
                 const band = speedForGcd(gcd, level, mode, haste);
-                const p = solve(r.prep, { spdMin: band.min, spdMax: band.max, plain: true, nodeLimit: 1000000 });
+                if (!band) {
+                  throw new Error('a reachable GCD has no speed band');
+                }
+                const searchPrep = r.prep ?? prep;
+                if (!searchPrep) {
+                  throw new Error('a search ran without candidates');
+                }
+                const p = solve(searchPrep, { spdMin: band.min, spdMax: band.max, plain: true, nodeLimit: 1000000 });
                 row.plainNodes = p.nodes;
                 if (!p.truncated) {
                   row.checked = 'plain';
@@ -154,48 +240,56 @@ if (isMainThread) {
     }
     // small pools against the exhaustive reference: a few pieces per slot, a random goal, GCD and mode, no food
     const rand = rng(1000 + task.si * 31 + task.id.charCodeAt(0) * 7 + task.id.charCodeAt(1));
-    const int = n => Math.floor(rand() * n);
+    const int = (n: number): number => Math.floor(rand() * n);
     for (let t = 0; t < 4; t++) {
-      const small = [];
-      for (const ty of ['head', 'body', 'neck', 'ring']) {
+      const small: PoolItem[] = [];
+      for (const ty of ['head', 'body', 'neck', 'ring'] as const) {
         const of = pool.filter(i => i.type === ty);
         for (let i = 0; i < (ty === 'ring' ? 2 : 1) && of.length; i++) {
-          small.push(of.splice(int(of.length), 1)[0]);
+          const [piece] = of.splice(int(of.length), 1);
+          if (piece) {
+            small.push(piece);
+          }
         }
       }
       const target = subs[int(subs.length)];
-      const free = gcdFor(optimize(job, small, sync, { target, melds: true }).totals[job.speedKey], level, 2500, haste);
+      if (!target) {
+        throw new Error('a job with no substat but speed');
+      }
+      const smallFastest = optimize(job, small, sync, { target, melds: true });
+      const free = gcdFor(smallFastest.ok ? (smallFastest.totals[job.speedKey] ?? 0) : 0, level, 2500, haste);
       const gcd = Math.round((free + (int(5) - 2) / 100) * 100) / 100;
-      const mode = rand() < 0.5 ? 'exact' : 'min';
+      const mode = rand() < 0.5 ? ('exact' as const) : ('min' as const);
       const band = speedForGcd(gcd, level, mode, haste);
       const r = optimizeGcd(job, small, sync, { target, melds: true, gcd, mode });
-      const row = { ...base, small: true, target, mode, gcd, ok: r.ok, reason: r.reason ?? null, checked: 'exhaustive' };
+      const row: SmallRow = { ...base, small: true, target, mode, gcd, ok: r.ok, reason: r.ok ? null : r.reason, checked: 'exhaustive' };
       if (band) {
         const want = exhaustive(job, small, sync, { target, melds: true, spdMin: band.min || null, spdMax: band.max });
         row.mismatch = JSON.stringify(want) !== JSON.stringify(score(r, [target]));
       } else {
-        row.mismatch = r.reason !== 'unreachable';
+        row.mismatch = r.ok || r.reason !== 'unreachable';
       }
       rows.push(row);
     }
-    parentPort.postMessage({ task, rows });
+    port.postMessage({ task, rows });
   });
-  parentPort.postMessage({ ready: true });
+  port.postMessage({ ready: true });
 }
 
-function summary(rows, seconds) {
-  const runs = rows.filter(r => !r.small);
-  const q = (xs, p) => {
+function summary(rows: Row[], seconds: number): void {
+  const runs = rows.filter((r): r is RunRow => !r.small);
+  const q = (xs: number[], p: number): number => {
     const a = xs.slice().sort((x, y) => x - y);
     return a.length ? a[Math.min(a.length - 1, Math.floor(p * a.length))] : 0;
   };
   console.log(`\ndone: ${runs.length} runs + ${rows.length - runs.length} small-pool checks in ${seconds.toFixed(0)} s`);
-  for (const [label, sel] of [
-    ['exact, no food', r => r.mode === 'exact' && !r.food],
-    ['exact, best food', r => r.mode === 'exact' && r.food],
-    ['or faster, no food', r => r.mode === 'min' && !r.food],
-    ['or faster, best food', r => r.mode === 'min' && r.food],
-  ]) {
+  const groups: [string, (r: RunRow) => boolean][] = [
+    ['exact, no food', (r: RunRow) => r.mode === 'exact' && !r.food],
+    ['exact, best food', (r: RunRow) => r.mode === 'exact' && r.food],
+    ['or faster, no food', (r: RunRow) => r.mode === 'min' && !r.food],
+    ['or faster, best food', (r: RunRow) => r.mode === 'min' && r.food],
+  ];
+  for (const [label, sel] of groups) {
     const g = runs.filter(sel);
     const first = g.filter(r => r.first).map(r => r.ms);
     const again = g.filter(r => !r.first).map(r => r.ms);
@@ -206,7 +300,7 @@ function summary(rows, seconds) {
     );
   }
   const plain = runs.filter(r => r.checked === 'plain');
-  const small = rows.filter(r => r.small);
+  const small = rows.filter((r): r is SmallRow => r.small === true);
   console.log(
     `plain-search checks ${plain.length}, mismatches ${plain.filter(r => r.mismatch).length}; unfinished ${runs.filter(r => r.plainNodes && !r.checked).length}`,
   );
