@@ -717,7 +717,7 @@ Notes:
 
 ## 9. Updating after a game patch
 
-One command, `npm run data:update`, does steps 1 and 2.
+One command, `npm run data:update`, does steps 1 and 2. To check that the committed `src/data/` is what the generators make from the clones (after changing a generator, say), run `npm run data:verify`: it runs each generator into a temporary folder and compares every file byte for byte, writing nothing in the project. It needs the clones at the commits the files name, so it is local only. The most-speed table is a five-minute search, so only its inputs hash is checked unless `-- --full` is given.
 
 1. **Fetch**: pull the newest CSVs into the local clone.
 2. **Regenerate**: run the generators (the data files record the new commit) and rebuild the page. It refuses to start while a CSV in the clone has local edits (section 6). Each step prints one line naming it (a progress bar instead when the optional `tqdm` package is installed).
@@ -926,6 +926,7 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Patch table generator (each patch's release day, for the sheet manager's Patch column) | `scripts/data/gen_patches.py` (`patch_table`, `release_day`) |
 | Most speed per level generator (the GCD speed slider's top) | `scripts/data/gen_max_speed.mjs` |
 | Source commit detection (per repository), the edited-clone check, the generated-file notice and the one-row-per-line writer | `scripts/data/provenance.py` (`detect`, `local_edits`, `note`, `json_lines`) |
+| Check `src/data/` against a fresh run of every generator (local) | `scripts/data/verify.py` (`npm run data:verify`) |
 | Regenerate everything; refuse an edited clone (`--allow-dirty`) | `scripts/data/regen.py` (`npm run data:update` runs fetch, then this) |
 | Counts, CSV blob ids, drift since the last run, the changelog line | `scripts/data/summary.py` (`summarize`, `drift`, `csv_blobs`), `src/data/summary.json`, `docs/data-changelog.md` |
 | Step lines, or a progress bar when the optional `tqdm` package is installed | `scripts/data/progress.py` |

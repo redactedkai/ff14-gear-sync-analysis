@@ -55,6 +55,7 @@ Every npm command, in one place (other pages link here). Times are from the owne
 | `npm run check` | Lint (with format check), typecheck, build, unit tests, component stories (Chromium), smoke test; no Python; about 1 min. Warns if installed packages differ from the lock (run `npm ci`). Run before calling a change done |
 | `npm run check:all` | `check`, then `test:stories:all`, `lint:py` and `test:py`. Run it when touching `scripts/data/` or after `data:update` |
 | `npm run data:update` | After a game patch: fetch the newest game data CSVs into `data/`, regenerate `src/data/` and rebuild |
+| `npm run data:verify` | Local only: run every generator into a temp folder and compare with `src/data/` byte for byte (needs the `data/` clones at the commits the files name; about 20 s; `-- --full` also reruns the 5-minute most-speed search) |
 | `npm run perf` | Optimizer timing, 6 jobs' full pools (about 4 min); run it after changing the search |
 | `npm run perf:full` | Optimizer timing, every job's full pool (about 25 min) |
 | `npm run perf:adversarial` | Hostile pools and a forced 700,000-node search (about 15 s) |

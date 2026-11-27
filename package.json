@@ -34,6 +34,7 @@
     "check": "node scripts/check-deps.mjs && npm run lint && npm run typecheck && npm run build && npm test && npm run test:stories && npm run test:smoke",
     "check:all": "npm run check && npm run test:stories:all && npm run lint:py && npm run test:py",
     "data:update": "node scripts/py.mjs scripts/data/fetch.py && node scripts/py.mjs scripts/data/regen.py",
+    "data:verify": "node scripts/py.mjs scripts/data/verify.py",
     "perf": "node scripts/perf/bench.mjs --quick --repeats 1",
     "perf:full": "node scripts/perf/bench.mjs --repeats 3",
     "perf:adversarial": "node scripts/perf/adversarial.mjs",
