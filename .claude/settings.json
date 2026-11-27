@@ -29,7 +29,7 @@
       "Bash(npm run test:look:*)",
       "Bash(npm run test:tooling:*)",
       "Bash(npm run test:changed:*)",
-      "Bash(node scripts/test.mjs:*)"
+      "Bash(node scripts/test.ts:*)"
     ]
   }
 }
