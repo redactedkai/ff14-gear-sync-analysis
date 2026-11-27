@@ -19,16 +19,17 @@ that is not a clique), or an unlinked pair sharing `unlinkedPercentMax` percent 
 import argparse
 import itertools
 import json
+from collections.abc import Collection, Sequence
 from pathlib import Path
 
 import provenance
-from item_format import ROOT, SchemaError, load_format, row_fields, run_main
+from item_format import ROOT, ItemFormat, ItemRow, SchemaError, load_format, row_fields, run_main
 
 
-def wearers_by_job(rows, fields, jobs, slot_codes):
+def wearers_by_job(rows: Sequence[ItemRow], fields: dict[str, int], jobs: Sequence[str], slot_codes: Collection[int]) -> list[set[int]]:
     """[set of row indexes, ...] one per job (in job bit order): the rows of `slot_codes` whose job mask has the job."""
     slot, mask = fields['slotCode'], fields['jobMask']
-    sets = [set() for _ in jobs]
+    sets: list[set[int]] = [set() for _ in jobs]
     for index, row in enumerate(rows):
         if row[slot] not in slot_codes:
             continue
@@ -38,7 +39,7 @@ def wearers_by_job(rows, fields, jobs, slot_codes):
     return sets
 
 
-def gear_groups(rows, fmt):
+def gear_groups(rows: Sequence[ItemRow], fmt: ItemFormat) -> list[list[str]]:
     """[[job id, ...], ...]: the gear groups of the item rows `rows` under the rule in the module comment."""
     jobs = fmt['jobs']
     rule = fmt['gearGroups']
@@ -50,7 +51,7 @@ def gear_groups(rows, fmt):
         if not wearable:
             raise SchemaError(f'{job} can wear no piece of {", ".join(rule["slotTypes"])}: is the job mask order still right?')
 
-    linked = set()
+    linked: set[tuple[int, int]] = set()
     for a, b in itertools.combinations(range(len(jobs)), 2):
         share = 100 * len(sets[a] & sets[b]) / len(sets[a] | sets[b])
         if share >= rule['linkPercent']:
@@ -61,8 +62,8 @@ def gear_groups(rows, fmt):
                 f'{rule["linkPercent"]}%, so the gear groups are not clear. Update gearGroups in {ROOT.name}/src/core/item-format.json.'
             )
 
-    groups = []
-    placed = set()
+    groups: list[list[str]] = []
+    placed: set[int] = set()
     for a in range(len(jobs)):
         if a in placed:
             continue
@@ -78,7 +79,7 @@ def gear_groups(rows, fmt):
     return groups
 
 
-def main(items_path, out):
+def main(items_path: str | Path, out: str | Path) -> None:
     doc = json.loads(Path(items_path).read_text(encoding='utf-8'))
     fmt = load_format()
     if doc['formatVersion'] != fmt['formatVersion']:

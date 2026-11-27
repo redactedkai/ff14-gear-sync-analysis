@@ -28,17 +28,18 @@ the page uses. Missing columns or a mismatch stop the generator with exit status
 import argparse
 import re
 from pathlib import Path
+from typing import cast
 
 import provenance
-from item_format import SchemaError, check_slot_percents, load_format, read_csv, run_main, slot_shares, stat_factors
+from item_format import ItemFormat, SchemaError, check_slot_percents, load_format, read_csv, run_main, slot_shares, stat_factors
 
 
-def job_modifiers(class_job_csv, fmt):
+def job_modifiers(class_job_csv: Path, fmt: ItemFormat) -> dict[str, dict[str, int]]:
     """{job: {attribute key: percent}} for every job in fmt['jobs'], from the ClassJob columns in fmt['jobModifiers'].
     A job with no row, or a modifier that is not a positive whole number, stops the generator (SchemaError)."""
-    cols = fmt['jobModifiers']['columns']
+    cols = cast('dict[str, str]', fmt['jobModifiers']['columns'])  # a TypedDict of strings, whose items() are typed object
     rows = {r['Abbreviation']: r for r in read_csv(class_job_csv, ['Abbreviation', *cols.values()])}
-    out = {}
+    out: dict[str, dict[str, int]] = {}
     for job in fmt['jobs']:
         if job not in rows:
             raise SchemaError(f'ClassJob.csv has no row for {job}')
@@ -49,13 +50,13 @@ def job_modifiers(class_job_csv, fmt):
     return out
 
 
-def clan_bonuses(tribe_csv, race_csv, fmt):
+def clan_bonuses(tribe_csv: Path, race_csv: Path, fmt: ItemFormat) -> list[dict[str, str | int]]:
     """[{race, clan, <attribute key>: offset}] for the clans of fmt['clans'], in Tribe row order. A clan's race is Race.csv
     row ceil(Tribe row / tribesPerRace) (the sheets hold no link; the Wiki's Starting Attributes page groups the clans the
     same way). Raises SchemaError when a Tribe row 1 to `count` or a Race row 1 to `raceCount` is missing or has no name,
     when two clans share a name, or when an offset is not a whole number."""
     spec = fmt['clans']
-    cols, name_col = spec['columns'], spec['nameColumn']
+    cols, name_col = cast('dict[str, str]', spec['columns']), spec['nameColumn']
     tribes = {int(r['#']): r for r in read_csv(tribe_csv, ['#', name_col, *cols.values()])}
     races = {int(r['#']): r for r in read_csv(race_csv, ['#', name_col])}
     missing = [f'Tribe {i}' for i in range(1, spec['count'] + 1) if not tribes.get(i, {}).get(name_col)]
@@ -64,7 +65,7 @@ def clan_bonuses(tribe_csv, race_csv, fmt):
         raise SchemaError(f'Tribe.csv or Race.csv has no name for {", ".join(missing)}')
     if spec['count'] != spec['raceCount'] * spec['tribesPerRace']:
         raise SchemaError(f'item-format.json clans: {spec["count"]} clans is not {spec["raceCount"]} races x {spec["tribesPerRace"]}')
-    out = []
+    out: list[dict[str, str | int]] = []
     for i in range(1, spec['count'] + 1):
         row = tribes[i]
         offsets = {k: row[c] for k, c in cols.items()}
@@ -80,7 +81,7 @@ def clan_bonuses(tribe_csv, race_csv, fmt):
 PARAM_GROW_COLUMNS = ['BaseSpeed', 'LevelModifier', 'ItemLevelSync']
 
 
-def level_data(param_grow_csv):
+def level_data(param_grow_csv: Path) -> list[list[int]]:
     """PG: [[BaseSpeed, LevelModifier, ItemLevelSync]] for character levels 1 to the top level (index = level - 1).
     The top level is the highest ParamGrow row with an ItemLevelSync, so it moves with the game's level cap: rows above
     the cap are zero (101 to 200 today), and the last row (201) holds 100/100 with no ItemLevelSync. Raises
@@ -101,7 +102,7 @@ def level_data(param_grow_csv):
     return [[int(rows[level][c]) for c in PARAM_GROW_COLUMNS] for level in range(1, top + 1)]
 
 
-def main(csv_dir, out, source: provenance.SourceArg = 'detect'):
+def main(csv_dir: Path | str, out: Path | str, source: provenance.SourceArg = 'detect') -> None:
     """source: provenance dict, None for unknown, or 'detect' to ask git about csv_dir."""
     source = provenance.resolve(source, csv_dir)
     d = Path(csv_dir)

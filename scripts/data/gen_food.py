@@ -17,20 +17,24 @@ import argparse
 from pathlib import Path
 
 import provenance
-from item_format import SchemaError, check_bools, load_format, read_csv, run_main
+from item_format import Row, SchemaError, check_bools, load_format, read_csv, run_main
 
 N_FOOD_PARAMS = 3  # stats per ItemFood row
 
 
-def food_columns():
+def food_columns() -> list[str]:
     return [f'{c}[{i}]' for c in ('BaseParam', 'IsRelative', 'ValueHQ', 'MaxHQ') for i in range(N_FOOD_PARAMS)]
 
 
-def meal_stats(food_row, stat_of, carried, vitality=None):
+def meal_stats(
+    food_row: Row, stat_of: dict[int, str], carried: list[str], vitality: str | None = None
+) -> tuple[list[list[str | int]], list[int] | None] | None:
     """([[key, percent, max], ...], [percent, max] or None): a kept meal's carried stats and its Vitality (key
     `vitality`), or None when the meal is left out: a stat that is not a combat stat, a flat (non-relative) bonus, or no
     substat at all."""
-    out, any_sub, vit = [], False, None
+    out: list[list[str | int]] = []
+    any_sub = False
+    vit: list[int] | None = None
     for i in range(N_FOOD_PARAMS):
         param = int(food_row[f'BaseParam[{i}]'])
         if not param:
@@ -53,7 +57,7 @@ def meal_stats(food_row, stat_of, carried, vitality=None):
     return (out, vit) if any_sub else None
 
 
-def main(csv_dir, out, source: provenance.SourceArg = 'detect'):
+def main(csv_dir: Path | str, out: Path | str, source: provenance.SourceArg = 'detect') -> None:
     """source: provenance dict, None for unknown, or 'detect' to ask git about csv_dir."""
     source = provenance.resolve(source, csv_dir)
     csv_path = Path(csv_dir)
@@ -65,7 +69,7 @@ def main(csv_dir, out, source: provenance.SourceArg = 'detect'):
     food_rows = {r['#']: r for r in read_csv(csv_path / 'ItemFood.csv', ['#', *food_columns()])}
     check_bools(items, ['CanBeHq'], 'Item.csv')
     check_bools(food_rows.values(), [f'IsRelative[{i}]' for i in range(N_FOOD_PARAMS)], 'ItemFood.csv')
-    foods = []  # (Item.csv row id, meal) pairs, the id only for the sort below
+    numbered_foods: list[tuple[int, list[object]]] = []  # (Item.csv row id, meal) pairs, the id only for the sort below
     for item in items:
         if item[food['uiCategoryColumn']] != str(food['uiCategory']) or item['CanBeHq'] != 'True':
             continue
@@ -78,11 +82,11 @@ def main(csv_dir, out, source: provenance.SourceArg = 'detect'):
             raise SchemaError(f'meal {item["#"]} ({item["Name"]}) points at ItemFood row {missing}, which does not exist')
         kept = meal_stats(row, stat_of, food['carried'], food['vitality'])
         if kept is not None:
-            foods.append((int(item['#']), [item['Name'], int(item['LevelItem']), *kept]))
-    foods.sort(
+            numbered_foods.append((int(item['#']), [item['Name'], int(item['LevelItem']), *kept]))
+    numbered_foods.sort(
         key=lambda entry: (entry[1][1], entry[1][0], entry[0])
     )  # item level, name, then the row id so a tie never depends on file order
-    foods = [meal for _, meal in foods]
+    foods = [meal for _, meal in numbered_foods]
     doc = {'_generated': provenance.note(source), 'source': source, 'formatVersion': fmt['formatVersion'], 'foods': foods}
     provenance.write_generated(out, provenance.json_lines(doc, expand=('foods',)))  # one meal per line
 

@@ -17,6 +17,7 @@ import base64
 import hashlib
 import json
 import struct
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -29,7 +30,7 @@ PNG_END = b'\x00\x00\x00\x00IEND\xaeB`\x82'  # the last chunk of every PNG (leng
 FETCH_RECORD = 'fetched.txt'  # in the icon folder: the UTC date fetch.py downloaded the icons (YYYY-MM-DD)
 
 
-def fetch_date(icon_dir, paths):
+def fetch_date(icon_dir: Path | str, paths: list[Path]) -> tuple[str, str]:
     """(date, how it is known) of the icons in icon_dir: the date in FETCH_RECORD, or, without that file, the newest
     of `paths`' file dates (UTC), which is when the last icon was written."""
     record = Path(icon_dir) / FETCH_RECORD
@@ -39,7 +40,7 @@ def fetch_date(icon_dir, paths):
     return datetime.fromtimestamp(newest, UTC).date().isoformat(), 'newest file date'
 
 
-def header(date, how, hashes):
+def header(date: str, how: str, hashes: Mapping[str, str]) -> str:
     """The generated file's header comment: the source, the fetch date and how it is known, and {job: sha256 of its
     PNG}, one job per line."""
     lines = [
@@ -52,21 +53,24 @@ def header(date, how, hashes):
     return '\n'.join(lines) + '\n'
 
 
-def png_size(data):
+def png_size(data: bytes) -> tuple[int, int] | None:
     """(width, height) of a PNG, or None if `data` is not one."""
     if data[:8] != PNG_SIGNATURE or data[12:16] != b'IHDR':
         return None
-    return struct.unpack('>II', data[16:24])
+    width, height = struct.unpack('>II', data[16:24])
+    return width, height
 
 
-def is_complete_png(data):
+def is_complete_png(data: bytes) -> bool:
     """Whether `data` ends with the PNG end chunk (IEND), which a download cut short lacks even when its header is fine."""
     return data.endswith(PNG_END)
 
 
-def main(icon_dir, out):
+def main(icon_dir: Path | str, out: Path | str) -> None:
     icon_dir = Path(icon_dir)
-    icons, hashes, problems = {}, {}, []
+    icons: dict[str, str] = {}
+    hashes: dict[str, str] = {}
+    problems: list[str] = []
     for job in load_format()['jobs']:
         path = icon_dir / f'{job}.png'
         if not path.exists():

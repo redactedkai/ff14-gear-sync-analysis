@@ -31,17 +31,17 @@ from item_format import SchemaError, load_format, run_main
 VERSION = re.compile(r'\d+\.\d+[a-z]?')
 
 
-def release_day(timestamp):
+def release_day(timestamp: int) -> str:
     """The UTC day, "YYYY-MM-DD", of a Unix timestamp in seconds."""
     return datetime.fromtimestamp(timestamp, UTC).strftime('%Y-%m-%d')
 
 
-def patch_table(entries):
+def patch_table(entries: object) -> list[list[str]]:
     """[[version, release day]] for the entries of patchlist.json (a list of dicts), oldest first, with a repeated entry
     (same version, same day) kept once. Raises SchemaError as the module's header lists."""
     if not isinstance(entries, list) or not entries:
         raise SchemaError('patchlist.json is not a list with entries')
-    table = []
+    table: list[list[str]] = []
     last_id = None
     for entry in entries:
         where = f'patchlist.json entry {entry.get("ID")!r}' if isinstance(entry, dict) else 'patchlist.json entry'
@@ -69,7 +69,7 @@ def patch_table(entries):
     return table
 
 
-def main(patchlist, out, source: provenance.SourceArg = 'detect'):
+def main(patchlist: Path | str, out: Path | str, source: provenance.SourceArg = 'detect') -> None:
     """source: provenance dict, None for unknown, or 'detect' to ask git about the patch list's clone."""
     source = provenance.resolve(source, Path(patchlist).parent, provenance.PATCHES_REPO)
     with Path(patchlist).open(encoding='utf-8') as f:
