@@ -168,7 +168,7 @@ function withMeld(job: JobContext, item: PoolItem, synced: StatMap, meld: Meld |
     v[WD_KEY] = weaponDamage(job, item, target);
   }
   // score and sum are set by buildCandidates
-  return { item, eff: v, copies: item.copies || 1, blocks: slotInfo(job, item).blocks, meld } as Candidate;
+  return { item, eff: v, copies: item.copies || 1, blocks: slotInfo(job, item).blocks, meld, score: 0, sum: 0 };
 }
 
 /* The candidate of a pinned piece: `item` (a pool item) worn with exactly `stones` (a set piece's stones: one entry per

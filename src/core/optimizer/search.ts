@@ -8,7 +8,7 @@
    In reading order: the bounds and filters that run before the search (suffixBounds to shortListsFirst), the parts the
    search builds from them (combinedLimitBound, childGroups, bandReachTables, makeMemo), the search (prepareSearch,
    newSearch, dfs and its steps) and branchAndBound, which runs them. */
-import { must, present } from '../guards.ts';
+import { must, mustHave, present } from '../guards.ts';
 import { frontSearch } from './front.ts';
 import { addRegainCuts } from './regain.ts';
 import type { Candidate, Limit, PoolItem, Proven, SlotEntry } from '../types.ts';
@@ -197,8 +197,8 @@ function lessBlockedBounds(
   let own = value;
   for (const type of cand.blocks || []) {
     const blockedPos = positions.get(type);
-    if ((blockedPos as number) > pos) {
-      own -= bounds[blockedPos as number];
+    if (blockedPos !== undefined && blockedPos > pos) {
+      own -= bounds[blockedPos];
     }
   }
   return own;
@@ -285,7 +285,7 @@ export function limitTables(
   // slots a legal loadout can leave empty: a blockable slot, a slot with no candidates, and a ring slot when the ring
   // list cannot fill both (copies of distinct items below 2: a lone Unique ring is worn once). Counting a piece in such a
   // slot would add points a loadout may not have, which a maximum can then wrongly reject
-  const blockedNow = (pos: number) => Boolean(empty) && (empty as Set<number>).has(pos); // blocked by a piece already chosen: only empty
+  const blockedNow = (pos: number) => empty?.has(pos) ?? false; // blocked by a piece already chosen: only empty
   const canEmpty = (pos: number) => {
     const list = posList[pos];
     if (blockable.has(slotList[pos]) || !list.length) {
@@ -619,7 +619,7 @@ export function improveStart(
     }
     let mask = 0;
     for (let other = 0; other < nSlots; other++) {
-      if (best[other]?.blockedBy && ((best[other] as SlotEntry).blockedBy as { item: PoolItem }).item === item) {
+      if (best[other]?.blockedBy?.item === item) {
         mask |= 1 << other;
       }
     }
@@ -664,10 +664,11 @@ export function improveStart(
     }
 
     // make it; the blocked slots name the new piece as their blocker
-    const oldItem = (best[move.pos] as SlotEntry & { cand: Candidate }).cand.item;
+    const oldItem = mustHave(best[move.pos]?.cand, 'the piece a move replaces').item;
     for (let other = 0; other < nSlots; other++) {
-      if (best[other]?.blockedBy && ((best[other] as SlotEntry).blockedBy as { item: PoolItem }).item === oldItem) {
-        best[other] = { ...(best[other] as SlotEntry), blockedBy: move.cand };
+      const entry = best[other];
+      if (entry && entry.blockedBy?.item === oldItem) {
+        best[other] = { ...entry, blockedBy: move.cand };
       }
     }
     best[move.pos] = { cand: move.cand, rank: -1 };
@@ -875,7 +876,7 @@ export function makeMemo(slotList: readonly SearchSlot[], limits: readonly Limit
 
   // the state's key; `coarse` leaves out the totals compared by dominance
   const keyOf = (state: Parameters<Memo['cut']>[0], pos: number, coarse: boolean) => {
-    const firstRing = slotList[pos] === 'ring' && slotList[pos - 1] === 'ring' ? (state.chosen[pos - 1] as SlotEntry) : null;
+    const firstRing = slotList[pos] === 'ring' && slotList[pos - 1] === 'ring' ? state.chosen[pos - 1] : null;
     const head = ((firstRing ? firstRing.rank + 1 : 0) * MEMO_MASKS + state.blockedMask) * MEMO_POSITIONS + pos;
     if (nLimits === 1) {
       return head * MEMO_TOTALS + memoValue[0](state.limitTotals[0]) + MEMO_TOTAL_OFFSET;
@@ -991,10 +992,11 @@ function prepareSearch({
   const known = start ? start.score : -Infinity;
   let lagr = !plain && start && limits.length ? lagrangeBound(posList, limits, start.score) : null;
   if (lagr) {
+    const lagrange = lagr;
     const filtered = new Map<Candidate[], Candidate[]>();
     posList = posList.map((list, pos) => {
       if (!filtered.has(list)) {
-        filtered.set(list, fixByReducedCost(list, lagr as Lagrange, pos, known));
+        filtered.set(list, fixByReducedCost(list, lagrange, pos, known));
       }
       return must(filtered, list, 'filtered list');
     });
@@ -1006,7 +1008,15 @@ function prepareSearch({
   // 3. the regain cuts from earlier searches' proven maxima (regain.ts), on the few candidates the filters left, then
   // the shortfalls that leaves. From here on `limits` and `dims` hold the cuts' synthetic stats too
   if (!plain && proven?.length) {
-    ({ posList, dims, limits } = addRegainCuts({ slotList, posList, fullLists, dims, limits, proven, speedKey: speedKey as string }));
+    ({ posList, dims, limits } = addRegainCuts({
+      slotList,
+      posList,
+      fullLists,
+      dims,
+      limits,
+      proven,
+      speedKey: mustHave(speedKey, 'speed stat for the regain cuts'),
+    }));
     if (hasMinimum) {
       posList = dropShortfalls(slotList, posList, dims, limits);
     }
@@ -1174,9 +1184,9 @@ function limitBoundFor(search: Search, mask: number): LimitBound | null {
 
 /* The Lagrangian bound's rest at `pos`: the most the slots from pos on add to the priced score, less the blocked
    slots', plus each term's coefficient times its total so far less its right side. */
-function lagrangeRest(search: Search, pos: number): number {
+function lagrangeRest(search: Search, lagr: Lagrange, pos: number): number {
   let rest = search.sufAug[pos] - search.blockedAug;
-  for (const term of (search.lagr as Lagrange).terms) {
+  for (const term of lagr.terms) {
     rest += term.coef * ((search.totals[term.stat] || 0) - term.rhs);
   }
   return rest;
@@ -1201,7 +1211,8 @@ function boundsCut(search: Search, pos: number, scoreSoFar: number): boolean {
     }
   }
   return (
-    Boolean(search.limitBound) && scoreSoFar + (limitBoundFor(search, search.blockedMask) as LimitBound).at(pos, null) <= search.bestScore
+    search.limitBound !== null &&
+    scoreSoFar + mustHave(limitBoundFor(search, search.blockedMask), 'limit tables').at(pos, null) <= search.bestScore
   );
 }
 
@@ -1296,13 +1307,13 @@ function tryGroups(search: Search, pos: number, scoreSoFar: number, isRing2: boo
   // the groups that can still beat the best so far, with their bound for the slots after this one; groups come by
   // best score, highest first, so once even the tables' most at any total cannot lift one past it, none can
   const order: { group: ChildGroup; restBound: number }[] = [];
-  const top = (search.limitBound as LimitBound).top(pos + 1);
-  for (const group of (search.groups as ChildGroup[][])[pos]) {
+  const top = mustHave(search.limitBound, 'limit tables').top(pos + 1);
+  for (const group of mustHave(search.groups, 'child groups')[pos]) {
     const withBest = scoreSoFar + group.members[0].cand.score;
     if (withBest + top <= search.bestScore) {
       break;
     }
-    const restBound = (limitBoundFor(search, search.blockedMask | group.mask) as LimitBound).at(pos + 1, group.values);
+    const restBound = mustHave(limitBoundFor(search, search.blockedMask | group.mask), 'limit tables').at(pos + 1, group.values);
     if (withBest + restBound > search.bestScore) {
       order.push({ group, restBound });
     }
@@ -1389,7 +1400,7 @@ function dfs(search: Search, pos: number, scoreSoFar: number): void {
   if (boundsCut(search, pos, scoreSoFar)) {
     return;
   }
-  const nodeLagr = search.lagr ? scoreSoFar + lagrangeRest(search, pos) : Infinity;
+  const nodeLagr = search.lagr ? scoreSoFar + lagrangeRest(search, search.lagr, pos) : Infinity;
   if (search.lagr && nodeLagr + lagrSlack(nodeLagr) <= search.bestScore) {
     return;
   }

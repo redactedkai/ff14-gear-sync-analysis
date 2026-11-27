@@ -24,10 +24,12 @@ import { blockableTypes, positionMask, slotPositions, type SearchSlot } from './
 /* One way to fill a stage's slots (frontSearch): the candidates for its positions (null for an empty one), and, once the
    stage is set up, their score, their total of each limited stat (`vals`) and the slots they block (a position mask).
    `unfilled`: no candidate there; `emptyBit`: the slot left empty because a chosen piece blocks it. */
-interface Choice {
+interface ChoiceDraft {
   cands: (Candidate | null)[];
   unfilled?: boolean;
   emptyBit?: number;
+}
+interface Choice extends ChoiceDraft {
   score: number;
   vals: Float64Array;
   blocks: number;
@@ -108,7 +110,7 @@ export function frontSearch(
 
   // stages from the last slot back: one per slot, the two ring slots as one; each stage's choices as
   // {score, vals, blocks, slots: [{cand} per position]}
-  const stages: { from: number; choices: Choice[] }[] = [];
+  const drafts: { from: number; choices: ChoiceDraft[] }[] = [];
   for (let i = n - 1; i >= 0; i--) {
     if (slotList[i] === 'ring' && i > 0 && slotList[i - 1] === 'ring') {
       // the pairs alone would pass FRONT_TRIES (and building millions of them overflowed the stack below: Scholar at
@@ -117,37 +119,38 @@ export function frontSearch(
       if ((rings * (rings + 1)) / 2 > FRONT_TRIES) {
         return null;
       }
-      stages.push({ from: i - 1, choices: ringChoices(posList[i - 1]) });
+      drafts.push({ from: i - 1, choices: ringChoices(posList[i - 1]) });
       i--;
       continue;
     }
     const list = posList[i];
-    const choices = list.map(a => ({ cands: [a] }) as Choice);
+    const choices: ChoiceDraft[] = list.map(a => ({ cands: [a] }));
     if (!list.length) {
-      choices.push({ cands: [null], unfilled: true } as Choice);
+      choices.push({ cands: [null], unfilled: true });
     }
     if (blockable & (1 << i)) {
-      choices.push({ cands: [null], emptyBit: 1 << i } as Choice);
+      choices.push({ cands: [null], emptyBit: 1 << i });
     }
-    stages.push({ from: i, choices });
+    drafts.push({ from: i, choices });
   }
-  for (const st of stages) {
-    for (const c of st.choices) {
-      c.score = 0;
-      c.vals = new Float64Array(nL);
-      c.blocks = 0;
-      for (const a of c.cands) {
+  // each choice's score, its total of each limited stat and the slots it blocks
+  const stages: { from: number; choices: Choice[] }[] = drafts.map(st => ({
+    from: st.from,
+    choices: st.choices.map(draft => {
+      const choice: Choice = { ...draft, score: 0, vals: new Float64Array(nL), blocks: 0 };
+      for (const a of choice.cands) {
         if (!a) {
           continue;
         }
-        c.score += a.score;
+        choice.score += a.score;
         for (let k = 0; k < nL; k++) {
-          c.vals[k] += a.eff[limits[k].stat] || 0;
+          choice.vals[k] += a.eff[limits[k].stat] || 0;
         }
-        c.blocks |= must(blocksOf, a, 'block mask');
+        choice.blocks |= must(blocksOf, a, 'block mask');
       }
-    }
-  }
+      return choice;
+    }),
+  }));
 
   // the most the slots before stage s (in slot order) can add: score, and each limited stat
   const before = stages.map(() => ({ score: 0, vals: new Float64Array(nL) }));
@@ -269,8 +272,8 @@ export function frontSearch(
 /* The legal ring pairs from one list, as the search makes them: two candidates, the second not before the first in the
    list, the same item twice only with 2 copies; a lone ring with the second slot empty only when no pair exists; both
    empty only when the list is. */
-function ringChoices(list: readonly Candidate[]): Choice[] {
-  const pairs: Choice[] = [];
+function ringChoices(list: readonly Candidate[]): ChoiceDraft[] {
+  const pairs: ChoiceDraft[] = [];
   for (let x = 0; x < list.length; x++) {
     for (let y = x; y < list.length; y++) {
       const a = list[x],
@@ -278,16 +281,16 @@ function ringChoices(list: readonly Candidate[]): Choice[] {
       if (a.item === b.item && a.copies < 2) {
         continue;
       }
-      pairs.push({ cands: [a, b] } as Choice);
+      pairs.push({ cands: [a, b] });
     }
   }
   if (pairs.length) {
     return pairs;
   }
   if (list.length) {
-    return list.map(a => ({ cands: [a, null] }) as Choice);
+    return list.map(a => ({ cands: [a, null] }));
   }
-  return [{ cands: [null, null] } as Choice];
+  return [{ cands: [null, null] }];
 }
 
 /* The entries no other one beats: same empty and blocked slots (and the same speed under a band, limit `exactK`), at
