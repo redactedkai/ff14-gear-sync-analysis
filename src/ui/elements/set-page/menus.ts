@@ -36,6 +36,22 @@ function gearOf(job: JobContext) {
   return gear;
 }
 
+/* A box of the page as far as the menu placement reads it: where it sits in the window. */
+export interface PlacedBox {
+  getBoundingClientRect(): { top: number; bottom: number; height: number };
+}
+
+/* A menu's scrolling list: a box whose height can be cut. */
+export interface MenuList extends PlacedBox {
+  style: { maxHeight: string };
+}
+
+/* An open menu as the placement reads it: its box, the box it hangs from, and its list (`.menu-list`). */
+export interface MenuBox extends MenuList {
+  readonly offsetParent: PlacedBox | null;
+  querySelector(selectors: '.menu-list'): MenuList | null;
+}
+
 /* The page's open menus (`session.menus`): which piece picker, materia menu or Food menu is open and where it sits. */
 export class PageMenus {
   private readonly session: PageSession;
@@ -242,7 +258,7 @@ export class PageMenus {
      it: .same and .pop in the table), which the page keeps under that line too, so the button stays in sight; and `room` the height
      left for the menu from there to the window's bottom. A menu a library places (the piece picker, the materia menu) hangs under its
      button `anchor`, whose top is `anchorTop` (the menu's offset parent is then the library's positioner). */
-  menuRoom(menu: HTMLElement, anchor: HTMLElement | null = null): { top: number; room: number; anchorTop: number } {
+  menuRoom(menu: MenuBox, anchor: PlacedBox | null = null): { top: number; room: number; anchorTop: number } {
     const top = this.viewTop();
     let anchorTop = menu.getBoundingClientRect().top;
     let buttonGap = 0; // how far under `top` the page keeps the button: the room of a menu in the table starts there
@@ -259,11 +275,11 @@ export class PageMenus {
   /* Scroll the page so an opened menu and its button sit between the pinned header and the window's bottom; a menu taller than the
      room gets a height that fits and scrolls inside. The button is what stays below the pinned parts (the page never scrolls it under
      them to show more of the menu). */
-  keepMenuInView(menu: HTMLElement | null, anchor: HTMLElement | null = null): void {
+  keepMenuInView(menu: MenuBox | null, anchor: PlacedBox | null = null): void {
     if (!menu) {
       return;
     }
-    const list = menu.querySelector<HTMLElement>('.menu-list') ?? menu;
+    const list = menu.querySelector('.menu-list') ?? menu;
     list.style.maxHeight = '';
     const { room } = this.menuRoom(menu, anchor);
     // the search box and the footer stay; the list takes what is left (their height is measured, not guessed)

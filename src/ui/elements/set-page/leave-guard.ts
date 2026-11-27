@@ -12,7 +12,7 @@ import type { PageView } from './set-page-types.ts';
 export type LeaveChoice = 'apply' | 'discard' | 'leave' | 'keep';
 
 /* The question being asked: what would be lost (the store's unsettledKind) and the move held back until it is answered. */
-interface LeaveQuestion {
+export interface LeaveQuestion {
   kind: 'draft' | 'running' | 'result';
   move: LeaveMove;
 }
@@ -120,7 +120,7 @@ export class PageLeave {
      overlay manager, which closes the topmost one on this same key), a waiting Auto-fill result is discarded. The question is a
      <gsa-dialog> whose own Escape (`dialog-escape`) answers Keep and marks the key as handled (defaultPrevented); a key that comes
      before the page has drawn the question is answered here. Tab is kept inside by the dialog. */
-  pageKey(event: KeyboardEvent): void {
+  pageKey(event: Pick<KeyboardEvent, 'key' | 'defaultPrevented' | 'preventDefault'>): void {
     const { session } = this;
     if (event.key !== 'Escape' || event.defaultPrevented) {
       return;

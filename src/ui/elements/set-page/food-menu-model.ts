@@ -133,7 +133,12 @@ export class FoodMenuModel {
 /* The meal a click inside the list picked: the key of the row's `data-meal` (the empty key is No food: null), or undefined when
    the click was on nothing that picks (a heading, the Clear search button). `target` is the clicked element. */
 export function mealKeyOfClick(target: Element | null): string | null | undefined {
-  const row = target?.closest<HTMLElement>('.same-item');
+  return mealKeyOfRow(target?.closest<HTMLElement>('.same-item') ?? null);
+}
+
+/* The meal a click on `row` picked (the row the click is in, or null off any row): the key of its `data-meal`, null for No food (the
+   empty key), undefined for no row or a row with no key. */
+export function mealKeyOfRow(row: { dataset: { meal?: string } } | null): string | null | undefined {
   const key = row?.dataset.meal;
   if (key === undefined) {
     return undefined;

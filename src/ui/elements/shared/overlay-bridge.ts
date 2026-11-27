@@ -10,6 +10,7 @@
      `onEscapeKeyDown`): the topmost layer closes first, whichever stack it is in.
    The manager is a parameter so Node tests can use their own. */
 import { overlays } from '../../overlays.ts';
+import type { OverlayElement, OverlayKeyEvent, OverlayOpener } from '../../overlays.ts';
 
 /* What the bridge reads of the machine's api: whether the layer is open. A Zag popover's and menu's api have it. */
 export interface BridgedLayerApi {
@@ -19,8 +20,8 @@ export interface BridgedLayerApi {
 /* One layer as the manager takes it (see the top of src/ui/overlays.ts). */
 export interface ManagedLayer {
   id: string;
-  root: () => Element | null;
-  opener: () => Element | null;
+  root: () => OverlayElement | null;
+  opener: () => OverlayOpener | null;
   tabOut: boolean;
   parent: string | null;
   ignoreEscape: () => boolean;
@@ -33,7 +34,7 @@ export interface LayerManager {
   close(id: string): boolean;
   isOpen(id: string): boolean;
   readonly openIds: string[];
-  pressEscape(event: Event): boolean;
+  pressEscape(event: OverlayKeyEvent): boolean;
 }
 
 /* What the bridge needs to know about its layer:
@@ -51,8 +52,8 @@ export interface OverlayBridgeOptions {
   id: string;
   api: () => BridgedLayerApi;
   closeWithoutFocus: () => void;
-  root: () => Element | null;
-  opener: () => Element | null;
+  root: () => Pick<Element, 'isConnected' | 'contains'> | null;
+  opener: () => OverlayOpener | null;
   parent?: string | null | (() => string | null);
   manager?: LayerManager;
 }
@@ -62,13 +63,13 @@ export interface OverlayBridgeOptions {
 export interface OverlayBridge {
   sync(): void;
   release(): void;
-  guardEscape(event: Event): void;
+  guardEscape(event: OverlayKeyEvent & Pick<Event, 'preventDefault'>): void;
 }
 
 /* Returns the bridge of one Zag layer. `sync()` registers the layer with the manager when the machine is open and drops it
    when it is closed; `release()` drops it at once (the element left the page). */
 export function createOverlayBridge(options: OverlayBridgeOptions): OverlayBridge {
-  const { id, api, closeWithoutFocus, root, opener, parent, manager = overlays as LayerManager } = options;
+  const { id, api, closeWithoutFocus, root, opener, parent, manager = overlays } = options;
   return {
     sync() {
       // an update that was already queued when the element left the page runs after `release()`: its layer is not open any more

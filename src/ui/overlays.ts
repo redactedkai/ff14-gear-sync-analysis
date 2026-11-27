@@ -12,25 +12,48 @@
    (a function of the event: true leaves this Escape to something else, e.g. a native menu's open list), close (a function
    that clears the layer's own state)}. */
 
+/* The part of an Element the manager asks: whether it holds an event's target. */
+export interface OverlayElement {
+  contains(target: EventTarget | null): boolean;
+}
+
+/* The part of a button the manager uses: holding a target, and taking the focus back (an element that cannot take it has no
+   `focus`). */
+export interface OverlayOpener extends OverlayElement {
+  focus?(): void;
+}
+
+/* The part of a key event the manager reads (a KeyboardEvent). */
+export type OverlayKeyEvent = Pick<KeyboardEvent, 'key' | 'defaultPrevented' | 'target'>;
+
+/* The part of a pointer or focus event the manager reads. */
+export type OverlayTargetEvent = Pick<Event, 'target'>;
+
+/* The part of the document the manager listens on. */
+export interface OverlayDocument {
+  addEventListener(type: 'keydown', listener: (event: OverlayKeyEvent) => void): void;
+  addEventListener(type: 'pointerdown' | 'focusin', listener: (event: OverlayTargetEvent) => void): void;
+}
+
 /* A layer as an overlay registers it (see the top). */
 export interface OverlayLayer {
   id: string;
-  root: () => Element | null;
-  opener?: (() => HTMLElement | null) | null;
+  root: () => OverlayElement | null;
+  opener?: (() => OverlayOpener | null) | null;
   tabOut?: boolean;
   parent?: string | null;
-  ignoreEscape?: (event: KeyboardEvent) => boolean;
+  ignoreEscape?: (event: OverlayKeyEvent) => boolean;
   close: () => void;
 }
 
 /* Whether `element` holds `target` (an element or null). */
-function holds(element: Element | null | undefined, target: EventTarget | null): boolean {
-  return Boolean(element && target && element.contains(target as Node));
+function holds(element: OverlayElement | null | undefined, target: EventTarget | null): boolean {
+  return Boolean(element && target && element.contains(target));
 }
 
 /* A manager of open layers. `getDocument` is a function returning the document the listeners go on (none in Node: the
    manager then only keeps the stack, which is what its unit tests use). */
-export function createOverlays(getDocument: () => Document | undefined = () => globalThis.document) {
+export function createOverlays(getDocument: () => OverlayDocument | null | undefined = () => globalThis.document) {
   const stack: OverlayLayer[] = []; // the open layers, the oldest first
   let listening = false;
 
@@ -62,7 +85,7 @@ export function createOverlays(getDocument: () => Document | undefined = () => g
 
   /* An Escape (`event`: the key event): closes the topmost layer with the focus back on its opener, unless the layer leaves
      this Escape to something else. Returns whether it closed one. */
-  function pressEscape(event: KeyboardEvent): boolean {
+  function pressEscape(event: OverlayKeyEvent): boolean {
     const layer = stack.at(-1);
     if (!layer || layer.ignoreEscape?.(event)) {
       return false;
@@ -71,13 +94,13 @@ export function createOverlays(getDocument: () => Document | undefined = () => g
     return true;
   }
 
-  function onKeydown(event: KeyboardEvent): void {
+  function onKeydown(event: OverlayKeyEvent): void {
     if (event.key === 'Escape' && !event.defaultPrevented) {
       pressEscape(event);
     }
   }
 
-  function onPointerdown(event: PointerEvent): void {
+  function onPointerdown(event: OverlayTargetEvent): void {
     for (const layer of [...stack].reverse()) {
       if (reaches(layer, event.target)) {
         return; // a press inside a layer leaves the layers under it open
@@ -86,7 +109,7 @@ export function createOverlays(getDocument: () => Document | undefined = () => g
     }
   }
 
-  function onFocusin(event: FocusEvent): void {
+  function onFocusin(event: OverlayTargetEvent): void {
     for (const layer of [...stack].reverse()) {
       if (layer.tabOut && !reaches(layer, event.target)) {
         closeLayer(layer);

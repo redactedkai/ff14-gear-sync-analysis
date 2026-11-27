@@ -5,9 +5,17 @@ const HQ_FONT_FAMILY = 'FFXIV_Lodestone_SSF';
 export const HQ_GLYPH = String.fromCharCode(0xe03c); // the HQ symbol in that font
 export const HQ_FONT_CLASS = 'hqfont';
 
+/* The part of document.fonts the loader uses: `load` resolves to the faces that loaded (only their count matters). */
+export interface FontLoader {
+  load(font: string, text: string): Promise<readonly unknown[]>;
+}
+
 /* Loads the font through `fonts` (document.fonts) and adds HQ_FONT_CLASS to `root` (document.documentElement) when a
    face loaded. Returns the promise (always resolves); a missing font API, a failed or empty load changes nothing. */
-export function enableHqFont(fonts: Pick<FontFaceSet, 'load'>, root: Pick<Element, 'classList'>): Promise<void> {
+export function enableHqFont(fonts: FontLoader | undefined, root: { classList: { add(name: string): void } }): Promise<void> {
+  if (!fonts) {
+    return Promise.resolve();
+  }
   try {
     return Promise.resolve(fonts.load(`16px ${HQ_FONT_FAMILY}`, HQ_GLYPH)).then(
       loaded => {

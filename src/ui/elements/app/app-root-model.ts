@@ -4,6 +4,7 @@
    when one changes. */
 import { dataSourceLabel } from '../../../core/tables.ts';
 import { followInPage } from '../../router/plain-click.ts';
+import type { LinkClick } from '../../router/plain-click.ts';
 import { formatRoute } from '../../router/routes.ts';
 import type { AppFacade } from '../../store/app-facade.ts';
 import type { AppState, AppStore } from '../../store/app-state.ts';
@@ -114,7 +115,7 @@ export class AppRootModel {
      (plain-click.ts). Leaving the Sheets tab while its set page has something to settle (a manual draft, a running Auto-fill, an
      Auto-fill result waiting) asks first, with the set page's own question (ui/store/sheets-actions.ts askLeave); the answer opens the
      tab. The tab shows as selected with a loading line first (store.openTab). */
-  goTab(tab: TabName, event: MouseEvent): void {
+  goTab(tab: TabName, event: LinkClick): void {
     followInPage(event, () => {
       const { app } = this;
       if (tab === (app.pendingTab ?? app.tab)) {

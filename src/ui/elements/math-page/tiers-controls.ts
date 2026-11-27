@@ -56,7 +56,7 @@ export class GsaTiersControls extends LitElement {
       () => makeJobContext(this.job).maxLevel,
       {
         live: true,
-        onEmpty: (input: HTMLInputElement) => {
+        onEmpty: input => {
           this.sendLevel(null);
           input.value = String(makeJobContext(this.job).maxLevel);
         },

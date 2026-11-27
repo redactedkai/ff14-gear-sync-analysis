@@ -49,7 +49,18 @@ export interface PiecePicker {
 /* What a click inside the picker's list picks: the gameId of the piece row `target` is in, or undefined for a click that picks
    nothing (off any row, on a disabled row, such as a Unique ring worn in the other ring row, or on a row with no gameId). */
 export function pieceKeyOfClick(target: Element | null): number | undefined {
-  const row = target?.closest<HTMLButtonElement>('.same-item');
+  return pieceKeyOfRow(target?.closest<HTMLButtonElement>('.same-item') ?? null);
+}
+
+/* A piece row as the click rule reads it: whether its button is disabled and its data-game-id. */
+export interface PickerRow {
+  disabled: boolean;
+  dataset: { gameId?: string };
+}
+
+/* The gameId a click on `row` picks (the row the click is in, or null off any row): undefined for no row, a disabled row and a row with no
+   gameId. */
+export function pieceKeyOfRow(row: PickerRow | null): number | undefined {
   if (!row || row.disabled || row.dataset.gameId === undefined) {
     return undefined;
   }

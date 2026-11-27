@@ -2,8 +2,36 @@
    scroll to where the player left that screen. A click already puts the focus where the player acted; only a move through
    history (the router's focusScreen) needs this. */
 
+/* A heading as far as the focus move reads it: whether it is drawn, and the focus. */
+export interface ScreenHeading {
+  tabIndex: number;
+  getClientRects(): ArrayLike<unknown>;
+  focus(options: { preventScroll: boolean }): void;
+}
+
+/* A tab's panel as far as the focus move reads it. */
+export interface ScreenPanel {
+  getClientRects(): ArrayLike<unknown>;
+  querySelectorAll(selectors: 'h2'): Iterable<ScreenHeading>;
+}
+
+/* The root element as far as the height hold reads it: its style and the style attribute. */
+export interface ScreenRoot {
+  style: { minHeight: string };
+  getAttribute(name: string): string | null;
+  removeAttribute(name: string): void;
+}
+
+/* The part of the document the focus move uses (a Document fits it). */
+export interface ScreenDocument {
+  querySelectorAll(selectors: '.tab'): Iterable<ScreenPanel>;
+  readonly documentElement: ScreenRoot;
+  readonly body: { readonly scrollHeight: number };
+  readonly defaultView: { readonly innerHeight: number } | null;
+}
+
 /* The first heading of the open screen that is on the page (the first visible h2 in the open tab's panel), or null. */
-function screenHeading(doc: Document): HTMLHeadingElement | null {
+function screenHeading(doc: ScreenDocument): ScreenHeading | null {
   const panel = [...doc.querySelectorAll('.tab')].find(tab => tab.getClientRects().length > 0);
   if (!panel) {
     return null;
@@ -28,7 +56,7 @@ export interface FocusScreenOptions {
   focus?: boolean;
   once?: boolean;
   isPending?: () => boolean;
-  doc?: Document;
+  doc?: ScreenDocument;
   raf?: (callback: () => void) => unknown;
   scrollTo?: (y: number) => void;
   scrolledTo?: () => number;
@@ -80,14 +108,14 @@ export function focusScreenHeading({
   raf = requestAnimationFrame,
   scrollTo = (y: number) => window.scrollTo(0, y),
   scrolledTo = () => window.scrollY,
-  viewportHeight = () => (doc.defaultView as Window).innerHeight,
+  viewportHeight = () => doc.defaultView?.innerHeight ?? 0,
   naturalHeight = () => doc.body.scrollHeight,
   watchSize = (onResize: () => void) => {
     if (typeof ResizeObserver === 'undefined') {
       return () => {};
     }
     const observer = new ResizeObserver(onResize);
-    observer.observe(doc.body);
+    observer.observe(document.body);
     return () => observer.disconnect();
   },
   holdHeight = (y: number) => {

@@ -9,12 +9,12 @@ export function plainClick(event: Pick<MouseEvent, 'button' | 'ctrlKey' | 'metaK
   return event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey;
 }
 
+/* A link's click as the page's handlers read it. */
+export type LinkClick = Pick<MouseEvent, 'button' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey' | 'preventDefault'>;
+
 /* The handler of an in-page link's click: on a plain click, cancels the browser's navigation and runs `move`, and returns true;
    on any other click, does nothing, so the browser opens the link its own way, and returns false. `event` is the click. */
-export function followInPage(
-  event: Pick<MouseEvent, 'button' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey' | 'preventDefault'>,
-  move: () => void,
-): boolean {
+export function followInPage(event: LinkClick, move: () => void): boolean {
   if (!plainClick(event)) {
     return false;
   }

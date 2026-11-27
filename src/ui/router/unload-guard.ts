@@ -19,6 +19,12 @@ export function unloadGuardDisabled(storage: Pick<Storage, 'getItem'> | null | u
   }
 }
 
+/* The part of a BeforeUnloadEvent the guard uses, and the part of `window` it listens on. */
+export type UnloadEvent = Pick<BeforeUnloadEvent, 'preventDefault' | 'returnValue'>;
+export interface UnloadTarget {
+  addEventListener(type: 'beforeunload', listener: (event: UnloadEvent) => void): void;
+}
+
 /* Adds the `beforeunload` listener to `target` and returns it (a test removes it by hand). `hasUnsettled()` says whether
    work would be lost; the flag is read at each unload, so setting it needs no restart. The listener asks the browser to show
    its own question (preventDefault, and returnValue for older browsers) and does nothing otherwise. */
@@ -27,11 +33,11 @@ export function installUnloadGuard({
   hasUnsettled,
   storage,
 }: {
-  target: Pick<Window, 'addEventListener'>;
+  target: UnloadTarget;
   hasUnsettled: () => boolean;
   storage: Pick<Storage, 'getItem'> | null | undefined;
-}): (event: BeforeUnloadEvent) => void {
-  const listener = (event: BeforeUnloadEvent) => {
+}): (event: UnloadEvent) => void {
+  const listener = (event: UnloadEvent) => {
     if (unloadGuardDisabled(storage) || !hasUnsettled()) {
       return;
     }
