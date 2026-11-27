@@ -31,12 +31,14 @@ export const JOB_MODS: Readonly<Record<string, Readonly<Record<MainStatKey | 'vi
 export const CLANS = ITEM_LEVEL_FILE.CLANS;
 /* ITEMS: the real-gear database rows (format in constants.ts). */
 /* (The one cast: the JSON file's rows read as arrays of strings, numbers and lists; ItemRow is their real shape.) */
+// biome-ignore lint/plugin: the JSON rows are lists of text, numbers and lists; ItemRow is their real shape, checked by tests/unit/core/item-format.test.js
 export const ITEMS = ITEMS_FILE.items as unknown as readonly ItemRow[];
 /* CURRENT_TOMES: the short names of the two current tomestones (e.g. ['Mathematics', 'Mnemonics']), for the
    "Tomestones (Current)" box's hint. */
 export const CURRENT_TOMES = Object.freeze([...(ITEMS_FILE.currentTomes ?? [])]);
 /* FOODS: the meals that raise combat substats, [name, ilvl, [[raw stat key, HQ percent, HQ max], ...], [Vitality HQ
    percent, HQ max] or null] (food.ts). */
+// biome-ignore lint/plugin: the JSON rows are lists of text, numbers and lists; FoodRow is their real shape (tests/unit/core/tables.provenance.test.js, food.test.js read them through it)
 export const FOODS = FOOD_FILE.foods as unknown as readonly FoodRow[];
 /* MAX_SPEED: the most total speed (base + gear + food) any job can have at each level, [level 1, ..., MAX_LEVEL]: the
    top of How the math works, GCD's speed slider (scripts/data/gen_max_speed.mjs: the best gear with melds, at any sync,

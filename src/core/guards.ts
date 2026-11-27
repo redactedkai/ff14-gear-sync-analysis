@@ -37,6 +37,7 @@ export function messageOf(error: unknown): string {
 /* True when `key` is one of `keys`, and then types it as one of them: `includes` alone wants an argument already of the
    list's type, which is what a cast was for. */
 export function isOneOf<K extends string>(keys: readonly K[], key: string | null | undefined): key is K {
+  // biome-ignore lint/plugin: widening a list of K to text for includes; the answer is about the value only (tests/unit/core/guards.test.ts)
   return key !== null && key !== undefined && (keys as readonly string[]).includes(key);
 }
 
@@ -48,18 +49,21 @@ export function fromKeys<K extends string, V>(keys: readonly K[], valueFor: (key
   for (const key of keys) {
     out[key] = valueFor(key);
   }
+  // biome-ignore lint/plugin: the loop above fills exactly the keys of the list, which the compiler cannot see (tests/unit/core/guards.test.ts checks keys and order)
   return out as Record<K, V>;
 }
 
 /* The entries of `record` as [key, value] pairs, the keys typed as `K`. `Object.entries` types its keys as text; for an object
    built from the keys `K` (fromKeys, a literal) they are those keys. The one cast below says so. */
 export function entriesOf<K extends string, V>(record: Partial<Record<K, V>>): [K, V][] {
+  // biome-ignore lint/plugin: an object built from the keys K has the keys K (tests/unit/core/guards.test.ts)
   return Object.entries(record) as [K, V][];
 }
 
 /* The keys of `record` as a list typed `K`: `Object.keys` types them as text. The one cast below says a record's own keys
    are its key type; use it for a record written out in the code (a table of labels), not for one read from a file. */
 export function keysOf<K extends string>(record: Record<K, unknown>): K[] {
+  // biome-ignore lint/plugin: a record written out in the code has the keys of its type (tests/unit/core/guards.test.ts)
   return Object.keys(record) as K[];
 }
 

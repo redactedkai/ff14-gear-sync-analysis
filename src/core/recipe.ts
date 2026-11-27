@@ -282,6 +282,7 @@ const gcdFacts = (r: GcdFacts): GcdFacts => ({ ok: r.ok, reason: r.reason, asked
 const frozenRecipe = (recipe: Recipe): Readonly<Recipe> =>
   Object.freeze(
     Object.fromEntries(Object.entries(recipe).map(([k, v]) => [k, Array.isArray(v) ? Object.freeze([...v]) : v])),
+    // biome-ignore lint/plugin: Object.fromEntries gives a plain object; every key of Recipe is copied, with its lists frozen (tests/unit/core/recipe.round-trip.test.js)
   ) as Readonly<Recipe>;
 
 /* Solve `recipe` for `job` (a JobContext) under `sync` ({cap, sync, level}, as for itemSyncIlvl) at character level

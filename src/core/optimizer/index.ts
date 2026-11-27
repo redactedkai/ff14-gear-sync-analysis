@@ -216,6 +216,7 @@ export function seedStart(prep: Prepared, picks: readonly SlotPick[]): Start {
     if (!p?.item) {
       return { cand: null, rank: -1, blockedBy: p?.blockedBy ? { item: p.blockedBy } : undefined };
     }
+    // biome-ignore lint/plugin: a seed piece carries only what the search reads (item, eff, meld, score); filling copies and blocks with defaults could change which pieces count as worn (tests/unit/core/optimizer/index.stat-minimums.test.js seeds)
     const cand = { item: p.item, eff: p.eff, meld: p.meld, score: prep.score(p.eff) } as Candidate;
     score += cand.score;
     return { cand, rank: -1 };

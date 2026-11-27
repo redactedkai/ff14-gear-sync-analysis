@@ -317,6 +317,7 @@ export const JOB_ROWS: readonly (readonly [string, readonly string[]])[] = Objec
    - scales: 1 when its item level follows the wearer's level (Item.SubStatCategory 2; syncTarget) */
 export const ROW = Object.freeze(
   Object.fromEntries(ITEM_FORMAT.itemRow.fields.map((field, position) => [field, position])),
+  // biome-ignore lint/plugin: ROW has one key per field name of item-format.json (RowIndex names them), built from that list (tests/unit/core/item-format.test.js)
 ) as unknown as RowIndex;
 /* The weapon damage and defense keys of a row (`damageDefense` in item-format.json): damagePhys, damageMag,
    defensePhys, defenseMag. */

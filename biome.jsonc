@@ -83,6 +83,12 @@
       "linter": { "rules": { "a11y": { "useValidAnchor": "off" } } }
     },
     {
+      // no type assertion (`as`) in the core: the compiler checks the code instead. A cast that has to stay carries a
+      // "ignore" comment that says why and which test checks it (src/core/guards.ts holds the typed helpers)
+      "includes": ["src/core/**/*.ts"],
+      "plugins": ["./biome-rules/no-type-assertion.grit"]
+    },
+    {
       "includes": ["scripts/validate/xivgear/xg_sync_test.ts"],
       "linter": { "enabled": false }
     },
