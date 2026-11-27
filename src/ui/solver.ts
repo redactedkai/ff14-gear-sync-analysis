@@ -55,6 +55,9 @@ export interface Solver {
 /* What a handler answers: the result of the kind of request, or the message of the error it threw. */
 export type HandlerAnswer = { result: SolveAnswer | ReturnType<typeof gearToSearchView>; ms: number } | { error: string };
 
+/* The members of a Web Worker the solver uses, so a test can stand in with a small fake (the page's own is a Worker). */
+export type SolverWorker = Pick<Worker, 'postMessage' | 'terminate' | 'onmessage' | 'onerror' | 'onmessageerror'>;
+
 /* A request waiting for the worker or in it: its id, its caller's key, the request and the callers that await its reply. */
 interface Entry {
   id: number;
@@ -178,11 +181,11 @@ export function inProcessSolver(session: SolverSession = makeSession()): Solver 
    with an error saying so (not a cancelled one: the page shows it as a failed search); only the callers of the
    timed-out request's key are rejected, other keys' waiting requests are asked of the new worker. */
 export function workerSolver(
-  createWorker: () => Worker,
+  createWorker: () => SolverWorker,
   fallback: () => Solver = inProcessSolver,
   { timeoutMs = SOLVER_TIMEOUT_MS }: { timeoutMs?: number } = {},
 ): Solver {
-  let worker: Worker | null = null;
+  let worker: SolverWorker | null = null;
   let backup: Solver | null = null; // the fallback solver, once the worker failed
   let nextId = 0;
   // per kind: the request in the worker (`flight`) and the ones waiting (`waiting`: one per caller key, in the order they
@@ -259,7 +262,7 @@ export function workerSolver(
     entry.timer?.unref?.(); // in Node (the tests), a pending timer does not keep the process running
     try {
       const { key, ...message } = entry.request;
-      (worker as Worker).postMessage({ id: entry.id, ...message });
+      (worker as SolverWorker).postMessage({ id: entry.id, ...message });
     } catch (error) {
       clearTimeout(entry.timer);
       lane.flight = null;

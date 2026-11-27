@@ -238,7 +238,7 @@ export class PageFill {
   }
 
   /* A click on the table while an Auto-fill result waits: say why nothing happens, as a toast. `target`: the element clicked. */
-  tableClick(target: Element): void {
+  tableClick(target: Pick<Element, 'closest'>): void {
     if (this.session.suggestion && !target.closest?.('.takebox')) {
       this.session.sheets.setNote(LOCKED_TABLE_TEXT);
     }
