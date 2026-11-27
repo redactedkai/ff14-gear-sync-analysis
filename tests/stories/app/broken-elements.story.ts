@@ -1,6 +1,6 @@
 /* Stories of the deliberately broken elements (broken-elements.js) and of a TypeScript element with a class field. */
 import { html } from 'lit';
-import './broken-elements.ts';
+import './broken-elements.js';
 import './ts-field-element.ts';
 
 /* A JavaScript class field next to `static properties`: Lit's development build throws on the first update. */
