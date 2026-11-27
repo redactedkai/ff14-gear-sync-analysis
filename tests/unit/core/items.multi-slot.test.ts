@@ -2,9 +2,11 @@
    White Mage's wand and shield): slot shares, what each blocks, and the optimizer against the brute force on them. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { DimKey, StatKey, Sync } from '../../../src/core/types.ts';
+import type { ParsedRow } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { browseItems, kindFactors, poolItemById, rowStats, slotInfo, slotLabel } from '../../../src/core/items.ts';
-import { evaluateSet } from '../../../src/core/set.ts';
+import { evaluateSet, makeSet } from '../../../src/core/set.ts';
 import { ROW } from '../../../src/core/constants.ts';
 import { predictRaw, syncStats } from '../../../src/core/formulas.ts';
 import { optimize } from '../../../src/core/optimizer/index.ts';
@@ -46,10 +48,10 @@ test('slot info: a piece is capped at its own slot share, and names what it cove
   });
   assert.equal(slotLabel(cloak.type, slotInfo(blm, cloak).blocks), 'Body + Head');
   // synced to 290, the cloak keeps a 220-share cap, well above a plain body piece's 135 share
-  const sync = { cap: 290, sync: true };
+  const sync: Sync = { cap: 290, sync: true };
   const eff = effStats(blm, cloak, sync);
   assert.deepEqual(eff, syncStats(blm, cloak.stats, 'body', 290, 300, 220, slotInfo(blm, cloak).factors));
-  assert.ok(eff.int > syncStats(blm, cloak.stats, 'body', 290, 300).int);
+  assert.ok((eff.int ?? 0) > (syncStats(blm, cloak.stats, 'body', 290, 300, undefined).int ?? 0));
   const [wand] = gamePool(whm, { q: 'Tidal Wave Wand' });
   assert.deepEqual(slotInfo(whm, wand), { pct: 100, blocks: [], factors: kindFactors(whm, itemRow('Tidal Wave Wand')[ROW.kind]) });
   const [cane] = gamePool(whm, { q: 'Tidal Wave Cane' });
@@ -59,26 +61,31 @@ test('slot info: a piece is capped at its own slot share, and names what it cove
 test("the items the set-edit tests pick: Sage's Vermilion Cloak of Healing covers the head; White Mage's Dreadwyrm Cane takes both hands and its Tidal Wave Wand does not", () => {
   const sage = makeJobContext('SGE');
   const cloak = poolItemById(sage, 24856);
+  assert.ok(cloak);
   assert.equal(cloak.name, 'Vermilion Cloak of Healing');
   assert.equal(cloak.type, 'body');
   assert.deepEqual(slotInfo(sage, cloak).blocks, ['head']);
   const dreadwyrmCane = poolItemById(whm, 9006);
+  assert.ok(dreadwyrmCane);
   assert.equal(dreadwyrmCane.name, 'Dreadwyrm Cane');
   assert.deepEqual(slotInfo(whm, dreadwyrmCane).blocks, ['offhand']);
-  assert.deepEqual(slotInfo(whm, poolItemById(whm, 7818)).blocks, []); // Tidal Wave Wand
+  const tidalWaveWand = poolItemById(whm, 7818);
+  assert.ok(tidalWaveWand);
+  assert.deepEqual(slotInfo(whm, tidalWaveWand).blocks, []); // Tidal Wave Wand
 });
 
 /* Real pools with multi-slot choices; the brute force checks blocked slots on the whole loadout. */
 /* Item level 100 White Mage gear: every weapon and the shield, and two sets for the other slots (to keep the brute
    force small). */
-const twoSets = r => r.type === 'weapon' || r.type === 'offhand' || /^(Bogatyr's|Scylla's)/.test(r.name);
-const POOLS = [
+const twoSets = (r: ParsedRow) => r.type === 'weapon' || r.type === 'offhand' || /^(Bogatyr's|Scylla's)/.test(r.name);
+type PoolFilter = { ilvlMin: number; ilvlMax: number; lvlMax?: number };
+const POOLS: [jobId: string, filter: PoolFilter, keep: (r: ParsedRow) => boolean, what: string][] = [
   ['WHM', { ilvlMin: 100, ilvlMax: 100, lvlMax: 50 }, twoSets, 'wand and shield or a two-handed weapon'],
   ['BLM', { ilvlMin: 290, ilvlMax: 310 }, twoSetsOrCloak, 'cloak or a head and body'],
   ['WHM', { ilvlMin: 290, ilvlMax: 310 }, twoSetsOrCloak, 'cloak or a head and body'],
 ];
 /* item level 290 to 310 gear without the 290 head, body and weapons (to keep the brute force small) */
-function twoSetsOrCloak(r) {
+function twoSetsOrCloak(r: ParsedRow) {
   return !['head', 'body', 'weapon'].includes(r.type) || r.ilvl !== 290;
 }
 for (const [jobId, filter, keep, what] of POOLS) {
@@ -91,13 +98,15 @@ for (const [jobId, filter, keep, what] of POOLS) {
     );
     const n = loadoutCount(job, pool);
     assert.ok(n >= 100 && n <= 400000, `${n} loadouts`);
-    for (const sync of [
+    const syncs: Sync[] = [
       { cap: 90, sync: true },
       { cap: 290, sync: true },
       { cap: 290, sync: false },
-    ]) {
-      for (const target of [job.mainKey, 'vit', ...job.substats]) {
-        const opts = { target, tiebreak: [job.mainKey, 'vit'].filter(s => s !== target) };
+    ];
+    for (const sync of syncs) {
+      const targets: StatKey[] = [job.mainKey, 'vit', ...job.substats];
+      for (const target of targets) {
+        const opts = { target, tiebreak: ([job.mainKey, 'vit'] as const).filter(s => s !== target) };
         const r = optimize(job, pool, sync, opts);
         const label = `${target} sync=${sync.sync} cap=${sync.cap}`;
         assert.ok(r.ok && !r.truncated, label);
@@ -122,11 +131,17 @@ test('the cloak and a separate head and body each win somewhere, so the brute fo
   // Under a low cap the cloak keeps a 220-share cap on one piece and wins; unsynced, the item level 310 head and body
   // win. A cloak must not prune the body pieces it beats on stats alone (it also costs the head).
   const pool = gamePool(blm, { ilvlMin: 290, ilvlMax: 310 }, twoSetsOrCloak);
-  const head = (sync, target) => optimize(blm, pool, sync, { target }).picks.find(p => p.type === 'head');
+  const head = (sync: Sync, target: DimKey) => {
+    const result = optimize(blm, pool, sync, { target });
+    assert.ok(result.ok);
+    const pick = result.picks.find(p => p.type === 'head');
+    assert.ok(pick, 'a head row');
+    return pick;
+  };
   const low = head({ cap: 90, sync: true }, 'int');
   assert.equal(low.item, null);
-  assert.equal(low.blockedBy.name, 'Vermilion Cloak of Casting');
-  assert.equal(head({ cap: 290, sync: false }, 'int').item.ilvl, 310);
+  assert.equal(low.blockedBy?.name, 'Vermilion Cloak of Casting');
+  assert.equal(head({ cap: 290, sync: false }, 'int').item?.ilvl, 310);
 });
 
 test('a cloak in a full pool keeps the search small: the bound drops the head it blocks', () => {
@@ -151,6 +166,7 @@ test('legs covering the feet and a body covering hands, legs and feet: slot shar
   assert.equal(itemRow('Herklaedi')[ROW.slotCode], 14);
   const [flanchard] = gamePool(war, { q: 'High Mythril Flanchard' });
   const herklaedi = gamePool(war, { q: 'Herklaedi' }).find(i => i.name === 'Herklaedi');
+  assert.ok(flanchard && herklaedi);
   assert.deepEqual(slotInfo(war, flanchard).blocks, ['feet']);
   assert.equal(slotInfo(war, flanchard).pct, 220);
   assert.deepEqual(slotInfo(war, herklaedi).blocks, ['hands', 'legs', 'feet']);
@@ -175,10 +191,18 @@ test('WAR item level 44-70 (Herklaedi, Flanchards or a plain body, legs and feet
   assert.ok(pool.some(i => i.name === 'Herklaedi') && pool.some(i => /Flanchard/.test(i.name)));
   const n = loadoutCount(war, pool);
   assert.ok(n >= 100 && n <= 400000, `${n} loadouts`);
-  const covered = new Set();
-  for (const sync of [{ level: 18 }, { level: 30 }, { level: 45 }, { cap: 40, sync: true }, {}]) {
-    for (const target of ['str', 'vit', ...war.substats]) {
-      const opts = { target, tiebreak: ['str', 'vit'].filter(s => s !== target) };
+  const covered = new Set<string>();
+  const syncs: Sync[] = [
+    { cap: null, sync: false, level: 18 },
+    { cap: null, sync: false, level: 30 },
+    { cap: null, sync: false, level: 45 },
+    { cap: 40, sync: true },
+    { cap: null, sync: false },
+  ];
+  for (const sync of syncs) {
+    const targets: StatKey[] = ['str', 'vit', ...war.substats];
+    for (const target of targets) {
+      const opts = { target, tiebreak: (['str', 'vit'] as const).filter(s => s !== target) };
       const r = optimize(war, pool, sync, opts);
       const label = `${target} ${JSON.stringify(sync)}`;
       assert.ok(r.ok && !r.truncated, label);
@@ -209,7 +233,7 @@ test('below level 50 a full pool keeps the search small: a piece covering later 
     const job = makeJobContext(id);
     const pool = gamePool(job, {});
     for (const level of [18, 30, 49]) {
-      const r = optimize(job, pool, { level }, { target: job.mainKey, tiebreak: ['vit'], nodeLimit: 150000 });
+      const r = optimize(job, pool, { cap: null, sync: false, level }, { target: job.mainKey, tiebreak: ['vit'], nodeLimit: 150000 });
       assert.ok(!r.truncated && r.nodes < 2000, `${id} level ${level}: ${r.nodes} nodes`);
     }
   }
@@ -220,6 +244,7 @@ test("picks come back in the character panel's slot order, though the search fil
   // ordered by SLOT_TYPES instead (it showed Head below Ring 2).
   const sge = makeJobContext('SGE');
   const r = optimize(sge, gamePool(sge, {}), { cap: 123, sync: true }, { target: 'mind' });
+  assert.ok(r.ok);
   assert.deepEqual(
     r.picks.map(p => p.type),
     ['weapon', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring', 'ring'],
@@ -229,22 +254,30 @@ test("picks come back in the character panel's slot order, though the search fil
 /* A hand-picked two-handed weapon leaves a White Mage's Off-hand row covered; a wand does not. The rule is the one cloaks
    and bodies use (slotInfo's blocks, set.ts's blockedBy): the row is shown as covered, and nothing else changes. */
 test('Dreadwyrm Cane (two-handed) covers the Off-hand row; Tidal Wave Wand (one-handed) does not', () => {
-  const pieceOf = (job, id) => poolItemById(job, id);
+  const pieceOf = (job: ReturnType<typeof makeJobContext>, id: number) => {
+    const piece = poolItemById(job, id);
+    assert.ok(piece, `item ${id}`);
+    return piece;
+  };
   const cane = pieceOf(whm, 9006);
   const wand = pieceOf(whm, 7818);
   assert.equal(cane.name, 'Dreadwyrm Cane');
   assert.equal(wand.name, 'Tidal Wave Wand');
   assert.deepEqual(slotInfo(whm, cane).blocks, ['offhand']);
   assert.deepEqual(slotInfo(whm, wand).blocks, []);
-  const rows = weapon =>
-    evaluateSet(
+  const offhandOf = (weapon: number) => {
+    const rows = evaluateSet(
       whm,
-      { pieces: [{ slot: 'weapon', gameId: weapon }, { slot: 'offhand' }], meal: null },
+      makeSet([{ slot: 'weapon', gameId: weapon }, { slot: 'offhand' }]),
       { cap: 999, sync: false, level: 100 },
       100,
     ).rows;
-  assert.equal(rows(9006)[1].blockedBy, 'Dreadwyrm Cane');
-  assert.equal(rows(7818)[1].blockedBy, '');
+    const row = rows[1];
+    assert.ok(row && row.item === null, 'an empty Off-hand row');
+    return row;
+  };
+  assert.equal(offhandOf(9006).blockedBy, 'Dreadwyrm Cane');
+  assert.equal(offhandOf(7818).blockedBy, '');
   // Black Mage: Tremor Cudgel (one-handed) beside Ancient Buckler, Dreadwyrm Staff (two-handed) against it
   const cudgel = pieceOf(blm, 8378);
   assert.equal(cudgel.name, 'Tremor Cudgel');

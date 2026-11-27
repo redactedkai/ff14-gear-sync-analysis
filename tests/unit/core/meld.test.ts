@@ -3,6 +3,7 @@
    Fending, item level 300 body: substat cap 110, Console Games Wiki), worked by hand, not from the code under test. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { DimKey, Meld, PoolItem, StatMap, StoneGroup, Sync } from '../../../src/core/types.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { browseItems, meldInfo, mkItem, poolItemFromRow } from '../../../src/core/items.ts';
 import { MATERIA } from '../../../src/core/tables.ts';
@@ -15,11 +16,19 @@ const sge = makeJobContext('SGE');
 const war = makeJobContext('WAR');
 const pld = makeJobContext('PLD');
 
+/* bestMeld for a piece that takes melds: the meld, never null. */
+function meldOf(...args: Parameters<typeof bestMeld>): Meld {
+  const meld = bestMeld(...args);
+  assert.ok(meld, `${args[1].name} takes melds for ${args[2]}`);
+  return meld;
+}
+
 /* Combat materia: values I-XII 1, 2, 3, 4, 6, 16, 8, 24, 12, 36, 18, 54; gates 15, 30, 45, 70, 160, 290, 420, 420, 560,
    560, 690, 690; VI, VIII, X and XII cannot go past the first overmeld slot. */
 test('best big and small stone at each item level gate', () => {
-  const at = il => {
+  const at = (il: number) => {
     const s = stoneValues(il);
+    assert.ok(s.big && s.small, `stones at item level ${il}`);
     return [s.big.grade, s.big.value, s.small.grade, s.small.value];
   };
   assert.deepEqual(at(100), [4, 4, 4, 4]);
@@ -48,7 +57,7 @@ test('slots: guaranteed ones big; with overmelding 5 in all, the first overmeld 
 /* The set page's materia menu offers per slot the grades the game lets it take: the item level gate (grade V needs 160,
    XII 690), and no high grade (VI, VIII, X, XII) in an overmeld slot past the first. */
 test('slot grades: the item level gate, no high grade in a small slot, nothing in a slot the piece lacks', () => {
-  const ok = (item, slot) =>
+  const ok = (item: PoolItem, slot: number) =>
     slotGrades(item, slot)
       .filter(g => g.ok)
       .map(g => g.grade);
@@ -69,15 +78,15 @@ test("meld cap of a piece is its own sync cap: Kirin's Osode of Fending (item le
 
 test("Kirin's Osode of Fending: Determination 77 -> 110 with VI, VI, V, the other two slots left empty", () => {
   const it = piece(war, "Kirin's Osode of Fending");
-  const m = bestMeld(war, it, ['det']);
+  const m = meldOf(war, it, ['det']);
   assert.deepEqual(m.gain, { det: 33 });
   assert.equal(m.free, 2);
   // three stones either way (VI x 3 = 48, VI x 2 + V = 38, both past the 33 of room): the odd grade on the tie
   assert.equal(meldText(war, m), 'DET VI ×2, DET V');
   // with a tiebreak the two spare VI go to it
-  assert.deepEqual(bestMeld(war, it, ['det', 'dh']).gain, { det: 33, dh: 32 });
+  assert.deepEqual(meldOf(war, it, ['det', 'dh']).gain, { det: 33, dh: 32 });
   // a substat the piece lacks can be melded: five VI, 80 below the 110 cap
-  assert.deepEqual(bestMeld(war, it, ['sks']).gain, { sks: 80 });
+  assert.deepEqual(meldOf(war, it, ['sks']).gain, { sks: 80 });
 });
 
 /* Greedy filling is not exact. Critical Hit 142 below a cap of 203 leaves 61; two big (XII, 54) and three small (XI, 18)
@@ -85,28 +94,28 @@ test("Kirin's Osode of Fending: Determination 77 -> 110 with VI, VI, V, the othe
    the 61 as well and leave a XII for Determination: +90. */
 test("Courtly Lover's Earrings of Healing: Crit > Det beats greedy (+61 / +90, not +61 / +54)", () => {
   const it = piece(sge, "Courtly Lover's Earrings of Healing");
-  const m = bestMeld(sge, it, ['crit', 'det']);
+  const m = meldOf(sge, it, ['crit', 'det']);
   assert.deepEqual(m.gain, { crit: 61, det: 90 });
   // in slot order: XII in the guaranteed slot and the first overmeld slot, XI in overmeld slots 2 to 4, which refuse
   // the even grades (MateriaGrade: XII has a 0% rate past the first overmeld slot)
   assert.equal(meldText(sge, m), 'CRT XII, DET XII, CRT XI, DET XI ×2');
-  assert.deepEqual(bestMeld(sge, it, ['det', 'crit']).gain, { det: 162 });
+  assert.deepEqual(meldOf(sge, it, ['det', 'crit']).gain, { det: 162 });
   // Critical Hit alone: XII + XI reach the cap as well as two XII; with the same gains and stones the odd grade is shown
   // (owner 2026-10-16). The other three slots stay empty (no stones in substats the objective doesn't score)
-  const crit = bestMeld(sge, it, ['crit']);
+  const crit = meldOf(sge, it, ['crit']);
   assert.deepEqual(crit.gain, { crit: 61 });
   assert.equal(meldText(sge, crit), 'CRT XII, CRT XI');
 });
 
 test("Courtly Lover's Pendulums: Crit > Det > DH gets Direct Hit +54 (greedy +36)", () => {
-  const m = bestMeld(sge, piece(sge, "Courtly Lover's Pendulums"), ['crit', 'det', 'dh']);
+  const m = meldOf(sge, piece(sge, "Courtly Lover's Pendulums"), ['crit', 'det', 'dh']);
   assert.deepEqual(m.gain, { det: 127, dh: 54 });
 });
 
 test('Rainbow Robe of Healing (item level 115): grade IV only; Piety headroom 13 takes four, one slot left empty', () => {
   const it = piece(sge, 'Rainbow Robe of Healing');
-  assert.deepEqual(bestMeld(sge, it, ['sps']).gain, { sps: 20 });
-  const m = bestMeld(sge, it, ['piety']);
+  assert.deepEqual(meldOf(sge, it, ['sps']).gain, { sps: 20 });
+  const m = meldOf(sge, it, ['piety']);
   assert.equal(m.gain.piety, 13);
   assert.equal(
     m.stones.reduce((n, x) => n + x.n, 0),
@@ -125,7 +134,11 @@ test('no melds: a main stat target alone, a piece with no slots, a hand-made pie
    lost when its equip level is above the synced level, kept with sync off. Kirin's Osode: item level 300, equip 70. */
 test('melds count only on pieces that are not synced', () => {
   const it = piece(war, "Kirin's Osode of Fending");
-  const det = sync => optimize(war, [it], sync, { target: 'det', melds: true }).totals.det;
+  const det = (sync: Sync) => {
+    const r = optimize(war, [it], sync, { target: 'det', melds: true });
+    assert.ok(r.ok);
+    return r.totals.det;
+  };
   assert.equal(det({ cap: 300, sync: true, level: 100 }), 110);
   assert.equal(det({ cap: null, sync: false, level: 100 }), 110);
   assert.equal(det({ cap: 299, sync: true, level: 100 }), 77);
@@ -140,7 +153,7 @@ test('melds with a speed range: a speed minimum is met by melds', () => {
   const it = piece(war, "Kirin's Osode of Fending");
   const r = optimize(war, [it], { cap: null, sync: false }, { target: 'det', melds: true, spdMin: 10 });
   assert.ok(r.ok);
-  assert.ok(r.totals.sks >= 10);
+  assert.ok((r.totals.sks ?? 0) >= 10);
   assert.equal(r.totals.det, 110);
   assert.equal(optimize(war, [it], { cap: null, sync: false }, { target: 'det', spdMin: 10, spdMax: 999 }).ok, false);
 });
@@ -153,7 +166,9 @@ test('every meld is a legal order of slots, for every meldable piece', () => {
   let checked = 0;
   for (const job of [sge, war, makeJobContext('BLM')]) {
     const pool = browseItems(job, { q: '', type: 'any', ilvlMin: 1, ilvlMax: 999, lvlMax: 100 }).map(r => poolItemFromRow(job, r));
-    const objectives = [['crit'], [job.speedKey, 'det'], ['det', 'crit', 'dh'], [job.substats.at(-1), 'crit']];
+    const lastSubstat = job.substats.at(-1);
+    assert.ok(lastSubstat);
+    const objectives: DimKey[][] = [['crit'], [job.speedKey, 'det'], ['det', 'crit', 'dh'], [lastSubstat, 'crit']];
     for (const it of pool) {
       const info = meldInfo(it);
       if (!info?.slots) {
@@ -163,14 +178,14 @@ test('every meld is a legal order of slots, for every meldable piece', () => {
       const total = info.overmeld ? 5 : info.slots;
       const caps = meldCaps(job, it);
       for (const keys of objectives) {
-        const m = bestMeld(job, it, keys);
+        const m = meldOf(job, it, keys);
         if (!m) {
           continue;
         }
-        const seq = m.stones.flatMap(x => Array(x.n).fill(x));
+        const seq = m.stones.flatMap(x => Array<StoneGroup>(x.n).fill(x));
         const label = `${job.jobId} ${it.name} ${keys}`;
         assert.equal(seq.length + m.free, total, label);
-        const sum = {};
+        const sum: StatMap = {};
         seq.forEach((x, i) => {
           assert.ok(job.substats.includes(x.stat), label);
           // no stone in a substat the objective doesn't score: those slots stay empty (owner's decision 2026-10-15)
@@ -181,9 +196,13 @@ test('every meld is a legal order of slots, for every meldable piece', () => {
           }
           sum[x.stat] = (sum[x.stat] || 0) + MATERIA.values[x.grade - 1];
         });
-        for (const [s, g] of Object.entries(m.gain)) {
+        for (const s of job.stats) {
+          const g = m.gain[s];
+          if (g === undefined) {
+            continue;
+          }
           const base = it.stats[s] || 0;
-          assert.equal(g, Math.min(sum[s] || 0, Math.max(0, caps[s] - base)), `${label}: ${s}`);
+          assert.equal(g, Math.min(sum[s] || 0, Math.max(0, (caps[s] ?? 0) - base)), `${label}: ${s}`);
         }
         checked++;
       }
@@ -198,7 +217,7 @@ test('every meld is a legal order of slots, for every meldable piece', () => {
    band below the piece's full speed could be missed. */
 test('meld versions: with a speed maximum, versions with less speed are kept', () => {
   const it = piece(war, "Kirin's Osode of Fending");
-  const gains = vs => vs.map(m => [m?.gain.det || 0, m?.gain.sks || 0]);
+  const gains = (vs: readonly (Meld | null)[]) => vs.map(m => [m?.gain.det || 0, m?.gain.sks || 0]);
   const min = gains(meldVersions(war, it, ['det', 'sks']));
   const exact = gains(meldVersions(war, it, ['det', 'sks'], { exactSpd: true }));
   for (const v of min) {
@@ -214,7 +233,8 @@ test('meld versions: with a speed maximum, versions with less speed are kept', (
   );
   assert.ok(!min.some(([det, spd]) => det === 33 && spd === 0), 'beaten by more speed without a maximum');
   // no version beats another on both stats at the same speed (exact) or at all (min)
-  const beats = (a, b) => a[0] >= b[0] && a[1] >= b[1] && (a[0] > b[0] || a[1] > b[1]);
+  const beats = (a: number[], b: number[]) =>
+    (a[0] ?? 0) >= (b[0] ?? 0) && (a[1] ?? 0) >= (b[1] ?? 0) && ((a[0] ?? 0) > (b[0] ?? 0) || (a[1] ?? 0) > (b[1] ?? 0));
   for (const a of min) {
     for (const b of min) {
       assert.ok(!beats(a, b), `${a} beats ${b}`);
@@ -248,19 +268,21 @@ test('meld versions show the same stones as bestMeld for the same gains', () => 
       if (!meldInfo(it)?.slots) {
         continue;
       }
-      for (const keys of [
+      const objectives: DimKey[][] = [
         ['crit', job.speedKey],
         [job.speedKey, 'det'],
         ['det', 'dh', job.speedKey],
-      ]) {
+      ];
+      for (const keys of objectives) {
         const best = bestMeld(job, it, keys);
         if (!best) {
           continue;
         }
-        const same = meldVersions(job, it, keys).find(v => JSON.stringify(v.gain) === JSON.stringify(best.gain));
+        const same = meldVersions(job, it, keys).find(v => v !== null && JSON.stringify(v.gain) === JSON.stringify(best.gain));
         if (!same) {
           continue; // a speed minimum keeps only versions no other beats; the best one is always among them
         }
+        assert.ok(same);
         assert.deepEqual(same.stones, best.stones, `${job.jobId} ${it.name} ${keys}`);
         assert.equal(same.free, best.free);
         checked++;
@@ -289,15 +311,15 @@ test('meld versions: with a speed maximum, no lower grade in a guaranteed slot',
 test('odd grades on ties: XI where it gives the same gains, from both paths', () => {
   const coat = piece(sge, "Courtly Lover's Longcoat of Healing");
   assert.equal(meldCaps(sge, coat).crit - (coat.stats.crit || 0), 123);
-  const m = bestMeld(sge, coat, ['crit']);
+  const m = meldOf(sge, coat, ['crit']);
   assert.deepEqual(m.gain, { crit: 123 });
   assert.equal(meldText(sge, m), 'CRT XII ×2, CRT XI');
   // with a speed maximum a version without speed is kept, and it shows the same stones
-  const v = meldVersions(sge, coat, ['crit', 'sps'], { exactSpd: true }).find(x => x.gain.crit === 123 && !x.gain.sps);
+  const v = meldVersions(sge, coat, ['crit', 'sps'], { exactSpd: true }).find(x => x !== null && x.gain.crit === 123 && !x.gain.sps);
   assert.ok(v, 'a version with Critical Hit only');
   assert.deepEqual(v.stones, m.stones);
 
   const ears = piece(sge, 'Augmented Bygone Brass Earrings of Healing');
   assert.equal(meldCaps(sge, ears).det - (ears.stats.det || 0), 64);
-  assert.equal(meldText(sge, bestMeld(sge, ears, ['det'])), 'DET XII, DET XI');
+  assert.equal(meldText(sge, meldOf(sge, ears, ['det'])), 'DET XII, DET XI');
 });

@@ -42,3 +42,18 @@ export function forEachLoadout(
   visit: (get: (stat: DimKey) => number) => void,
 ): void;
 export function foodAdd(job: JobContext, meal: FoodChoice | null, stat: DimKey, gear: number, level: number): number;
+/* The best loadout's ranked totals ([target, ...tiebreaks], weapon damage first is dropped), or null when no loadout is legal. */
+export function exhaustive(
+  job: JobContext,
+  pool: readonly PoolItem[],
+  sync: Sync,
+  options: {
+    target: DimKey;
+    tiebreak?: readonly (DimKey | '' | null | undefined)[];
+    spdMin?: number | null;
+    spdMax?: number | null;
+    mins?: Record<string, number>;
+    melds?: boolean;
+    fixed?: readonly PinnedPiece[];
+  },
+): number[] | null;
