@@ -1,8 +1,6 @@
 // Helpers that seed saved sheets into localStorage, open a set, and read the sheet list.
 
-import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { OUT, STORE_KEY } from './constants.mjs';
+import { STORE_KEY } from './constants.mjs';
 import { expect } from './expect.mjs';
 import { SET_SHEET } from './fixtures.mjs';
 import { waitReady, waitStateSaved } from './nav.mjs';
@@ -16,26 +14,26 @@ export async function seedSheet(pg, sheet) {
  * order too, for records that cannot be read. */
 export async function seedSheets(pg, sheets, broken = {}) {
   await waitStateSaved(pg);
-  // written from a page of its own (same file:// storage), which is closed before the reload: a write made in the page that is
-  // about to reload was lost on the CI runner (the new page read storage without it)
-  const writer = await pg.context().newPage();
-  try {
-    await writer.goto(pathToFileURL(resolve(OUT, 'blank.html')).href);
-    await writer.evaluate(
-      ([key, list, bad]) => {
-        for (const s of list) {
-          localStorage.setItem(`${key}:sheet:${s.id}`, JSON.stringify(s));
-        }
-        for (const [id, text] of Object.entries(bad)) {
-          localStorage.setItem(`${key}:sheet:${id}`, text);
-        }
-        localStorage.setItem(`${key}:sheets`, JSON.stringify({ v: 1, order: [...list.map(s => s.id), ...Object.keys(bad)] }));
-      },
-      [STORE_KEY, sheets, broken],
-    );
-  } finally {
-    await writer.close();
-  }
+  // written by the reloaded document itself, before the page's own scripts run, and only once (marked in sessionStorage, which
+  // a reload keeps): records written by the page that was about to reload, or by a page closed before it, were lost on the CI
+  // runner (the new page read storage without them)
+  const seedId = `seed-${Math.random().toString(36).slice(2)}`;
+  await pg.addInitScript(
+    ([marker, key, list, bad]) => {
+      if (sessionStorage.getItem(marker)) {
+        return;
+      }
+      sessionStorage.setItem(marker, '1');
+      for (const s of list) {
+        localStorage.setItem(`${key}:sheet:${s.id}`, JSON.stringify(s));
+      }
+      for (const [id, text] of Object.entries(bad)) {
+        localStorage.setItem(`${key}:sheet:${id}`, text);
+      }
+      localStorage.setItem(`${key}:sheets`, JSON.stringify({ v: 1, order: [...list.map(s => s.id), ...Object.keys(bad)] }));
+    },
+    [seedId, STORE_KEY, sheets, broken],
+  );
   await reloadAtSheets(pg);
   await waitReady(pg);
 
