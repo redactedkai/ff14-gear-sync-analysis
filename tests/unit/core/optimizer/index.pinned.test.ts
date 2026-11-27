@@ -29,7 +29,8 @@ const sge = makeJobContext('SGE');
 const pld = makeJobContext('PLD');
 const NO_SYNC: Sync = { cap: 999, sync: false };
 
-const ring = (name: string, sps: number, copies = 1, extra: StatMap = {}): PoolItem => mkItem(name, 'ring', 100, { sps, ...extra }, { copies });
+const ring = (name: string, sps: number, copies = 1, extra: StatMap = {}): PoolItem =>
+  mkItem(name, 'ring', 100, { sps, ...extra }, { copies });
 
 test('pinned search equals the brute-force reference on 300 random hand-made pools', () => {
   const rand = rng(20261109),
@@ -77,9 +78,7 @@ test('pinned search equals the brute-force reference on 300 random hand-made poo
     );
     // the pinned pieces are in the picks, marked, and the totals are the picks' sum
     assert.deepEqual(
-      got.picks
-        .flatMap(p => (p.pinned && p.item ? [p.item] : []))
-        .sort((a, b) => a.id.localeCompare(b.id)),
+      got.picks.flatMap(p => (p.pinned && p.item ? [p.item] : [])).sort((a, b) => a.id.localeCompare(b.id)),
       wear.map(([w]) => w).sort((a, b) => a.id.localeCompare(b.id)),
       label,
     );
@@ -306,7 +305,9 @@ test('a pinned piece counts its stones, however the melds are set, and the weapo
   assert.ok(withStones.eff.det > plain.eff.det, 'the stones add Determination');
   // with melds off or on, the pinned body keeps exactly its stones
   for (const melds of [false, true]) {
-    const r = mustSolve(optimize(sge, pool, NO_SYNC, { target: 'crit', melds, fixed: [withStones, fixedCandidate(sge, weapon, [], NO_SYNC)] }));
+    const r = mustSolve(
+      optimize(sge, pool, NO_SYNC, { target: 'crit', melds, fixed: [withStones, fixedCandidate(sge, weapon, [], NO_SYNC)] }),
+    );
     const pickedBody = mustFind(
       r.picks.find(p => p.type === 'body'),
       'the body pick',

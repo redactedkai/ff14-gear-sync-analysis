@@ -17,7 +17,8 @@ const NOSYNC: Sync = { cap: 123, sync: false };
    (two at 135), two pieces per armor slot and four per accessory slot, all item level 130; four rings, two of
    them Unique. About 98,000 loadouts, so exhaustive() checks every answer. */
 const pool = gamePool(war, { ilvlMin: 130, ilvlMax: 135, lvlMax: 50 });
-const brute = (target: DimKey, constraints: { spdMin?: number; spdMax?: number } = {}) => exhaustive(war, pool, NOSYNC, { target, ...constraints });
+const brute = (target: DimKey, constraints: { spdMin?: number; spdMax?: number } = {}) =>
+  exhaustive(war, pool, NOSYNC, { target, ...constraints });
 
 test('the pool is what these tests need, and the unconstrained result matches brute force', () => {
   // a patch that changes the window fails here, not in a puzzling total below

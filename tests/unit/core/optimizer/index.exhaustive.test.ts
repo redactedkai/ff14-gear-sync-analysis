@@ -111,7 +111,9 @@ test('maximum constraints are respected and still find the best loadout', () => 
 test('F3 regression: a tiebreak total of 10,000 or more never outranks a higher key', () => {
   const head = (name: string, stats: StatMap): PoolItem => mkItem(name, 'head', 100, stats);
   // the old fixed weights (1e8 / 1e4 / 1) scored B and D higher
-  let r = mustSolve(optimize(sge, [head('A', { sps: 2 }), head('B', { sps: 1, mind: 20000 })], NO_SYNC, { target: 'sps', tiebreak: ['mind'] }));
+  let r = mustSolve(
+    optimize(sge, [head('A', { sps: 2 }), head('B', { sps: 1, mind: 20000 })], NO_SYNC, { target: 'sps', tiebreak: ['mind'] }),
+  );
   assert.equal(r.picks[0].item?.name, 'A');
   r = mustSolve(
     optimize(sge, [head('C', { sps: 1, mind: 1 }), head('D', { sps: 1, vit: 20000 })], NO_SYNC, {

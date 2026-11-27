@@ -345,7 +345,7 @@ test('frontSearch gives up on too many ring pairs or too much filtering, without
   const rings = Array.from({ length: 2000 }, (_, i) => cand(i, 2000 - i));
   assert.equal(frontSearch(['ring', 'ring'], [rings, rings], [makeLimit('det', 10, null)]), null);
   // a neck with room for the minimum, filled last, so the head and body totals stay below it and apart
-  const lists = [999, 1000].map((n, s) => Array.from({ length: n }, (_, i) => cand(i, 1000 - i)));
+  const lists = [999, 1000].map(n => Array.from({ length: n }, (_, i) => cand(i, 1000 - i)));
   const t = performance.now();
   const limits = [makeLimit('det', 2000, null)];
   assert.equal(frontSearch(['neck', 'head', 'body'], [[cand(0, 2000)], ...lists], limits), null);
@@ -425,7 +425,8 @@ test('frontSearch alone gives the plain search best: empty, blockable and ringle
     const eff = { sks: int(40), det: int(40) };
     return syntheticCandidate(int(100), eff, blocks);
   };
-  const list = (n: number, make: () => Candidate = () => cand()): Candidate[] => Array.from({ length: n }, make).sort((x, y) => y.score - x.score);
+  const list = (n: number, make: () => Candidate = () => cand()): Candidate[] =>
+    Array.from({ length: n }, make).sort((x, y) => y.score - x.score);
   const shapes: Record<string, () => [SearchSlot[], Candidate[][]]> = {
     empty: () => [
       ['head', 'body', 'neck'],

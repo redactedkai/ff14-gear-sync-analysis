@@ -147,7 +147,11 @@ test('jobs of one gear group reach the same totals on the pieces all of them wea
             : [];
         });
         // each job against the first job of its own weapon mode, else the first job of the group
-        const totalsOf = (r: (typeof runs)[number]): (number | undefined)[] => [r.result.totals.wd, r.result.totals[r.key], r.result.totals.crit];
+        const totalsOf = (r: (typeof runs)[number]): (number | undefined)[] => [
+          r.result.totals.wd,
+          r.result.totals[r.key],
+          r.result.totals.crit,
+        ];
         for (const run of runs.slice(1)) {
           const reference = runs.find(candidate => candidate.job.weaponMode === run.job.weaponMode) ?? runs[0];
           if (reference === run) {

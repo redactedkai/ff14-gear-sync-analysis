@@ -14,7 +14,7 @@ import {
 } from '../../../../src/core/optimizer/search.ts';
 import type { Lagrange, LimitTable } from '../../../../src/core/optimizer/search.ts';
 import type { SearchSlot } from '../../../../src/core/optimizer/slot-index.ts';
-import type { Candidate, Limit, SlotType } from '../../../../src/core/types.ts';
+import type { Candidate, Limit } from '../../../../src/core/types.ts';
 import { rng, mustFind } from '../../helpers/common.ts';
 import { syntheticCandidate as cand } from '../../helpers/synthetic-candidates.ts';
 
@@ -53,8 +53,22 @@ test('limitTables: a minimum, and a band, give the brute-force best of the slots
     const min = 20 + Math.floor(rand() * 40);
     const max = min + Math.floor(rand() * 20);
     const cases: { label: string; table: LimitTable; fits: (total: number) => boolean }[] = [
-      { label: 'minimum', table: mustFind(limitTables(SLOTS, posList, c => c.eff.sks, min, null), 'minimum table'), fits: total => total >= min },
-      { label: 'band', table: mustFind(limitTables(SLOTS, posList, c => c.eff.sks, min, max), 'band table'), fits: total => total >= min && total <= max },
+      {
+        label: 'minimum',
+        table: mustFind(
+          limitTables(SLOTS, posList, c => c.eff.sks, min, null),
+          'minimum table',
+        ),
+        fits: total => total >= min,
+      },
+      {
+        label: 'band',
+        table: mustFind(
+          limitTables(SLOTS, posList, c => c.eff.sks, min, max),
+          'band table',
+        ),
+        fits: total => total >= min && total <= max,
+      },
     ];
     for (const { label, table, fits } of cases) {
       for (let pos = 0; pos <= SLOTS.length; pos++) {
@@ -89,7 +103,12 @@ test('combinedLimitBound: the smallest of each limit table, with two and three b
       });
       const totals = new Float64Array(count).map(() => int(15));
       const bound = mustFind(combinedLimitBound(SLOTS, posList, limits, totals, null), 'combined bound');
-      const tables = limits.map(l => mustFind(limitTables(SLOTS, posList, c => c.eff[l.stat], l.min, l.max), `table of ${l.stat}`));
+      const tables = limits.map(l =>
+        mustFind(
+          limitTables(SLOTS, posList, c => c.eff[l.stat], l.min, l.max),
+          `table of ${l.stat}`,
+        ),
+      );
       const add = limits.map(() => int(5));
       for (let pos = 0; pos <= SLOTS.length; pos++) {
         assert.equal(bound.top(pos), Math.min(...tables.map(table => table.top(pos))), `${count} bands top ${pos}`);

@@ -208,7 +208,8 @@ function enumerateVectors(job: JobContext, item: PoolItem, sync: Sync, keys: rea
   const key = (v: Vector): number[] => keys.map(k => v[k] || 0);
   const ks = out.map(key);
   const si = keys.indexOf(job.speedKey);
-  const beaten = (a: number[], b: number[]): boolean => (!exactSpd || si < 0 || a[si] === b[si]) && b.every((x, j) => x >= a[j]) && b.some((x, j) => x > a[j]);
+  const beaten = (a: number[], b: number[]): boolean =>
+    (!exactSpd || si < 0 || a[si] === b[si]) && b.every((x, j) => x >= a[j]) && b.some((x, j) => x > a[j]);
   // the first vector of each distinct `keys` total, then those no other total beats (the stones' order in the slots
   // makes most totals repeat, so this compares far fewer pairs than all of them)
   const firstOf = new Map<string, number>();
