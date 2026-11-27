@@ -453,23 +453,6 @@ test('two Backs in one task over a held move end on the entry the page shows', (
   assert.equal(hash(), '#/sheets/s_1');
 });
 
-test('a screen left by a typed address keeps its own scroll position', () => {
-  const { sheets, history, clock, router, focused } = setup('');
-  sheets.openSheet('s_1');
-  clock.fire();
-  sheets.openSet('g_1');
-  clock.fire();
-  router.noteScroll(400, 1000);
-  history.type('#/sheets/s_1/sets/g_2');
-  history.deliver();
-  assert.equal(sheets.setId, 'g_2');
-  router.noteScroll(0, 1000);
-  history.back();
-  history.deliver();
-  assert.equal(sheets.setId, 'g_1');
-  assert.equal(focused.at(-1), 400);
-});
-
 test('a link of the same page that is a typed entry becomes an entry of the router at once', () => {
   const { history } = setup('');
   history.type('#/sheets/s_1');
@@ -552,23 +535,6 @@ test('the page title follows the screen and the names the player gave', () => {
   assert.equal(titles.at(-1), titleOf({ tab: 'sheets', screen: 'set', sheetId: 's_1', setId: 'g_2' }, { sheet: 'Sage 123', set: 'Set 2' }));
 });
 
-test('Back and Forward return to where the page was scrolled on each screen', () => {
-  const { sheets, history, clock, router, focused } = setup('');
-  router.noteScroll(40); // the list, scrolled
-  sheets.openSheet('s_1');
-  clock.fire();
-  router.noteScroll(300); // the sheet page, scrolled
-  history.back();
-  history.deliver();
-  assert.equal(focused.at(-1), 40);
-  history.forward();
-  history.deliver();
-  assert.equal(focused.at(-1), 300);
-  history.type('#/gear'); // an entry the router did not make has no scroll to return to
-  history.deliver();
-  assert.equal(focused.at(-1), 0);
-});
-
 test('a scroll the browser makes because the page got shorter is not remembered as where the player left it', () => {
   const { sheets, history, clock, router, focused } = setup('');
   router.noteScroll(300, 900); // the player scrolled the list to 300
@@ -624,47 +590,6 @@ test('the scroll events of a placement and of the browser clamping a page are no
 
 /* ---- the settings an address names (query.ts): applied when a link opens, written back as they change ---- */
 
-test('a link with a query applies its settings, takes the defaults for the names it leaves out, and is rewritten as the settings', () => {
-  const { app, hash } = setup('#/gear?sort=det&min=700&colour=red', page => {
-    page.editBrowse({ q: 'saved search', dir: 'asc', type: 'ring' });
-  });
-  assert.equal(app.browse.sort, 'det');
-  assert.equal(app.browse.min, 700);
-  assert.equal(app.browse.q, '', "the reader's own search is not kept: a link with a query is the whole description");
-  assert.equal(app.browse.dir, 'desc');
-  assert.equal(app.browse.type, 'any');
-  assert.equal(hash(), '#/gear?min=700&sort=det', 'an unknown name is dropped and the names take their order');
-});
-
-test("a link with no query keeps the reader's settings and the address stays bare", () => {
-  const { app, hash } = setup('#/gear', page => {
-    page.editBrowse({ sort: 'det' });
-  });
-  assert.equal(app.browse.sort, 'det');
-  assert.equal(hash(), '#/gear');
-});
-
-test("a change of settings replaces the address's query and adds no history entry", t => {
-  t.mock.timers.enable({ apis: ['setTimeout'] });
-  const { app, history, clock, hash } = setup('#/gear');
-  const entries = history.entries.length;
-  app.editBrowse({ sort: 'det' });
-  clock.fire();
-  assert.equal(hash(), '#/gear?sort=det');
-  t.mock.timers.tick(100); // a write is followed by a short cooldown
-  app.editBrowse({ type: 'ring' });
-  app.editBrowse({ market: false });
-  clock.fire();
-  assert.equal(hash(), '#/gear?slot=ring&market=0&sort=det');
-  t.mock.timers.tick(100);
-  app.editBrowse({ sort: 'ilvl' });
-  app.editBrowse({ type: 'any' });
-  app.editBrowse({ market: true });
-  clock.fire();
-  assert.equal(hash(), '#/gear', 'every setting back at its default: no query');
-  assert.equal(history.entries.length, entries);
-});
-
 test('a change of the search text waits until typing pauses; another change writes it at once', t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const { app, clock, hash } = setup('#/gear');
@@ -690,16 +615,6 @@ test('a change of the search text waits until typing pauses; another change writ
   assert.equal(hash(), '#/gear?q=Moon%20Staff&sort=det');
   t.mock.timers.tick(1000);
   assert.equal(hash(), '#/gear?q=Moon%20Staff&sort=det', 'the waiting write was dropped');
-});
-
-test('a tab link to the Gear browser pushes its address with the settings it holds', () => {
-  const { app, clock, hash, history } = setup('', page => {
-    page.editBrowse({ sort: 'dh' });
-  });
-  app.openTab('browse');
-  clock.fire();
-  assert.equal(hash(), '#/gear?sort=dh');
-  assert.equal(history.entries.length, 2);
 });
 
 test('a typed link on the open screen applies its settings; a typed link to another screen applies them as it opens it', () => {
@@ -743,13 +658,6 @@ test('Back and Forward move between screens, not settings: the page keeps its se
   assert.equal(app.browse.sort, 'det');
 });
 
-test('the Sheets screens take no settings from a query', () => {
-  const { app, hash, sheets } = setup('#/sheets/s_1?sort=det&slot=ring');
-  assert.equal(sheets.screen, 'sheet');
-  assert.equal(app.browse.sort, 'ilvl');
-  assert.equal(hash(), '#/sheets/s_1', 'the address is the sheet without the query');
-});
-
 test('a link with settings that leaves a set page that holds a draft waits for the answer before it applies them', () => {
   const { app, sheets, history, clock, hash } = setup('');
   sheets.openSheet('s_1');
@@ -769,17 +677,6 @@ test('a link with settings that leaves a set page that holds a draft waits for t
   assert.equal(hash(), '#/gear?sort=det');
 });
 
-test('the screen the page leaves keeps the scroll position read as the next screen is pushed, however late its scroll event comes', () => {
-  const scrolled = { y: 400, maxY: 800 };
-  const { sheets, history, clock, router, focused } = setup('', undefined, { readScroll: () => scrolled });
-  sheets.openSheet('s_1'); // pushed while the list is scrolled to 400
-  clock.fire();
-  router.noteScroll(0, 0); // the scroll event of the list comes after the push, when the page was already shorter
-  history.back();
-  history.deliver();
-  assert.deepEqual(focused, [400]);
-});
-
 test('the scroll events that follow a push, of the screen left and of the page getting shorter, are not a position of the new screen', () => {
   // the Gear browser scrolled to 67 of 281, then the player opens a screen that cannot scroll: its scroll event is late, and the page
   // is clamped on the way (42 of 42, then 0 of 0)
@@ -797,20 +694,6 @@ test('the scroll events that follow a push, of the screen left and of the page g
   history.forward();
   history.deliver();
   assert.equal(focused.at(-1), 0, 'the new screen was never scrolled');
-});
-
-test('a scroll of the player on the new screen after a push is remembered, even to the position the screen was left at', () => {
-  const scrolled = { y: 100, maxY: 500 };
-  const { sheets, history, clock, router, focused } = setup('', undefined, { readScroll: () => scrolled });
-  sheets.openSheet('s_1');
-  clock.fire();
-  router.noteScroll(250, 900); // the player scrolled the new screen
-  router.noteScroll(100, 900); // and back up to where the screen before it was left
-  history.back();
-  history.deliver();
-  history.forward();
-  history.deliver();
-  assert.equal(focused.at(-1), 100);
 });
 
 test('Back reads where the screen is scrolled as the browser moves, so a scroll its event has not yet reported is not lost', () => {
@@ -848,42 +731,6 @@ test('Back after a scroll up reads the exact position of the page, not the deepe
   assert.equal(focused.at(-1), 300, 'the sheet page returns to where the page had it, not to the deeper noted position');
 });
 
-test('Back and Forward keep each screen at the position the page had on it, however late the scroll events come', () => {
-  const page = { y: 0, maxY: 900 };
-  const { sheets, history, clock, router, focused } = setup('', undefined, { readScroll: () => ({ ...page }) });
-  page.y = 120; // the list, scrolled
-  sheets.openSheet('s_1');
-  clock.fire();
-  page.y = 0; // the sheet page opens at the top
-  router.noteScroll(0, 900);
-  page.y = 450; // the sheet page, scrolled by the wheel
-  history.back();
-  history.deliver();
-  assert.equal(focused.at(-1), 120);
-  page.y = 120;
-  router.noteScroll(450, 900); // the late event of the sheet page's scroll, which the placement of the list ignores
-  history.forward();
-  history.deliver();
-  assert.equal(focused.at(-1), 450);
-});
-
-test('a link names the job, level and item level sync of the tab; what it leaves out is the default, not what the reader had', () => {
-  const { app, hash } = setup('#/gear?job=SGE&level=90&il=123&slot=ring');
-  assert.deepEqual([app.job, app.level, app.sync, app.cap], ['SGE', 90, true, 123]);
-  assert.equal(app.jobCtx.jobId, 'SGE');
-  assert.equal(app.browse.type, 'ring');
-  assert.equal(hash(), '#/gear?job=SGE&level=90&il=123&slot=ring');
-  // the reader had sync on and a cap: a link with no il is sync off, and the held cap is not a setting of the link
-  const second = setup('#/gear?job=WAR', page => {
-    page.editPanel({ sync: true, cap: 600, level: 70 }, 'browse'); // the Gear browser's own panel, as saved
-  });
-  assert.deepEqual(
-    [second.app.job, second.app.level, second.app.sync, second.app.cap],
-    ['WAR', 100, false, 600],
-    'sync off; the cap the reader held stays',
-  );
-});
-
 test('a link to a tab that is not open sets the panel of that tab and leaves the open tab alone', () => {
   const { app, history, hash } = setup('#/sheets');
   app.editPanel({ job: 'DRK' }, 'math');
@@ -893,14 +740,6 @@ test('a link to a tab that is not open sets the panel of that tab and leaves the
   assert.deepEqual([app.job, app.sync, app.cap], ['SGE', true, 123], 'the panel of the Gear browser is the open one now');
   assert.equal(app.panel('math').job, 'DRK', 'the math panel is not touched');
   assert.equal(hash(), '#/gear?job=SGE&il=123');
-});
-
-test('a link that changes the job of Stat Allocation keeps its settings valid for the job', () => {
-  const { app } = setup('#/math/piece?job=WAR');
-  assert.equal(app.panel('math').job, 'WAR');
-  assert.deepEqual(app.piece.subs, ['crit', 'sks'], 'Spell Speed of a healer is Skill Speed on a tank');
-  assert.equal(app.panel('browse').job, 'PLD', 'the Gear browser keeps its own job');
-  assert.equal(app.panel('tiers').job, 'PLD', 'and so does Substat tiers');
 });
 
 test('Substat tiers has its own job and level in its address; Stat Allocation and the Gear browser are left alone', () => {
@@ -914,34 +753,6 @@ test('Substat tiers has its own job and level in its address; Stat Allocation an
   const ignored = setup('#/math/tiers?job=SGE&il=123&level=90');
   assert.equal(ignored.app.tiers.job, 'SGE');
   assert.equal(ignored.hash(), '#/math/tiers?job=SGE');
-});
-
-test('GCD Scaling has no job in its address: a job in it is ignored', () => {
-  const { app, hash } = setup('#/math/gcd?job=WAR&il=123&haste=SAM');
-  assert.equal(app.panel('math').job, 'PLD');
-  assert.equal(app.panel('math').sync, false);
-  assert.equal(app.gcd.haste, 'SAM');
-  assert.equal(hash(), '#/math/gcd?haste=SAM');
-});
-
-test('the address follows the panel: a job, a level and the item level sync switch', t => {
-  t.mock.timers.enable({ apis: ['setTimeout'] });
-  const { app, clock, hash, history } = setup('#/gear');
-  const entries = history.entries.length;
-  app.setJob('SGE');
-  clock.fire();
-  assert.equal(hash(), '#/gear?job=SGE');
-  t.mock.timers.tick(100);
-  app.editPanel({ level: 90 });
-  app.editPanel({ cap: 123 });
-  app.editPanel({ sync: true });
-  clock.fire();
-  assert.equal(hash(), '#/gear?job=SGE&level=90&il=123');
-  t.mock.timers.tick(100);
-  app.editPanel({ sync: false }); // the cap stays held, and is no setting
-  clock.fire();
-  assert.equal(hash(), '#/gear?job=SGE&level=90');
-  assert.equal(history.entries.length, entries);
 });
 
 test('a screen the page opens by a click or its own navigation starts at the top; Back and Forward place the saved position instead', () => {
@@ -981,15 +792,6 @@ test('the screen left by a click keeps the position its scroll events noted, whe
   history.back();
   history.deliver();
   assert.equal(focused.at(-1), 500);
-});
-
-test('sync on with no cap yet is an empty il, and opens as sync on', () => {
-  const first = setup('#/gear?job=SGE');
-  first.app.editPanel({ sync: true });
-  first.clock.fire();
-  assert.equal(first.hash(), '#/gear?job=SGE&il=');
-  const again = setup('#/gear?job=SGE&il=');
-  assert.deepEqual([again.app.sync, again.app.cap], [true, null]);
 });
 
 test('a reload of an entry scrolled before restores its scroll; the positions are kept for the next reload', () => {

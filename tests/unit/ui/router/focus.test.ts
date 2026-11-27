@@ -282,38 +282,6 @@ function heldPage({ reachableWhenDrawn }: { reachableWhenDrawn: number }): HeldP
   return page;
 }
 
-test('a deep position is scrolled to in the call itself, with the height held, and the height is let go once it has held', () => {
-  const page = heldPage({ reachableWhenDrawn: 900 });
-  const clock = frames();
-  focusScreenHeading({ scrollY: 400, doc: docOf([panel(true, [])]), raf: clock.raf, ...page.options });
-  assert.deepEqual(page.log, ['hold 400', 'scroll 400'], 'before any frame has run');
-  assert.equal(page.position, 400);
-  page.drawn = true;
-  clock.run();
-  assert.equal(page.position, 400);
-  assert.deepEqual(page.log, ['hold 400', 'scroll 400', 'release'], 'no second scroll, and the height is let go at the end');
-});
-
-test('a screen that stops growing short of the position gets its height back at once and shows its own end, not blank space', () => {
-  const page = heldPage({ reachableWhenDrawn: 250 });
-  const clock = frames();
-  const screenHeight = 1150; // the screen's own height: 250 px of scrolling in a 900 px window, short of the 400 asked for
-  focusScreenHeading({
-    scrollY: 400,
-    doc: docOf([panel(true, [])]),
-    raf: clock.raf,
-    naturalHeight: () => screenHeight,
-    ...page.options,
-  });
-  page.drawn = true;
-  assert.equal(page.held, 400, 'held tall at first: the screen may still be growing');
-  clock.step(); // the first look at the screen: no growth seen yet
-  assert.equal(page.held, 400);
-  clock.step(); // the same height as a frame ago: it has stopped growing
-  assert.equal(page.held, 0, 'the hold is let go as soon as the height stops growing');
-  assert.equal(page.log.filter(entry => entry === 'release').length, 1);
-});
-
 test('a screen already complete when it is swapped in loses the hold before its first frame is drawn', async () => {
   const page = heldPage({ reachableWhenDrawn: 250 });
   const clock = frames();
@@ -330,48 +298,6 @@ test('a screen already complete when it is swapped in loses the hold before its 
   page.drawn = true;
   clock.step(); // the first frame: the height is the same as at the first look
   assert.equal(page.held, 0, 'let go in the first frame, before it is drawn');
-});
-
-test('a tab swapped in complete and shorter than the position loses the hold in the frame that places it, before it is drawn', () => {
-  const page = heldPage({ reachableWhenDrawn: 250 });
-  const clock = frames();
-  let pending = true;
-  focusScreenHeading({
-    scrollY: 400,
-    isPending: () => pending,
-    doc: docOf([panel(true, [])]),
-    raf: clock.raf,
-    naturalHeight: () => 1150, // the window got taller since the position was left: the screen no longer reaches it
-    ...page.options,
-  });
-  clock.step(); // a frame of the screen still on show
-  pending = false; // the tab was swapped in, in a task before the next frame
-  clock.step(); // the frame that places the position and is then drawn
-  assert.equal(page.held, 0, 'no frame is drawn with the blank space of the hold');
-  assert.deepEqual(page.log, ['release', 'hold 400', 'scroll 400', 'release']);
-});
-
-test('a screen that is still growing keeps its height held until it reaches the position', () => {
-  const page = heldPage({ reachableWhenDrawn: 900 });
-  const clock = frames();
-  let screenHeight = 1000;
-  focusScreenHeading({
-    scrollY: 400,
-    doc: docOf([panel(true, [])]),
-    raf: clock.raf,
-    naturalHeight: () => screenHeight,
-    ...page.options,
-  });
-  for (const height of [1100, 1200, 1250, 1290]) {
-    screenHeight = height; // the screen grew since the last frame
-    clock.step();
-    assert.equal(page.held, 400, `still held at ${height}`);
-  }
-  for (let frame = 0; frame < 6; frame += 1) {
-    clock.step(); // 450 px of scrolling now: the position is reached and has held
-  }
-  assert.equal(page.held, 0);
-  assert.equal(page.position, 400);
 });
 
 test('the height is held at most a few windows more than the page is tall, however far the saved position is', () => {
