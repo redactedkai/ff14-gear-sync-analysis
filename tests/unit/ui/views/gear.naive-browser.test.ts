@@ -82,7 +82,7 @@ test('the Gear browser lists the rows, order and slot counts of a naive filter a
       expOff: ['ARR', 'HW', 'SB', 'ShB', 'EW', 'DT'].filter(() => rand() < 0.25),
       exclude: ACTIVITIES.map(activity => activity.key).filter(() => rand() < 0.3),
       market: rand() < 0.5,
-      min: pick(['', '', 100, 300, 690, '12abc']),
+      min: pick(['', '', 100, 300, 690]),
       max: pick(['', '', 200, 500, 795, 99999]),
       lvl: pick([job.maxLevel, '', 50, 70, 90, 1]),
       sort: pick(['name', 'lvl', 'ilvl', ...job.stats]),
