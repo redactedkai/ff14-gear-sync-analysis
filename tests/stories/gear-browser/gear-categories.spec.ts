@@ -147,12 +147,13 @@ test.describe('<gsa-gear-categories>', () => {
           clientWidth: root.clientWidth,
           scrollHeight: root.scrollHeight,
           clientHeight: root.clientHeight,
+          // an element's box, or its content (text that runs past its box counts toward the page's width too)
           past: [...document.querySelectorAll('*')]
-            .filter(element => element.getBoundingClientRect().right > root.clientWidth)
-            .slice(0, 6)
+            .filter(element => element.getBoundingClientRect().left + element.scrollWidth > root.clientWidth)
+            .slice(0, 14)
             .map(
               element =>
-                `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''} right ${Math.round(element.getBoundingClientRect().right)}`,
+                `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}.${String(element.className).slice(0, 24)} left ${Math.round(element.getBoundingClientRect().left)} width ${Math.round(element.getBoundingClientRect().width)} content ${element.scrollWidth}`,
             ),
         },
       };
