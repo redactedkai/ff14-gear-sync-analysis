@@ -7,7 +7,7 @@ import { SheetDialogs } from '../../../../../src/ui/elements/sheets/sheet-dialog
 import { EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT } from '../../../../../src/ui/sheets/store-shared.ts';
 import { WHM_CANE, fakeStorage, piece, sageSet } from '../../../helpers/sheet-fixtures.ts';
 import { mustFind } from '../../../helpers/common.ts';
-import { createSheetsFacade, madeId, openSheetOf } from '../../../helpers/stores.ts';
+import { createSheetsFacade, idOf, openSheetOf } from '../../../helpers/stores.ts';
 
 /* The dialogs over a fresh store; `changes` counts the calls of the page's draw-again callback. */
 function bind() {
@@ -193,7 +193,7 @@ test('the cap follows the level, the job and the sync switch, and the cap field 
 test('Copy sheet to a job that cannot wear a piece waits for the box before it copies', () => {
   const { dialogs, sheets } = bind();
   sheets.createSheet({ name: 'Canes', job: 'WHM', level: 100, sync: { on: false, cap: 795 } });
-  const setId = madeId(sheets.newSet());
+  const setId = idOf(sheets.newSet());
   sheets.updateSet(setId, { pieces: sageSet().pieces.map((row, i) => (i === 0 ? piece('weapon', WHM_CANE) : row)) });
   dialogs.openCopy(openSheetOf(sheets).id);
   assert.equal(formView(dialogs).warning, null, 'the White Mage can wear its own cane');

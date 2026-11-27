@@ -12,7 +12,7 @@ import { mustFind } from '../../../helpers/common.ts';
 import { standsFor } from '../../../helpers/dom-fakes.ts';
 import { fakeStorage } from '../../../helpers/sheet-fixtures.ts';
 import { createStores, openSetOf, openSheetOf } from '../../../helpers/stores.ts';
-import type { SheetsFacade } from '../../../helpers/stores.ts';
+import type { PageStore } from '../../../../../src/ui/store/page-store.ts';
 
 /* The model over a fresh store. */
 function bind() {
@@ -33,7 +33,7 @@ function fakeOpener(focus: () => void = () => {}): HTMLElement {
 }
 
 /* A sheet with the given name, opened. */
-function addSheet(sheets: SheetsFacade, name = 'S') {
+function addSheet(sheets: PageStore['sheets'], name = 'S') {
   sheets.createSheet({ name, job: 'SGE', level: 100, sync: { on: false, cap: 795 } });
 }
 
