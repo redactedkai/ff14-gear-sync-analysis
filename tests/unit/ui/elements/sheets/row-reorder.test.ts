@@ -4,27 +4,30 @@
 import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { RowReorder } from '../../../../../src/ui/elements/sheets/row-reorder.ts';
+import { standsFor, stubGlobal } from '../../../helpers/dom-fakes.ts';
 import { fakeStorage } from '../../../helpers/sheet-fixtures.ts';
 import { createSheetsFacade } from '../../../helpers/stores.ts';
 
 // the controller moves the focus a frame after a step: run those frames at once
+let restoreFrames = () => {};
 beforeEach(() => {
-  globalThis.requestAnimationFrame = callback => callback();
+  restoreFrames = stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => callback(0));
 });
 afterEach(() => {
-  delete globalThis.requestAnimationFrame;
+  restoreFrames();
 });
 
 /* A controller over three sheets (listed A, B, C) of a store, with `locks` ({drag, step}) and the handles it was asked to focus. */
-function bind(locks = {}) {
+function bind(locks: { drag?: boolean; step?: boolean } = {}) {
   let next = 0;
   const sheets = createSheetsFacade({ storage: fakeStorage(), makeId: prefix => `${prefix}${++next}` });
   for (const name of ['C', 'B', 'A']) {
     sheets.createSheet({ name, job: 'SGE', level: 100, sync: { on: false, cap: 795 } });
   }
   sheets.openManager();
-  const focused = [];
+  const focused: number[] = [];
   const host = { addController() {}, requestUpdate() {}, isConnected: true, updateComplete: Promise.resolve(true) };
+  standsFor<ConstructorParameters<typeof RowReorder>[0]>(host);
   const reorder = new RowReorder(host, {
     dragLocked: () => Boolean(locks.drag),
     stepLocked: () => Boolean(locks.step),
@@ -36,11 +39,23 @@ function bind(locks = {}) {
   return { reorder, names, focused, host };
 }
 
-const key = name => ({ key: name, preventDefault() {} });
+const key = (name: string): KeyboardEvent => {
+  const event = { key: name, preventDefault() {} };
+  standsFor<KeyboardEvent>(event);
+  return event;
+};
 const transfer = { setData() {}, setDragImage() {} };
-const dragEvent = extra => ({ dataTransfer: transfer, target: { closest: () => null }, preventDefault() {}, ...extra });
+const dragEvent = (extra: { preventDefault?: () => void } = {}): DragEvent => {
+  const event = { dataTransfer: transfer, target: { closest: () => null }, preventDefault() {}, ...extra };
+  standsFor<DragEvent>(event);
+  return event;
+};
 /* A pointer at `clientY` over a row 40 px tall that starts at 0. */
-const over = clientY => ({ clientY, currentTarget: { getBoundingClientRect: () => ({ top: 0, height: 40 }) }, preventDefault() {} });
+const over = (clientY: number): DragEvent => {
+  const event = { clientY, currentTarget: { getBoundingClientRect: () => ({ top: 0, height: 40 }) }, preventDefault() {} };
+  standsFor<DragEvent>(event);
+  return event;
+};
 
 test('Up and Down on a handle move the row one place and the focus follows it; other keys do nothing', async () => {
   const { reorder, names, focused, host } = bind();

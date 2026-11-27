@@ -4,16 +4,36 @@
 import { afterEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { opensRow } from '../../../../../src/ui/elements/sheets/open-row.ts';
+import { standsFor, stubGlobal } from '../../../helpers/dom-fakes.ts';
 
 /* A click on a row: `controlInRow` is the control the click landed in (null for plain cell content), `controlOutside`
    one found above the row (the page around a table). */
-function click({ controlInRow = null, controlOutside = null } = {}) {
-  const row = { contains: node => node === controlInRow };
-  return { currentTarget: row, target: { closest: () => controlInRow ?? controlOutside } };
+function click({
+  controlInRow = null,
+  controlOutside = null,
+}: {
+  controlInRow?: object | null;
+  controlOutside?: object | null;
+} = {}): MouseEvent {
+  const row = { contains: (node: unknown) => node === controlInRow };
+  const event = { currentTarget: row, target: { closest: () => controlInRow ?? controlOutside } };
+  standsFor<MouseEvent>(event);
+  return event;
+}
+
+/* The functions that put back the globals a test replaced. */
+const restores: (() => void)[] = [];
+
+/* Makes the page's selection `text`, inside the row or not. */
+function selectText(text: string, inRow: boolean): void {
+  const selection = { isCollapsed: text === '', toString: () => text, containsNode: () => inRow };
+  restores.push(stubGlobal('getSelection', () => selection));
 }
 
 afterEach(() => {
-  delete globalThis.getSelection;
+  for (const restore of restores.splice(0).reverse()) {
+    restore();
+  }
 });
 
 test('a click on plain cell content opens its row', () => {
@@ -30,11 +50,10 @@ test('a control above the row (outside it) does not stop the row from opening', 
 });
 
 test('a click that ends a text selection in the row opens nothing; an empty or other selection does not stop it', () => {
-  const selection = (text, inRow) => ({ isCollapsed: text === '', toString: () => text, containsNode: () => inRow });
-  globalThis.getSelection = () => selection('Week 1', true);
+  selectText('Week 1', true);
   assert.equal(opensRow(click()), false, 'selected text inside the row');
-  globalThis.getSelection = () => selection('', true);
+  selectText('', true);
   assert.equal(opensRow(click()), true);
-  globalThis.getSelection = () => selection('elsewhere', false);
+  selectText('elsewhere', false);
   assert.equal(opensRow(click()), true);
 });
