@@ -15,7 +15,7 @@ const STORIES_DIR = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(STORIES_DIR, 'out');
 
 /* Every file under `folder`, as paths with forward slashes (the `out` folder is skipped). */
-function listFiles(folder) {
+function listFiles(folder: string): string[] {
   return readdirSync(folder).flatMap(name => {
     const path = join(folder, name);
     if (statSync(path).isDirectory()) {
@@ -28,7 +28,7 @@ function listFiles(folder) {
 /* Writes the registry: one lazy import per `*.story.ts` file, keyed by its path under tests/stories without the
    extension ('app/job-menu'). Returns the number of story files. */
 function writeRegistry() {
-  const storyFiles = listFiles(STORIES_DIR).filter(file => /\.story.ts$/.test(file));
+  const storyFiles = listFiles(STORIES_DIR).filter(file => /\.story\.ts$/.test(file));
   const lines = storyFiles.map(file => {
     const id = relative(STORIES_DIR, file)
       .replaceAll('\\', '/')
@@ -49,6 +49,8 @@ async function buildGallery() {
     outdir: OUT_DIR,
     entryNames: 'gallery',
     bundle: true,
+    // the gallery imports the generated registry by this name (typed in gallery/gallery-globals.d.ts)
+    alias: { 'story-registry': join(OUT_DIR, 'registry.generated.js') },
     format: 'iife',
     target: BROWSER_TARGETS,
     // Lit's development build (its dev-mode errors and warnings)

@@ -1,17 +1,20 @@
 /* Stories of <gsa-job-menu>: the Job box of the page's strip, with a button before it and one after it (where Tab goes). A pick
    (`job-change`) is appended to the `events` output as the job's id, and the story sets `job` as the page does. */
 import { html } from 'lit';
-import '../../../src/ui/elements/app/job-menu.ts';
+import { GsaJobMenu } from '../../../src/ui/elements/app/job-menu.ts';
+import { findElement, listenerElement } from '../gallery/dom.ts';
 
 /* The job the story starts with, and its name in the box. */
 export const START_JOB = 'SGE';
 export const START_JOB_NAME = 'Sage';
 
 /* Sets `job` to the pick and records it. */
-function onPick(event) {
-  event.currentTarget.querySelector('gsa-job-menu').job = event.detail;
+function onPick(event: CustomEvent<string>) {
+  findElement(listenerElement(event), 'gsa-job-menu', GsaJobMenu).job = event.detail;
   const output = document.querySelector('[data-testid="events"]');
-  output.textContent = JSON.stringify([...JSON.parse(output.textContent || '[]'), event.detail]);
+  if (output) {
+    output.textContent = JSON.stringify([...JSON.parse(output.textContent || '[]'), event.detail]);
+  }
 }
 
 export const Default = () => html`

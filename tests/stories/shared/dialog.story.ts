@@ -14,7 +14,7 @@ export const NAME_TEXT = 'Bahamut T13';
 /* The dialog, open: its first control is the name box, the one asked to take the focus. */
 export const Default = () => {
   const recordDetail = recordEvents('events');
-  const record = event => recordDetail({ detail: event.type });
+  const record = (event: Event) => recordDetail({ detail: event.type });
   return html`
     <button type="button">${BEHIND_LABEL}</button>
     <gsa-dialog content-id="story-dialog" title-id="story-title" initial-focus="#story-name" @dialog-close=${record} @dialog-escape=${record}>

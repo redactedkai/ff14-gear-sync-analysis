@@ -14,6 +14,11 @@ export { APP_MENU_LABEL };
 /* The words of the weapon row, which the keyboard specs look for by name. */
 export const WEAPON_LABEL = 'Weapon';
 
+declare global {
+  // the function below, which the specs call through `page.evaluate`
+  var gsaOpenLayerIds: () => string[];
+}
+
 /* The ids of the layers the page's overlay manager holds open, for a test that checks the element lets go of its layer. */
 globalThis.gsaOpenLayerIds = () => [...overlays.openIds];
 

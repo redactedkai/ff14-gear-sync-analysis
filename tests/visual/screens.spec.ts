@@ -20,15 +20,22 @@ for (const width of WIDTHS) {
         await stubWebFonts(context);
         await prepareContext(context, view);
 
-        const pageErrors = [];
+        const pageErrors: string[] = [];
         page.on('pageerror', error => pageErrors.push(error.message));
-        await page.goto(viewUrl(pathToFileURL(process.env[PAGE_ENV]).href, view));
+        const builtPage = process.env[PAGE_ENV];
+        if (!builtPage) {
+          throw new Error(`${PAGE_ENV} is not set: the global setup builds the page`);
+        }
+        await page.goto(viewUrl(pathToFileURL(builtPage).href, view));
         await openView(page, view);
 
         expect(pageErrors, 'script errors on the page').toEqual([]);
         const sidewaysPx = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         expect(sidewaysPx, 'sideways scroll').toBeLessThanOrEqual(0);
-        await expect(page).toHaveScreenshot(`${name}-${width}-dark.png`, { fullPage: true, maxDiffPixels: view.maxDiffPixels ?? 0 });
+        await expect(page).toHaveScreenshot(`${name}-${width}-dark.png`, {
+          fullPage: true,
+          maxDiffPixels: ('maxDiffPixels' in view ? view.maxDiffPixels : undefined) ?? 0,
+        });
       });
     }
   });

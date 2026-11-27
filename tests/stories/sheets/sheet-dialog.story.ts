@@ -2,22 +2,33 @@
    over a sheets store stand-in that records the sheet it is asked to create (`create:<name>:<job>` in the `events` output), the element
    given the model's view and answering with its actions, and the button that opened the dialog behind it. */
 import { html } from 'lit';
-import '../../../src/ui/elements/sheets/sheet-dialog.ts';
-import { SheetDialogs } from '../../../src/ui/elements/sheets/sheet-dialogs-model.ts';
+import { GsaSheetDialog } from '../../../src/ui/elements/sheets/sheet-dialog.ts';
+import { SheetDialogs, type SheetsPort } from '../../../src/ui/elements/sheets/sheet-dialogs-model.ts';
 import { FORM_FIELD } from '../../../src/ui/sheets/ops.ts';
+import { saveSheet } from '../../../src/ui/sheets/storage.ts';
+import type { SavedSheet } from '../../../src/ui/sheets/saved-types.ts';
+import { restoreState } from '../../../src/ui/state.ts';
+import { createPageStore } from '../../../src/ui/store/page-store.ts';
+import { fakeStorage } from '../../unit/helpers/sheet-fixtures.ts';
 
 /* The words the specs look for. */
 export const TITLE = 'New sheet';
 export const OPENER_LABEL = 'New sheet opener';
 
+/* The Sheets facade of a real page store over a stand-in storage that holds `saved`. */
+function facadeHolding(saved: SavedSheet[]): SheetsPort {
+  const storage = fakeStorage();
+  for (const sheet of saved) {
+    saveSheet(sheet, storage);
+  }
+  return createPageStore({ restored: restoreState(null), storage }).sheets;
+}
+
 /* The sheets store's part that a New sheet dialog uses: nothing saved; a create with a job and a name is recorded and accepted, one
    without a job is refused at the Job field and a blank name at the Name field, as the store does. */
-function sheetsStandIn(record) {
+function sheetsStandIn(record: (parts: string[]) => void): SheetsPort {
   return {
-    busy: false,
-    sheet: () => null,
-    set: () => null,
-    list: () => ({ sheets: [], unreadable: [] }),
+    ...facadeHolding([]),
     createSheet: fields => {
       if (!fields.job) {
         return { ok: false, error: 'Choose a job.', field: FORM_FIELD.job };
@@ -33,8 +44,8 @@ function sheetsStandIn(record) {
 
 /* The dialog, open over its opener button. */
 export const Default = () => {
-  const seen = [];
-  const record = parts => {
+  const seen: string[] = [];
+  const record = (parts: string[]) => {
     seen.push(...parts);
     const output = document.querySelector('[data-testid="events"]');
     if (output) {
@@ -44,14 +55,14 @@ export const Default = () => {
   const opener = document.createElement('button');
   opener.type = 'button';
   opener.textContent = OPENER_LABEL;
-  const dialog = document.createElement('gsa-sheet-dialog');
+  const dialog = new GsaSheetDialog();
   const model = new SheetDialogs({
     sheets: sheetsStandIn(record),
     onChange: () => {
       dialog.view = model.view();
     },
   });
-  dialog.addEventListener('dialog-action', event => model.act(event.detail));
+  dialog.addEventListener('dialog-action', event => event instanceof CustomEvent && model.act(event.detail));
   dialog.addEventListener('dialog-closed', () => model.afterClosed());
   model.openNewSheet(opener);
   return html`${opener}${dialog}<output data-testid="events" hidden></output>`;
@@ -59,7 +70,7 @@ export const Default = () => {
 
 /* A White Mage sheet with one gear set holding the Ironworks Magitek Cane (game id 8645, no other healer wears it) in its weapon row:
    copying it to Astrologian clears the weapon, which the Copy dialog warns about. */
-const CANE_SHEET = {
+const CANE_SHEET: SavedSheet = {
   v: 1,
   id: 's_cane',
   name: 'Canes',
@@ -72,7 +83,7 @@ const CANE_SHEET = {
       id: 'g_cane',
       name: 'Mine',
       description: '',
-      pieces: ['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring', 'ring'].map(slot =>
+      pieces: (['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring', 'ring'] as const).map(slot =>
         slot === 'weapon' ? { slot, gameId: 8645, stones: [] } : { slot },
       ),
       meal: null,
@@ -89,11 +100,8 @@ const CANE_SHEET = {
 
 /* The sheets store's part that a Copy dialog uses: the one sheet; a copy that is not acknowledged is refused at the box of the warning,
    as the store does. */
-const copyStandIn = {
-  busy: false,
-  sheet: () => CANE_SHEET,
-  set: () => null,
-  list: () => ({ sheets: [CANE_SHEET], unreadable: [] }),
+const copyStandIn: SheetsPort = {
+  ...facadeHolding([CANE_SHEET]),
   copySheet: (_id, _fields, ack) => (ack ? { ok: true } : { ok: false, error: 'Tick the box to copy.', field: FORM_FIELD.ack }),
 };
 
@@ -102,14 +110,14 @@ export const Copy = () => {
   const opener = document.createElement('button');
   opener.type = 'button';
   opener.textContent = OPENER_LABEL;
-  const dialog = document.createElement('gsa-sheet-dialog');
+  const dialog = new GsaSheetDialog();
   const model = new SheetDialogs({
     sheets: copyStandIn,
     onChange: () => {
       dialog.view = model.view();
     },
   });
-  dialog.addEventListener('dialog-action', event => model.act(event.detail));
+  dialog.addEventListener('dialog-action', event => event instanceof CustomEvent && model.act(event.detail));
   dialog.addEventListener('dialog-closed', () => model.afterClosed());
   model.openCopy(CANE_SHEET.id, opener);
   return html`${opener}${dialog}`;

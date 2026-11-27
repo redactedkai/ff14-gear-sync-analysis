@@ -4,6 +4,7 @@
 import { restoreState } from '../../../src/ui/state.ts';
 import { saveSheet } from '../../../src/ui/sheets/storage.ts';
 import { createPageStore } from '../../../src/ui/store/page-store.ts';
+import type { SavedSheet } from '../../../src/ui/sheets/saved-types.ts';
 import { fakeStorage } from '../../unit/helpers/sheet-fixtures.ts';
 import { solver } from '../set-page/set-page.story.ts';
 
@@ -11,7 +12,7 @@ import { solver } from '../set-page/set-page.story.ts';
 const MAX_REAL_ILVL = 795;
 
 /* The ports over a store that holds the saved sheets `sheets` and opens on the tab `tab` ('sheets', 'browse' or 'math'). */
-export function pagePorts({ sheets: savedSheets = [], tab = 'sheets' } = {}) {
+export function pagePorts({ sheets: savedSheets = [], tab = 'sheets' }: { sheets?: SavedSheet[]; tab?: string } = {}) {
   const storage = fakeStorage();
   for (const sheet of savedSheets) {
     saveSheet(sheet, storage);

@@ -2,14 +2,18 @@
    with the store) is played by a listener that applies each `browse-edit` patch to the element's `browse`. Every patch is
    also appended to the `edits` output. */
 import { html } from 'lit';
-import '../../../src/ui/elements/gear-browser/gear-browser.ts';
+import { GsaGearBrowser } from '../../../src/ui/elements/gear-browser/gear-browser.ts';
+import { findElement, listenerElement } from '../gallery/dom.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { defaultBrowse } from '../../../src/ui/state.ts';
 import { recordEvents } from '../gallery/record.ts';
 
 /* The page's job: a `browse-edit` patch becomes the element's next `browse` (frozen, as the store hands it out). */
-function applyEdit(event) {
-  const screen = event.currentTarget.querySelector('gsa-gear-browser');
+function applyEdit(event: CustomEvent<object>) {
+  const screen = findElement(listenerElement(event), 'gsa-gear-browser', GsaGearBrowser);
+  if (!screen.browse) {
+    throw new Error('the Gear browser has no browse state yet');
+  }
   screen.browse = Object.freeze({ ...screen.browse, ...event.detail });
   recordEvents('edits')(event);
 }

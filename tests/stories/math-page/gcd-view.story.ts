@@ -1,11 +1,12 @@
 /* Stories of <gsa-gcd-view>: the GCD Scaling sub-tab. The page's part is played by a listener that applies `gcd-edit` to the
    element's properties, as <gsa-math-screen> does with the store. */
 import { html } from 'lit';
-import '../../../src/ui/elements/math-page/gcd-view.ts';
+import { GsaGcdView } from '../../../src/ui/elements/math-page/gcd-view.ts';
+import { findElement, listenerElement } from '../gallery/dom.ts';
 
 /* The page's job: a `gcd-edit` sets the typed level or the speed asked for, and the element draws again. */
-function applyEdit(event) {
-  const view = event.currentTarget.querySelector('gsa-gcd-view');
+function applyEdit(event: CustomEvent<{ level: number } | { speed: number }>) {
+  const view = findElement(listenerElement(event), 'gsa-gcd-view', GsaGcdView);
   Object.assign(view, event.detail);
 }
 

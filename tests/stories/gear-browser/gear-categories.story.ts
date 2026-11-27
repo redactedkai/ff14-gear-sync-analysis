@@ -15,7 +15,11 @@ export const DEFAULT_LEFT_OUT = ACTIVITIES.filter(activity => !activity.on).map(
 export const Default = ({
   exclude = DEFAULT_LEFT_OUT,
   market = true,
-  counts = /** @type {Record<string, number> | null} */ (null),
+  counts = null,
+}: {
+  exclude?: string[];
+  market?: boolean;
+  counts?: Record<string, number> | null;
 } = {}) => html`
   <div style="display: flex; gap: 24px; align-items: flex-start; justify-content: flex-end">
     <button type="button">Before</button>

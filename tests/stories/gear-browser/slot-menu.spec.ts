@@ -424,9 +424,9 @@ test.describe('<gsa-slot-menu>', () => {
     const component = await mount<typeof Default>(STORY);
     await component.getByRole('button', { name: slotButtonName(ANY_SLOT_LABEL) }).click();
     await expect(page.locator('#b-slots')).toBeVisible();
-    expect(await page.evaluate(() => (globalThis as unknown as { gsaOpenLayerIds(): string[] }).gsaOpenLayerIds())).toHaveLength(1);
+    expect(await page.evaluate(() => globalThis.gsaOpenLayerIds())).toHaveLength(1);
     await page.evaluate(() => document.querySelector('gsa-slot-menu')?.remove());
-    expect(await page.evaluate(() => (globalThis as unknown as { gsaOpenLayerIds(): string[] }).gsaOpenLayerIds())).toEqual([]);
+    expect(await page.evaluate(() => globalThis.gsaOpenLayerIds())).toEqual([]);
   });
 
   test('the focus ring shows when the keyboard reaches the button after the pointer was over or inside the widget', async ({

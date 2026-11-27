@@ -16,11 +16,18 @@ import { readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// One domain: its title, the files of src/ and scripts/ it owns, and the test and support files its mirror rule does not place.
+export interface Domain {
+  title: string;
+  src: string[];
+  tests: string[];
+}
+
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 // The domains in the order the docs list them: name -> title, what it owns in `src` (src/ and scripts/), and the test
 // and support files its mirror rule does not place (`tests`).
-export const DOMAINS = {
+export const DOMAINS: Record<string, Domain> = {
   model: {
     title: 'The game number rules: item stats, sync, speed, tiers, food, materia',
     src: [
@@ -216,9 +223,9 @@ const SKIPPED_FOLDERS = new Set(['__pycache__', 'out', 'node_modules']);
 // Every file under `folder` (relative to the repo root), as sorted paths with forward slashes, relative to the root.
 // Folders that hold generated or foreign files (`out`, `__pycache__`, `node_modules`) are left out.
 // `root` is the repo root; only the guard tests pass another, a temporary tree with a planted file.
-export function listFiles(folder, root = ROOT) {
-  const found = [];
-  const visit = current => {
+export function listFiles(folder: string, root = ROOT): string[] {
+  const found: string[] = [];
+  const visit = (current: string) => {
     for (const name of readdirSync(current)) {
       if (SKIPPED_FOLDERS.has(name)) {
         continue;
@@ -236,7 +243,7 @@ export function listFiles(folder, root = ROOT) {
 }
 
 // A pattern with its `{a,b}` choices written out: 'x/{a,b}.js' gives ['x/a.js', 'x/b.js'].
-function expandChoices(pattern) {
+function expandChoices(pattern: string): string[] {
   const choice = pattern.match(/\{([^}]+)\}/);
   if (!choice) {
     return [pattern];
@@ -245,23 +252,23 @@ function expandChoices(pattern) {
 }
 
 // True when `file` matches `pattern` (a path, a folder ending in `/**`, or `{a,b}` choices).
-export function matchesPattern(file, pattern) {
+export function matchesPattern(file: string, pattern: string): boolean {
   return expandChoices(pattern).some(path => (path.endsWith('/**') ? file.startsWith(path.slice(0, -2)) : file === path));
 }
 
 // The names of the domains whose `key` list ('src' or 'tests') has a pattern matching `file`.
-function domainsListing(file, key) {
+function domainsListing(file: string, key: 'src' | 'tests'): string[] {
   return DOMAIN_NAMES.filter(name => DOMAINS[name][key].some(pattern => matchesPattern(file, pattern)));
 }
 
 // The domains that own a file of src/ or scripts/: one name for a correct registry; none or several are guard failures.
-export function domainsOfSource(file) {
+export function domainsOfSource(file: string): string[] {
   return domainsListing(file, 'src');
 }
 
 // The src/ file a unit test mirrors, or null: tests/unit/ui/views/gcd.test.ts gives src/ui/views/gcd.ts; a `.concern` is
 // dropped; `index` is a real file in a folder (core/optimizer/index.pinned gives src/core/optimizer/index.ts).
-export function mirroredModule(testFile, sourceFiles) {
+export function mirroredModule(testFile: string, sourceFiles: ReadonlySet<string>): string | null {
   const parts = testFile.match(/^tests\/unit\/(.+)\/([^/.]+)(?:\.[^/]+)?\.test\.(?:js|ts)$/);
   if (!parts) {
     return null;
@@ -273,7 +280,7 @@ const SOURCE_FILES = new Set(listFiles('src'));
 
 // The domains of a file of tests/: the ones whose `tests` list names it, else the domain of the module it mirrors.
 // One name for a correct registry; none or several are guard failures.
-export function domainsOfTest(file) {
+export function domainsOfTest(file: string): string[] {
   const listed = domainsListing(file, 'tests');
   if (listed.length) {
     return listed;
@@ -284,7 +291,7 @@ export function domainsOfTest(file) {
 
 // Splits a list of domain names ('sheets,set-page') and checks each. Returns the names, in the given order; throws an
 // Error that lists the valid names for an unknown or empty one.
-export function parseDomains(text) {
+export function parseDomains(text: string): string[] {
   const names = text
     .split(',')
     .map(name => name.trim())
@@ -301,7 +308,7 @@ const TEST_FILE = /\.test\.(js|ts)$/;
 
 // The unit test files (tests/unit/**/*.test.{js,ts}) of the named domains, sorted. `fast` leaves out the LONG files.
 // `root` is the repo root (another only in the guard tests).
-export function unitFilesOf(domainNames, { fast = false, root = ROOT } = {}) {
+export function unitFilesOf(domainNames: string[], { fast = false, root = ROOT } = {}): string[] {
   return listFiles('tests/unit', root)
     .filter(file => TEST_FILE.test(file))
     .filter(file => domainNames.some(name => domainsOfTest(file).includes(name)))
@@ -309,12 +316,12 @@ export function unitFilesOf(domainNames, { fast = false, root = ROOT } = {}) {
 }
 
 // The sweep test files (tests/sweep/*.test.{js,ts}) of the named domains, sorted.
-export function sweepFilesOf(domainNames) {
+export function sweepFilesOf(domainNames: string[]): string[] {
   return listFiles('tests/sweep').filter(file => TEST_FILE.test(file) && domainNames.some(name => domainsOfTest(file).includes(name)));
 }
 
 // The Python generator test files (tests/data/test_*.py) of the named domains, sorted.
-export function pythonFilesOf(domainNames) {
+export function pythonFilesOf(domainNames: string[]): string[] {
   return listFiles('tests/data').filter(
     file => /\/test_[^/]*\.py$/.test(file) && domainNames.some(name => domainsOfTest(file).includes(name)),
   );

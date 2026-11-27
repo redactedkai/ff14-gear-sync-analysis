@@ -2,12 +2,15 @@
    The page's part is played here: an edit of the item level answers with the cap lowered to 405 (the most level 70 allows) and every
    action the element sends is appended to the `events` output as `action:kind:id` or `action:value`. */
 import { html } from 'lit';
-import '../../../src/ui/elements/sheets/sheet-page.ts';
+import { GsaSheetPage, type SheetPageView, type SheetSwitcher } from '../../../src/ui/elements/sheets/sheet-page.ts';
+import type { SheetAction } from '../../../src/ui/elements/sheets/sheet-action.ts';
 import '../../../src/ui/elements/shared/select.ts';
+import { listenerElement } from '../gallery/dom.ts';
 import { recordEvents } from '../gallery/record.ts';
+import { actionFields } from './action-fields.ts';
 
 /* A gear set's row, shaped as views/sheet-sets.ts builds it (the two figures are the main stat and the GCD). */
-const set = (id, name, mind, gcd, description = '') => ({
+const set = (id: string, name: string, mind: number, gcd: string, description = ''): SheetPageView['rows'][number] => ({
   id,
   href: `#/sheets/s_raid/sets/${id}`,
   name,
@@ -15,14 +18,14 @@ const set = (id, name, mind, gcd, description = '') => ({
   descriptionLine: description,
   originText: '0 pinned, 11 unpinned',
   figures: [
-    { key: 'main', text: String(mind) },
-    { key: 'gcd', text: gcd },
+    { key: 'main', label: 'MND', text: String(mind) },
+    { key: 'gcd', label: 'GCD', text: gcd },
   ],
-  points: [{ key: 'mind', text: String(mind) }],
+  points: [{ key: 'mind', label: 'MND', text: String(mind) }],
 });
 
 /* The sheet page's view. */
-export const VIEW = {
+export const VIEW: SheetPageView = {
   id: 's_raid',
   crumbs: [
     { text: 'Sheets', to: 'sheets', href: '#/sheets' },
@@ -47,7 +50,7 @@ export const VIEW = {
 };
 
 /* The caret menu after the sheet's name. */
-const SWITCHER = {
+const SWITCHER: SheetSwitcher = {
   items: [{ id: 's_raid', name: 'Raid', href: '#/sheets/s_raid', current: true }],
   allLabel: 'All sheets (1)',
   allHref: '#/sheets',
@@ -61,11 +64,11 @@ export const LOWERED_TO = 405;
 export const Default = () => {
   const record = recordEvents('events');
   /* The page's wrapper: records the action, and answers an item level above what level 70 allows with the lowered cap. */
-  const answer = event => {
-    const { action, kind, id, value, mode, name } = event.detail;
+  const answer = (event: CustomEvent<SheetAction>) => {
+    const { action, kind, id, value, mode, name } = actionFields(event.detail);
     if (action === 'clan' || action === 'party') {
       // the Clan and Party bonus boxes: the page keeps the pick and shows the note under the table
-      const page = event.currentTarget;
+      const page = listenerElement(event, GsaSheetPage);
       page.clan = action === 'clan' ? name || null : page.clan;
       page.partyRoles = action === 'party' ? Number(value) : page.partyRoles;
       page.view = {
@@ -73,9 +76,9 @@ export const Default = () => {
         bonusNote: page.clan || page.partyRoles ? `${page.clan ?? 'No clan'}, ${page.partyRoles}% party bonus` : '',
       };
     }
-    if (action === 'cap' && Number(value) > LOWERED_TO) {
+    if (event.detail.action === 'cap' && Number(value) > LOWERED_TO) {
       event.detail.result = { ok: true, lowered: { from: Number(value), to: LOWERED_TO, level: 70 } };
-    } else if (action === 'cap' || action === 'level') {
+    } else if (event.detail.action === 'cap' || event.detail.action === 'level') {
       event.detail.result = { ok: true, lowered: null };
     }
     record({ detail: [action, kind, id, value ?? name, mode].filter(part => part !== undefined).join(':') });

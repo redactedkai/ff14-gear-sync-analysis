@@ -2,7 +2,8 @@
    played here: the element asks for a change (`open-change`) and the story sets `open`, as the page does, and appends the answer to the
    `events` output. */
 import { html } from 'lit';
-import '../../../src/ui/elements/shared/collapsible.ts';
+import { GsaCollapsible } from '../../../src/ui/elements/shared/collapsible.ts';
+import { listenerElement } from '../gallery/dom.ts';
 import { recordEvents } from '../gallery/record.ts';
 
 /* The ids of the two parts (the element's `trigger-id` and `content-id`), which the spec uses, and the trigger's name. */
@@ -12,8 +13,8 @@ export const TRIGGER_NAME = 'Help';
 
 export const Default = () => {
   const record = recordEvents('events');
-  const onOpenChange = event => {
-    event.currentTarget.open = event.detail;
+  const onOpenChange = (event: CustomEvent<boolean>) => {
+    listenerElement(event, GsaCollapsible).open = event.detail;
     record(event);
   };
   return html`

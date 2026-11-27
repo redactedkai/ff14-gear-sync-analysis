@@ -2,15 +2,19 @@
    played here: a `step` action moves the row in the story's own list and answers with its new index, and every action the element
    sends is appended to the `events` output as `action:kind:id` (the element never reads a store). */
 import { html } from 'lit';
-import '../../../src/ui/elements/sheets/sheet-manager.ts';
+import { GsaSheetManager, type ManagerView } from '../../../src/ui/elements/sheets/sheet-manager.ts';
+import type { SheetAction } from '../../../src/ui/elements/sheets/sheet-action.ts';
+import { listenerElement } from '../gallery/dom.ts';
+import { actionFields } from './action-fields.ts';
 import { recordEvents } from '../gallery/record.ts';
 
 /* One sheet's row, shaped as views/sheet-manager.ts builds it. */
-const row = (id, name, jobId, jobName) => ({
+const row = (id: string, name: string, jobId: string, jobName: string) => ({
   id,
   href: `#/sheets/${id}`,
   name,
   descriptionLine: 'No description',
+  hasDescription: false,
   jobId,
   jobName,
   settingsText: 'Lv 100 / IL 795',
@@ -25,8 +29,9 @@ const row = (id, name, jobId, jobName) => ({
 export const NAMES = ['Raid', 'Dungeons', 'Crafting'];
 
 /* The manager's view with the sheets of `names` in that order. */
-const viewOf = names => ({
+const viewOf = (names: string[]): ManagerView => ({
   title: 'Sheets',
+  unavailableText: '',
   empty: false,
   showNewButton: true,
   emptyCard: { title: 'No sheets yet', text: 'A sheet is for one piece of content.', buttonText: 'New sheet' },
@@ -40,15 +45,16 @@ export const Default = () => {
   let order = NAMES;
   const record = recordEvents('events');
   /* The page's wrapper: records the action, and moves a row for a step. */
-  const answer = event => {
-    const { action, kind, id, index, step } = event.detail;
-    if (action === 'step') {
+  const answer = (event: CustomEvent<SheetAction>) => {
+    const { action, kind, id } = actionFields(event.detail);
+    if (event.detail.action === 'step') {
+      const { index, step } = event.detail;
       const to = Math.min(Math.max(index + step, 0), order.length - 1);
       const moved = [...order];
-      moved.splice(to, 0, moved.splice(index, 1)[0]);
+      moved.splice(to, 0, ...moved.splice(index, 1));
       order = moved;
       event.detail.result = to;
-      event.currentTarget.view = viewOf(order);
+      listenerElement(event, GsaSheetManager).view = viewOf(order);
     }
     record({ detail: [action, kind, id].filter(Boolean).join(':') });
   };
