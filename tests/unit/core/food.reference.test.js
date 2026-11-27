@@ -7,9 +7,9 @@ import assert from 'node:assert/strict';
 import { JOBS } from '../../../src/core/constants.ts';
 import { allMeals, bestFood, foodBonus, foodChoices, gearNeeded, withFood } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import { rng } from '../helpers/common.js';
+import { rng } from '../helpers/common.ts';
 import { foodAdd } from '../helpers/exhaustive.js';
-import { lexCompare } from '../helpers/exact-solver.js';
+import { lexCompare } from '../helpers/exact-solver.ts';
 
 const CASES_PER_JOB = 120;
 

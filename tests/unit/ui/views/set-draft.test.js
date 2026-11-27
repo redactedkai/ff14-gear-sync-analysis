@@ -6,8 +6,8 @@ import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { changeText, draftChanges, draftNote, draftView } from '../../../../src/ui/views/set-draft.ts';
 import { evaluateInSheet, setFigures } from '../../../../src/ui/views/set-totals.ts';
-import { hasNumber } from '../../helpers/common.js';
-import { SAGE_IDS, piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
+import { hasNumber } from '../../helpers/common.ts';
+import { SAGE_IDS, piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
 
 const sage = makeJobContext('SGE');
 const sheet = sheetOf('SGE', []);

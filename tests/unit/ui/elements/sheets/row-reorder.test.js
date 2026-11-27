@@ -4,8 +4,8 @@
 import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { RowReorder } from '../../../../../src/ui/elements/sheets/row-reorder.ts';
-import { fakeStorage } from '../../../helpers/sheet-fixtures.js';
-import { createSheetsFacade } from '../../../helpers/stores.js';
+import { fakeStorage } from '../../../helpers/sheet-fixtures.ts';
+import { createSheetsFacade } from '../../../helpers/stores.ts';
 
 // the controller moves the focus a frame after a step: run those frames at once
 beforeEach(() => {

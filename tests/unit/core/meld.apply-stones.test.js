@@ -10,7 +10,7 @@ import { browseItems, mkItem, poolItemFromRow } from '../../../src/core/items.ts
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { applyStones, bestMeld, meldStones, meldText, meldVersions } from '../../../src/core/meld.ts';
 import { effStats } from '../../../src/core/piece.ts';
-import { piece, rngInt } from '../helpers/common.js';
+import { piece, rngInt } from '../helpers/common.ts';
 
 const war = makeJobContext('WAR');
 const sge = makeJobContext('SGE');

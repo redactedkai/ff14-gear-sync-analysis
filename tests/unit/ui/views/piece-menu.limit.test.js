@@ -9,7 +9,7 @@ import { categoryOf, jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { FIRST_ROWS, limitRows } from '../../../../src/ui/views/limit-rows.ts';
 import { piecePickerView } from '../../../../src/ui/views/piece-menu.ts';
-import { sageSet } from '../../helpers/sheet-fixtures.js';
+import { sageSet } from '../../helpers/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 const GEAR = jobGear(SGE);

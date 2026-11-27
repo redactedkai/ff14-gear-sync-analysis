@@ -5,10 +5,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { FoodMenuModel } from '../../../../../src/ui/elements/set-page/food-menu-model.ts';
-import { fakeFrames } from '../../../helpers/frames.js';
-import { bind, twoToFill } from '../../../helpers/set-page-bind.js';
-import { SAGE_IDS } from '../../../helpers/sheet-fixtures.js';
-import { createSheetsFacade } from '../../../helpers/stores.js';
+import { fakeFrames } from '../../../helpers/frames.ts';
+import { bind, twoToFill } from '../../../helpers/set-page-bind.ts';
+import { SAGE_IDS } from '../../../helpers/sheet-fixtures.ts';
+import { createSheetsFacade } from '../../../helpers/stores.ts';
 
 fakeFrames({ immediate: true });
 

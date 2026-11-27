@@ -725,6 +725,6 @@ The status of each claim about the stat model (item stats, stat factors, substat
 | Food: bonus, choices per job, best meal for a goal, gear needed for a total | `src/core/food.ts`; meals in `src/data/food.json` |
 | A character's base stat at a level (`statBase`), main stat base `LEVEL_MAIN` | `src/core/base-stats.ts` |
 | Weapon damage and defense: synced values, a gear set's defense, mitigation | `src/core/damage-defense.ts`; budgets, factors and shares (`SHARES`) in `src/data/item-level.json`; the job's weapon damage `damageKey` in `src/core/job-context.ts` |
-| Accuracy against real items, Wiki 475 check | `tests/unit/helpers/model-validation.js` |
+| Accuracy against real items, Wiki 475 check | `tests/unit/helpers/model-validation.ts` |
 | Slot share check against `BaseParam.csv` | `scripts/data/item_format.py` (`check_slot_percents`) |
 | Tests for the above | `tests/unit/core/formulas.test.js`, `core/formulas.sync-clamp.test.js`, `core/formulas.sync-cap-order.test.js`, `core/sync-target.test.js`, `core/speed.test.js`, `core/formulas.model-accuracy.test.js`, `core/formulas.stat-factor.test.js` |

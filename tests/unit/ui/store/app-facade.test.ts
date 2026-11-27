@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../src/core/tables.ts';
 import { createPageStore } from '../../../../src/ui/store/page-store.ts';
 import type { RestoredState } from '../../../../src/ui/store/app-state.ts';
-import { restoreOpen } from '../../helpers/common.js';
+import { restoreOpen } from '../../helpers/common.ts';
 import { withRecordedReads } from '../../helpers/revision-reads.ts';
 
 /* A page store over `saved` (state.ts restoreState's input, with the open tab) whose facade reports each revision key it reads

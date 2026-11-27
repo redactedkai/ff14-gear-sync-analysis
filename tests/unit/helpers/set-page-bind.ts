@@ -7,9 +7,9 @@ import { inProcessSolver } from '../../../src/ui/solver.ts';
 import { placePiece } from '../../../src/ui/sheets/set-edits.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { fillButtonView, noPiecesFlag, setPageViews } from '../../../src/ui/views/set-page.ts';
-import { fakeStorage, sageSet, sheetOf } from './sheet-fixtures.js';
-import { fakeFrames, stubElement } from './frames.js';
-import { createStores } from './stores.js';
+import { fakeStorage, sageSet, sheetOf } from './sheet-fixtures.ts';
+import { fakeFrames, stubElement } from './frames.ts';
+import { createStores } from './stores.ts';
 
 /* The elements of the page the logic reaches by selector, by the name `calls` records them under; the frame callback runs at once in Node */
 const PAGE_ELEMENTS = {

@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { JOBS } from '../../../src/core/constants.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { averageItemLevel, evaluateSet, makeSet } from '../../../src/core/set.ts';
-import { SAGE_IDS } from '../helpers/sheet-fixtures.js';
+import { SAGE_IDS } from '../helpers/sheet-fixtures.ts';
 
 const NO_SYNC = { cap: 795, sync: false, level: 100 };
 const SLOTS = ['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring', 'ring'];

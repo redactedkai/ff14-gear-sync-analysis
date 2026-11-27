@@ -11,7 +11,7 @@ import { mitigationPct, setDefense, syncedValue, weaponDamage } from '../../../s
 import { resultOf } from '../../../src/core/same-result.ts';
 import { IL } from '../../../src/core/tables.ts';
 import { gamePool } from '../helpers/exhaustive.js';
-import { piece } from '../helpers/common.js';
+import { piece } from '../helpers/common.ts';
 
 const sge = makeJobContext('SGE');
 const NO_SYNC = { cap: null, sync: false, level: 100 };

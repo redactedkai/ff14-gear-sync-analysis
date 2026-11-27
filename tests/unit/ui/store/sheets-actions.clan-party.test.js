@@ -6,8 +6,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { sheetKey } from '../../../../src/ui/sheets/storage.ts';
 import { LOCKED_TEXT } from '../../../../src/ui/sheets/store-shared.ts';
-import { createSheetsFacade } from '../../helpers/stores.js';
-import { fakeStorage, quotaError } from '../../helpers/sheet-fixtures.js';
+import { createSheetsFacade } from '../../helpers/stores.ts';
+import { fakeStorage, quotaError } from '../../helpers/sheet-fixtures.ts';
 
 /* A store over `storage` with a new Sage sheet open; the clock ticks 1 ms per call. */
 function openStore(storage = fakeStorage()) {

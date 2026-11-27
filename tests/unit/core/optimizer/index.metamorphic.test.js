@@ -9,8 +9,8 @@ import { GEAR_GROUPS } from '../../../../src/core/gear-groups.ts';
 import { jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { optimize } from '../../../../src/core/optimizer/index.ts';
-import { rng } from '../../helpers/common.js';
-import { lexCompare } from '../../helpers/exact-solver.js';
+import { rng } from '../../helpers/common.ts';
+import { lexCompare } from '../../helpers/exact-solver.ts';
 
 const SYNCS = [
   { cap: 123, sync: true, level: 100 },

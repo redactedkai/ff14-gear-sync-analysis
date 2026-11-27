@@ -4,9 +4,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { slotGroups, withSub } from '../../../../src/ui/views/piece.ts';
-import { hasNumber, hasParts } from '../../helpers/common.js';
+import { hasNumber, hasParts } from '../../helpers/common.ts';
 import { gamePool } from '../../helpers/exhaustive.js';
-import { makeApp, pieceViewOf } from '../../helpers/views.js';
+import { makeApp, pieceViewOf } from '../../helpers/views.ts';
 
 test('Piece stats view: the default two substats both reach the cap; the healer note only for Mind jobs; shares in percent', () => {
   const rpr = pieceViewOf(makeApp('RPR', { cap: 123, sync: true, level: 50 }));

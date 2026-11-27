@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { SheetDialogs } from '../../../../../src/ui/elements/sheets/sheet-dialogs-model.ts';
 import { EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT } from '../../../../../src/ui/sheets/store-shared.ts';
-import { WHM_CANE, fakeStorage, piece, sageSet } from '../../../helpers/sheet-fixtures.js';
-import { createSheetsFacade } from '../../../helpers/stores.js';
+import { WHM_CANE, fakeStorage, piece, sageSet } from '../../../helpers/sheet-fixtures.ts';
+import { createSheetsFacade } from '../../../helpers/stores.ts';
 
 /* The dialogs over a fresh store; `changes` counts the calls of the page's draw-again callback. */
 function bind() {

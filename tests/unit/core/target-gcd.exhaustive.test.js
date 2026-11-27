@@ -12,7 +12,7 @@ import { optimize, prepare, solve } from '../../../src/core/optimizer/index.ts';
 import { gcdFor, gcdTierAt, hasteFor } from '../../../src/core/speed.ts';
 import { optimizeGcd } from '../../../src/core/target-gcd.ts';
 import { exhaustive, foodAdd, gamePool, smallPool, WINDOWS } from '../helpers/exhaustive.js';
-import { rng } from '../helpers/common.js';
+import { rng } from '../helpers/common.ts';
 
 /* GCD tier starts around the free result's speed `free` at `level`: two below (slower GCDs) and two above (faster). */
 function tiersAround(free, level) {

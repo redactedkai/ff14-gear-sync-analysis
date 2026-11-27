@@ -12,7 +12,7 @@ import { makeSolverHandler, solverRequest } from '../../../../src/ui/solver.ts';
 import { PINS_CONFLICT_TEXT, applyFill, badPinMessages, dropBadPins, fillPlan, unpinnedText } from '../../../../src/ui/sheets/fill.ts';
 import { MEAL_ROW_LABEL } from '../../../../src/ui/sheets/saved-set.ts';
 import { solveView } from '../../../../src/ui/solve.ts';
-import { appState, hasNumber, piece } from '../../helpers/common.js';
+import { appState, hasNumber, piece } from '../../helpers/common.ts';
 
 const sge = makeJobContext('SGE');
 const SYNC = { cap: 999, sync: false, level: 100 };

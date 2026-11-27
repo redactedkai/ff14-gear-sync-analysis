@@ -8,7 +8,7 @@ import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { sheetPageView } from '../../../../src/ui/views/sheet-sets.ts';
 import { bonusNote, evaluateInSheet, setFigures, setTotalsView } from '../../../../src/ui/views/set-totals.ts';
-import { rawGear, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.js';
+import { rawGear, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.ts';
 
 const NO_SYNC = { on: false, cap: 795 };
 const warSheet = (extra = {}, sets = []) => ({ ...sheetOf('WAR', sets, { sync: NO_SYNC }), ...extra });

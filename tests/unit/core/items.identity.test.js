@@ -7,7 +7,7 @@ import { ROW } from '../../../src/core/constants.ts';
 import { itemById, mkItem, parseRow, poolItemById, poolItemFromRow, poolKey } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { ITEMS } from '../../../src/core/tables.ts';
-import { itemRow, piece } from '../helpers/common.js';
+import { itemRow, piece } from '../helpers/common.ts';
 
 const war = makeJobContext('WAR');
 const sge = makeJobContext('SGE');

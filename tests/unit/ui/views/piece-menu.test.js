@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { piecePickerView } from '../../../../src/ui/views/piece-menu.ts';
-import { SAGE_IDS, sageSet } from '../../helpers/sheet-fixtures.js';
+import { SAGE_IDS, sageSet } from '../../helpers/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 const HEAD = 2;

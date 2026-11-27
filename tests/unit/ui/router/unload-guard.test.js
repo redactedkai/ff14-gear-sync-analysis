@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { UNLOAD_GUARD_OFF_KEY, installUnloadGuard, unloadGuardDisabled } from '../../../../src/ui/router/unload-guard.ts';
-import { fakeStorage } from '../../helpers/sheet-fixtures.js';
+import { fakeStorage } from '../../helpers/sheet-fixtures.ts';
 
 /* A window stand-in that keeps the listener, and an unload event as the browser hands it. */
 function fakeWindow() {

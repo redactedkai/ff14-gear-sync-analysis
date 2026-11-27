@@ -12,7 +12,7 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { copySheet, piecesToClear } from '../../../../src/ui/sheets/ops.ts';
 import { SET_ROW_SLOTS, parseSheet } from '../../../../src/ui/sheets/storage.ts';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
-import { rng } from '../../helpers/common.js';
+import { rng } from '../../helpers/common.ts';
 
 const SHEETS = 900;
 const SYNC = { on: true, cap: 660 };

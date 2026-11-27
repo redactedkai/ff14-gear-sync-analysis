@@ -10,9 +10,9 @@ import { jobGear, slotInfo } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { applyStones, bestMeld, meldStones } from '../../../src/core/meld.ts';
 import { effStats } from '../../../src/core/piece.ts';
-import { rng } from '../helpers/common.js';
+import { rng } from '../helpers/common.ts';
 import { meldVectors } from '../helpers/exhaustive.js';
-import { lexCompare } from '../helpers/exact-solver.js';
+import { lexCompare } from '../helpers/exact-solver.ts';
 
 const PIECES = 3000;
 const NO_SYNC = { cap: null, sync: false, level: null };

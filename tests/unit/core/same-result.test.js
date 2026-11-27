@@ -7,7 +7,7 @@ import { equipLevel, mkItem } from '../../../src/core/items.ts';
 import { resultOf, sameOutcome, sameResult } from '../../../src/core/same-result.ts';
 import { dotMult, gcdFor } from '../../../src/core/speed.ts';
 import { rankTierOf, statTier } from '../../../src/core/tiers.ts';
-import { makeApp, solveOf } from '../helpers/views.js';
+import { makeApp, solveOf } from '../helpers/views.ts';
 
 const sge = makeJobContext('SGE');
 const CTX = { level: 100, food: null, haste: 0 };

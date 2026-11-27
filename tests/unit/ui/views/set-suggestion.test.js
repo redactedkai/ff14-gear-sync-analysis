@@ -21,8 +21,8 @@ import {
   suggestionView,
   takenSet,
 } from '../../../../src/ui/views/set-suggestion.ts';
-import { hasNumber } from '../../helpers/common.js';
-import { SAGE_IDS, piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
+import { hasNumber } from '../../helpers/common.ts';
+import { SAGE_IDS, piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
 
 const sage = makeJobContext('SGE');
 const sheet = sheetOf('SGE', []);

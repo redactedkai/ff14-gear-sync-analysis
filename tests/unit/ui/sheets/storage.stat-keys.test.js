@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { parseSheet } from '../../../../src/ui/sheets/storage.ts';
 import { fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
+import { sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
 
 /* One job per profile, with the game's own main, speed and special stat written out (the game's names, not read from the
    code under test): Sage (healer), Warrior (tank), Samurai (Strength melee), Ninja (Dexterity), Black Mage (caster). */

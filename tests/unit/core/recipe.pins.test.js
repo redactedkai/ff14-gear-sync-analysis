@@ -9,7 +9,7 @@ import { gcdRange, resolvePins, runRecipe } from '../../../src/core/recipe.ts';
 import { jobGear } from '../../../src/core/items.ts';
 import { makeSession } from '../../../src/core/session.ts';
 import { evaluateSet } from '../../../src/core/set.ts';
-import { appState, piece } from '../helpers/common.js';
+import { appState, piece } from '../helpers/common.ts';
 
 const sge = makeJobContext('SGE');
 const SYNC = { cap: 999, sync: false, level: 100 };

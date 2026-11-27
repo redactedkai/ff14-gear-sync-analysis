@@ -8,8 +8,8 @@ import { evaluateInSheet } from '../../../../../src/ui/views/set-totals.ts';
 import { makeSession } from '../../../../../src/core/session.ts';
 import { gearToSearchView } from '../../../../../src/ui/solve.ts';
 import { makeJobContext } from '../../../../../src/core/job-context.ts';
-import { bind, lateSolver, refusingSolver, tick, twoToFill } from '../../../helpers/set-page-bind.js';
-import { sageSet } from '../../../helpers/sheet-fixtures.js';
+import { bind, lateSolver, refusingSolver, tick, twoToFill } from '../../../helpers/set-page-bind.ts';
+import { sageSet } from '../../../helpers/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 

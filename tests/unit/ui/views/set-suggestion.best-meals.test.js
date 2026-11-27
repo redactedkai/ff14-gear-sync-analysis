@@ -7,7 +7,7 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { setRowsView } from '../../../../src/ui/views/set-rows.ts';
 import { appliedFields, suggestionOf } from '../../../../src/ui/views/set-suggestion.ts';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
-import { piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
+import { piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
 
 const sage = makeJobContext('SGE');
 const sheet = sheetOf('SGE', []);

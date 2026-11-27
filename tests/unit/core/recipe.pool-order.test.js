@@ -16,7 +16,7 @@ import { runRecipe } from '../../../src/core/recipe.ts';
 import { makeSession } from '../../../src/core/session.ts';
 import { syncSettings } from '../../../src/ui/job-sync-panel.ts';
 import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.ts';
-import { rankedOf, setKey, shuffled } from '../helpers/recipe-sets.js';
+import { rankedOf, setKey, shuffled } from '../helpers/recipe-sets.ts';
 
 const ORDER_SEEDS = [11, 222, 3333]; // the pool orders tried besides the database's own
 

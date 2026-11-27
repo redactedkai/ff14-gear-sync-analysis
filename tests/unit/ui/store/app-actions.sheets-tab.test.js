@@ -3,8 +3,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TABS } from '../../../../src/ui/state.ts';
-import { createAppFacade } from '../../helpers/stores.js';
-import { restoreOpen } from '../../helpers/common.js';
+import { createAppFacade } from '../../helpers/stores.ts';
+import { restoreOpen } from '../../helpers/common.ts';
 
 const SAVE = {
   tab: 'browse',

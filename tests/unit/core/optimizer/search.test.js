@@ -12,7 +12,7 @@ import {
   makeMemo,
   shortListsFirst,
 } from '../../../../src/core/optimizer/search.ts';
-import { rng } from '../../helpers/common.js';
+import { rng } from '../../helpers/common.ts';
 
 let nextId = 0;
 /* A synthetic candidate: its score, stats and the slot types it blocks. */

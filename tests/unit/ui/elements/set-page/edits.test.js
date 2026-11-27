@@ -4,10 +4,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { placePiece } from '../../../../../src/ui/sheets/set-edits.ts';
 import { makeJobContext } from '../../../../../src/core/job-context.ts';
-import { bind } from '../../../helpers/set-page-bind.js';
-import { hasNumber } from '../../../helpers/common.js';
-import { SAGE_IDS, sageSet } from '../../../helpers/sheet-fixtures.js';
-import { createSheetsFacade } from '../../../helpers/stores.js';
+import { bind } from '../../../helpers/set-page-bind.ts';
+import { hasNumber } from '../../../helpers/common.ts';
+import { SAGE_IDS, sageSet } from '../../../helpers/sheet-fixtures.ts';
+import { createSheetsFacade } from '../../../helpers/stores.ts';
 
 const SGE = makeJobContext('SGE');
 const HEAD = 2;

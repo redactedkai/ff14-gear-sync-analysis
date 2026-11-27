@@ -10,7 +10,7 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { runRecipe } from '../../../../src/core/recipe.ts';
 import { makeSession } from '../../../../src/core/session.ts';
 import { applyFill, fillPlan } from '../../../../src/ui/sheets/fill.ts';
-import { appState } from '../../helpers/common.js';
+import { appState } from '../../helpers/common.ts';
 
 const SLOT_OF_ROW = ['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring', 'ring'];
 const emptySet = () => ({ pieces: SLOT_OF_ROW.map(slot => ({ slot })), meal: null, pinned: { pieces: [], meal: false } });

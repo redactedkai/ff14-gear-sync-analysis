@@ -1,7 +1,7 @@
 /* A set page's Auto-fill on real gear (src/core/recipe.ts runRecipe, evaluated by src/core/set.ts evaluateSet): the gear it
    searches and its filters, the totals in character panel numbers, Target GCD, food and rank by tier, against the
    core's own searches and the brute force. The recipe is a set's (its Auto-fill settings, sheets/fill-settings.ts fillRecipe), on
-   store-shaped state (helpers/views.js). */
+   store-shaped state (helpers/views.ts). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ACTIVITIES, JOBS } from '../../../src/core/constants.ts';
@@ -28,7 +28,7 @@ import {
   solveOf,
   uniqueRingPool,
   windowPool,
-} from '../helpers/views.js';
+} from '../helpers/views.ts';
 
 /* The owner's screenshot: Astrologian at level 50, cap 123, A Realm Reborn only, Relic left out, Mind > Vitality >
    Direct Hit, materia, best meal, rank by tier. The page said the search stopped at its step limit; it had found no set

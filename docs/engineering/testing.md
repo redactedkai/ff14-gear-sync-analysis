@@ -638,7 +638,7 @@ Where does a new test go?
 Notes:
 
 - **Unit test file.** Named for the module under the naming rule (section 2): add to the module's file, or start one under that name, with a header comment on line 1 saying what it covers. A test name says the behaviour checked, not a roadmap code (keep the code in the comment). Use `node:test` and strict assertions, and import from the core directly. For the optimizer, compare with the shared brute force.
-- **Views.** Labels, totals, colouring, empty and error states, on a plain state object (`makeApp` in `tests/unit/helpers/views.js`).
+- **Views.** Labels, totals, colouring, empty and error states, on a plain state object (`makeApp` in `tests/unit/helpers/views.ts`).
 - **State.** Add both a valid round-trip and a damaged value that must be repaired.
 - **Generator.** Add a row to the fixture CSVs if needed, using the real header, and assert on the generated output.
 - **Component story.** `<name>.story.js` (a function from props to a Lit template, imports the element) and `<name>.spec.ts` (imports `test` and `expect` from `tests/stories/fixtures.ts`, mounts with `mount<typeof Story>('<domain>/<file>/<Export>', props)`) side by side in `tests/stories/<domain>/`. No registration: the generator finds `*.story.*` files, and `tests/stories/**` is `tooling`. An element goes in `src/ui/elements/<domain>/`, which `tests/domains.mjs` lists in that domain's `src`.
@@ -698,14 +698,14 @@ The rule behind the table: a value that depends on what gear exists may move; a 
 | --- | --- |
 | Unit tests | `tests/unit/<src folder>/<module>.test.js`, named by the rule in section 2 |
 | Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.js` (`exhaustive`, `gamePool`, `loadoutCount`) |
-| Shared test helpers and typed-in outside values | `tests/unit/helpers/common.js` (`rng`, `itemRow`, `appState`, `SLOT_PERMILLE`, `AKH_LEVEL`) |
-| Tier ranking reference and its random cases | `tests/unit/helpers/tier-reference.js` (`tierLex`, `checkNoGcd`, `checkGcd`); the long sweep in `tests/sweep/` |
-| View test state, small real-gear pools and an Auto-fill's solve | `tests/unit/helpers/views.js` (`makeApp`, `solveOf`, `windowPool`) |
-| Saved sheets of real items | `tests/unit/helpers/sheet-fixtures.js` (`sageSet`, `warSet`, `sheetOf`, `fakeStorage`) |
+| Shared test helpers and typed-in outside values | `tests/unit/helpers/common.ts` (`rng`, `itemRow`, `appState`, `SLOT_PERMILLE`, `AKH_LEVEL`) |
+| Tier ranking reference and its random cases | `tests/unit/helpers/tier-reference.ts` (`tierLex`, `checkNoGcd`, `checkGcd`); the long sweep in `tests/sweep/` |
+| View test state, small real-gear pools and an Auto-fill's solve | `tests/unit/helpers/views.ts` (`makeApp`, `solveOf`, `windowPool`) |
+| Saved sheets of real items | `tests/unit/helpers/sheet-fixtures.ts` (`sageSet`, `warSet`, `sheetOf`, `fakeStorage`) |
 | View builders tested without the browser | `src/ui/views/` |
-| Accuracy check against real items and the Wiki | `tests/unit/helpers/model-validation.js` (`bandAccuracy`, `wikiChecks`) |
+| Accuracy check against real items and the Wiki | `tests/unit/helpers/model-validation.ts` (`bandAccuracy`, `wikiChecks`) |
 | Generator tests and fixtures | `tests/data/test_*.py`, `tests/data/common.py`, `tests/data/fixtures/` |
-| View test setup | `tests/unit/helpers/views.js` (`makeApp`, `WINDOW`, `windowPool`, `uniqueRingPool`) |
+| View test setup | `tests/unit/helpers/views.ts` (`makeApp`, `WINDOW`, `windowPool`, `uniqueRingPool`) |
 | Smoke test, its steps and its screenshots | `tests/e2e/smoke.mjs` (`runGroup`, `main`), `tests/e2e/groups.mjs` (`GROUPS`), `tests/e2e/checks/<folder>/` (the checks), `tests/e2e/lib/` (the helpers, `SHARED_SETUP`), `tests/e2e/out/` (gitignored) |
 | The smoke test's look checks | `tests/e2e/lib/visual.mjs` (the contrast arithmetic, the token reader and the in-page probes; the unit tests import it from there), `tests/e2e/lib/axe.mjs` (running axe-core and splitting its findings into new and known) |
 | Before-and-after screenshots | `scripts/shots/shots.mjs`, `scripts/shots/views.mjs` (`VIEWS`, `openView`), `scripts/shots/compare.mjs` |

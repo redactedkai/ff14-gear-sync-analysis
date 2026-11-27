@@ -7,7 +7,7 @@ import { restoreState } from '../../../src/ui/state.ts';
 import { saveSheet } from '../../../src/ui/sheets/storage.ts';
 import { createPageStore } from '../../../src/ui/store/page-store.ts';
 import { setHeaderView } from '../../../src/ui/views/sheet-sets.ts';
-import { fakeStorage, sageSet, sheetOf } from '../../unit/helpers/sheet-fixtures.js';
+import { fakeStorage, sageSet, sheetOf } from '../../unit/helpers/sheet-fixtures.ts';
 
 /* The row of the head piece and the Sage head piece the story's set holds (SAGE_IDS.head in the unit tests' fixtures). */
 export const HEAD_ROW = 2;

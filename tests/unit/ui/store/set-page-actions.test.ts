@@ -6,7 +6,7 @@ import { createAppStore, setPageOf, unsettled, unsettledKind } from '../../../..
 import type { GearSet, RestoredState, Suggestion } from '../../../../src/ui/store/app-state.ts';
 import { createSetPageActions } from '../../../../src/ui/store/set-page-actions.ts';
 import { frozenCopy } from '../../../../src/ui/view-cache.ts';
-import { restoreOpen } from '../../helpers/common.js';
+import { restoreOpen } from '../../helpers/common.ts';
 
 const NO_SHEETS = { available: false, sheets: [], unreadable: [], indexProblem: null };
 

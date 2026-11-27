@@ -5,8 +5,8 @@ import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../../src/core/tables.ts';
 import { AppRootModel, appRootSelection } from '../../../../../src/ui/elements/app/app-root-model.ts';
 import { shallowEq } from '../../../../../src/ui/store/select.ts';
-import { restoreOpen } from '../../../helpers/common.js';
-import { createStores } from '../../../helpers/stores.js';
+import { restoreOpen } from '../../../helpers/common.ts';
+import { createStores } from '../../../helpers/stores.ts';
 
 /* The root's model over a real store of `saved`; `sheets` replaces the Sheets facade (a stand-in for the leave question). A tab opens
    on the next macrotask, as the page opens it one frame later. */

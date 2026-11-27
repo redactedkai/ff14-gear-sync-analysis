@@ -7,7 +7,7 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { mkItem } from '../../../src/core/items.ts';
 import { optimize } from '../../../src/core/optimizer/index.ts';
 import { FOODS } from '../../../src/core/tables.ts';
-import { rngInt } from '../helpers/common.js';
+import { rngInt } from '../helpers/common.ts';
 
 const SGE = makeJobContext('SGE');
 const DRG = makeJobContext('DRG');

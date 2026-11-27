@@ -6,7 +6,7 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { holdsPiece, isUsed, rowLabel, sameRow, usedRows } from '../../../../src/ui/sheets/saved-set.ts';
 import { draftChanges } from '../../../../src/ui/views/set-draft.ts';
 import { suggestionView } from '../../../../src/ui/views/set-suggestion.ts';
-import { THREE_CRIT_IV, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
+import { THREE_CRIT_IV, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 

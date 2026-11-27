@@ -8,7 +8,7 @@ import { makeSession } from '../../../src/core/session.ts';
 import { evaluateSet } from '../../../src/core/set.ts';
 import { inProcessSolver, isCancelled, makeSolverHandler, solverRequest, workerSolver } from '../../../src/ui/solver.ts';
 import { gearToSearchView, solveView } from '../../../src/ui/solve.ts';
-import { inputsOf, makeApp } from '../helpers/views.js';
+import { inputsOf, makeApp } from '../helpers/views.ts';
 
 /* Sage at item level 123, a set's Auto-fill settings with Food on. */
 const SGE = (() => {

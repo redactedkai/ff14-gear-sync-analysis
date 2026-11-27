@@ -6,8 +6,8 @@ import { ACTIVITIES } from '../../../src/core/constants.ts';
 import { mkItem } from '../../../src/core/items.ts';
 import { makeSession } from '../../../src/core/session.ts';
 import { gearToSearchView, searchCount, solveView } from '../../../src/ui/solve.ts';
-import { hasParts } from '../helpers/common.js';
-import { gearOf, inputsOf, makeApp, solveOf, testSession, windowPool } from '../helpers/views.js';
+import { hasParts } from '../helpers/common.ts';
+import { gearOf, inputsOf, makeApp, solveOf, testSession, windowPool } from '../helpers/views.ts';
 
 const solveOfApp = (app, session = testSession, pins = null) => {
   const { job, sync, level, recipe } = inputsOf(app);

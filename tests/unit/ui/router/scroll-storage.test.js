@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SCROLL_KEY, readScrollPositions, tabStorage, writeScrollPositions } from '../../../../src/ui/router/scroll-storage.ts';
-import { fakeStorage } from '../../helpers/sheet-fixtures.js';
+import { fakeStorage } from '../../helpers/sheet-fixtures.ts';
 
 /* A storage that holds `text` under the scroll key. */
 function storageWith(text) {

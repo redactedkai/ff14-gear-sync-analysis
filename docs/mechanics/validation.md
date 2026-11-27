@@ -168,7 +168,7 @@ For a substat (stat factor 100) the model's cap for a slot with share $p$ is $\o
 - **What this confirms:** the clamp rule (each stat on a piece above the cap is limited to the full-share value of a same-slot piece at the cap) for **substats**.
 - **What it does not cover:** the main stat and Vitality. The Wiki lists one cap per slot and only for substats; whether lower-ranked substats clamp against the full-share value is settled by the Wiki's Item Level page instead ([math.md, section 5](math.md#what-is-assumed)).
 
-**Tests.** The validation unit test checks all six rows (`wikiChecks` in `tests/unit/helpers/model-validation.js`). The sync unit test checks the one-handed weapon and shield rows through a Paladin's caps, so the job-dependent weapon path is covered too.
+**Tests.** The validation unit test checks all six rows (`wikiChecks` in `tests/unit/helpers/model-validation.ts`). The sync unit test checks the one-handed weapon and shield rows through a Paladin's caps, so the job-dependent weapon path is covered too.
 
 ### The caps at item level 123
 
@@ -513,7 +513,7 @@ Notes:
 
 | Concept | File |
 | --- | --- |
-| Band accuracy, Wiki 475 table | `tests/unit/helpers/model-validation.js` (`bandAccuracy`, `wikiChecks`) |
+| Band accuracy, Wiki 475 table | `tests/unit/helpers/model-validation.ts` (`bandAccuracy`, `wikiChecks`) |
 | Prediction of a real piece's stats | `src/core/formulas.ts` (`predictRaw`) |
 | Caps used by the tests above | `src/core/formulas.ts` (`capsFor`, `capValue`) |
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.ts` (`syncTarget`, `levelSyncIlvl`) |

@@ -14,9 +14,9 @@ import {
   SHEET_GONE_TEXT,
   copiedNote,
 } from '../../../../src/ui/sheets/store-shared.ts';
-import { createSheetsFacade } from '../../helpers/stores.js';
+import { createSheetsFacade } from '../../helpers/stores.ts';
 import { FORM_FIELD, NEW_SHEET_CAP } from '../../../../src/ui/sheets/ops.ts';
-import { WHM_CANE, fakeStorage, piece, quotaError, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
+import { WHM_CANE, fakeStorage, piece, quotaError, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
 
 /* A store over `storage` with a clock that ticks 1 s per call and numbered ids. */
 function makeStore(storage = fakeStorage()) {

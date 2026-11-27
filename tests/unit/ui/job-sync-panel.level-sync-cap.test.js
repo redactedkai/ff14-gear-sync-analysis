@@ -7,8 +7,8 @@ import assert from 'node:assert/strict';
 
 import { holdLevelSyncCap, levelSyncCap, mathJobOwner, panelOf } from '../../../src/ui/job-sync-panel.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import { restoreOpen } from '../helpers/common.js';
-import { createAppFacade } from '../helpers/stores.js';
+import { restoreOpen } from '../helpers/common.ts';
+import { createAppFacade } from '../helpers/stores.ts';
 
 test("levelSyncCap: the item level level sync gives, none at the job's level cap", () => {
   const sage = makeJobContext('SGE');

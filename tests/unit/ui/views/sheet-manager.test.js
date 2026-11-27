@@ -18,7 +18,7 @@ import {
 } from '../../../../src/ui/views/sheet-sets.ts';
 import { plural } from '../../../../src/ui/text.ts';
 import { localDate, settingsLine, syncShort } from '../../../../src/ui/views/sheet-text.ts';
-import { sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.js';
+import { sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.ts';
 
 const loaded = (sheets, extra = {}) => ({ available: true, sheets, unreadable: [], indexProblem: null, ...extra });
 

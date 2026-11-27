@@ -7,8 +7,8 @@ import { jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { placePiece, withMeal, withPin, withStone, withoutStone } from '../../../../src/ui/sheets/set-edits.ts';
 import { rowLabel } from '../../../../src/ui/sheets/saved-set.ts';
-import { hasParts } from '../../helpers/common.js';
-import { SAGE_IDS, THREE_CRIT_IV, sageSet } from '../../helpers/sheet-fixtures.js';
+import { hasParts } from '../../helpers/common.ts';
+import { SAGE_IDS, THREE_CRIT_IV, sageSet } from '../../helpers/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 const HEAD = 2;

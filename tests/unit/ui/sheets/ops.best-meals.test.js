@@ -7,8 +7,8 @@ import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { copyGearSet, copySheet, newGearSet, repairSheet } from '../../../../src/ui/sheets/ops.ts';
 import { parseSheet } from '../../../../src/ui/sheets/storage.ts';
-import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
-import { createSheetsFacade } from '../../helpers/stores.js';
+import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { createSheetsFacade } from '../../helpers/stores.ts';
 
 const AT = Date.UTC(2026, 10, 10, 12);
 /* three real meals of Sage, as an Auto-fill result's tie list names them */

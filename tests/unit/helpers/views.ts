@@ -10,7 +10,7 @@ import { gearView } from '../../../src/ui/views/gear.ts';
 import { pieceView } from '../../../src/ui/views/piece.ts';
 import { searchCount } from '../../../src/ui/solve.ts';
 import { explainerItemLevel, explainerView, meldKeys } from '../../../src/ui/views/sync-explainer.ts';
-import { appState } from './common.js';
+import { appState } from './common.ts';
 import { gamePool } from './exhaustive.js';
 
 /* One solver session for every test that searches the job's own gear, as the page has one. */

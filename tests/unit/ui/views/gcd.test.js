@@ -19,7 +19,7 @@ import {
   speedRange,
 } from '../../../../src/ui/views/gcd.ts';
 import { groupMaxSpeed, jobGroups } from '../../../../scripts/data/gen_max_speed.mjs';
-import { hasNumber } from '../../helpers/common.js';
+import { hasNumber } from '../../helpers/common.ts';
 
 const ROWS = 2 * GCD_STEPS_NEAR + 1;
 

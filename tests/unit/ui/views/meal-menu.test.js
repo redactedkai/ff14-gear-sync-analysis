@@ -18,8 +18,8 @@ import {
 } from '../../../../src/ui/views/meal-menu.ts';
 import { setMealMenuView } from '../../../../src/ui/views/set-meal-menu.ts';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
-import { sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
-import { makeApp, solveOf } from '../../helpers/views.js';
+import { sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { makeApp, solveOf } from '../../helpers/views.ts';
 
 /* A Sage set: synced level 70, item level 375, Critical Hit > Determination > Mind, materia and food. On its gear Popoto
    Potage and Mollete (Critical Hit + Spell Speed) add the most Critical Hit the totals allow, +133 (under their 151

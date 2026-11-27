@@ -6,7 +6,7 @@ import { ACTIVITIES } from '../../../../src/core/constants.ts';
 import { browseItems } from '../../../../src/core/items.ts';
 import { ANY_SLOT_LABEL } from '../../../../src/ui/elements/gear-browser/slot-menu-names.ts';
 import { PAGE_SIZE, PAGE_SLOTS, browseFiltered, browseCell, markWords, pageList, slotCellText } from '../../../../src/ui/views/gear.ts';
-import { gearViewOf, makeApp } from '../../helpers/views.js';
+import { gearViewOf, makeApp } from '../../helpers/views.ts';
 
 /* The browser's list: database rows matching its filters that its own "Gear categories" filter lets through; no pool. With
    every box ticked, only pieces that can no longer be obtained (no route) are left out. */

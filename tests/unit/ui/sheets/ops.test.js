@@ -26,7 +26,7 @@ import {
   ranges,
   sheetSettings,
 } from '../../../../src/ui/sheets/ops.ts';
-import { WHM_CANE, piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
+import { WHM_CANE, piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
 
 const AT = Date.UTC(2026, 10, 9, 12);
 

@@ -13,7 +13,7 @@ import { slotInfo } from '../../../../src/core/items.ts';
 import { pruneForLimits } from '../../../../src/core/optimizer/candidates.ts';
 import { gcdTierAt } from '../../../../src/core/speed.ts';
 import { exhaustive, smallPool } from '../../helpers/exhaustive.js';
-import { rng } from '../../helpers/common.js';
+import { rng } from '../../helpers/common.ts';
 
 const NO_SYNC = { cap: null, sync: false, level: 100 };
 

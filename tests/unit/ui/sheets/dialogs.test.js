@@ -5,8 +5,8 @@ import { test } from 'node:test';
 import { ACK_REQUIRED_TEXT, EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT, SHEET_GONE_TEXT } from '../../../../src/ui/sheets/store-shared.ts';
 import { FORM_FIELD } from '../../../../src/ui/sheets/ops.ts';
 import { shownName, submitDialog } from '../../../../src/ui/sheets/dialogs.ts';
-import { WHM_CANE, fakeStorage, piece, sageSet } from '../../helpers/sheet-fixtures.js';
-import { createSheetsFacade } from '../../helpers/stores.js';
+import { WHM_CANE, fakeStorage, piece, sageSet } from '../../helpers/sheet-fixtures.ts';
+import { createSheetsFacade } from '../../helpers/stores.ts';
 
 function makeStore() {
   let next = 0;

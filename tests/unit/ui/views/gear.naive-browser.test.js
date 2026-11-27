@@ -10,7 +10,7 @@ import { ITEMS } from '../../../../src/core/tables.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { defaultBrowse } from '../../../../src/ui/state.ts';
 import { gearView } from '../../../../src/ui/views/gear.ts';
-import { rng } from '../../helpers/common.js';
+import { rng } from '../../helpers/common.ts';
 
 const CASES = 250;
 const STAT_ORDER = ['str', 'dex', 'int', 'mind', 'vit', 'piety', 'ten', 'dh', 'crit', 'det', 'sks', 'sps', 'mainAttr', 'secAttr'];

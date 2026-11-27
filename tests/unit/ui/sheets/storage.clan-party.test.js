@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadSheets, parseSheet, saveSheet } from '../../../../src/ui/sheets/storage.ts';
-import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
+import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
 
 /* The text of a saved record of a Sage sheet with `extra` fields added (or replaced). */
 const record = extra => JSON.stringify({ ...sheetOf('SGE', [sageSet()]), ...extra });

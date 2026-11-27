@@ -1,4 +1,4 @@
-/* The optimizer against an independent exact solver (helpers/exact-solver.js): the best item per slot, with the ring pair and
+/* The optimizer against an independent exact solver (helpers/exact-solver.ts): the best item per slot, with the ring pair and
    the blocked slots handled exactly, on every job's whole real pool over the sync presets of the perf scripts (melds off), and
    on a reduced pool with melds on (stat vectors from the test helper's meld enumerator). Fixed seeds. */
 import { test } from 'node:test';
@@ -7,8 +7,8 @@ import { JOBS, SLOT_TYPES } from '../../../../src/core/constants.ts';
 import { jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { optimize } from '../../../../src/core/optimizer/index.ts';
-import { rng } from '../../helpers/common.js';
-import { lexCompare, solveExact } from '../../helpers/exact-solver.js';
+import { rng } from '../../helpers/common.ts';
+import { lexCompare, solveExact } from '../../helpers/exact-solver.ts';
 
 /* Sync settings as the perf scripts use them: off, item level caps, level sync, and a duty's level with its cap. */
 const SYNCS = [

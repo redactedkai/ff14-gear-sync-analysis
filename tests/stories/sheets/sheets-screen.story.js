@@ -3,7 +3,7 @@
    would. No Auto-fill is run here. */
 import { html } from 'lit';
 import '../../../src/ui/elements/sheets/sheets-screen.ts';
-import { sageSet, sheetOf } from '../../unit/helpers/sheet-fixtures.js';
+import { sageSet, sheetOf } from '../../unit/helpers/sheet-fixtures.ts';
 import { pagePorts } from '../shared/page-ports.js';
 
 /* The two sets' names and ids, and the button that opens the second. */

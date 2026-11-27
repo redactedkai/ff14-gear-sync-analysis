@@ -22,7 +22,7 @@ import { makeSolverHandler, solverRequest } from '../../../../src/ui/solver.ts';
 import { applyFill } from '../../../../src/ui/sheets/fill.ts';
 import { defaultFillSettings, fillRecipe } from '../../../../src/ui/sheets/fill-settings.ts';
 import { localDate } from '../../../../src/ui/views/sheet-text.ts';
-import { createSheetsFacade } from '../../helpers/stores.js';
+import { createSheetsFacade } from '../../helpers/stores.ts';
 
 /* A Storage stand-in. `failWith`: an error every setItem throws (a full storage: name 'QuotaExceededError'). */
 function fakeStorage({ failWith = null } = {}) {

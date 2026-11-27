@@ -7,8 +7,8 @@ import assert from 'node:assert/strict';
 import { barInput, mathSelection, pieceInput, setMathJob, setMathSync } from '../../../../../src/ui/elements/math-page/math-inputs.ts';
 import { shallowEq } from '../../../../../src/ui/store/select.ts';
 import { overlays } from '../../../../../src/ui/overlays.ts';
-import { restoreOpen } from '../../../helpers/common.js';
-import { createStores } from '../../../helpers/stores.js';
+import { restoreOpen } from '../../../helpers/common.ts';
+import { createStores } from '../../../helpers/stores.ts';
 
 /* The page's store of `saved` (the math tab open). */
 function opened(saved = {}) {

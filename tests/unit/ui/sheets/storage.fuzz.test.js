@@ -1,4 +1,4 @@
-/* Saved sheet records damaged in several fields at once (helpers/fuzz.js), from a fixed seed, through every reader: parseSheet
+/* Saved sheet records damaged in several fields at once (helpers/fuzz.ts), from a fixed seed, through every reader: parseSheet
    and loadSheets with the sheet manager's view never throw; a record that is still readable goes through repairSheet and then
    evaluateInSheet, fillPlan and fillRecipe without throwing, and no total is NaN or negative. */
 import { test } from 'node:test';
@@ -9,9 +9,9 @@ import { repairSheet } from '../../../../src/ui/sheets/ops.ts';
 import { loadSheets, parseSheet } from '../../../../src/ui/sheets/storage.ts';
 import { sheetManagerView } from '../../../../src/ui/views/sheet-manager.ts';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
-import { rng } from '../../helpers/common.js';
-import { damage } from '../../helpers/fuzz.js';
-import { fakeStorage, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.js';
+import { rng } from '../../helpers/common.ts';
+import { damage } from '../../helpers/fuzz.ts';
+import { fakeStorage, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.ts';
 
 const CASES = 20000;
 const isTotal = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;

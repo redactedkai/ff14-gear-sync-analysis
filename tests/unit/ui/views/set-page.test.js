@@ -2,7 +2,7 @@
    the Food menu only when read. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bind, twoToFill } from '../../helpers/set-page-bind.js';
+import { bind, twoToFill } from '../../helpers/set-page-bind.ts';
 
 const FEET = 6;
 

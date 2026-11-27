@@ -7,8 +7,8 @@ import { FILL_CANCELLED_TEXT, RESULT_DISCARDED_TEXT } from '../../../../../src/u
 import { overlays } from '../../../../../src/ui/overlays.ts';
 import { inProcessSolver } from '../../../../../src/ui/solver.ts';
 import { unsettledKind } from '../../../../../src/ui/store/app-state.ts';
-import { bind, heldSolver, tick, twoToFill } from '../../../helpers/set-page-bind.js';
-import { SAGE_IDS } from '../../../helpers/sheet-fixtures.js';
+import { bind, heldSolver, tick, twoToFill } from '../../../helpers/set-page-bind.ts';
+import { SAGE_IDS } from '../../../helpers/sheet-fixtures.ts';
 
 const HEAD = 2;
 

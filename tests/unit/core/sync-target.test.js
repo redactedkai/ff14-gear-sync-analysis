@@ -12,7 +12,7 @@ import { browseItems, dbStats, kindFactors, parseRow, poolItemFromRow } from '..
 import { optimize } from '../../../src/core/optimizer/index.ts';
 import { effStats, itemSyncIlvl } from '../../../src/core/piece.ts';
 import { exhaustive, gamePool, loadoutCount } from '../helpers/exhaustive.js';
-import { SLOT_PERMILLE, roundHalfUp } from '../helpers/common.js';
+import { SLOT_PERMILLE, roundHalfUp } from '../helpers/common.ts';
 
 const sge = makeJobContext('SGE');
 const ROWS = ITEMS.map(parseRow);

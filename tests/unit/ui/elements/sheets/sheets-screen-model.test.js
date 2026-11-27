@@ -5,8 +5,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { SheetsScreenModel, sheetsSelection } from '../../../../../src/ui/elements/sheets/sheets-screen-model.ts';
 import { shallowEq } from '../../../../../src/ui/store/select.ts';
-import { fakeStorage } from '../../../helpers/sheet-fixtures.js';
-import { createStores } from '../../../helpers/stores.js';
+import { fakeStorage } from '../../../helpers/sheet-fixtures.ts';
+import { createStores } from '../../../helpers/stores.ts';
 
 /* The model over a fresh store. */
 function bind() {

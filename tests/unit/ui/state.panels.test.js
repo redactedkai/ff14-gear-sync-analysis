@@ -4,7 +4,7 @@
    `optPanel`) are dropped. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { restoreOpen } from '../helpers/common.js';
+import { restoreOpen } from '../helpers/common.ts';
 import { capCeiling } from '../../../src/core/sync-target.ts';
 
 /* [job, cap, sync, level] of the open tab's panel (no group) or of a tab's group */

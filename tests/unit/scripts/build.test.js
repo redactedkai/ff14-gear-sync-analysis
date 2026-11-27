@@ -202,7 +202,7 @@ test('build: the solver worker loads from the posted data texts and answers like
   self.onmessage({ data: { data: structuredClone(WORKER_DATA) } });
   assert.equal(self.__solverData, undefined, 'the texts are let go once loaded');
   const { inProcessSolver, solverRequest } = await import('../../../src/ui/solver.ts');
-  const { inputsOf, makeApp } = await import('../helpers/views.js');
+  const { inputsOf, makeApp } = await import('../helpers/views.ts');
   const app = makeApp('WHM', { cap: 200, level: 100 });
   app.recipe.food = true;
   const inputs = inputsOf(app);

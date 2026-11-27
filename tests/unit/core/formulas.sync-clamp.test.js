@@ -6,7 +6,7 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { capsFor, syncStats } from '../../../src/core/formulas.ts';
 import { browseItems, poolItemFromRow } from '../../../src/core/items.ts';
 import { IL } from '../../../src/core/tables.ts';
-import { SLOT_PERMILLE } from '../helpers/common.js';
+import { SLOT_PERMILLE } from '../helpers/common.ts';
 
 const sge = makeJobContext('SGE');
 const blm = makeJobContext('BLM');

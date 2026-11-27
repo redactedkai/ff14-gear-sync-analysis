@@ -9,8 +9,8 @@ import { gcdFor } from '../../../../src/core/speed.ts';
 import { meldSlotChoices, meldSlotsOf } from '../../../../src/ui/job-sync-panel.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { explainerOffText } from '../../../../src/ui/views/sync-explainer.ts';
-import { SLOT_PERMILLE, appState, hasNumber, hasParts, labelled, roundHalfUp } from '../../helpers/common.js';
-import { explainerItemLevelOf, explainerViewOf, meldKeysOf } from '../../helpers/views.js';
+import { SLOT_PERMILLE, appState, hasNumber, hasParts, labelled, roundHalfUp } from '../../helpers/common.ts';
+import { explainerItemLevelOf, explainerViewOf, meldKeysOf } from '../../helpers/views.ts';
 
 /* A store-shaped state: a job, a sync (item level `cap`, or level sync when `cap` is null), and the explainer's piece. */
 function app(job, { level, cap = null, slot = 'body', ilvl = null, subs = ['crit', makeJobContext(job).speedKey], slots = 2 }) {

@@ -10,7 +10,7 @@ import { browseItems, poolItemFromRow } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { effStats } from '../../../src/core/piece.ts';
 import { IL, ITEMS, MAX_ILVL, MP } from '../../../src/core/tables.ts';
-import { roundHalfUp } from '../helpers/common.js';
+import { roundHalfUp } from '../helpers/common.ts';
 
 /* The cap of `stat` at cap item level `cap`: floor(floor(budget x factor / 100) x slot share / 100) / 10, rounded; an
    off-hand is the 2H weapon's cap less the 1H weapon's. `kind` is the item's stat factor kind (null: the job's own factor

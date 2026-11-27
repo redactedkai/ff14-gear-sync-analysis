@@ -2,8 +2,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createAppFacade, createStores } from '../../helpers/stores.js';
-import { restoreOpen } from '../../helpers/common.js';
+import { createAppFacade, createStores } from '../../helpers/stores.ts';
+import { restoreOpen } from '../../helpers/common.ts';
 
 /* A store for `job` with the Gear browser open. */
 const storeFor = job => createAppFacade(restoreOpen({ job, tab: 'browse' }));

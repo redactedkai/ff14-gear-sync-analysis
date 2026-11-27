@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { expansionBounds } from '../../../src/core/items.ts';
 import { dotMult, gcdFor, gcdTierAt, gcdTiers, hasteFor, speedForGcd } from '../../../src/core/speed.ts';
-import { rngInt } from '../helpers/common.js';
+import { rngInt } from '../helpers/common.ts';
 
 /* Expected values in this file are read from AkhMorning's published tier tables:
    https://www.akhmorning.com/allagan-studies/stats/speed/ ("Table View: 2.5s Tiers", "Show data for level" 50 / 90 /

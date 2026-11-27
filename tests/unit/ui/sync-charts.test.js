@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { OVERGEAR_BANDS, escapeXml, overgearChartSvg, speedStepChartSvg } from '../../../src/ui/sync-charts.ts';
-import { labelled } from '../helpers/common.js';
+import { labelled } from '../helpers/common.ts';
 
 /* Audit 12, finding 2: the charts said they were "built only from numbers", but they take a slot name and stat names.
    All are constants today; escaping them keeps a future label (an item name, say) from adding markup. */

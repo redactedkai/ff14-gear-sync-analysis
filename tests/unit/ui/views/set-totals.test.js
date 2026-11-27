@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { evaluateInSheet, figureChange, figuresAgainst, setFigures, setTotalsView } from '../../../../src/ui/views/set-totals.ts';
-import { hasNumber } from '../../helpers/common.js';
-import { piece, rawGear, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.js';
+import { hasNumber } from '../../helpers/common.ts';
+import { piece, rawGear, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.ts';
 
 /* Level 100: the character's own points before any gear (Sage: the main stat base 440 x the job's modifier (115%) and Vitality (100%),
    420 for the speed-based substats and 440 for Determination and Piety; the level's divisor. */

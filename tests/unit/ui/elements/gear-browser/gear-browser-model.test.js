@@ -13,8 +13,8 @@ import {
 import { syncSettings } from '../../../../../src/ui/job-sync-panel.ts';
 import { defaultBrowse } from '../../../../../src/ui/state.ts';
 import { gearView } from '../../../../../src/ui/views/gear.ts';
-import { restoreOpen } from '../../../helpers/common.js';
-import { createAppFacade } from '../../../helpers/stores.js';
+import { restoreOpen } from '../../../helpers/common.ts';
+import { createAppFacade } from '../../../helpers/stores.ts';
 
 /* The store of `saved` and a model reading it the way the element does: `list()` is the model's list for the store now. */
 function bound(saved = { job: 'SGE', tab: 'browse', sync: true, cap: 123 }) {

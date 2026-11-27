@@ -8,7 +8,7 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { optimize, prepare, solve } from '../../../../src/core/optimizer/index.ts';
 import { addRegainCuts } from '../../../../src/core/optimizer/regain.ts';
 import { exhaustive, smallPool } from '../../helpers/exhaustive.js';
-import { rng } from '../../helpers/common.js';
+import { rng } from '../../helpers/common.ts';
 
 const NO_SYNC = { cap: null, sync: false, level: 100 };
 

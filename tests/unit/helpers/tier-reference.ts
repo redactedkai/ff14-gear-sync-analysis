@@ -11,9 +11,9 @@ import { optimize } from '../../../src/core/optimizer/index.ts';
 import { levelParams } from '../../../src/core/level-params.ts';
 import { gcdFor, hasteFor } from '../../../src/core/speed.ts';
 import { rankByTier } from '../../../src/core/tier-rank.ts';
-import { rng } from './common.js';
+import { rng } from './common.ts';
 import { foodAdd, forEachLoadout, loadoutCount, smallPool } from './exhaustive.js';
-import { pickPins, pinsCoexist, pinsOf } from './pins.js';
+import { pickPins, pinsCoexist, pinsOf } from './pins.ts';
 /* Tier steps per mille for each stat key (AkhMorning; Tenacity by its mitigation, 200); speed by its GCD. */
 const STEP = { crit: 200, det: 140, dh: 550, ten: 200, piety: 150 };
 
@@ -195,7 +195,7 @@ export function checkGcd(seed, count, threeKeys = false, from = 0) {
   return { runs, infeasible };
 }
 
-/* `count` random cases with pinned pieces (helpers/pins.js) from seed `seed`, each against the reference given the same
+/* `count` random cases with pinned pieces (helpers/pins.ts) from seed `seed`, each against the reference given the same
    pins: four jobs, level 100, one or two pieces pinned with stones, melds on or off, food off or every meal, no Target
    GCD or the GCD the pinned set reaches as an exact one and as a minimum. Returns {runs}: the cases run. */
 export function checkPinned(seed, count) {

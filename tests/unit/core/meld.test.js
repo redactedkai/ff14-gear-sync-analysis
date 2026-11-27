@@ -9,7 +9,7 @@ import { MATERIA } from '../../../src/core/tables.ts';
 import { bestMeld, meldSlots, meldText, meldVersions, slotGrades, stoneValues } from '../../../src/core/meld.ts';
 import { meldCaps } from '../../../src/core/piece.ts';
 import { optimize } from '../../../src/core/optimizer/index.ts';
-import { piece } from '../helpers/common.js';
+import { piece } from '../helpers/common.ts';
 
 const sge = makeJobContext('SGE');
 const war = makeJobContext('WAR');
