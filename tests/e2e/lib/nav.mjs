@@ -3,7 +3,7 @@
 
 import { allExpansions } from '../checks/gear-browser/filters.mjs';
 import { ACTIVITY_KEYS_BY_SECTION, ACTIVITY_LABEL, ACTIVITY_SECTION, NAV_TIMEOUT, STORE_KEY, TIMEOUT } from './constants.mjs';
-import { check, expect, poll, same } from './expect.mjs';
+import { check, expect, placedByZag, poll, same } from './expect.mjs';
 import { afterTwoFramesAndATask } from './layer-wait.ts';
 import { selectValue } from './select.mjs';
 
@@ -262,6 +262,7 @@ export async function openFrom(pg, pre) {
     await pg.click(`#${pre}-from`);
   }
   await expect(pg.locator(`#${pre}-from-menu`)).toBeVisible();
+  await placedByZag(pg, `#${pre}-from-menu`); // Zag shows the menu a frame before it places it: a box read before that is above the window
 }
 
 /** Close the "Gear categories" menu of `pre` with Escape: the open menu takes the key, so in the Auto-fill settings popover only the
