@@ -4,7 +4,7 @@
    Auto-fill locks the set (Cancel, and the question before leaving); axe. */
 import { STEP_LIMIT_TEXT, failedText } from '../../../src/ui/views/set-suggestion.ts';
 import { expect, test } from '../fixtures.ts';
-import { FILL_ERROR_MESSAGE, HEAD_ROW, type Default, type FillFails, type FillHeld } from './set-page.story.js';
+import { FILL_ERROR_MESSAGE, HEAD_ROW, type Default, type FillFails, type FillHeld } from './set-page.story.ts';
 import { focusInside } from '../layers.ts';
 
 const STORY = 'set-page/set-page/Default';

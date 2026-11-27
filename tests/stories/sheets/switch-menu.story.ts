@@ -2,7 +2,7 @@
    before it and a button after it (where Tab goes). Every pick is appended to the `events` output as `kind:id`. */
 import { html } from 'lit';
 import '../../../src/ui/elements/sheets/switch-menu.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* The rows of a sheet with three gear sets, the second the open one. */
 export const ITEMS = [

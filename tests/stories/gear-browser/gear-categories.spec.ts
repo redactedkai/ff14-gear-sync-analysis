@@ -4,7 +4,7 @@
    of the menu (texts, counts, All / None / Default) in Chromium. */
 import { test, expect } from '../fixtures.ts';
 import { ACTIVITIES } from '../../../src/core/constants.ts';
-import type { Default } from './gear-categories.story.js';
+import type { Default } from './gear-categories.story.ts';
 import { layerArmed, layerPlaced } from '../layers.ts';
 import { expectForcedColoursLook, expectLookApart, partShows, settled, tapOutside, tokenColor } from '../look.ts';
 

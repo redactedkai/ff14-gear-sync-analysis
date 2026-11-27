@@ -2,7 +2,7 @@
    Job menu edits the store and the bar follows it; axe. The links' own behaviour is math-bar.spec.ts, the job each sub-tab edits is
    math-inputs.test.ts. */
 import { expect, test } from '../fixtures.ts';
-import { PICKED_JOB, START_JOB_NAME, type Default } from './math-screen.story.js';
+import { PICKED_JOB, START_JOB_NAME, type Default } from './math-screen.story.ts';
 
 const STORY = 'math-page/math-screen/Default';
 // the finding axe has on the math bar, known on the page too (see math-bar.spec.ts)

@@ -14,7 +14,7 @@ The owner plays Sage at item level 123, but the tool is **job-agnostic**: all 23
 - `src/ui/`: state, our own store (`store/`), view builders (`views/`, unit-tested), and `elements/` (Lit elements, one folder per domain, and the Zag controller they share).
 - `src/data/`: **generated, never edit by hand.** Change `scripts/data/` and run `python scripts/data/regen.py`.
 - `scripts/`: build, data generators, perf, and validation against ffxiv-gearing and xivgear (run by hand).
-- `tests/`: `unit/`, `sweep/` (long optimizer sweep), `data/` (generators), `e2e/smoke.ts` (the runner; the checks are in `e2e/checks/`), `stories/` (Lit elements in a gallery page, three engines), `visual/` (screenshot baselines), `domains.mjs` (sorts every file into one of 11 domains).
+- `tests/`: `unit/`, `sweep/` (long optimizer sweep), `data/` (generators), `e2e/smoke.ts` (the runner; the checks are in `e2e/checks/`), `stories/` (Lit elements in a gallery page, three engines), `visual/` (screenshot baselines), `domains.ts` (sorts every file into one of 11 domains).
 - `docs/`: `mechanics/` (the game), `engineering/` (the code), plus glossary, roadmap, history.
 - `docs/scratchpad/`: gitignored. Reports, mockups and agent output go in `docs/scratchpad/<topic>/`; nothing committed links to it.
 
@@ -125,5 +125,5 @@ How it works: `docs/engineering/optimizer.md` (start at its overview) and `tier-
 ## Tests and docs
 
 - Details: `docs/engineering/testing.md`. Unit tests go in `tests/unit/`, in the folder of the module's path under `src/` (`src/ui/views/gcd.ts` → `tests/unit/ui/views/gcd.test.js`; a concern after a dot: `tests/unit/core/formulas.sync-clamp.test.js`), generator tests in `tests/data/test_<generator>.py`, UI regressions as a step in `tests/e2e/checks/<screen>/`, listed in `tests/e2e/groups.ts`. Use real items and published numbers as expected values.
-- A test's domain is its module's (`tests/domains.mjs`): a unit test needs no entry unless it mirrors no module (then add it to a domain's `tests` list); a smoke step names its domain in `groups.ts`, by what it checks; a new `src/` or `scripts/` file must match a domain's `src` list. A unit test fails on a file with no domain. A unit test file whose tests take over 5 s goes on `LONG`.
+- A test's domain is its module's (`tests/domains.ts`): a unit test needs no entry unless it mirrors no module (then add it to a domain's `tests` list); a smoke step names its domain in `groups.ts`, by what it checks; a new `src/` or `scripts/` file must match a domain's `src` list. A unit test fails on a file with no domain. A unit test file whose tests take over 5 s goes on `LONG`.
 - Docs follow `docs/diagrams/STYLE.md`. If a change alters a documented number or rule, update the doc.

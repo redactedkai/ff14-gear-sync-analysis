@@ -1,7 +1,7 @@
 /* Story of <gsa-select>, in three engines: the keys of a select (open, typeahead, pick, Escape keeps the value, Tab closes and the
    focus moves on, a press outside closes), the groups, and axe. */
 import { expect, test } from '../fixtures.ts';
-import { BUTTON_ID, NONE_LABEL, SELECT_LABEL, type Default } from './select.story.js';
+import { BUTTON_ID, NONE_LABEL, SELECT_LABEL, type Default } from './select.story.ts';
 import { focusInside } from '../layers.ts';
 import { expectForcedColoursLook, tapOutside } from '../look.ts';
 

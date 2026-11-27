@@ -2,7 +2,7 @@
    sub-tabs, Stat Allocation open. */
 import { html } from 'lit';
 import '../../../src/ui/elements/math-page/math-screen.ts';
-import { pagePorts } from '../shared/page-ports.js';
+import { pagePorts } from '../shared/page-ports.ts';
 
 /* The job the screen starts with (the page's neutral default) and one to pick, with the name the Job box shows for it. */
 export const START_JOB_NAME = 'Paladin';

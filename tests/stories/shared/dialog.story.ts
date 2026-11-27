@@ -2,7 +2,7 @@
    box is named by), with a button behind it. Each event the element sends is appended to the `events` output by its name. */
 import { html } from 'lit';
 import '../../../src/ui/elements/shared/dialog.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* The words the spec looks for: the box's title and the button behind it. */
 export const TITLE = 'Story dialog';

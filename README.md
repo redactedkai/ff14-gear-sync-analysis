@@ -42,7 +42,7 @@ Every npm command, in one place (other pages link here). Times are from the owne
 | `npm run test:full` | Unit tests and a long random sweep of the optimizer's tier ranking (`tests/sweep/`, about 35 s); run it before changing scoring, pruning or the search. CI runs it |
 | `npm run test:py` | The Python data generator tests |
 | `npm run test:smoke` | Browser smoke test of the built page (build first); prints `no errors` when it passes. `-- --domain <name>` runs one domain's groups and prints `no errors (partial: N of M groups)` |
-| `npm run test:fast` | Every unit test except the 19 long files (`LONG` in `tests/domains.mjs`): about 12 s against about 40 s for `npm test`. For work in progress; `check` is still the bar for done |
+| `npm run test:fast` | Every unit test except the 19 long files (`LONG` in `tests/domains.ts`): about 12 s against about 40 s for `npm test`. For work in progress; `check` is still the bar for done |
 | `npm run test:changed` | The unit tests of the domains that own the files `git status` lists as changed (one line per path says why; `-- --list` shows the mapping only). For work in progress; `check` is still the bar for done |
 | `npm run test:<domain>` | The unit tests of one domain: `model`, `data` (with the Python tests), `solver`, `auto-fill`, `set-page`, `sheets`, `gear-browser`, `math-page`, `app`, `look`, `tooling`. Add `-- --fast` to leave out the long files, `-- --smoke` to build a private copy of the page and run that domain's browser checks. For work in progress; `check` is still the bar for done |
 | `npm run lint` | Biome (JavaScript, TypeScript, JSON, CSS and `src/index.html`): lint and format check, no file changes; a warning fails it; then `lint:lit` |
@@ -94,7 +94,7 @@ The full rules are in [CLAUDE.md](CLAUDE.md); start the docs at [docs/README.md]
   - Keep big data (the item database, search results) out of the store or frozen in it; elements build a `view` object and templates only display it.
   - Write a rule once and share it; two copies drift.
   - `src/data/` is generated: change `scripts/data/` and regenerate, never edit it by hand.
-- **Tests.** Unit tests go in `tests/unit/<src folder>/<module>.test.js` (Node), generator tests in `tests/data/` (Python), page regressions in `tests/e2e/checks/` (run by `tests/e2e/smoke.ts`). Some modules are tested from a file named after a concern (`level-sync`, `multi-slot`), so to find a module's tests, search for its path: `grep -rl "core/sync-target.ts" tests/unit`. Each test belongs to one domain (`tests/domains.mjs`); `npm run test:<domain>` runs it. Expected values come from real items and published numbers, not from the tool's own output; see [testing.md](docs/engineering/testing.md).
+- **Tests.** Unit tests go in `tests/unit/<src folder>/<module>.test.js` (Node), generator tests in `tests/data/` (Python), page regressions in `tests/e2e/checks/` (run by `tests/e2e/smoke.ts`). Some modules are tested from a file named after a concern (`level-sync`, `multi-slot`), so to find a module's tests, search for its path: `grep -rl "core/sync-target.ts" tests/unit`. Each test belongs to one domain (`tests/domains.ts`); `npm run test:<domain>` runs it. Expected values come from real items and published numbers, not from the tool's own output; see [testing.md](docs/engineering/testing.md).
 
 ## Data
 

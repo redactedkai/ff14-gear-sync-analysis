@@ -1,9 +1,9 @@
-// Run the tests of one or more domains (tests/domains.mjs): `node scripts/test.mjs --domain set-page,auto-fill`.
+// Run the tests of one or more domains (tests/domains.ts): `node scripts/test.mjs --domain set-page,auto-fill`.
 // For work in progress. `npm run check` is still the bar for "done": it runs every test, and its smoke test prints the
 // bare 'no errors' (a domain run's smoke test prints 'no errors (partial: ...)').
 //
 //   --domain a,b   the domains to run (default: all of them)
-//   --fast         leave out the long unit files (LONG in tests/domains.mjs)
+//   --fast         leave out the long unit files (LONG in tests/domains.ts)
 //   --py           also run the Python generator tests (all in `data`)
 //   --sweep        also run the long optimizer sweep (all in `solver`)
 //   --smoke        also build a private copy of the page and run the domains' browser checks (the shared dist/ is not touched)
@@ -32,7 +32,7 @@ import {
   pythonFilesOf,
   sweepFilesOf,
   unitFilesOf,
-} from '../tests/domains.mjs';
+} from '../tests/domains.ts';
 
 const BOOLEAN_OPTIONS = ['--fast', '--py', '--sweep', '--smoke', '--full', '--list', '--changed'];
 
@@ -152,7 +152,7 @@ function pickChangedDomains() {
   const picked = domainsOfChanges(changedPathsOf(result.stdout));
   console.log(picked.lines.join('\n') || 'no changed files');
   if (picked.unowned.length) {
-    console.warn(`warning: ${picked.unowned.length} changed path(s) are in no domain (see tests/domains.mjs)`);
+    console.warn(`warning: ${picked.unowned.length} changed path(s) are in no domain (see tests/domains.ts)`);
   }
   return { domains: picked.domains };
 }

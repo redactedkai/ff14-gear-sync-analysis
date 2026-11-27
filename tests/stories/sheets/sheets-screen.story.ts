@@ -4,7 +4,7 @@
 import { html } from 'lit';
 import '../../../src/ui/elements/sheets/sheets-screen.ts';
 import { sageSet, sheetOf } from '../../unit/helpers/sheet-fixtures.ts';
-import { pagePorts } from '../shared/page-ports.js';
+import { pagePorts } from '../shared/page-ports.ts';
 
 /* The two sets' names and ids, and the button that opens the second. */
 export const FIRST_SET = { id: 'g_1', name: 'Raid' };

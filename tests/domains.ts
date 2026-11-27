@@ -167,7 +167,7 @@ export const DOMAINS = {
     title: 'The build, the test runners and the repo code rules',
     src: ['scripts/build/**', 'scripts/layout-stress/**', 'scripts/{check-deps,py,test,visual}.mjs'],
     tests: [
-      'tests/domains.mjs',
+      'tests/domains.ts',
       // the component stories: the gallery, the fixtures, the config and the stories of every element (one folder per domain)
       'tests/stories/**',
       'tests/e2e/{smoke,groups}.ts',

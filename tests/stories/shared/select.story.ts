@@ -2,7 +2,7 @@
    goes). Every pick is appended to the `events` output. */
 import { html } from 'lit';
 import '../../../src/ui/elements/shared/select.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* The accessible name and the button's id, which the specs use. */
 export const SELECT_LABEL = 'Race and clan';

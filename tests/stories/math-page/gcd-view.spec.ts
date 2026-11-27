@@ -1,7 +1,7 @@
 /* Stories of <gsa-gcd-view>: a click on a bar of the chart sets the level, a click on a row of the table sets the speed; the rows and the bars are plain pointer targets, so there is no keyboard
    model beyond the table's own (no focusable part); axe. */
 import { test, expect } from '../fixtures.ts';
-import type { Default } from './gcd-view.story.js';
+import type { Default } from './gcd-view.story.ts';
 
 const STORY = 'math-page/gcd-view/Default';
 

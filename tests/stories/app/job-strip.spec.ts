@@ -2,7 +2,7 @@
    and gold border (the field follows the level; the error for text that is no item level is cap-field.spec's), the strip not moving
    when the cap is lowered, and axe. */
 import { expect, test } from '../fixtures.ts';
-import type { Default } from './job-strip.story.js';
+import type { Default } from './job-strip.story.ts';
 import { partShows } from '../look.ts';
 
 const STORY = 'app/job-strip/Default';

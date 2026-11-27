@@ -3,7 +3,7 @@
    inside, closes on a press on its backdrop and by Escape; axe. */
 import { focusInside, layerArmed, layerPlaced } from '../layers.ts';
 import { test, expect } from '../fixtures.ts';
-import type { Default } from './bar-popover.story.js';
+import type { Default } from './bar-popover.story.ts';
 import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'math-page/bar-popover/Default';

@@ -1,7 +1,7 @@
 /* Stories of <gsa-switch-menu>: a caret that opens a plain list of links (no role=menu), the open set's row takes the focus,
    Escape closes it with the focus on the caret, Tab walks its rows and closes it past either end, a plain click on a row is a pick, and axe. */
 import { test, expect } from '../fixtures.ts';
-import { BUTTON_NAME, MENU_NAME, type Default } from './switch-menu.story.js';
+import { BUTTON_NAME, MENU_NAME, type Default } from './switch-menu.story.ts';
 import { layerArmed } from '../layers.ts';
 import { expectForcedColoursLook, tapOutside } from '../look.ts';
 

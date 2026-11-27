@@ -3,7 +3,7 @@
    sends is appended to the `events` output as `action:kind:id` (the element never reads a store). */
 import { html } from 'lit';
 import '../../../src/ui/elements/sheets/sheet-manager.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* One sheet's row, shaped as views/sheet-manager.ts builds it. */
 const row = (id, name, jobId, jobName) => ({

@@ -4,7 +4,7 @@
 import { expect, test } from '../fixtures.ts';
 import type { Page } from 'playwright/test';
 import { SHEET_GONE_TEXT } from '../../../src/ui/sheets/store-shared.ts';
-import { OPENER_LABEL, TITLE, type Copy, type Default } from './sheet-dialog.story.js';
+import { OPENER_LABEL, TITLE, type Copy, type Default } from './sheet-dialog.story.ts';
 
 const STORY = 'sheets/sheet-dialog/Default';
 

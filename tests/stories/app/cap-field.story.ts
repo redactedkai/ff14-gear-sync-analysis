@@ -3,7 +3,7 @@
    and appended to the `events` output; with `follow`, the field lowers the cap to what the level allows, and says so. */
 import { html } from 'lit';
 import '../../../src/ui/elements/app/cap-field.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* The highest real item level, as the page gives it, and the start values. */
 const MAX_REAL = 795;

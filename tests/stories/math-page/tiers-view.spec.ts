@@ -5,7 +5,7 @@
    drawn a window at a time, so the tests read the row marked as the value's. */
 import type { Page } from 'playwright/test';
 import { test, expect } from '../fixtures.ts';
-import type { Default } from './tiers-view.story.js';
+import type { Default } from './tiers-view.story.ts';
 
 const STORY = 'math-page/tiers-view/Default';
 

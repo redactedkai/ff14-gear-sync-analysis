@@ -24,7 +24,7 @@ export const PINNED_IMAGE = 'mcr.microsoft.com/playwright:v1.64.1-noble';
 export const IMAGE_ENV = 'GSA_VISUAL_IMAGE';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const configPath = join(root, 'tests', 'visual', 'playwright.config.mjs');
+const configPath = join(root, 'tests', 'visual', 'playwright.config.ts');
 
 /* The image tag after the colon of PINNED_IMAGE, which the CI job gives to this script as GSA_VISUAL_IMAGE. */
 export function pinnedTag() {

@@ -1,6 +1,6 @@
 /* Playwright Test config for the component stories: one project per engine, the gallery opened from file:// (no server),
    no retries (a flaky story is a bug to fix, not to hide). `npm run test:stories` runs the chromium project,
-   `npm run test:stories:all` all three. The gallery is built first by tests/stories/build.mjs. */
+   `npm run test:stories:all` all three. The gallery is built first by tests/stories/build.ts. */
 import { defineConfig, devices } from 'playwright/test';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';

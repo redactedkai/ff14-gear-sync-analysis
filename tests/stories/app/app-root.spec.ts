@@ -2,7 +2,7 @@
    no section beyond the three tabs'); axe. The tab links' addresses, the loading line and the leave question are
    app-root-model.test.ts; the start marker and the boot shell are the smoke test's. */
 import { expect, test } from '../fixtures.ts';
-import type { Default } from './app-root.story.js';
+import type { Default } from './app-root.story.ts';
 
 const STORY = 'app/app-root/Default';
 const TABS = ['sheets', 'browse', 'math'];

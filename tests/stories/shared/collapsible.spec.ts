@@ -1,7 +1,7 @@
 /* Story of <gsa-collapsible>, in three engines: the keys of a disclosure (the WAI-ARIA disclosure pattern: Enter and Space on the button
    show and hide the panel, `aria-expanded` and `aria-controls` follow, Tab moves on past a shown panel) and axe. */
 import { expect, test } from '../fixtures.ts';
-import { CONTENT_ID, TRIGGER_ID, type Default } from './collapsible.story.js';
+import { CONTENT_ID, TRIGGER_ID, type Default } from './collapsible.story.ts';
 
 const STORY = 'shared/collapsible/Default';
 

@@ -7,7 +7,7 @@ import { ACTIVITIES } from '../../../src/core/constants.ts';
 import { gearFromSummary, marketWords } from '../../../src/ui/elements/gear-browser/filter-menu-model.ts';
 import { expect, test } from '../fixtures.ts';
 import { styleOf, tokenColor } from '../look.ts';
-import { DEFAULT_LEFT_OUT, type Default } from './gear-categories.story.js';
+import { DEFAULT_LEFT_OUT, type Default } from './gear-categories.story.ts';
 
 const STORY = 'gear-browser/gear-categories/Default';
 const FIELD = '#b-from';

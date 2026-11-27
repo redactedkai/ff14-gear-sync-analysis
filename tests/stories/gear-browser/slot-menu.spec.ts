@@ -11,7 +11,7 @@ import {
   type BesideAppMenu,
   type Default,
   type LowOnPage,
-} from './slot-menu.story.js';
+} from './slot-menu.story.ts';
 import { layerArmed, layerPlaced } from '../layers.ts';
 import { ANY_SLOT_KEY, ANY_SLOT_LABEL, slotButtonName } from '../../../src/ui/elements/gear-browser/slot-menu-names.ts';
 

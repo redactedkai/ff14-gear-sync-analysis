@@ -1,7 +1,7 @@
 /* Stories of <gsa-materia-menu>: the menu opens under the pressed chip with the worn stone focused, a pick is told to the page
    and closes it with the focus back on the chip, Escape and a press outside close it; axe. */
 import { test, expect } from '../fixtures.ts';
-import type { Default } from './materia-menu.story.js';
+import type { Default } from './materia-menu.story.ts';
 import { expectForcedColoursLook, expectLookApart, hasRing, tapOutside } from '../look.ts';
 
 const STORY = 'set-page/materia-menu/Default';

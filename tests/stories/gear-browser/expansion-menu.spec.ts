@@ -5,7 +5,7 @@
 import { EXPANSIONS } from '../../../src/core/constants.ts';
 import { EXPANSION_LABEL, expansionSummary } from '../../../src/ui/elements/gear-browser/filter-menu-model.ts';
 import { expect, test } from '../fixtures.ts';
-import type { Default } from './expansion-menu.story.js';
+import type { Default } from './expansion-menu.story.ts';
 import { layerArmed } from '../layers.ts';
 import { expectForcedColoursLook, expectLookApart, partShows, tapOutside } from '../look.ts';
 

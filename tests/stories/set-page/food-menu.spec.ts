@@ -1,7 +1,7 @@
 /* Stories of <gsa-food-menu>: the menu opens with the search box focused, the search and the pills narrow the list, a meal row is a
    pick, Escape and Tab out close it with the focus where the keyboard model puts it, a quick close leaves no error, and axe. */
 import { test, expect } from '../fixtures.ts';
-import { BUTTON_ID, MENU_ID, type Default } from './food-menu.story.js';
+import { BUTTON_ID, MENU_ID, type Default } from './food-menu.story.ts';
 import { layerArmed } from '../layers.ts';
 import { expectForcedColoursLook, tapOutside } from '../look.ts';
 

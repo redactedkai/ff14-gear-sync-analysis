@@ -1,6 +1,6 @@
 /* A TypeScript element with a field initializer next to `static properties`. It works only because the build reads
    tsconfig's useDefineForClassFields false and assigns the field in the constructor (through Lit's accessor). The story
-   TypeScriptField in broken-elements.story.js pins that setting; the page's own elements still avoid the pattern. */
+   TypeScriptField in broken-elements.story.ts pins that setting; the page's own elements still avoid the pattern. */
 import { LitElement, html } from 'lit';
 
 /* The element whose `count = 0` initializer sits next to `static properties`; the story that mounts it proves the build setting. */

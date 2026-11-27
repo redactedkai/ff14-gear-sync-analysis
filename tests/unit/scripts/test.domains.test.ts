@@ -1,7 +1,7 @@
-/* The test domains (tests/domains.mjs): the guard that keeps the registry whole. Every file of src/, scripts/ and tests/
+/* The test domains (tests/domains.ts): the guard that keeps the registry whole. Every file of src/, scripts/ and tests/
    belongs to exactly one domain, every smoke step names a known domain, every registry pattern still matches a file, and
    package.json has a test:<domain> script for each domain and for no other name. A new file that no domain claims fails
-   here with its path: add it to a domain's `src` or `tests` list in tests/domains.mjs (or, for a unit test, put it where
+   here with its path: add it to a domain's `src` or `tests` list in tests/domains.ts (or, for a unit test, put it where
    its module's path says). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -21,7 +21,7 @@ import {
   mirroredModule,
   parseDomains,
   unitFilesOf,
-} from '../../domains.mjs';
+} from '../../domains.ts';
 
 const SOURCE_FILES = [...listFiles('src'), ...listFiles('scripts')];
 const TEST_FILES = listFiles('tests');

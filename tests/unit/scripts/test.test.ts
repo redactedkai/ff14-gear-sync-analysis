@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { changedPathsOf, domainsOfChange, domainsOfChanges, parseArguments } from '../../../scripts/test.mjs';
-import { DOMAIN_NAMES, LONG, unitFilesOf } from '../../domains.mjs';
+import { DOMAIN_NAMES, LONG, unitFilesOf } from '../../domains.ts';
 
 /* The options `argv` parses to; fails the test when it names an error. */
 function optionsOf(argv: string[]) {

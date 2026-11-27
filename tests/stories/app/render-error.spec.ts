@@ -1,7 +1,7 @@
 /* The fixture's own proof: a story whose element throws in render() must fail the test. Playwright does not fail a test
    on a page error and `mount()` resolves before Lit renders, so only the fixture (tests/stories/fixtures.ts) catches it. */
 import { test, expect } from '../fixtures.ts';
-import type { ThrowingRender } from './broken-elements.story.js';
+import type { ThrowingRender } from './broken-elements.story.ts';
 
 test.describe('the fixture', () => {
   test('fails a test whose element throws in render()', async ({ mount }) => {

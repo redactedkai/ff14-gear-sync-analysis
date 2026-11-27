@@ -3,7 +3,7 @@
    set opens from its row and the Effects / Stat points switch tells the page, and axe. */
 import { expect, test } from '../fixtures.ts';
 import { clickAtPoint, clickAtRightEnd, dragAcross } from '../row-clicks.ts';
-import { LOWERED_TO, type Default } from './sheet-page.story.js';
+import { LOWERED_TO, type Default } from './sheet-page.story.ts';
 
 // The drag handles have no accessible name: a finding the page's own accessibility check lists as known (KNOWN_AXE in
 // tests/e2e/checks/look/accessibility.ts). Remove this filter with that entry when the handles get a name.

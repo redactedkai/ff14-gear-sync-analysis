@@ -3,7 +3,7 @@
 import { html } from 'lit';
 import '../../../src/ui/elements/math-page/gcd-controls.ts';
 import '../../../src/ui/elements/shared/select.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* The element at the synced level 50 with no typed level, no haste and no speed asked (the base). */
 export const Default = () => {

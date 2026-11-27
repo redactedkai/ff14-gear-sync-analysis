@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { inputFiles, isCoreInput } from '../../../scripts/data/gen_max_speed.mjs';
-import { listFiles } from '../../domains.mjs';
+import { listFiles } from '../../domains.ts';
 
 test('max-speed inputs: JavaScript, TypeScript and JSON files under src/core count, other files do not', () => {
   for (const path of ['src/core/sync-target.ts', 'src/core/item-format.json', 'src/core/future-module.ts']) {

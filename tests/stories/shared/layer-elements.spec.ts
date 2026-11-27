@@ -1,8 +1,8 @@
 /* Stories of the Zag controller and the overlay bridge, with the test elements of layer-elements.ts: a Zag popover next to,
    inside and around a layer opened by the page's own overlay manager. The rule they guard: one Escape closes one layer. */
 import { test, expect } from '../fixtures.ts';
-import { APP_MENU_LABEL } from './layer-elements.story.js';
-import type { Alone, BesideAppMenu, HoldingAppMenu, InsideAppMenu } from './layer-elements.story.js';
+import { APP_MENU_LABEL } from './layer-elements.story.ts';
+import type { Alone, BesideAppMenu, HoldingAppMenu, InsideAppMenu } from './layer-elements.story.ts';
 
 const STORY = (name: string) => `shared/layer-elements/${name}`;
 

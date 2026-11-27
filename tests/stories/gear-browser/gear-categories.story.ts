@@ -4,7 +4,7 @@ import { html } from 'lit';
 import '../../../src/ui/elements/gear-browser/expansion-menu.ts';
 import '../../../src/ui/elements/gear-browser/gear-categories.ts';
 import { ACTIVITIES } from '../../../src/core/constants.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* The boxes left out by default (the page's defaults: `on: false` in item-format.json), written out so the story does not read them
    from the code under test. */

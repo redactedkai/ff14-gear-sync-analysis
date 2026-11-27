@@ -3,7 +3,7 @@
    lets go of the button). Every pick is appended to the `events` output (the piece's gameId, or null for Empty this slot). */
 import { html } from 'lit';
 import '../../../src/ui/elements/set-page/piece-picker.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* The pieces: 400 of Dawntrail and 300 of Endwalker, `Piece 1` to `Piece 700`; the first Endwalker one is a Unique ring worn in the
    other ring row (shown, not pickable). */

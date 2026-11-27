@@ -3,7 +3,7 @@
    sub-tab, a Ctrl click is the browser's), the controls follow the open sub-tab, no choice of a Slot or a substat moves the bar, the controls row has its three layouts with their rules and gaps, every box has one height at 100% and 125% text; the keyboard model is the slider's and the links'
    own; axe. */
 import { test, expect } from '../fixtures.ts';
-import type { Default } from './math-bar.story.js';
+import type { Default } from './math-bar.story.ts';
 
 const STORY = 'math-page/math-bar/Default';
 // the one finding axe has on the bar, known on the page too (KNOWN_AXE in tests/e2e/checks/look/accessibility.ts): the chips' names leave out

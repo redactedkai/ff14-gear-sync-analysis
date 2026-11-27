@@ -2,7 +2,7 @@
    with a plain click, Up and Down on a drag handle move the row and keep the focus on the handle, and axe. */
 import { expect, test } from '../fixtures.ts';
 import { clickAtRightEnd, dragAcross } from '../row-clicks.ts';
-import { NAMES, type Default } from './sheet-manager.story.js';
+import { NAMES, type Default } from './sheet-manager.story.ts';
 
 // The drag handles have no accessible name: a finding the page's own accessibility check lists as known (KNOWN_AXE in
 // tests/e2e/checks/look/accessibility.ts). Remove this filter with that entry when the handles get a name.

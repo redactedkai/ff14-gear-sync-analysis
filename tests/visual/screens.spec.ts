@@ -5,8 +5,8 @@
 import { pathToFileURL } from 'node:url';
 import { expect, test } from 'playwright/test';
 import { VIEWS, openView, prepareContext, viewUrl } from '../../scripts/shots/views.mjs';
-import { PAGE_ENV } from './global-setup.mjs';
-import { stubWebFonts } from './fonts-stub.mjs';
+import { PAGE_ENV } from './global-setup.ts';
+import { stubWebFonts } from './fonts-stub.ts';
 
 const WIDTHS = [1440, 960];
 const VIEWPORT_HEIGHT = 900;

@@ -1,6 +1,6 @@
 /* Story of <gsa-dialog>: the modal rules the Sheets dialogs rely on, in one pass (the page's own checks cover the forms). */
 import { test, expect } from '../fixtures.ts';
-import { BEHIND_LABEL, NAME_TEXT, TITLE, type Alert, type Default } from './dialog.story.js';
+import { BEHIND_LABEL, NAME_TEXT, TITLE, type Alert, type Default } from './dialog.story.ts';
 
 test.describe('<gsa-dialog>', () => {
   test('a modal box: the focus goes in and stays in, the page behind is out of the accessibility tree, Escape and a press on the backdrop are the page to answer', async ({

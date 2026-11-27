@@ -3,7 +3,7 @@
    the X, Escape and a press outside close it with the focus where each should leave it. In three engines. */
 import { RANK_NOTE_ID } from '../../../src/ui/elements/set-page/rank-note.ts';
 import { expect, test } from '../fixtures.ts';
-import { GEAR_ID, POPOVER_ID, type Default } from './settings-popover.story.js';
+import { GEAR_ID, POPOVER_ID, type Default } from './settings-popover.story.ts';
 import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'set-page/settings-popover/Default';

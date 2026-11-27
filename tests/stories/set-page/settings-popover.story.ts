@@ -6,7 +6,7 @@ import '../../../src/ui/elements/gear-browser/expansion-menu.ts';
 import '../../../src/ui/elements/set-page/rank-note.ts';
 import '../../../src/ui/elements/set-page/settings-popover.ts';
 import '../../../src/ui/elements/shared/select.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* The ids the page's own markup gives (the page's tests name them). */
 export const GEAR_ID = 'sh-settings';

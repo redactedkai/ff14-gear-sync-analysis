@@ -3,7 +3,7 @@
    waits for the note's time without waiting in real time; the timer's own rules are note-timer's Node test. */
 import { NOTE_MS } from '../../../src/ui/elements/app/note-timer.ts';
 import { expect, test } from '../fixtures.ts';
-import { NOTE_TEXT, SAVE_MESSAGE, type Default } from './notes.story.js';
+import { NOTE_TEXT, SAVE_MESSAGE, type Default } from './notes.story.ts';
 
 const STORY = 'app/notes/Default';
 

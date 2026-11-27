@@ -2,7 +2,7 @@
    the lint rule lit/no-classfield-shadowing (tests/unit/scripts/lint-lit.test.ts), Lit's development build, which throws
    (this file), and tsconfig's useDefineForClassFields false for TypeScript elements (this file). */
 import { test, expect, ALLOW_PAGE_ERROR } from '../fixtures.ts';
-import type { ClassFieldTrap, TypeScriptField } from './broken-elements.story.js';
+import type { ClassFieldTrap, TypeScriptField } from './broken-elements.story.ts';
 
 test.describe('the class-field trap', () => {
   test('a JavaScript class field fails the test through the fixture', async ({ mount }) => {

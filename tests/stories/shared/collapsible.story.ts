@@ -3,7 +3,7 @@
    `events` output. */
 import { html } from 'lit';
 import '../../../src/ui/elements/shared/collapsible.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* The ids of the two parts (the element's `trigger-id` and `content-id`), which the spec uses, and the trigger's name. */
 export const TRIGGER_ID = 'story-help';

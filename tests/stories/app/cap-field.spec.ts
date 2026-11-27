@@ -2,7 +2,7 @@
    at once, an arrow key steps at once, text that is no item level is an error and commits nothing; there is no Escape rule), the cap
    lowered to what a lower level allows, and axe. */
 import { expect, test } from '../fixtures.ts';
-import type { Default } from './cap-field.story.js';
+import type { Default } from './cap-field.story.ts';
 
 const STORY = 'app/cap-field/Default';
 // the highest item level the best gear made for level 40 has (capCeiling in core/sync-target.ts): what a cap at level 40 is lowered to

@@ -4,7 +4,7 @@
 import type { Page } from 'playwright/test';
 import { HASTE_OPTIONS } from '../../../src/ui/views/gcd.ts';
 import { expect, test } from '../fixtures.ts';
-import type { Default } from './gcd-controls.story.js';
+import type { Default } from './gcd-controls.story.ts';
 
 const STORY = 'math-page/gcd-controls/Default';
 

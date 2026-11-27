@@ -2,7 +2,7 @@
    is played here: every level the field sends (`level-change`) is kept as `value` and given back, and appended to the `events` output. */
 import { html } from 'lit';
 import '../../../src/ui/elements/app/level-field.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* The job's level cap and the level the story starts at. */
 export const MAX_LEVEL = 100;

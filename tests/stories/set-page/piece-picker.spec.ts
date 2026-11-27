@@ -2,7 +2,7 @@
    narrows the list and Clear search brings it back, a piece row is a pick and Empty this slot another (both close it with the focus
    on the button), a Unique piece worn elsewhere cannot be picked, Escape and a press outside close it; axe. */
 import { test, expect } from '../fixtures.ts';
-import { PIECE_COUNT, TAKEN_PIECE, type Default } from './piece-picker.story.js';
+import { PIECE_COUNT, TAKEN_PIECE, type Default } from './piece-picker.story.ts';
 import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'set-page/piece-picker/Default';

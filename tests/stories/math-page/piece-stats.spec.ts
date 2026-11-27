@@ -5,7 +5,7 @@
 import { OFF_TEXT } from '../../../src/ui/views/sync-explainer.ts';
 import { expect, test } from '../fixtures.ts';
 import { styleOf, tokenColor } from '../look.ts';
-import { type Default, NO_SYNC } from './piece-stats.story.js';
+import { type Default, NO_SYNC } from './piece-stats.story.ts';
 
 const STORY = 'math-page/piece-stats/Default';
 /* A body piece below the cap: it keeps its materia, so the bars show the meld segment. */

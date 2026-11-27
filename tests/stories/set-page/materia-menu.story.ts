@@ -2,7 +2,7 @@
    page's part is played here by two plain buttons and listeners; a pick is recorded into the `events` output as `stat:grade`. */
 import { html } from 'lit';
 import '../../../src/ui/elements/set-page/materia-menu.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* The view of an overmeld slot (the shape of `materiaMenuView`): two grades of two stats, the second of Critical Hit worn. */
 export const MENU = {

@@ -3,7 +3,7 @@
    `note-expire` clears the note, as the root does; the expiry is appended to the `events` output. */
 import { html } from 'lit';
 import '../../../src/ui/elements/app/notes.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* The two texts the buttons say. */
 export const NOTE_TEXT = 'Deleted “UwU” sheet.';

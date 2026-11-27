@@ -2,7 +2,7 @@
    only the selected tab is in the Tab order, and Tab goes on into its boxes), a box unticked is sent as left out, and axe. The menu
    around it (open, Escape, the 960 px fit) is gear-categories.spec.ts. */
 import { expect, test } from '../fixtures.ts';
-import type { Default } from './gear-sections.story.js';
+import type { Default } from './gear-sections.story.ts';
 
 const STORY = 'gear-browser/gear-sections/Default';
 const TAB_IDS = ['b-from-tab-everyday', 'b-from-tab-side-content', 'b-from-tab-hard-content'];

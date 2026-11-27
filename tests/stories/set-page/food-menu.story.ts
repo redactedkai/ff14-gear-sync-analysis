@@ -3,7 +3,7 @@
    picked is appended to the `events` output (its key, or null for No food). */
 import { html } from 'lit';
 import '../../../src/ui/elements/set-page/food-menu.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* The words the specs look for. */
 export const BUTTON_ID = 'sh-meal-btn';

@@ -4,7 +4,7 @@
 import { html } from 'lit';
 import '../../../src/ui/elements/sheets/sheet-page.ts';
 import '../../../src/ui/elements/shared/select.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* A gear set's row, shaped as views/sheet-sets.ts builds it (the two figures are the main stat and the GCD). */
 const set = (id, name, mind, gcd, description = '') => ({

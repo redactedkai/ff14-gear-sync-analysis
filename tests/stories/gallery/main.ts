@@ -1,6 +1,6 @@
 /* The story gallery: the page Playwright's `mount` fixture opens. `window.mount({ story, props })` renders a story into
    #root and `window.unmount()` clears it. A story is a function (props) => Lit template; the registry
-   (out/registry.generated.js, written by tests/stories/build.mjs) maps a story file to a lazy import. The page's own
+   (out/registry.generated.js, written by tests/stories/build.ts) maps a story file to a lazy import. The page's own
    stylesheet is loaded, so an element looks as it does on the page. */
 import { nothing, render } from 'lit';
 import '../../../src/styles/entry.css';

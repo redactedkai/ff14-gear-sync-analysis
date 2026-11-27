@@ -2,7 +2,7 @@
    and commit once, Enter commits at once, text that is no level is an error and commits nothing; a level out of range moves to the
    nearest on leaving the box; there is no Escape rule), and axe. */
 import { expect, test } from '../fixtures.ts';
-import { MAX_LEVEL, type Default } from './level-field.story.js';
+import { MAX_LEVEL, type Default } from './level-field.story.ts';
 
 const STORY = 'app/level-field/Default';
 

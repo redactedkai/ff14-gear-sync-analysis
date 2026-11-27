@@ -3,7 +3,7 @@
    headings and page buttons plain buttons (Tab order, Enter and Space as for any button), so there is no keyboard model beyond
    those; the Slot menu and the filter menus inside have their own specs. axe. */
 import { test, expect } from '../fixtures.ts';
-import type { Default } from './gear-browser.story.js';
+import type { Default } from './gear-browser.story.ts';
 
 const STORY = 'gear-browser/gear-browser/Default';
 

@@ -1,7 +1,7 @@
 /* Stories of <gsa-stat-note>: the note opens under the pressed "?", is named by its heading, moves to another "?", and closes
    by Escape (the focus back on its "?") or a press outside; axe. */
 import { test, expect } from '../fixtures.ts';
-import type { Default } from './stat-note.story.js';
+import type { Default } from './stat-note.story.ts';
 import { layerPlaced } from '../layers.ts';
 import { expectForcedColoursLook, tapOutside } from '../look.ts';
 

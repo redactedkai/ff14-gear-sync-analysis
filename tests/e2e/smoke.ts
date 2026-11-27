@@ -18,7 +18,7 @@ Expected values come from outside the code under test where possible:
 
 Layout: this file is the runner. lib/ holds the helpers (expect, navigation, the shared setup, saved sheets, the worker
 thread that computes numbers from src/core, the init scripts). checks/<folder>/ holds the checks: the
-folder is named for the step's domain (tests/domains.mjs; the app's are settings, saved-state, tabs and startup). groups.ts lists GROUPS, the
+folder is named for the step's domain (tests/domains.ts; the app's are settings, saved-state, tabs and startup). groups.ts lists GROUPS, the
 steps in the order they run.
 
 The steps run in groups, in parallel: each group gets a fresh browser context (so its own saved state) and page, set to
@@ -29,7 +29,7 @@ waiting. Failures are printed in step order.
 
 Setup once: npm install && npx playwright install chromium
 Run: npm run build && npm run test:smoke
-Options: --domain <name,name> (or SMOKE_DOMAIN) runs only the groups with a step of those domains (tests/domains.mjs); a run
+Options: --domain <name,name> (or SMOKE_DOMAIN) runs only the groups with a step of those domains (tests/domains.ts); a run
 with a filter that leaves out groups ends with 'no errors (partial: N of M groups)', never the bare 'no errors' of the full run.
 Environment: SMOKE_PAGE (page to test, default dist/index.html), SMOKE_OUT (screenshots, default tests/e2e/out),
 SMOKE_WORKERS (groups at once, default half the cores up to 6),
@@ -43,7 +43,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import type { Browser } from 'playwright';
 import { UNLOAD_GUARD_OFF_KEY } from '../../src/ui/router/unload-guard.ts';
-import { parseDomains } from '../domains.mjs';
+import { parseDomains } from '../domains.ts';
 import { GROUPS } from './groups.ts';
 import type { Group } from './groups.ts';
 import { OUT, PAGE, PAGE_PATH, WORKERS, shot } from './lib/constants.ts';

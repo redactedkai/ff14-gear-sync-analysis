@@ -3,7 +3,7 @@
    state, given back to the strip as properties, and appended to the `events` output as `level:50` or `cap:200`. */
 import { html } from 'lit';
 import '../../../src/ui/elements/app/job-strip.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* The highest level and item level a job takes, as the page gives them. */
 const MAX_LEVEL = 100;

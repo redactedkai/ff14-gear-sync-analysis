@@ -2,7 +2,7 @@
    role (Up and Down) and inside a role (Left and Right), Enter picks and gives the focus back to the button, Escape closes it with
    the focus on the button, Tab closes it and moves on, a click on an icon picks, all 23 jobs are there, and axe. */
 import { test, expect } from '../fixtures.ts';
-import { START_JOB, START_JOB_NAME, type Default } from './job-menu.story.js';
+import { START_JOB, START_JOB_NAME, type Default } from './job-menu.story.ts';
 import { expectForcedColoursLook, tapOutside } from '../look.ts';
 
 const STORY = 'app/job-menu/Default';

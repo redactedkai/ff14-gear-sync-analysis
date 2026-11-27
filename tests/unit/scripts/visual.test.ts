@@ -75,5 +75,5 @@ test('the view list: numbered names that stay unique, and the counts the docs an
   assert.ok(testing.includes(`${names.length * 2} images expected`), `testing.md names ${names.length * 2} baseline images`);
   assert.ok(testing.includes(`${names.length * 4} shots for the ${names.length} views`), `testing.md names ${names.length * 4} shots`);
   assert.ok(read('scripts/shots/shots.mjs').includes(`${names.length} views, ${names.length * 4} shots`), 'shots.mjs header count');
-  assert.ok(read('tests/visual/screens.spec.mjs').includes(`${names.length * 2} baselines`), 'screens.spec.mjs header count');
+  assert.ok(read('tests/visual/screens.spec.ts').includes(`${names.length * 2} baselines`), 'screens.spec.ts header count');
 });

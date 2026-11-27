@@ -5,7 +5,7 @@ import { RANK_NOTE_BUTTON_ID, RANK_NOTE_ID, RANK_NOTE_NAME, RANK_NOTE_TEXT } fro
 import { expect, test } from '../fixtures.ts';
 import { layerArmed } from '../layers.ts';
 import { expectForcedColoursLook, styleOf, tapOutside, tokenColor } from '../look.ts';
-import type { Default, InSettings } from './rank-note.story.js';
+import type { Default, InSettings } from './rank-note.story.ts';
 
 const STORY = 'set-page/rank-note/Default';
 const BUTTON = `#${RANK_NOTE_BUTTON_ID}`;

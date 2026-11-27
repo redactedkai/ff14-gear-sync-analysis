@@ -82,7 +82,7 @@ import { walkJob } from './checks/tabs/walk.ts';
 import type { Page } from 'playwright';
 import { FAILING_WORKER, HOLD_SOLVE, NO_WORKER, SLOW_COUNT } from './lib/init-scripts.ts';
 
-// A step: its name, the function that runs it, and its domain (a key of DOMAINS in tests/domains.mjs: the part of the
+// A step: its name, the function that runs it, and its domain (a key of DOMAINS in tests/domains.ts: the part of the
 // product the step checks, named by what its comment says; the folder of its file does not decide). A step that
 // starts from the shared setup has `shared: true`.
 export interface Step {

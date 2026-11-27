@@ -2,7 +2,7 @@
    (scripts/visual.mjs), which makes sure it runs only in the pinned image; docs/engineering/testing.md, "Screenshot
    baselines".
 
-   - Dark scheme only; the fallback fonts only (fonts-stub.mjs); animations off; the UTC time zone and the en-US
+   - Dark scheme only; the fallback fonts only (fonts-stub.ts); animations off; the UTC time zone and the en-US
      locale, so a date drawn on the page (the seeded sheets' created and changed days) is the same on every machine.
    - One folder of baselines, `__screenshots__/`, with no platform in the file name: the baselines are made only by
      the CI job in the pinned Linux image, and compared only there. GSA_VISUAL_SNAPSHOTS names another folder (a
@@ -20,8 +20,8 @@ const outputFolder = process.env.GSA_VISUAL_OUTPUT ? resolve(process.env.GSA_VIS
 
 export default defineConfig({
   testDir: here,
-  testMatch: '*.spec.mjs',
-  globalSetup: resolve(here, 'global-setup.mjs'),
+  testMatch: '*.spec.ts',
+  globalSetup: resolve(here, 'global-setup.ts'),
   snapshotPathTemplate: `${snapshotFolder.split('\\').join('/')}/{arg}{ext}`,
   outputDir: outputFolder,
   retries: 0,

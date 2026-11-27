@@ -5,7 +5,7 @@ import { html } from 'lit';
 import '../../../src/ui/elements/gear-browser/gear-browser.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { defaultBrowse } from '../../../src/ui/state.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 /* The page's job: a `browse-edit` patch becomes the element's next `browse` (frozen, as the store hands it out). */
 function applyEdit(event) {

@@ -3,7 +3,7 @@
    ticked stays ticked and the button's text follows; every list the menu sends is appended to the `events` output. */
 import { html } from 'lit';
 import '../../../src/ui/elements/gear-browser/expansion-menu.ts';
-import { recordEvents } from '../gallery/record.js';
+import { recordEvents } from '../gallery/record.ts';
 
 const record = recordEvents('events');
 
