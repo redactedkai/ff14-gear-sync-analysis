@@ -48,7 +48,7 @@ test('the materia menu: the best grades the item level takes, the room under the
 });
 
 /* The overmeld odds in the materia menu: the Wiki's Advanced Materia Melding table (HQ pieces) and the MateriaGrade sheet
-   (NQ pieces), as in core/meld.overmeld-odds.test.js. Courtly Lover's Earrings of Healing (item level 770, 1 slot +
+   (NQ pieces), as in core/meld.overmeld-odds.test.ts. Courtly Lover's Earrings of Healing (item level 770, 1 slot +
    overmeld, can be HQ) and Axe of the Fury (item level 205, 2 slots + overmeld, cannot be HQ). */
 const odds = menu => menu.bands.flatMap(b => b.columns).map(c => c.odds);
 

@@ -5,7 +5,7 @@ or horizontal page scroll at 960 px (NARROW). Prints 'no errors' on success.
 
 Expected values come from outside the code under test where possible:
   - sync caps at item level 123 (head/hands/feet 29, body/legs 47, accessories 23, 2H weapon 48;
-    main stat 30/48/24/50) (the Wiki's item level 475 caps are checked in tests/unit/core/formulas.model-accuracy.test.js);
+    main stat 30/48/24/50) (the Wiki's item level 475 caps are checked in tests/unit/core/formulas.model-accuracy.test.ts);
   - a set page's Auto-fill over every piece a healer can wear: the set it suggests, synced to 123, has the Spell Speed src/core
     computes for the same settings in Node (the core is checked against a brute force over every loadout in
     tests/unit);

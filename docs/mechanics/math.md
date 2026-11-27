@@ -727,4 +727,4 @@ The status of each claim about the stat model (item stats, stat factors, substat
 | Weapon damage and defense: synced values, a gear set's defense, mitigation | `src/core/damage-defense.ts`; budgets, factors and shares (`SHARES`) in `src/data/item-level.json`; the job's weapon damage `damageKey` in `src/core/job-context.ts` |
 | Accuracy against real items, Wiki 475 check | `tests/unit/helpers/model-validation.ts` |
 | Slot share check against `BaseParam.csv` | `scripts/data/item_format.py` (`check_slot_percents`) |
-| Tests for the above | `tests/unit/core/formulas.test.js`, `core/formulas.sync-clamp.test.js`, `core/formulas.sync-cap-order.test.js`, `core/sync-target.test.js`, `core/speed.test.js`, `core/formulas.model-accuracy.test.js`, `core/formulas.stat-factor.test.js` |
+| Tests for the above | `tests/unit/core/formulas.test.ts`, `core/formulas.sync-clamp.test.ts`, `core/formulas.sync-cap-order.test.ts`, `core/sync-target.test.js`, `core/speed.test.js`, `core/formulas.model-accuracy.test.ts`, `core/formulas.stat-factor.test.ts` |

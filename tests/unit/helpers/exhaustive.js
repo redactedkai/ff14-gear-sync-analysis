@@ -208,7 +208,7 @@ function enumerateVectors(job, item, sync, keys, exactSpd) {
    when a chosen piece blocks it (a two-handed weapon blocks the off-hand, a cloak the head).
 
    Effective (synced) stats come from the optimizer's own effStats and weaponDamage, so this reference does not check
-   the sync clamp; that is covered by core/formulas.sync-clamp.test.js, the Wiki item level 475 caps and the caps at 123 (docs/engineering/testing.md).
+   the sync clamp; that is covered by core/formulas.sync-clamp.test.ts, the Wiki item level 475 caps and the caps at 123 (docs/engineering/testing.md).
    `mins` = {stat: total}: minimums on any stat's total, checked like spdMin.
    `fixed`: pinned pieces, [{item, vector (pinnedVector)}]: worn as they are, counted in every total, and their slots
    are not searched (forEachLoadout). */

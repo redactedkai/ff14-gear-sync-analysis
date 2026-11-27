@@ -775,7 +775,7 @@ Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its f
 | `scripts/validate/gearing/run.mjs`, `scripts/validate/xivgear/run.py` | nothing: both read the job list from `item-format.json` |
 | `tests/data/fixtures/ClassJob.csv`, `ClassJobCategory.csv` | the job's real rows and column |
 | `tests/data/common.py`, `tests/data/test_gen_item_level.py` | `ALL_JOBS_MASK` (all jobs' bits); the job count in the job modifier test |
-| `tests/unit/core/formulas.stat-factor.test.js` and others | the all-jobs mask ($2^{n} - 1$); tests for a new rule (Beastmaster: level cap, shield, its own gear) |
+| `tests/unit/core/formulas.stat-factor.test.ts` and others | the all-jobs mask ($2^{n} - 1$); tests for a new rule (Beastmaster: level cap, shield, its own gear) |
 | `tests/e2e/checks/` | a check of what is new on the page (Beastmaster: the level cap in the inputs) |
 | data | `fetch.py` (the new job's icon), then `regen.py`; the job's `ClassJob` modifiers and icon number are read by job abbreviation |
 | docs | the "Jobs" paragraph of `CLAUDE.md`; this page, section 3 (job order); [math.md](../mechanics/math.md), [optimizer.md](optimizer.md), [testing.md](testing.md), [validation.md](../mechanics/validation.md) and the glossary where they count or list jobs |
@@ -936,7 +936,7 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Page's job, stat and slot tables; slot shares read from the format file | `src/core/constants.ts` |
 | Page bundle | `scripts/build/build.mjs` (`npm run build`) |
 | Generator tests and test CSVs | `tests/data/test_*.py`, `tests/data/common.py`, `tests/data/fixtures/` (food: `fixtures/food/`; run by `npm run test:py`) |
-| Format, level table and provenance tests | `tests/unit/core/item-format.test.js`, `tests/unit/core/constants.level-tables.test.js`, `tests/unit/core/tables.provenance.test.js` |
+| Format, level table and provenance tests | `tests/unit/core/item-format.test.ts`, `tests/unit/core/constants.level-tables.test.ts`, `tests/unit/core/tables.provenance.test.ts` |
 | Local CSV clone (gitignored) | `data/ffxiv-datamining/csv/en/` |
 | Local patch list clone (gitignored) | `data/ffxiv-datamining-patches/patchlist.json` |
 | Diagrams | `docs/diagrams/data-flow.svg`, `docs/diagrams/data-item-row.svg`, `docs/diagrams/data-selection.svg` |

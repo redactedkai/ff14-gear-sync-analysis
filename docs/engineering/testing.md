@@ -67,7 +67,7 @@ Which file tests what? One line per file; the file itself says the rest.
 
 ### Unit tests
 
-**Naming rule.** The folder of a test file under `tests/unit/` is the folder of the module it tests under `src/`, and the file is the module's name, then `.test.js` (`.test.ts` for a module written in TypeScript: Node strips the types, and a `.ts` import names its extension). A file on one concern of a module adds the concern after a dot. So the test for `src/ui/views/gcd.ts` is `tests/unit/ui/views/gcd.test.js`, and the sync clamp of `src/core/formulas.ts` is in `tests/unit/core/formulas.sync-clamp.test.js`. A folder counts as a module (`src/core/optimizer/` is `core/optimizer/index`, so `core/optimizer/index.exhaustive.test.js`). Tests of `scripts/` go in `tests/unit/scripts/` and tests of the smoke test's own helpers (`tests/e2e/lib/`) in `tests/unit/smoke-helpers/`; the CSS tests are in `tests/unit/styles/`, named for the concern. A test that crosses modules goes in the file of the module whose rule it checks, or in the folder that holds the modules it scans (`ui/no-alpine`, `ui/views/no-bad-values`). Sorted by path, a module's files sit together. A test's domain is its module's (section 1.1). The test lists below name a file by its path under `tests/unit/`, without `.test.js`.
+**Naming rule.** The folder of a test file under `tests/unit/` is the folder of the module it tests under `src/`, and the file is the module's name, then `.test.js` (`.test.ts` for a module written in TypeScript: Node strips the types, and a `.ts` import names its extension). A file on one concern of a module adds the concern after a dot. So the test for `src/ui/views/gcd.ts` is `tests/unit/ui/views/gcd.test.js`, and the sync clamp of `src/core/formulas.ts` is in `tests/unit/core/formulas.sync-clamp.test.ts`. A folder counts as a module (`src/core/optimizer/` is `core/optimizer/index`, so `core/optimizer/index.exhaustive.test.js`). Tests of `scripts/` go in `tests/unit/scripts/` and tests of the smoke test's own helpers (`tests/e2e/lib/`) in `tests/unit/smoke-helpers/`; the CSS tests are in `tests/unit/styles/`, named for the concern. A test that crosses modules goes in the file of the module whose rule it checks, or in the folder that holds the modules it scans (`ui/no-alpine`, `ui/views/no-bad-values`). Sorted by path, a module's files sit together. A test's domain is its module's (section 1.1). The test lists below name a file by its path under `tests/unit/`, without `.test.js`.
 
 | File | Covers |
 | --- | --- |
@@ -513,7 +513,7 @@ Notes on the measurements and checks run by hand (none is part of `npm run check
 
 Running a subset:
 
-- one unit test file: `node --test tests/unit/core/formulas.sync-clamp.test.js`
+- one unit test file: `node --test tests/unit/core/formulas.sync-clamp.test.ts`
 - unit tests by name: `node --test --test-name-pattern="brute force" "tests/unit/**/*.test.js"`
 - generator tests by name: `python -m unittest discover -s tests/data -p "test_*.py" -k hq`
 - one domain's unit tests: `npm run test:set-page`; with its browser checks: `npm run test:set-page -- --smoke`
