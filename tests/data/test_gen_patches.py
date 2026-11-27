@@ -15,6 +15,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from subprocess import CompletedProcess
+from typing import Any  # any-ok: parsed JSON
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import gen_patches
@@ -91,7 +92,7 @@ class GenPatchesTest(unittest.TestCase):
 
     def test_provenance_fields_and_one_patch_per_line(self) -> None:
         run_quiet(gen_patches.main, str(self.patchlist), str(self.out), None)
-        doc = json.loads(self.out.read_text(encoding='utf-8'))
+        doc: dict[str, Any] = json.loads(self.out.read_text(encoding='utf-8'))  # any-ok: parsed JSON
         self.assertEqual(list(doc), ['_generated', 'source', 'formatVersion', 'PATCHES'])
         self.assertIsNone(doc['source'])
         self.assertIn('xivapi/ffxiv-datamining-patches (commit unknown)', doc['_generated'])
@@ -124,7 +125,7 @@ class GenPatchesTest(unittest.TestCase):
             check=False,
         )
         self.assertEqual(run.returncode, 0, run.stderr)
-        doc = json.loads(self.out.read_text(encoding='utf-8'))
+        doc: dict[str, Any] = json.loads(self.out.read_text(encoding='utf-8'))  # any-ok: parsed JSON
         self.assertEqual(doc['source'], {'repo': 'xivapi/ffxiv-datamining-patches', 'commit': 'c' * 40, 'date': '2026-10-13T00:00:00Z'})
         _ = self.patchlist.write_text(json.dumps([entry(1, '7.56', 'soon')]), encoding='utf-8')
         run = subprocess.run([sys.executable, str(script), str(self.patchlist), str(self.out)], capture_output=True, text=True, check=False)
@@ -132,10 +133,10 @@ class GenPatchesTest(unittest.TestCase):
         self.assertIn('ReleaseDate', run.stderr)
 
     def test_the_committed_table_is_in_the_generators_shape(self) -> None:
-        doc = json.loads((ROOT / 'src' / 'data' / 'patches.json').read_text(encoding='utf-8'))
+        doc: dict[str, Any] = json.loads((ROOT / 'src' / 'data' / 'patches.json').read_text(encoding='utf-8'))  # any-ok: parsed JSON
         self.assertEqual(doc['source']['repo'], 'xivapi/ffxiv-datamining-patches')
         self.assertIn(doc['source']['commit'], doc['_generated'])
-        versions = [version for version, _day in doc['PATCHES']]
+        versions: list[str] = [version for version, _day in doc['PATCHES']]
         self.assertEqual(len(set(versions)), len(versions))
         self.assertIn(['7.56', '2026-09-08'], doc['PATCHES'])
 

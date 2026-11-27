@@ -67,7 +67,7 @@ class GenJobIconsTest(unittest.TestCase):
         for job, url in icons.items():
             assert isinstance(url, str)
             self.assertTrue(url.startswith('data:image/png;base64,'), job)
-            data = __import__('base64').b64decode(url.split(',', 1)[1])
+            data: bytes = __import__('base64').b64decode(url.split(',', 1)[1])
             self.assertEqual(data, (self.icons / f'{job}.png').read_bytes(), job)
 
     def test_header_names_fetch_date_and_hashes(self) -> None:
@@ -76,7 +76,7 @@ class GenJobIconsTest(unittest.TestCase):
         run_quiet(gen_job_icons.main, self.icons, self.out)
         text: str = self.out.read_text(encoding='utf-8')
         self.assertIn('Fetched 2026-10-12 (fetch.py)', text)
-        sage = __import__('hashlib').sha256((self.icons / 'SGE.png').read_bytes()).hexdigest()
+        sage: str = __import__('hashlib').sha256((self.icons / 'SGE.png').read_bytes()).hexdigest()
         self.assertIn(f'   SGE {sage}\n', text)
         (self.icons / gen_job_icons.FETCH_RECORD).unlink()
         os.utime(self.icons / 'PLD.png', (0, 1767225600))  # 2026-01-01 00:00 UTC

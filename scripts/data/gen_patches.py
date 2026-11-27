@@ -81,7 +81,7 @@ def main(patchlist: Path | str, out: Path | str, source: provenance.SourceArg = 
     """source: provenance dict, None for unknown, or 'detect' to ask git about the patch list's clone."""
     source = provenance.resolve(source, Path(patchlist).parent, provenance.PATCHES_REPO)
     with Path(patchlist).open(encoding='utf-8') as f:
-        entries = json.load(f)
+        entries: object = json.load(f)
     doc: dict[str, Source | int | list[list[str]] | str | None] = {
         '_generated': provenance.note(source, provenance.PATCHES_REPO),
         'source': source,

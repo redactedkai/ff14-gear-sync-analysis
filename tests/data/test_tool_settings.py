@@ -8,6 +8,7 @@ Run: npm run test:py (npm run check:all runs them too)
 import re
 import tomllib
 import unittest
+from typing import Any  # any-ok: parsed JSON
 
 from common import ROOT
 
@@ -51,7 +52,7 @@ class ToolSettingsTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.config = tomllib.loads((ROOT / 'pyproject.toml').read_text(encoding='utf-8'))
         workflow: str = (ROOT / '.github' / 'workflows' / 'pages.yml').read_text(encoding='utf-8')
-        matrix_lines = re.findall(r'^\s*python-version:\s*\[([^\]]*)\]\s*$', workflow, re.MULTILINE)
+        matrix_lines: list[str] = re.findall(r'^\s*python-version:\s*\[([^\]]*)\]\s*$', workflow, re.MULTILINE)
         assert len(matrix_lines) == 1, 'the workflow has one python-version matrix line'
         cls.matrix = sorted(re.findall(r'\d+\.\d+', matrix_lines[0]), key=version_tuple)
 
@@ -87,11 +88,11 @@ class ToolSettingsTest(unittest.TestCase):
         self.assertEqual(len(lines), len(PINNED_TOOLS), 'a new tool needs its name in PINNED_TOOLS here')
 
     def test_the_ruff_keys_are_the_expected_ones(self) -> None:
-        ruff = self.config['tool']['ruff']
+        ruff: dict[str, Any] = self.config['tool']['ruff']  # any-ok: parsed JSON
         self.assertEqual(set(ruff), {'line-length', 'target-version', 'extend-exclude', 'format', 'lint'})
         self.assertEqual(ruff['line-length'], 140)
         self.assertEqual(ruff['format'], {'quote-style': 'single', 'line-ending': 'lf'})
-        lint = ruff['lint']
+        lint: dict[str, Any] = ruff['lint']  # any-ok: parsed JSON
         self.assertEqual(set(lint), {'select', 'preview', 'explicit-preview-rules', 'per-file-ignores'})
         self.assertEqual(set(lint['per-file-ignores']), {'tests/**', 'scripts/validate/**', '.claude/**'})
         self.assertEqual(set(lint['select']), RULE_FAMILIES)
@@ -103,7 +104,7 @@ class ToolSettingsTest(unittest.TestCase):
             self.assertIn(folder, self.config['tool']['ruff']['extend-exclude'])
 
     def test_pyrefly_uses_the_strict_preset_with_every_clean_check_on(self) -> None:
-        pyrefly = self.config['tool']['pyrefly']
+        pyrefly: dict[str, Any] = self.config['tool']['pyrefly']  # any-ok: parsed JSON
         self.assertEqual(pyrefly['preset'], 'strict')
         self.assertTrue(all(pyrefly['errors'].values()), 'the errors table only turns checks on')
         for kind in (
@@ -118,7 +119,7 @@ class ToolSettingsTest(unittest.TestCase):
             self.assertIs(pyrefly['errors'][kind], True, kind)
 
     def test_pyrefly_has_one_exception_the_override_decorator_in_tests(self) -> None:
-        sub_configs = {sub['matches']: sub['errors'] for sub in self.config['tool']['pyrefly']['sub-config']}
+        sub_configs: dict[str, dict[str, bool]] = {sub['matches']: sub['errors'] for sub in self.config['tool']['pyrefly']['sub-config']}
         self.assertEqual(sub_configs, {'tests/**': {'missing-override-decorator': False}})
 
     def test_pyrefly_searches_the_script_and_test_folders(self) -> None:

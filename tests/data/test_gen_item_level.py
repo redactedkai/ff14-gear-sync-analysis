@@ -13,6 +13,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any  # any-ok: parsed JSON
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import gen_item_level
@@ -68,13 +69,13 @@ class GenItemLevelTest(unittest.TestCase):
     def generate(self) -> tuple[dict[str, list[int]], list[list[int]]]:
         out: Path = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
-        doc = json.loads(out.read_text(encoding='utf-8'))
+        doc: dict[str, Any] = json.loads(out.read_text(encoding='utf-8'))  # any-ok: parsed JSON
         return doc['IL'], doc['PG']
 
     def test_provenance_fields(self) -> None:
         out: Path = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out), None)
-        doc = json.loads(out.read_text(encoding='utf-8'))
+        doc: dict[str, Any] = json.loads(out.read_text(encoding='utf-8'))  # any-ok: parsed JSON
         self.assertEqual(list(doc), ['_generated', 'source', 'formatVersion', 'IL', 'PG', 'MP', 'SHARES', 'JOBS', 'CLANS'])
         self.assertIsNone(doc['source'])
         self.assertIn('commit unknown', doc['_generated'])
@@ -89,7 +90,7 @@ class GenItemLevelTest(unittest.TestCase):
         out: Path = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
         text: str = out.read_text(encoding='utf-8')
-        doc = json.loads(text)
+        doc: dict[str, Any] = json.loads(text)  # any-ok: parsed JSON
         lines: list[str] = text.splitlines()
         for key in ('IL', 'MP', 'SHARES', 'JOBS'):
             start: int = lines.index(f'"{key}":{{')
@@ -104,7 +105,7 @@ class GenItemLevelTest(unittest.TestCase):
         """MP: each stat's BaseParam MeldParam[0..12] row (the fixture holds the real rows), keyed by stat."""
         out: Path = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
-        mp = json.loads(out.read_text(encoding='utf-8'))['MP']
+        mp: dict[str, list[int]] = json.loads(out.read_text(encoding='utf-8'))['MP']
         self.assertEqual(list(mp), [*STAT_ORDER, 'damagePhys', 'damageMag', 'defensePhys', 'defenseMag'])
         self.assertEqual(mp['vit'], [90, 100, 100, 100, 100, 90, 90, 100, 90, 100, 100, 100, 100])
         # the real BaseParam rows 13 (Magic Damage) and 21 (Defense)
@@ -118,7 +119,7 @@ class GenItemLevelTest(unittest.TestCase):
         """SHARES: the real BaseParam slot shares per slot code for weapon damage (weapons only) and defense (armor only)."""
         out: Path = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
-        shares = json.loads(out.read_text(encoding='utf-8'))['SHARES']
+        shares: dict[str, list[int]] = json.loads(out.read_text(encoding='utf-8'))['SHARES']
         damage: list[int] = [1000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         defense: list[int] = [0, 0, 0, 176, 236, 176, 236, 176, 0, 0, 0, 0, 412, 412, 824]
         self.assertEqual(shares, {'damagePhys': damage, 'damageMag': damage, 'defensePhys': defense, 'defenseMag': defense})
@@ -127,7 +128,7 @@ class GenItemLevelTest(unittest.TestCase):
         """JOBS: each combat job's attribute modifiers from the real ClassJob rows; base classes left out."""
         out: Path = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
-        jobs = json.loads(out.read_text(encoding='utf-8'))['JOBS']
+        jobs: dict[str, dict[str, int]] = json.loads(out.read_text(encoding='utf-8'))['JOBS']
         self.assertEqual(len(jobs), 23)
         self.assertNotIn('GLA', jobs)
         self.assertEqual(jobs['SGE'], {'str': 60, 'dex': 100, 'int': 115, 'mind': 115, 'vit': 100})
@@ -139,7 +140,7 @@ class GenItemLevelTest(unittest.TestCase):
         offsets; the values are the ones the Wiki's Starting Attributes page lists (22 Strength for a Midlander is a base 20 plus 2)."""
         out: Path = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
-        clans = json.loads(out.read_text(encoding='utf-8'))['CLANS']
+        clans: list[dict[str, Any]] = json.loads(out.read_text(encoding='utf-8'))['CLANS']  # any-ok: parsed JSON
         self.assertEqual(len(clans), 16)
         self.assertEqual(clans[0], {'race': 'Hyur', 'clan': 'Midlander', 'str': 2, 'dex': -1, 'int': 3, 'mind': -1, 'vit': 0})
         self.assertEqual(clans[7], {'race': "Miqo'te", 'clan': 'Keeper of the Moon', 'str': -1, 'dex': 2, 'int': 1, 'mind': 3, 'vit': -2})

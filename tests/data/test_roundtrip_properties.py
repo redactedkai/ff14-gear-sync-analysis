@@ -21,14 +21,11 @@ from hypothesis import strategies as st
 from hypothesis.strategies import SearchStrategy
 
 # JSON values as the generators write them: numbers, strings of any characters (line breaks, quotes, non-ASCII), lists.
-SCALARS: SearchStrategy[bool | int | str | None] = st.one_of(
-    st.integers(min_value=-(10**9), max_value=10**9), st.text(max_size=12), st.booleans(), st.none()
-)
-ROWS: SearchStrategy[list[list[bool | int | str | None]]] = st.lists(st.lists(SCALARS, max_size=6), max_size=8)
+SCALARS: SearchStrategy[Json] = st.one_of(st.integers(min_value=-(10**9), max_value=10**9), st.text(max_size=12), st.booleans(), st.none())
+ROWS: SearchStrategy[list[Json]] = st.lists(st.lists(SCALARS, max_size=6), max_size=8)
 KEYS: SearchStrategy[str] = st.sampled_from(['items', 'foods', 'groups', 'note', 'source', 'formatVersion'])
-DOCS: SearchStrategy[dict[str, bool | dict[str, bool | int | str | None] | int | list[list[bool | int | str | None]] | str | None]] = (
-    st.dictionaries(KEYS, st.one_of(ROWS, SCALARS, st.dictionaries(st.text(max_size=6), SCALARS, max_size=4)), max_size=6)
-)
+VALUES: SearchStrategy[Json] = st.one_of(ROWS, SCALARS, st.dictionaries(st.text(max_size=6), SCALARS, max_size=4))
+DOCS: SearchStrategy[dict[str, Json]] = st.dictionaries(KEYS, VALUES, max_size=6)
 
 
 class JsonLinesRoundTripTest(unittest.TestCase):
@@ -69,7 +66,7 @@ class GeneratedFilesRoundTripTest(unittest.TestCase):
         self.assertNotIn(b'\r', data)
         self.assertTrue(data.endswith(b'\n'))
         text: str = data.decode('utf-8')
-        doc = json.loads(text)
+        doc: dict[str, Json] = json.loads(text)
         self.assertEqual(provenance.json_lines(doc, expand=expand, ensure_ascii=ensure_ascii), text)
         return doc
 

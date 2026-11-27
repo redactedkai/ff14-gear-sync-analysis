@@ -22,6 +22,7 @@ import json
 from argparse import ArgumentParser, Namespace
 from collections.abc import Collection, Sequence
 from pathlib import Path
+from typing import Any  # any-ok: parsed JSON
 
 import provenance
 from item_format import ROOT, GearGroupsFormat, ItemFormat, ItemRow, SchemaError, load_format, row_fields, run_main, whole
@@ -81,13 +82,13 @@ def gear_groups(rows: Sequence[ItemRow], fmt: ItemFormat) -> list[list[str]]:
 
 
 def main(items_path: str | Path, out: str | Path) -> None:
-    doc = json.loads(Path(items_path).read_text(encoding='utf-8'))
+    doc: dict[str, Any] = json.loads(Path(items_path).read_text(encoding='utf-8'))  # any-ok: parsed JSON
     fmt: ItemFormat = load_format()
     if doc['formatVersion'] != fmt['formatVersion']:
-        found = doc['formatVersion']
+        found: object = doc['formatVersion']
         raise SchemaError(f'{items_path} has format version {found}, expected {fmt["formatVersion"]}: run gen_items.py first')
-    source = doc['source']
-    result = {
+    source: provenance.Source | None = doc['source']
+    result: dict[str, object] = {
         '_generated': provenance.note(source),
         'source': source,
         'formatVersion': fmt['formatVersion'],

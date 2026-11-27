@@ -84,7 +84,7 @@ def download_icon(url: str, dest: Path) -> None:
     part: Path = dest.with_name(dest.name + '.part')
     req: Request = urllib.request.Request(url, headers={'User-Agent': USER_AGENT})  # the default one is refused
     with urllib.request.urlopen(req, timeout=30) as r:
-        data = r.read()
+        data: bytes = r.read()
     size: int = gen_job_icons.SIZE
     if gen_job_icons.png_size(data) != (size, size) or not gen_job_icons.is_complete_png(data):
         sys.exit(f'{dest.name}: the download from {url} is not a whole {size} x {size} PNG; nothing was replaced.')

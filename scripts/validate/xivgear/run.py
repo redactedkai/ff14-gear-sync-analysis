@@ -53,14 +53,14 @@ def main() -> None:
     ap: ArgumentParser = argparse.ArgumentParser()
     _ = ap.add_argument('--jobs', default=','.join(JOBS))
     args: Namespace = ap.parse_args()
-    jobs = args.jobs.split(',')
+    jobs: list[str] = args.jobs.split(',')
     if not (CORE / 'node_modules').exists():
         raise SystemExit('No xivgear clone. Run: python scripts/validate/xivgear/fetch.py')
     bundle()
     _ = shutil.copyfile(HERE / 'xg_sync_test.ts', TEST)
     out_dir: Path = OUT / 'xivgear'
     out_dir.mkdir(parents=True, exist_ok=True)
-    levels = sorted({lv for lv, _ in json.loads((HERE / 'settings.json').read_text(encoding='utf-8'))['settings']})
+    levels: list[int] = sorted({lv for lv, _ in json.loads((HERE / 'settings.json').read_text(encoding='utf-8'))['settings']})
     base: dict[str, str] = {
         **os.environ,
         'XG_OURS': str(BUNDLE),
@@ -84,7 +84,7 @@ def main() -> None:
         TEST.unlink(missing_ok=True)
     report: dict[str, dict[str, dict[str, Any]]] = {'jobs': {}}  # any-ok: the results JSON, read by key
     for j in JOBS:  # every job with results, including ones not run this time
-        parts = [
+        parts: list[dict[str, Any]] = [  # any-ok: parsed JSON
             json.loads(f.read_text(encoding='utf-8')) for f in sorted(out_dir.glob(f'{j}-*.json'), key=lambda f: int(f.stem.split('-')[1]))
         ]
         if len(parts) > 0:
@@ -102,7 +102,7 @@ def main() -> None:
             equal += s['equal']
             pieces += s['pieces']
         tags.update(t)
-        s0 = r['settings'][0]
+        s0: dict[str, Any] = r['settings'][0]  # any-ok: parsed JSON
         print(
             f'{j}: {s0["pieces"]} pieces in both, {s0["oursOnly"]} only ours, {s0["theirsOnly"]} only theirs; '
             f'differences {dict(t) if len(t) > 0 else "none"}'

@@ -18,7 +18,7 @@ def name_of(expected: object) -> str:
 
 def key_set(expected: object, attribute: str) -> frozenset[str]:
     """The `__required_keys__` or `__optional_keys__` of a TypedDict class."""
-    keys = getattr(expected, attribute, None)
+    keys: object = getattr(expected, attribute, None)
     assert isinstance(keys, frozenset), f'{name_of(expected)} has no {attribute}'
     return keys
 
@@ -29,7 +29,7 @@ def problems_of(value: Json, expected: object, where: str) -> list[str]:
     if typing.is_typeddict(expected):
         if not isinstance(value, dict):
             return [f'{where}: expected an object, found {type(value).__name__}']
-        hints = typing.get_type_hints(expected)
+        hints: dict[str, object] = typing.get_type_hints(expected)
         problems = [f'{where}.{key}: in the file, not in {name_of(expected)}' for key in value if key not in hints]
         problems += [
             f'{where}.{key}: in {name_of(expected)}, not in the file' for key in key_set(expected, '__required_keys__') if key not in value
@@ -38,7 +38,7 @@ def problems_of(value: Json, expected: object, where: str) -> list[str]:
             if key in hints:
                 problems += problems_of(item, hints[key], f'{where}.{key}')
         return problems
-    origin = typing.get_origin(expected)
+    origin: object = typing.get_origin(expected)
     if origin is list:
         if not isinstance(value, list):
             return [f'{where}: expected a list, found {type(value).__name__}']
@@ -58,7 +58,7 @@ def problems_of(value: Json, expected: object, where: str) -> list[str]:
 class ItemFormatTypesTest(unittest.TestCase):
     def test_the_types_match_the_file(self) -> None:
         with FORMAT_PATH.open(encoding='utf-8') as f:
-            raw = json.load(f)
+            raw: Json = json.load(f)
         self.assertEqual(problems_of(raw, ItemFormat, 'item-format'), [])
 
     def test_load_format_reads_that_file(self) -> None:

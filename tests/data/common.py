@@ -92,7 +92,7 @@ def write_param_grow(path: str | Path, levels: Iterable[int]) -> None:
             w.writerow([row[k] for k in PARAM_GROW_HEADER])
 
 
-JOBS = json.loads((ROOT / 'src' / 'core' / 'item-format.json').read_text(encoding='utf-8'))['jobs']
+JOBS: list[str] = json.loads((ROOT / 'src' / 'core' / 'item-format.json').read_text(encoding='utf-8'))['jobs']
 
 
 def add_shop(rows: list[list[str]], shop_id: str, listings: Iterable[tuple[str, str]]) -> None:

@@ -51,7 +51,7 @@ class GenFoodTest(unittest.TestCase):
         )
 
     def test_left_out(self) -> None:
-        names = {f[0] for f in self.doc['foods']}
+        names: set[str] = {f[0] for f in self.doc['foods']}
         for name in ['Grade 4 Gemdraught of Mind', 'Popoto', 'Battered Fish', 'Honey Bun', 'Princess Pudding', 'Salt Cod']:
             self.assertNotIn(name, names)
 
@@ -79,7 +79,7 @@ class FoodSortTiesTest(unittest.TestCase):
                 rows.insert(rows.index(original) + (0 if put_copy_first else 1), copy)
 
             edit_csv(Path(tmp) / 'Item.csv', add_copy)
-            foods = generate(tmp)['foods']
+            foods: list[list[Any]] = generate(tmp)['foods']  # any-ok: parsed JSON
             return [(food[2][0][0]) for food in foods if food[0] == 'Royal Toast']
 
     def test_a_tie_is_ordered_by_item_id_not_by_file_order(self) -> None:

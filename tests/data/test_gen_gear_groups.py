@@ -8,6 +8,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any  # any-ok: parsed JSON
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import gen_gear_groups
@@ -77,8 +78,10 @@ class GenGearGroupsTest(unittest.TestCase):
             _ = gen_gear_groups.gear_groups([self.row(0, self.fmt['jobs'])], self.fmt)
 
     def test_shipped_groups_follow_the_shipped_items(self) -> None:
-        items = json.loads((ROOT / 'src' / 'data' / 'items.json').read_text(encoding='utf-8'))
-        shipped = json.loads((ROOT / 'src' / 'data' / 'gear-groups.json').read_text(encoding='utf-8'))
+        items: dict[str, Any] = json.loads((ROOT / 'src' / 'data' / 'items.json').read_text(encoding='utf-8'))  # any-ok: parsed JSON
+        shipped: dict[str, Any] = json.loads(  # any-ok: parsed JSON
+            (ROOT / 'src' / 'data' / 'gear-groups.json').read_text(encoding='utf-8')
+        )
         groups: list[list[str]] = gen_gear_groups.gear_groups(items['items'], self.fmt)
         self.assertEqual(shipped['groups'], groups)
         self.assertEqual(shipped['source'], items['source'])

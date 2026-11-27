@@ -71,7 +71,7 @@ class GenItemsTest(unittest.TestCase):
             self.assertIn(scales, (0, 1))
             self.assertIn(cat, range(len(load_format()['category']['list'])))
             self.assertTrue(all(isinstance(v, int) and v >= 0 for v in dd), r)
-        ids = [r[13] for r in self.rows]
+        ids: list[int] = [r[13] for r in self.rows]
         self.assertEqual(len(set(ids)), len(ids))
 
     def test_row_fields_come_from_the_format(self) -> None:
@@ -209,7 +209,7 @@ class GenItemsTest(unittest.TestCase):
 
         for name, want in expect.items():
             with self.subTest(name=name):
-                routes = self.row(name)[8]
+                routes: list[int] = self.row(name)[8]
                 self.assertEqual(as_keys(routes), sorted(want))
                 self.assertEqual(market in routes, name != 'Test Ring Unique')
         self.assertEqual(self.doc['currentTomes'], ['Heliometry', 'Mathematics'])  # TomestonesItem slots 2 and 3
@@ -402,7 +402,9 @@ class ItemSortTiesTest(unittest.TestCase):
             out: Path = Path(tmp) / 'items.json'
             run_quiet(gen_items.main, tmp, str(out))
             fields: dict[str, int] = row_fields(load_format())
-            rows = [r for r in json.loads(out.read_text(encoding='utf-8'))['items'] if r[fields['name']] == 'Test Greataxe']
+            rows: list[list[Any]] = [  # any-ok: parsed JSON
+                r for r in json.loads(out.read_text(encoding='utf-8'))['items'] if r[fields['name']] == 'Test Greataxe'
+            ]
             return [r[fields['gameId']] for r in rows]
 
     def test_a_tie_is_ordered_by_game_id_not_by_file_order(self) -> None:

@@ -18,6 +18,7 @@ import unittest
 from collections.abc import Callable, Iterable
 from io import StringIO
 from pathlib import Path
+from typing import Any  # any-ok: parsed JSON
 from unittest import mock
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
@@ -230,10 +231,10 @@ class SummaryMainTest(unittest.TestCase):
         data: bytes = self.summary_path.read_bytes()
         self.assertNotIn(b'\r', data)
         self.assertTrue(data.endswith(b'\n'))
-        doc = json.loads(data)
+        doc: dict[str, Any] = json.loads(data)  # any-ok: parsed JSON
         self.assertEqual((doc['source'], doc['formatVersion']), (self.SOURCE, self.fmt['formatVersion']))
         self.assertIsNone(doc['csv'])  # the temporary directory is no git clone
-        counts = doc['counts']
+        counts: dict[str, Any] = doc['counts']  # any-ok: parsed JSON
         self.assertEqual((counts['rows'], counts['maxIlvl'], counts['meals'], counts['itemSheetRows']), (2, 100, 2, 10))
         self.assertEqual(counts['bySlot'], {'3': 2})
         self.assertIn('Added to data-changelog.md', printed)
