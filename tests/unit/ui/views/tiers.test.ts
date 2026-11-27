@@ -4,7 +4,7 @@
    AkhMorning's formulas at level 100 (DIV 2780, SUB 420), as in core/tiers.test.ts. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { AKH_LEVEL, hasNumber, hasParts } from '../../helpers/common.ts';
+import { AKH_LEVEL, hasNumber, hasParts, mustFind } from '../../helpers/common.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { MAX_SPEED } from '../../../../src/core/tables.ts';
 import {
@@ -20,11 +20,17 @@ import {
 } from '../../../../src/ui/views/tiers.ts';
 
 /* The job's context (the views take it, not the store); every test is at level 100 unless it names another. */
-const app = id => makeJobContext(id);
+const app = (id: string) => makeJobContext(id);
+
+/* The Substat tiers view of a job; fails the test when there is none. */
+const tiersOf = (...args: Parameters<typeof tiersView>) => mustFind(tiersView(...args), 'the tiers view');
+
+/* The row `fromEnd` places from the end of `rows` (-1 is the last); fails the test when there is none. */
+const rowFromEnd = <Row>(rows: readonly Row[], fromEnd: number): Row => mustFind(rows.at(fromEnd), `row ${fromEnd}`);
 
 /* A row's range text as [first, last] panel values (last null for "N+", equal to the first for a one-point tier). */
-function bounds(range) {
-  const number = text => Number(text.replaceAll(',', ''));
+function bounds(range: string): [number, number | null] {
+  const number = (text: string) => Number(text.replaceAll(',', ''));
   if (range.endsWith('+')) {
     return [number(range.slice(0, -1)), null];
   }
@@ -39,7 +45,7 @@ test('no job: no view', () => {
 test('Sage: a card per substat, Points and one column per effect, in the column names the header uses', () => {
   const a = app('SGE');
   // 2380 Critical Hit at level 100: 1960 gear, floor(200 x 1960 / 2780) = 141 -> 19.1% rate, +54.1% on a critical hit
-  const v = tiersView(a, { crit: 2380 }, 100);
+  const v = tiersOf(a, { crit: 2380 }, 100);
   assert.equal(v.level, 100);
   assert.deepEqual(
     v.cards.map(c => [c.stat, c.names]),
@@ -63,7 +69,7 @@ test('Sage: a card per substat, Points and one column per effect, in the column 
 
 test('rows: every tier from the base to the most a box takes, each a range of panel values', () => {
   // the most any substat can be at level 100 is 3679 (MAX_SPEED): 3259 gear points over the base of 420
-  const v = tiersView(app('SGE'), { crit: 3022 }, 100);
+  const v = tiersOf(app('SGE'), { crit: 3022 }, 100);
   const [crit, det, dh, , piety] = v.cards;
   // Critical Hit steps every 13.9 points: floor(200 x 3259 / 2780) = 234 steps, so 235 tiers. Determination every 19.9:
   // 164 steps; Direct Hit every 5.05: 644; Piety every 18.5: 175
@@ -80,9 +86,9 @@ test('rows: every tier from the base to the most a box takes, each a range of pa
     ['420–425', '426–430', '431–435'],
   );
   // the last tier has no end to show: its first value and a plus
-  assert.equal(crit.rows.at(-1).range, '3,673+');
-  assert.equal(crit.rows.at(-2).range, '3,659–3,672');
-  assert.equal(dh.rows.at(-1).range, '3,676+');
+  assert.equal(rowFromEnd(crit.rows, -1).range, '3,673+');
+  assert.equal(rowFromEnd(crit.rows, -2).range, '3,659–3,672');
+  assert.equal(rowFromEnd(dh.rows, -1).range, '3,676+');
   for (const c of v.cards) {
     // a range and a value per effect in every row, none empty
     assert.ok(
@@ -91,9 +97,9 @@ test('rows: every tier from the base to the most a box takes, each a range of pa
     );
     // the rows follow each other: a row ends the value before the next one starts, the last one stays open
     for (let i = 1; i < c.rows.length; i++) {
-      assert.equal(bounds(c.rows[i - 1].range)[1] + 1, bounds(c.rows[i].range)[0], `${c.stat} row ${i}`);
+      assert.equal(mustFind(bounds(c.rows[i - 1].range)[1], 'the end of a tier') + 1, bounds(c.rows[i].range)[0], `${c.stat} row ${i}`);
     }
-    assert.equal(bounds(c.rows.at(-1).range)[1], null, c.stat);
+    assert.equal(bounds(rowFromEnd(c.rows, -1).range)[1], null, c.stat);
   }
   // the value's tier: Critical Hit 3022 is gear 2602, tier floor(200 x 2602 / 2780) = 187, the 188th row
   assert.equal(crit.cur, 187);
@@ -106,7 +112,7 @@ test('rows: every tier from the base to the most a box takes, each a range of pa
 });
 
 test('rows are made once per job and level: a value, a click or a typed number does not change them', () => {
-  const crit = (id, value, level) => tiersView(app(id), { crit: value }, level).cards[0];
+  const crit = (id: string, value: number, level: number) => tiersOf(app(id), { crit: value }, level).cards[0];
   const first = crit('SGE', 3022, 100);
   assert.equal(crit('SGE', 600, 100).rowsKey, first.rowsKey);
   assert.equal(crit('SGE', 600, 100).rows, first.rows);
@@ -115,14 +121,17 @@ test('rows are made once per job and level: a value, a click or a typed number d
 });
 
 test('a value at the most a box takes is in the last tier, which has no next', () => {
-  const crit = tiersView(app('SGE'), { crit: MAX_SPEED[99] }, 100).cards[0];
+  const crit = tiersOf(app('SGE'), { crit: MAX_SPEED[99] }, 100).cards[0];
   assert.equal(crit.cur, crit.rows.length - 1);
   // 3679 is 6 points into the tier that starts at 3673
   assert.deepEqual([crit.foot.spare, crit.foot.toNext], ['6', null]);
 });
 
 test('Sage: Spell Speed tiers are the GCD steps, the first shorter, the last one open', () => {
-  const sps = tiersView(app('SGE'), {}, 100).cards.find(c => c.stat === 'sps');
+  const sps = mustFind(
+    tiersOf(app('SGE'), {}, 100).cards.find(c => c.stat === 'sps'),
+    'the card',
+  );
   // AkhMorning level 100: gear speed 22 -> 2.49 s, 107 -> 2.48 s, 193 -> 2.47 s: 442, 527 and 613 on the panel (validation.md)
   assert.deepEqual(
     sps.rows.slice(0, 4).map(r => [r.range, r.values[0]]),
@@ -135,13 +144,16 @@ test('Sage: Spell Speed tiers are the GCD steps, the first shorter, the last one
   );
   // about 3259 / 85.5 steps, and the GCD never rises
   assert.ok(sps.rows.length > 35 && sps.rows.length < 45, `${sps.rows.length} speed tiers`);
-  assert.equal(bounds(sps.rows.at(-1).range)[1], null);
+  assert.equal(bounds(rowFromEnd(sps.rows, -1).range)[1], null);
   const gcds = sps.rows.map(r => Number(r.values[0].slice(0, -1)));
   assert.ok(gcds.every((gcd, i) => i === 0 || gcd < gcds[i - 1]));
 });
 
 test('Paladin: Tenacity has uneven tiers, one point long where its two effects step next to each other', () => {
-  const ten = tiersView(app('PLD'), {}, 100).cards.find(c => c.stat === 'ten');
+  const ten = mustFind(
+    tiersOf(app('PLD'), {}, 100).cards.find(c => c.stat === 'ten'),
+    'the card',
+  );
   // Dmg & heal steps every 24.8 points, Dmg taken every 13.9: 357 tiers up to 3679. At 545 Dmg & heal steps (floor(112 x
   // 125 / 2780) = 5) and at 546 Dmg taken (floor(200 x 126 / 2780) = 9): the tier at 545 is one point
   assert.equal(ten.rows.length, 357);
@@ -160,7 +172,10 @@ test('Paladin: Tenacity has uneven tiers, one point long where its two effects s
 });
 
 test('Paladin: Tenacity has Dmg & heal and Dmg taken, the one that changes at a tier marked', () => {
-  const ten = tiersView(app('PLD'), { ten: 1617 }, 100).cards.find(c => c.stat === 'ten');
+  const ten = mustFind(
+    tiersOf(app('PLD'), { ten: 1617 }, 100).cards.find(c => c.stat === 'ten'),
+    'the card',
+  );
   assert.equal(ten.label, 'Tenacity');
   assert.deepEqual(ten.lines, ['+4.8% dmg & heal', '−8.6% dmg taken']);
   assert.deepEqual(ten.names, ['Points', 'Dmg & heal', 'Dmg taken']);
@@ -173,7 +188,7 @@ test('Paladin: Tenacity has Dmg & heal and Dmg taken, the one that changes at a 
 });
 
 test('Monk and Samurai: the speed card names the haste the GCD counts at the level', () => {
-  const v = tiersView(app('MNK'), {}, 100);
+  const v = tiersOf(app('MNK'), {}, 100);
   assert.deepEqual(
     v.cards.map(c => c.stat),
     ['crit', 'det', 'dh', 'sks'],
@@ -184,7 +199,11 @@ test('Monk and Samurai: the speed card names the haste the GCD counts at the lev
     ['', '', ''],
   );
   // Samurai: none before Fuka (level 18), 10% until 78, 13% from it
-  const sam = level => tiersView(app('SAM'), {}, level).cards.find(c => c.stat === 'sks').haste;
+  const sam = (level: number) =>
+    mustFind(
+      tiersOf(app('SAM'), {}, level).cards.find(c => c.stat === 'sks'),
+      'the speed card',
+    ).haste;
   assert.equal(sam(10), '');
   assert.ok(hasParts(sam(70), 'Fuka', '10%'), sam(70));
   assert.ok(hasParts(sam(78), 'Fuka', '13%'), sam(78));
@@ -216,7 +235,7 @@ test("the sub-tab's own level: the synced level until one is typed, held to the 
   // AkhMorning's SUB at level 80 is 380 (AKH_LEVEL); the view says the level it shows
   assert.equal(tierValues(a, 80).sps, AKH_LEVEL[80][1]);
   assert.equal(tierInput(a, 'crit', '5', 80), 380);
-  assert.equal(tiersView(a, {}, 80).level, 80);
+  assert.equal(tiersOf(a, {}, 80).level, 80);
 });
 
 test('values typed or clicked are kept until the job or the level changes, and stay dropped when the settings come back', () => {
@@ -236,6 +255,6 @@ test('values typed or clicked are kept until the job or the level changes, and s
   const dropped = tierEditsKept(both, tierEditsKey(sage, 60));
   assert.deepEqual(tierEditsKept(dropped, key100).values, {});
   // the cards show them on top of the bases
-  const view = tiersView(sage, { ...tierValues(sage, 100), ...both.values }, 100);
+  const view = tiersOf(sage, { ...tierValues(sage, 100), ...both.values }, 100);
   assert.deepEqual([view.cards[0].value, view.cards[1].value], [600, 420]);
 });

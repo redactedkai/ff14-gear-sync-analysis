@@ -15,7 +15,8 @@ import { sageSet } from '../../helpers/sheet-fixtures.ts';
 const SGE = makeJobContext('SGE');
 const RING_1 = 10;
 const GEAR = jobGear(SGE);
-const keysFor = query => piecePickerView(SGE, GEAR, sageSet(), RING_1, query).groups.flatMap(g => g.items.map(x => x.key));
+const keysFor = (query: string): number[] =>
+  piecePickerView(SGE, GEAR, sageSet(), RING_1, query).groups.flatMap(g => g.items.flatMap(x => (x.key === undefined ? [] : [x.key])));
 
 test('every word of the search must be in the name or the category, in any order and case', () => {
   const ALEXANDRIAN = 16539;
@@ -30,7 +31,7 @@ test('every word of the search must be in the name or the category, in any order
   // the same answer from an independent filter over the item data
   const expected = GEAR.filter(
     i => i.type === 'ring' && /ring/i.test(i.name) && /heal/i.test(i.name) && categoryOf(i)?.label === 'Savage',
-  ).map(i => i.gameId);
+  ).flatMap(i => (i.gameId === undefined ? [] : [i.gameId]));
   assert.deepEqual(
     [...savage].sort((a, b) => a - b),
     expected.sort((a, b) => a - b),

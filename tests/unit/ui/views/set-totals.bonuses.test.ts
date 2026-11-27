@@ -8,19 +8,25 @@ import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { sheetPageView } from '../../../../src/ui/views/sheet-sets.ts';
 import { bonusNote, evaluateInSheet, setFigures, setTotalsView } from '../../../../src/ui/views/set-totals.ts';
+import { mustFind } from '../../helpers/common.ts';
 import { rawGear, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.ts';
+import type { SavedGearSet, SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 
 const NO_SYNC = { on: false, cap: 795 };
-const warSheet = (extra = {}, sets = []) => ({ ...sheetOf('WAR', sets, { sync: NO_SYNC }), ...extra });
-const valuesOf = cells => Object.fromEntries(cells.map(c => [c.stat, c.value]));
+const warSheet = (extra: Partial<SavedSheet> = {}, sets: SavedGearSet[] = []): SavedSheet => ({
+  ...sheetOf('WAR', sets, { sync: NO_SYNC }),
+  ...extra,
+});
+const valuesOf = (cells: readonly { stat: string; value: number }[]): Record<string, number> =>
+  Object.fromEntries(cells.map(c => [c.stat, c.value]));
 
 test('a sheet without the fields, or with none set, shows the numbers it showed before', () => {
   const plain = setTotalsView(evaluateInSheet(warSheet(), warSet())).total;
   const none = setTotalsView(evaluateInSheet(warSheet({ clan: null, partyRoles: 0 }), warSet())).total;
   assert.deepEqual(none, plain);
   const gear = rawGear('WAR', warSet().pieces);
-  assert.equal(valuesOf(plain.cells).str, 462 + gear.str);
-  assert.equal(valuesOf(plain.cells).vit, 484 + gear.vit);
+  assert.equal(valuesOf(plain.cells).str, 462 + (gear.str ?? 0));
+  assert.equal(valuesOf(plain.cells).vit, 484 + (gear.vit ?? 0));
 });
 
 test('Warrior, Midlander and 5 roles: the Total row, with and without a meal', () => {
@@ -32,7 +38,7 @@ test('Warrior, Midlander and 5 roles: the Total row, with and without a meal', (
   assert.deepEqual(view.withoutMeal, view.cells);
 
   // the newest meal gives Vitality floor(10% of 840) = 84, added after the party bonus; without a meal the cells go on
-  const meal = allMeals(makeJobContext('WAR')).at(-1);
+  const meal = mustFind(allMeals(makeJobContext('WAR')).at(-1), 'a meal');
   const fed = setTotalsView(evaluateInSheet(sheet, { ...warSet(), meal: meal.key })).total;
   assert.equal(valuesOf(fed.cells).vit, 882 + 84);
   assert.equal(valuesOf(fed.cells).str, 846);
@@ -41,14 +47,17 @@ test('Warrior, Midlander and 5 roles: the Total row, with and without a meal', (
 
 test('the header figure of the main stat, and a Sage with Mind', () => {
   const sheet = warSheet({ clan: 'Midlander', partyRoles: 5 });
-  const main = setFigures(evaluateInSheet(sheet, warSet())).find(f => f.key === 'main');
+  const main = mustFind(
+    setFigures(evaluateInSheet(sheet, warSet())).find(f => f.key === 'main'),
+    'the main stat figure',
+  );
   assert.equal(main.text, '846');
   assert.equal(main.label, 'STR');
   // Sage: Keeper of the Moon +3 Mind, 3 roles: floor((506 + 3 + 279) x 1.03) = 811; without them 506 + 279 = 785
   const sage = sheetOf('SGE', [], { sync: { on: true, cap: 123 } });
   const withBonus = setFigures(evaluateInSheet({ ...sage, clan: 'Keeper of the Moon', partyRoles: 3 }, sageSet()));
-  assert.equal(withBonus.find(f => f.key === 'main').text, '811');
-  assert.equal(setFigures(evaluateInSheet(sage, sageSet())).find(f => f.key === 'main').text, '785');
+  assert.equal(withBonus.find(f => f.key === 'main')?.text, '811');
+  assert.equal(setFigures(evaluateInSheet(sage, sageSet())).find(f => f.key === 'main')?.text, '785');
   // Critical Hit's figure counts no bonus: the same on both
   assert.deepEqual(
     withBonus.find(f => f.key === 'crit'),
@@ -67,12 +76,12 @@ test('the sheet list: the Stat points tab counts the bonuses and the note names 
   }
   const plain = sheetPageView(warSheet({}, [warSet()]));
   assert.equal(plain.bonusNote, '');
-  assert.equal(plain.rows[0].points.find(p => p.key === 'str').text, String(462 + 342));
+  assert.equal(plain.rows[0].points.find(p => p.key === 'str')?.text, String(462 + 342));
 });
 
 test('the note names the offset when both stats get the same one, and says "rounded down" only with a party bonus', () => {
-  const note = extra => bonusNote({ job: 'WAR', ...extra });
-  const has = (text, ...parts) => parts.every(part => text.includes(part));
+  const note = (extra: Partial<Pick<SavedSheet, 'clan' | 'partyRoles'>>) => bonusNote({ job: 'WAR', ...extra });
+  const has = (text: string, ...parts: string[]) => parts.every(part => text.includes(part));
   assert.equal(note({}), '');
   assert.equal(note({ clan: null, partyRoles: 0 }), '');
   assert.equal(note({ clan: 'Nobody', partyRoles: 0 }), '');

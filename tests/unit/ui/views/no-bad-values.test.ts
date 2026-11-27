@@ -10,11 +10,12 @@ import { gcdView } from '../../../../src/ui/views/gcd.ts';
 import { explainerItemLevel, explainerView } from '../../../../src/ui/views/sync-explainer.ts';
 import { tierValues, tiersView } from '../../../../src/ui/views/tiers.ts';
 import { rng } from '../../helpers/common.ts';
+import type { JobContext } from '../../../../src/core/types.ts';
 
 const BAD_TEXT = /NaN|Infinity|undefined|\[object|\bnull\b/;
 
 /* The path and value of the first bad number, text or undefined in a view, or null when it has none. */
-function firstBad(value, path = '') {
+function firstBad(value: unknown, path = ''): string | null {
   if (typeof value === 'number') {
     return Number.isFinite(value) ? null : `${path} = ${value}`;
   }
@@ -27,8 +28,8 @@ function firstBad(value, path = '') {
   if (value === null || typeof value !== 'object') {
     return null;
   }
-  for (const key of Object.keys(value)) {
-    const found = firstBad(value[key], `${path}.${key}`);
+  for (const [key, child] of Object.entries(value)) {
+    const found = firstBad(child, `${path}.${key}`);
     if (found) {
       return found;
     }
@@ -38,11 +39,11 @@ function firstBad(value, path = '') {
 
 test('Piece stats, Substat tiers and GCD hold no bad value for every job over its levels', () => {
   const rand = rng(8675309);
-  const int = count => Math.floor(rand() * count);
-  const pick = list => list[int(list.length)];
+  const int = (count: number): number => Math.floor(rand() * count);
+  const pick = <Item>(list: readonly Item[]): Item => list[int(list.length)];
   const caps = [null, 50, 123, 290, 400, 475, 590, 660, 690, 795];
   // levels are thinned to keep the run short: levels 1 to 5, the job's top three and every 7th between
-  const levelsOf = job =>
+  const levelsOf = (job: JobContext): number[] =>
     Array.from({ length: job.maxLevel }, (_, i) => i + 1).filter(level => level <= 5 || level > job.maxLevel - 3 || level % 7 === 0);
   for (const { id } of JOBS) {
     const job = makeJobContext(id);
@@ -52,7 +53,7 @@ test('Piece stats, Substat tiers and GCD hold no bad value for every job over it
       const slot = pick(job.activeSlotTypes);
       const subs = [pick(job.substats), pick([...job.substats, null])];
       // the item levels the slider reaches: its two ends and one between, or none saved
-      const [lowest, highest] = explainerItemLevel(job, sync, { ilvl: null, slot, subs, slots: null }).range;
+      const [lowest, highest] = explainerItemLevel(job, sync, { ilvl: null, subs }).range;
       const settings = {
         ilvl: pick([null, lowest, highest, lowest + int(highest - lowest + 1)]),
         slot,
@@ -65,7 +66,7 @@ test('Piece stats, Substat tiers and GCD hold no bad value for every job over it
 
       const values = tierValues(job, level);
       for (const substat of job.substats) {
-        values[substat] += int(400);
+        values[substat] = (values[substat] ?? 0) + int(400);
       }
       assert.equal(firstBad(tiersView(job, values, level)), null, `Substat tiers: ${label}`);
 

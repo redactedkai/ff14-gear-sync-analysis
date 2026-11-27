@@ -47,7 +47,7 @@ test('the stored most speed: one value per level, at least the base, and level 5
   // level 50: 341 base + 387 gear (level 100 gear synced to the 135 cap, melds) + 72 food
   assert.equal(MAX_SPEED[49], 800);
   const groups = jobGroups();
-  const truncated = [];
+  const truncated: unknown[] = [];
   assert.equal(
     Math.max(...groups.map(g => groupMaxSpeed(g, 50, truncated) ?? 0)),
     MAX_SPEED[49],
@@ -135,17 +135,20 @@ test('haste menu: None, then each haste job and its source by name, with no perc
 
 test('haste: the percent the level has is in the facts and the chart, so the menu needs none', () => {
   // Monk at level 70: Enhanced Greased Lightning II, 15%; at level 76 and up the III trait, 20%
-  assert.equal(gcdView(70, 'MNK', null).facts.at(-1).value, '15%');
-  assert.equal(gcdView(76, 'MNK', null).facts.at(-1).value, '20%');
+  assert.equal(gcdView(70, 'MNK', null).facts.at(-1)?.value, '15%');
+  assert.equal(gcdView(76, 'MNK', null).facts.at(-1)?.value, '20%');
   // the chart labels each step of a source with several values
   const marks = gcdView(70, 'MNK', null).chartSvg.match(/>\d+% at \d+</g);
   assert.deepEqual(marks, ['>5% at 1<', '>10% at 20<', '>15% at 40<', '>20% at 76<']);
   const sam78 = gcdView(78, 'SAM', null);
-  assert.equal(sam78.facts.at(-1).value, '13%');
-  assert.ok(sam78.facts.at(-1).label.includes('Fuka'), sam78.facts.at(-1).label);
+  const lastFact = sam78.facts.at(-1);
+  assert.ok(lastFact, 'the facts are not empty');
+  assert.equal(lastFact.value, '13%');
+  assert.ok(lastFact.label.includes('Fuka'), lastFact.label);
   assert.equal(sam78.facts[0].value, '2.17s');
   assert.ok(sam78.facts[3].label.includes('13%'), sam78.facts[3].label);
   const early = gcdView(10, 'SAM', null).facts.at(-1);
+  assert.ok(early, 'the facts are not empty');
   assert.equal(early.value, '0%');
   assert.ok(early.label.includes('Fuka') && hasNumber(early.label, 18), early.label); // the haste and the level it starts at
   // the chart marks where it starts and grows

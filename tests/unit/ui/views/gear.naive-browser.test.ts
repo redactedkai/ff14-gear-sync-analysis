@@ -11,13 +11,24 @@ import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { defaultBrowse } from '../../../../src/ui/state.ts';
 import { gearView } from '../../../../src/ui/views/gear.ts';
 import { rng } from '../../helpers/common.ts';
+import type { JobContext } from '../../../../src/core/types.ts';
+import type { BrowseFields } from '../../../../src/ui/store/app-state.ts';
+
+/* A row of the naive filter's result, and what the view's rows hold of it. */
+interface ListedRow {
+  name: string;
+  type: string;
+  ilvl: number;
+  lvl: number;
+  eff: Record<string, number>;
+}
 
 const CASES = 250;
 const STAT_ORDER = ['str', 'dex', 'int', 'mind', 'vit', 'piety', 'ten', 'dh', 'crit', 'det', 'sks', 'sps', 'mainAttr', 'secAttr'];
 
 /* The rows the browser should list for `job` under the filters `browse`: {name, type, ilvl, lvl}, by the rules of the page's
    filters written out again (job mask, slot, equip level, item level range, expansion, name words, main stat, Gear categories). */
-function naiveRows(job, browse) {
+function naiveRows(job: JobContext, browse: BrowseFields) {
   const jobBit = 1 << job.jobIndex;
   const words = browse.q.toLowerCase().split(/\s+/).filter(Boolean);
   const allowedRoutes =
@@ -26,7 +37,7 @@ function naiveRows(job, browse) {
   const equipLevelMax = Number(browse.lvl) || 0;
   const ilvlMin = Number(browse.min) || 0;
   const ilvlMax = Number(browse.max) || 0;
-  const statAt = key => STAT_ORDER.indexOf(key);
+  const statAt = (key: string): number => STAT_ORDER.indexOf(key);
   const rows = [];
   for (const row of ITEMS) {
     if ((row[ROW.jobMask] & jobBit) === 0) {
@@ -47,7 +58,7 @@ function naiveRows(job, browse) {
     if (browse.expOff.includes(expansionOf(row[ROW.equipLevel], row[ROW.ilvl]))) {
       continue;
     }
-    if (!words.every(word => row[ROW.name].toLowerCase().includes(word))) {
+    if (!words.every((word: string) => row[ROW.name].toLowerCase().includes(word))) {
       continue;
     }
     const raw = rowStats(row);
@@ -70,12 +81,12 @@ function naiveRows(job, browse) {
 
 test('the Gear browser lists the rows, order and slot counts of a naive filter and sort', () => {
   const rand = rng(8675309);
-  const pick = list => list[Math.floor(rand() * list.length)];
+  const pick = <Item>(list: readonly Item[]): Item => list[Math.floor(rand() * list.length)];
   const words = ['', '', '', 'ring', 'of', 'ironworks', 'a', 'heavens', 'the sky', 'zzzz', ' Cap ', 'Ra'];
-  const id = row => `${row.name}|${row.type}|${row.ilvl}`;
+  const id = (row: Pick<ListedRow, 'name' | 'type' | 'ilvl'>): string => `${row.name}|${row.type}|${row.ilvl}`;
   for (let n = 0; n < CASES; n++) {
     const job = makeJobContext(pick(JOBS).id);
-    const browse = {
+    const browse: BrowseFields = {
       ...defaultBrowse(job),
       q: pick(words),
       type: pick(['any', 'any', ...job.activeSlotTypes]),
@@ -99,14 +110,14 @@ test('the Gear browser lists the rows, order and slot counts of a naive filter a
     assert.equal(count ? Number(count[1].replace(/,/g, '')) : 0, want.length, `${label}: count text "${first.countText}"`);
 
     // the rows over all pages
-    const shown = [];
+    const shown: ListedRow[] = [];
     for (let page = 1; page <= first.pageCount; page++) {
       shown.push(...gearView(job, sync, browse, page).shown);
     }
     assert.deepEqual(shown.map(id).sort(), want.map(id).sort(), `${label}: rows`);
 
     // the order: by the sort key, then the view's ties; ascending reverses the key (a stat is its synced value)
-    const keyOf = row => {
+    const keyOf = (row: ListedRow): number => {
       if (browse.sort === 'lvl') {
         return row.lvl;
       }

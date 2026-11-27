@@ -4,7 +4,8 @@
    from the code under test. */
 import { poolItemById } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import type { SlotType, StatKey } from '../../../src/core/types.ts';
+import { placePiece } from '../../../src/ui/sheets/set-edits.ts';
+import type { JobContext, SlotType, StatKey } from '../../../src/core/types.ts';
 import type { GearPins, SavedFillSettings, SavedGearSet, SavedRow, SavedSheet, SavedStone } from '../../../src/ui/sheets/saved-types.ts';
 
 export { fakeStorage, quotaError } from './fakes.ts';
@@ -165,3 +166,13 @@ export function rawGear(jobId: string, pieces: readonly SavedRow[]): Partial<Rec
 
 /* A White Mage weapon: the Ironworks Magitek Cane (item level 120), which no other healer can wear. */
 export const WHM_CANE = 8645;
+
+/* `gearSet` with the piece `gameId` (null: none) placed in row `index` as the page's piece picker places it (placePiece); fails the
+   test when the placement is refused. */
+export function placed(job: JobContext, gearSet: SavedGearSet, index: number, gameId: number | null): SavedGearSet {
+  const result = placePiece(job, gearSet, index, gameId);
+  if (!result.ok) {
+    throw new Error(`row ${index} refused the piece ${gameId}`);
+  }
+  return result.gearSet;
+}

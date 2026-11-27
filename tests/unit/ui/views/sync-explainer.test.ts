@@ -7,13 +7,29 @@ import { capsFor } from '../../../../src/core/formulas.ts';
 import { meldInfo, mkItem } from '../../../../src/core/items.ts';
 import { gcdFor } from '../../../../src/core/speed.ts';
 import { meldSlotChoices, meldSlotsOf } from '../../../../src/ui/job-sync-panel.ts';
+import type { RawStatKey, SlotType } from '../../../../src/core/types.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { explainerOffText } from '../../../../src/ui/views/sync-explainer.ts';
 import { SLOT_PERMILLE, appState, hasNumber, hasParts, labelled, roundHalfUp } from '../../helpers/common.ts';
-import { explainerItemLevelOf, explainerViewOf, meldKeysOf } from '../../helpers/views.ts';
+import { explainerItemLevelOf, explainerViewOf as maybeExplainerViewOf, meldKeysOf } from '../../helpers/views.ts';
+import { mustFind } from '../../helpers/common.ts';
+
+/* The explainer view of a state that shows one (a synced state), never null. */
+const explainerViewOf = (...args: Parameters<typeof maybeExplainerViewOf>) => mustFind(maybeExplainerViewOf(...args), 'the explainer view');
 
 /* A store-shaped state: a job, a sync (item level `cap`, or level sync when `cap` is null), and the explainer's piece. */
-function app(job, { level, cap = null, slot = 'body', ilvl = null, subs = ['crit', makeJobContext(job).speedKey], slots = 2 }) {
+interface AppOptions {
+  level: number;
+  cap?: number | null;
+  slot?: string;
+  ilvl?: number | null;
+  subs?: (string | null)[];
+  slots?: number;
+}
+function app(
+  job: string,
+  { level, cap = null, slot = 'body', ilvl = null, subs = ['crit', makeJobContext(job).speedKey], slots = 2 }: AppOptions,
+) {
   const a = appState({ job, sync: cap != null, cap, level }, {});
   a.piece = { ...a.piece, ilvl, slot, subs, slots };
   return a;
@@ -50,7 +66,7 @@ test('level 50, cap 130: overgeared gear has more almost at once, materia adds l
 });
 
 test("the Wiki's item level 475 example: rings at 500 and 600 synced to 475", () => {
-  const ring = il => explainerViewOf(app('RPR', { level: 80, cap: 475, slot: 'ring', ilvl: il })).bars.slice(2);
+  const ring = (il: number) => explainerViewOf(app('RPR', { level: 80, cap: 475, slot: 'ring', ilvl: il })).bars.slice(2);
   // 93 / 65 -> 88 / 65; 127 / 89 -> 88 / 88: the 70% line is cut to the full cap, and never raised
   assert.deepEqual(
     ring(500).map(b => [b.raw, b.kept]),
@@ -101,17 +117,20 @@ test('a hand-made piece can declare its meld slots (the explainer gives its piec
 
 /* The caps behind the explainer, from the ItemLevel table times the slot share (BaseParam, typed in), rounded half up.
    Piety and Tenacity have their own ItemLevel column, higher at a few item levels than the shared substat column. */
-const expectedCap = (column, ilvl, type, oneHanded) => {
-  let pm = SLOT_PERMILLE[type];
+const expectedCap = (column: RawStatKey, ilvl: number, type: SlotType, oneHanded: boolean) => {
+  let pm: number;
   if (type === 'weapon') {
     pm = oneHanded ? SLOT_PERMILLE.weapon1h : SLOT_PERMILLE.weapon2h;
+  } else {
+    pm = SLOT_PERMILLE[type];
   }
   return roundHalfUp((IL[column][ilvl] * pm) / 1000);
 };
-for (const [job, column, oneHanded] of [
-  ['SGE', 'piety', false],
-  ['PLD', 'ten', true],
-]) {
+const specialCaps: { job: string; column: 'piety' | 'ten'; oneHanded: boolean }[] = [
+  { job: 'SGE', column: 'piety', oneHanded: false },
+  { job: 'PLD', column: 'ten', oneHanded: true },
+];
+for (const { job, column, oneHanded } of specialCaps) {
   test(`${job} at cap 540: the special substat's cap comes from its own ItemLevel column`, () => {
     const ctx = makeJobContext(job);
     for (const t of ctx.activeSlotTypes.filter(x => x !== 'offhand')) {
@@ -152,7 +171,10 @@ test('the overgeared chart: the substats named, a band each and the melds, and w
    melds are lost and no bar has any. */
 test('one piece: a piece that keeps its melds shows them on its bars; a synced piece has none', () => {
   const kept = explainerViewOf(app('SGE', { level: 100, cap: 169, slot: 'head', ilvl: 169, subs: ['dh', 'crit'] }));
-  const crit = kept.bars.find(b => b.label.startsWith('Critical Hit'));
+  const crit = mustFind(
+    kept.bars.find(b => b.label.startsWith('Critical Hit')),
+    'the Critical Hit bar',
+  );
   const gain = kept.vsRows[0].points - kept.bars.filter(b => b.label.includes('·')).reduce((a, b) => a + b.kept, 0);
   assert.ok(gain > 0, 'the piece keeps some melds');
   assert.equal(crit.melds, gain); // both stones are Critical Hit
@@ -190,8 +212,8 @@ test('one piece: the table splits the materia into the stones and what is left a
 /* Every row of the table has its second line filled (owner's screenshot, 2026-10-18: at 168 with the cap at 169 the
    line under each item level was blank). */
 test('one piece: at or below the cap the table rows say below the cap and at the cap', () => {
-  const rows = ilvl => explainerViewOf(app('SGE', { level: 100, cap: 169, slot: 'neck', ilvl, subs: ['dh', 'crit'] })).vsRows;
-  const tags = ilvl => rows(ilvl).map(r => [r.il, r.kind]);
+  const rows = (ilvl: number) => explainerViewOf(app('SGE', { level: 100, cap: 169, slot: 'neck', ilvl, subs: ['dh', 'crit'] })).vsRows;
+  const tags = (ilvl: number) => rows(ilvl).map(r => [r.il, r.kind]);
   assert.deepEqual(tags(168), [
     [168, 'below-cap'],
     [169, 'at-cap'],
@@ -250,7 +272,7 @@ test('Piece stats: what it says while no sync applies', () => {
 
 test('Materia slots: the example piece takes stones up to its slots (none with 0, one with 1)', () => {
   const settings = { level: 100, cap: 169, slot: 'ear', ilvl: 169, subs: ['dh', 'crit'] };
-  const chips = slots => explainerViewOf(app('SGE', { ...settings, slots })).stoneChips;
+  const chips = (slots: number) => explainerViewOf(app('SGE', { ...settings, slots })).stoneChips;
   assert.deepEqual(chips(0), []);
   assert.deepEqual(chips(1), ['+6']);
   assert.deepEqual(chips(2), ['+6', '+6']);
@@ -264,7 +286,7 @@ test('Materia slots: the example piece takes stones up to its slots (none with 0
 });
 
 test("Materia slots: with no choice (null), the slot's usual total; a choice its pieces do not have goes back to it", () => {
-  const usual = piece => meldSlotsOf({ slots: null, ...piece });
+  const usual = (piece: { slot: string }) => meldSlotsOf({ slots: null, ...piece });
   assert.deepEqual(
     ['head', 'body', 'hands', 'legs', 'feet'].map(slot => usual({ slot })),
     [2, 2, 2, 2, 2],
@@ -289,7 +311,7 @@ test('synced levels 1 to 4 (item level budget 0): every bar width is a percentag
       const v = explainerViewOf(app(job, { level }));
       assert.ok(v, `${job} level ${level} shows Piece stats`);
       for (const bar of v.bars) {
-        for (const key of ['keep', 'riseLeft', 'rise', 'cutLeft', 'cut', 'meldLeft', 'meldWidth', 'capAt']) {
+        for (const key of ['keep', 'riseLeft', 'rise', 'cutLeft', 'cut', 'meldLeft', 'meldWidth', 'capAt'] as const) {
           assert.match(bar[key], /^\d+(\.\d+)?%$/, `${job} level ${level} ${bar.label} ${key}`);
         }
         assert.equal(bar.keep, '0%', `${job} level ${level} ${bar.label}: no stat, no bar`);

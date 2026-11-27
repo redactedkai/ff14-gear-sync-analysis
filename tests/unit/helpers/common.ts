@@ -121,3 +121,10 @@ export function hasParts(text: string, ...parts: string[]): boolean {
 export function labelled(svg: string, value: number | string, itemLevel: number | string): boolean {
   return [...svg.matchAll(/<text[^>]*>([^<]*)</g)].some(match => match[1].startsWith(`${value}:`) && hasNumber(match[1], itemLevel));
 }
+
+/* `value` itself, or a failed test naming `what` when it is null or undefined: the typed way to say that a lookup (find, a map get)
+   must have found something. */
+export function mustFind<Value>(value: Value | null | undefined, what: string): Value {
+  assert.ok(value !== null && value !== undefined, `not found: ${what}`);
+  return value;
+}

@@ -8,6 +8,7 @@ import { setRowsView } from '../../../../src/ui/views/set-rows.ts';
 import { appliedFields, suggestionOf } from '../../../../src/ui/views/set-suggestion.ts';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
 import { piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import type { SavedGearSet } from '../../../../src/ui/sheets/saved-types.ts';
 
 const sage = makeJobContext('SGE');
 const sheet = sheetOf('SGE', []);
@@ -16,7 +17,7 @@ const TIED = MEALS.map(meal => meal.key);
 const BRACELET = 8624; // Ironworks Bracelet of Healing
 
 /* A solve's plain set: the saved rows with the wrist swapped, and the last tied meal. */
-const answer = gearSet => ({
+const answer = (gearSet: SavedGearSet) => ({
   pieces: gearSet.pieces
     .filter(row => sage.activeSlotTypes.includes(row.slot))
     .map(row => {
@@ -43,7 +44,7 @@ test("suggestionOf carries the answer's tied meals; appliedFields saves them onl
 
 test('the Food row: "best for goal" for a tagged meal; a meal picked by hand, no meal and no tags show nothing', () => {
   const set = sageSet({ meal: TIED[2] });
-  const view = bestKeys => setRowsView(evaluateInSheet(sheet, set), set, { bestKeys }).food.best;
+  const view = (bestKeys: string[]) => setRowsView(evaluateInSheet(sheet, set), set, { bestKeys }).food.best;
   const tagged = view(TIED).note;
   assert.ok(tagged.length > 0, 'a tagged meal gets a note');
   assert.deepEqual(view([TIED[2]]), { note: tagged });

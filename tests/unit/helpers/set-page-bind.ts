@@ -4,10 +4,9 @@
 import { saveSheet } from '../../../src/ui/sheets/storage.ts';
 import { PageSession } from '../../../src/ui/elements/set-page/session.ts';
 import { inProcessSolver } from '../../../src/ui/solver.ts';
-import { placePiece } from '../../../src/ui/sheets/set-edits.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { fillButtonView, noPiecesFlag, setPageViews } from '../../../src/ui/views/set-page.ts';
-import { fakeStorage, sageSet, sheetOf } from './sheet-fixtures.ts';
+import { fakeStorage, placed, sageSet, sheetOf } from './sheet-fixtures.ts';
 import { fakeFrames, stubElement } from './frames.ts';
 import type { ElementCall } from './frames.ts';
 import { createStores } from './stores.ts';
@@ -135,11 +134,7 @@ export function bind(
 export function twoToFill() {
   let set = sageSet({ pinned: { pieces: [0, 1, 2, 3, 5, 7, 8, 9, 10, 11], meal: false } });
   for (const row of [HANDS, FEET]) {
-    const placed = placePiece(SGE, set, row, null);
-    if (!placed.ok) {
-      throw new Error(`row ${row} was not emptied`);
-    }
-    set = placed.gearSet;
+    set = placed(SGE, set, row, null);
   }
   return set;
 }

@@ -26,10 +26,17 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { JOBS } from '../../../../src/core/constants.ts';
 import { MAX_LEVEL, MAX_REAL } from '../../../../src/core/tables.ts';
 
+/* The parts of a Sync chip that the checks read. */
+type ChipView = ReturnType<typeof syncChipView>;
+
 const T = SYNC_CHIP_TEXT;
 const sage = makeJobContext('SGE');
 /* The Sync chip for Sage under the panel {cap, sync, level} (the store's fields) and the example piece's slot. */
-function chip(panel, slot = 'head', extra = {}) {
+function chip(
+  panel: { cap: number | null; sync: boolean; level: number },
+  slot = 'head',
+  extra: { switchOn?: boolean; loweredFrom?: number | null; capMissing?: boolean } = {},
+) {
   return syncChipView(sage, syncSettings(panel), slot, {
     switchOn: Boolean(panel.sync),
     capMissing: Boolean(panel.sync) && panel.cap == null,
@@ -37,8 +44,8 @@ function chip(panel, slot = 'head', extra = {}) {
   });
 }
 /* The chip's words as one string and its parts' classes. */
-const words = view => view.parts.map(part => part.text).join(' ');
-const classes = view => view.parts.map(part => part.cls);
+const words = (view: ChipView): string => view.parts.map(part => part.text).join(' ');
+const classes = (view: ChipView): string[] => view.parts.map(part => part.cls);
 
 test('Sync chip, IL Sync on: the level and the item level it caps to, both strong', () => {
   const view = chip({ cap: 270, sync: true, level: 85 });

@@ -6,14 +6,18 @@ import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { changeText, draftChanges, draftNote, draftView } from '../../../../src/ui/views/set-draft.ts';
 import { evaluateInSheet, setFigures } from '../../../../src/ui/views/set-totals.ts';
-import { hasNumber } from '../../helpers/common.ts';
+import { hasNumber, mustFind } from '../../helpers/common.ts';
+import type { SavedGearSet, SavedRow, SavedStone } from '../../../../src/ui/sheets/saved-types.ts';
 import { SAGE_IDS, piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
 
 const sage = makeJobContext('SGE');
 const sheet = sheetOf('SGE', []);
 
 /* `set` with the row at `index` replaced. */
-const withRow = (set, index, row) => ({ ...set, pieces: set.pieces.map((p, i) => (i === index ? row : p)) });
+const withRow = (set: SavedGearSet, index: number, row: SavedRow): SavedGearSet => ({
+  ...set,
+  pieces: set.pieces.map((p, i) => (i === index ? row : p)),
+});
 
 test('no change: nothing differs, Apply is off and the second row says so', () => {
   const v = draftView(sheet, sageSet(), sageSet());
@@ -54,7 +58,12 @@ test('another piece in a row: the row is listed with both names, and the figures
   assert.deepEqual([v.changes.countText, v.applyDisabled], ['1 slot', false]);
   assert.ok(hasNumber(v.applyText, 1) && hasNumber(v.leaveText, 1), `${v.applyText} | ${v.leaveText}`);
   assert.deepEqual(v.changedRows, [9]);
-  const byKey = Object.fromEntries(v.header[1].figures.map(f => [f.key, f.change]));
+  const changes = Object.fromEntries(v.header[1].figures.map(f => [f.key, f.change]));
+  const byKey = {
+    det: mustFind(changes.det, 'the Determination change'),
+    gcd: changes.gcd,
+    main: mustFind(changes.main, 'the main stat change'),
+  };
   // Mind 22 -> 23 and Determination 0 -> 16 (from the item data); the 15 points of speed lost do not move the GCD
   assert.equal(byKey.det.up, true);
   assert.equal(byKey.det.good, true);
@@ -76,7 +85,7 @@ test('another piece in a row: the row is listed with both names, and the figures
 
 test('the same piece with other stones is a melds-only change with both stone lists', () => {
   const saved = sageSet();
-  const stones = [
+  const stones: SavedStone[] = [
     { stat: 'det', grade: 4 },
     { stat: 'det', grade: 4 },
     { stat: 'crit', grade: 3 },
@@ -91,7 +100,7 @@ test('the same piece with other stones is a melds-only change with both stone li
 
 test('an emptied row and a new meal: "1 slot and meal"; the meal is named before and after', () => {
   const saved = sageSet();
-  const meal = allMeals(sage).at(-1);
+  const meal = mustFind(allMeals(sage).at(-1), 'a meal');
   const draft = { ...withRow(saved, 3, { slot: 'body' }), meal: meal.key };
   const c = draftChanges(sage, saved, draft);
   assert.deepEqual(
@@ -105,9 +114,12 @@ test('an emptied row and a new meal: "1 slot and meal"; the meal is named before
   assert.ok(hasNumber(v.applyText, 2) && hasNumber(v.header[1].label, 2), `${v.applyText} | ${v.header[1].label}`);
   // the gloves' and shoes' 48 speed points are gone (no meal; the others add 15): the GCD goes from 2.49s to 2.50s, a higher figure and worse (red), and Mind falls
   const noMeal = draftView(sheet, saved, withRow(withRow(saved, 4, { slot: 'hands' }), 6, { slot: 'feet' }));
-  const gcd = noMeal.header[1].figures.find(f => f.key === 'gcd');
+  const gcd = mustFind(
+    noMeal.header[1].figures.find(f => f.key === 'gcd'),
+    'the GCD figure',
+  );
   assert.deepEqual([noMeal.header[0].figures[1].text, gcd.text, gcd.change], ['2.49s', '2.50s', { text: '+0.01s', up: true, good: false }]);
-  assert.equal(noMeal.header[1].figures[0].change.good, false);
+  assert.equal(noMeal.header[1].figures[0].change?.good, false);
   // the meal alone
   assert.equal(draftChanges(sage, saved, { ...saved, meal: meal.key }).countText, 'the meal');
 });
@@ -121,10 +133,16 @@ test('a row the job does not use (the off-hand of a two-handed job) is not a cha
 test('changeText and the notes after Apply or Discard', () => {
   assert.match(changeText(2, false), /2/);
   assert.doesNotMatch(changeText(0, true), /\d/);
-  const two = { count: 3, rows: [{}, {}], meal: { before: 'none', after: 'x' } };
+  // real changes: two rows and a meal, one row, none
+  const saved = sageSet();
+  const two = draftChanges(sage, saved, {
+    ...withRow(withRow(saved, 3, { slot: 'body' }), 4, { slot: 'hands' }),
+    meal: mustFind(allMeals(sage).at(-1), 'a meal').key,
+  });
+  assert.deepEqual([two.rows.length, two.meal !== null], [2, true]);
   // the structure, not the sentence: the verb first, then what changed (changeText's text), none for no changes
-  const one = { count: 1, rows: [{}], meal: null };
-  const none = { count: 0, rows: [], meal: null };
+  const one = draftChanges(sage, saved, withRow(saved, 3, { slot: 'body' }));
+  const none = draftChanges(sage, saved, saved);
   const applied = draftNote('Applied', two);
   assert.ok(applied.startsWith('Applied') && applied.includes(changeText(2, true)), applied);
   const discarded = draftNote('Discarded', two);

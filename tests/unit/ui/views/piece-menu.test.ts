@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { piecePickerView } from '../../../../src/ui/views/piece-menu.ts';
+import { mustFind } from '../../helpers/common.ts';
 import { SAGE_IDS, sageSet } from '../../helpers/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
@@ -29,7 +30,10 @@ test('the piece picker: the slot pieces by expansion newest first, the search, t
     rainbow.groups.map(g => g.label),
     ['Heavensward', 'A Realm Reborn'],
   );
-  const cap = items.find(x => x.key === SAGE_IDS.head);
+  const cap = mustFind(
+    items.find(x => x.key === SAGE_IDS.head),
+    'the Rainbow Cap',
+  );
   assert.equal(cap.on, true, 'the piece the row holds');
   assert.equal(cap.levels, '115, lvl 50');
   assert.match(cap.line, /^CRT 20 · PIE 28 · 2\+3 slots$/);

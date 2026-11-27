@@ -6,20 +6,26 @@ import assert from 'node:assert/strict';
 import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { evaluateInSheet, figureChange, figuresAgainst, setFigures, setTotalsView } from '../../../../src/ui/views/set-totals.ts';
-import { hasNumber } from '../../helpers/common.ts';
+import { hasNumber, mustFind } from '../../helpers/common.ts';
+import type { SlotType, StatKey } from '../../../../src/core/types.ts';
+import type { Figure } from '../../../../src/ui/views/set-totals.ts';
+import type { SavedGearSet, SavedRow } from '../../../../src/ui/sheets/saved-types.ts';
 import { piece, rawGear, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.ts';
 
 /* Level 100: the character's own points before any gear (Sage: the main stat base 440 x the job's modifier (115%) and Vitality (100%),
    420 for the speed-based substats and 440 for Determination and Piety; the level's divisor. */
-const SAGE_BASE = { mind: 506, vit: 440, crit: 420, det: 440, dh: 420, sps: 420, piety: 440 };
+const SAGE_BASE: Partial<Record<StatKey, number>> = { mind: 506, vit: 440, crit: 420, det: 440, dh: 420, sps: 420, piety: 440 };
 const DIV = 2780;
 
 /* Sage's gear points: the raw item stats, plus the head's three Critical Hit IV stones (+8 of 12, 4 lost past the cap of 28). */
-function sageGear(set) {
+function sageGear(set: SavedGearSet): Partial<Record<StatKey, number>> {
   const gear = rawGear('SGE', set.pieces);
-  gear.crit += 8;
+  gear.crit = (gear.crit ?? 0) + 8;
   return gear;
 }
+
+/* The number a stat key holds in a set of points, 0 when it holds none. */
+const pointsOf = (points: Partial<Record<StatKey, number>>, stat: StatKey): number => points[stat] ?? 0;
 
 test('Sage: Total is gear plus the character base, with and without the meal', () => {
   const sheet = sheetOf('SGE', []);
@@ -29,27 +35,27 @@ test('Sage: Total is gear plus the character base, with and without the meal', (
   const job = makeJobContext('SGE');
   assert.deepEqual(
     view.total.cells.map(c => [c.stat, c.header, c.value]),
-    job.stats.map(s => [s, job.short[s], gear[s] + SAGE_BASE[s]]),
+    job.stats.map(s => [s, job.short[s], pointsOf(gear, s) + pointsOf(SAGE_BASE, s)]),
   );
   assert.equal(view.total.hasMeal, false);
   assert.deepEqual(view.total.withoutMeal, view.total.cells);
 
   // the newest meal: each of its stats gets floor(pct x (base + gear) / 100), at most its maximum
-  const meal = allMeals(job).at(-1);
+  const meal = mustFind(allMeals(job).at(-1), 'a meal');
   const fed = setTotalsView(evaluateInSheet(sheet, sageSet({ meal: meal.key })));
   const lines = [...meal.stats, ...(meal.vit ? [meal.vit] : [])];
   const bonus = Object.fromEntries(
-    lines.map(l => [l.stat, Math.min(l.max, Math.floor((l.pct * (SAGE_BASE[l.stat] + gear[l.stat])) / 100))]),
+    lines.map(l => [l.stat, Math.min(l.max, Math.floor((l.pct * (pointsOf(SAGE_BASE, l.stat) + pointsOf(gear, l.stat))) / 100))]),
   );
   assert.ok(Object.keys(bonus).length >= 2);
   assert.equal(fed.total.hasMeal, true);
   assert.deepEqual(
     fed.total.cells.map(c => c.value),
-    job.stats.map(s => gear[s] + SAGE_BASE[s] + (bonus[s] ?? 0)),
+    job.stats.map(s => pointsOf(gear, s) + pointsOf(SAGE_BASE, s) + (bonus[s] ?? 0)),
   );
   assert.deepEqual(
     fed.total.withoutMeal.map(c => c.value),
-    job.stats.map(s => gear[s] + SAGE_BASE[s]),
+    job.stats.map(s => pointsOf(gear, s) + pointsOf(SAGE_BASE, s)),
   );
 });
 
@@ -69,7 +75,7 @@ test('Sage: the Total row counts empty rows ("1 slot empty") and a set with noth
 });
 
 test('a job with an always-on haste says its Tier row counts the hasted speed; one without keeps the plain caption', () => {
-  const caption = jobId =>
+  const caption = (jobId: string) =>
     setTotalsView(evaluateInSheet(sheetOf(jobId, [], { sync: { on: false, cap: 795 } }), { ...warSet(), pieces: [{ slot: 'weapon' }] }))
       .tier.caption;
   const plain = caption('SGE');
@@ -91,17 +97,19 @@ test('Sage: the Tier row is the spare points and the points to the next tier of 
   assert.equal(cells.mind, null);
   assert.equal(cells.vit, null);
   // tier = floor(step x points / div); a tier starts at ceil(tier x div / step)
-  for (const [stat, step] of [
+  const steps: [StatKey, number][] = [
     ['crit', 200],
     ['det', 140],
     ['dh', 550],
-  ]) {
-    const tier = Math.floor((step * gear[stat]) / DIV);
+  ];
+  for (const [stat, step] of steps) {
+    const cell = mustFind(cells[stat], `the ${stat} tier cell`);
+    const tier = Math.floor((step * pointsOf(gear, stat)) / DIV);
     const start = Math.ceil((tier * DIV) / step);
     const next = Math.ceil(((tier + 1) * DIV) / step);
-    assert.equal(cells[stat].spare, gear[stat] - start, stat);
-    assert.equal(cells[stat].toNext, next - gear[stat], stat);
-    assert.equal(cells[stat].text, `${gear[stat] - start} · +${next - gear[stat]}`, stat);
+    assert.equal(cell.spare, pointsOf(gear, stat) - start, stat);
+    assert.equal(cell.toNext, next - pointsOf(gear, stat), stat);
+    assert.equal(cell.text, `${pointsOf(gear, stat) - start} · +${next - pointsOf(gear, stat)}`, stat);
   }
 });
 
@@ -111,11 +119,20 @@ test('Sage: the Tier row is the spare points and the points to the next tier of 
    + 148 + 142 + 148 + 133 + 129, read from the item data) sits 21 above the first start and 65 below the second
    (1,839 - 1,818 = 21; 1,904 - 1,839 = 65). Roadmap A3. */
 test('Tier row at 1,839 gear speed (level 100): 21 above the tier start (2,238 on the panel), 65 to the next (2,324)', () => {
-  const ids = { head: 49705, body: 50879, hands: 49707, legs: 49455, feet: 51161, ear: 49718, neck: 49470, wrist: 49651 };
-  const pieces = [
+  const ids: [SlotType, number][] = [
+    ['head', 49705],
+    ['body', 50879],
+    ['hands', 49707],
+    ['legs', 49455],
+    ['feet', 51161],
+    ['ear', 49718],
+    ['neck', 49470],
+    ['wrist', 49651],
+  ];
+  const pieces: SavedRow[] = [
     { slot: 'weapon' },
     { slot: 'offhand' },
-    ...Object.entries(ids).map(([slot, gameId]) => piece(slot, gameId)),
+    ...ids.map(([slot, gameId]) => piece(slot, gameId)),
     piece('ring', 46452),
     piece('ring', 46397),
   ];
@@ -123,7 +140,7 @@ test('Tier row at 1,839 gear speed (level 100): 21 above the tier start (2,238 o
   assert.equal(rawGear('SGE', pieces).sps, 1839);
   const view = setTotalsView(evaluateInSheet(sheetOf('SGE', [], { sync: { on: false, cap: 795 } }), gearSet));
   const job = makeJobContext('SGE');
-  const cell = view.tier.cells[job.stats.indexOf('sps')];
+  const cell = mustFind(view.tier.cells[job.stats.indexOf('sps')], 'the Spell Speed tier cell');
   assert.deepEqual([cell.spare, cell.toNext, cell.text], [21, 65, '21 · +65']);
 });
 
@@ -137,12 +154,12 @@ test('Warrior (Tenacity, two-handed): the off-hand row holding a piece adds noth
   );
   assert.deepEqual([view.defense.mag.label, view.defense.mag.value, view.defense.mag.pctText], ['Magic', 789, '−4% damage']);
   // the axe in the off-hand row would double the weapon's stats if it were counted
-  const withoutOffhand = { ...warSet(), pieces: warSet().pieces.map(p => (p.slot === 'offhand' ? { slot: 'offhand' } : p)) };
+  const withoutOffhand = { ...warSet(), pieces: warSet().pieces.map((p): SavedRow => (p.slot === 'offhand' ? { slot: 'offhand' } : p)) };
   assert.deepEqual(setTotalsView(evaluateInSheet(sheet, withoutOffhand)).total.cells, view.total.cells);
   // the raw sums match, the weapon included; the job has a special substat (Tenacity, TNC)
   const gear = rawGear('WAR', warSet().pieces);
-  assert.equal(view.total.cells.find(c => c.stat === 'det').value, gear.det + 440);
-  assert.equal(view.total.cells.find(c => c.stat === 'ten').header, 'TNC');
+  assert.equal(view.total.cells.find(c => c.stat === 'det')?.value, pointsOf(gear, 'det') + 440);
+  assert.equal(view.total.cells.find(c => c.stat === 'ten')?.header, 'TNC');
 });
 
 test('the header figures: main stat, GCD, Critical Hit, Crit dmg, Determination, Direct Hit, Piety, DoT (Sage)', () => {
@@ -157,17 +174,17 @@ test('the header figures: main stat, GCD, Critical Hit, Crit dmg, Determination,
     ['MND', 'GCD', 'CRT', 'Crit dmg', 'DET', 'DHT', 'PIE', 'DoT'],
   );
   const text = Object.fromEntries(figures.map(f => [f.key, f.text]));
-  const pct = perMille => `${(perMille / 10).toFixed(1)}%`;
-  assert.equal(text.main, String(gear.mind + SAGE_BASE.mind));
+  const pct = (perMille: number) => `${(perMille / 10).toFixed(1)}%`;
+  assert.equal(text.main, String(pointsOf(gear, 'mind') + pointsOf(SAGE_BASE, 'mind')));
   // the GCD: recast 2500 x (1000 + ceil(130 x -gear / div)) / 1000, in hundredths of a second
-  const recast = Math.floor((2500 * (1000 + Math.ceil((-130 * gear.sps) / DIV))) / 1000);
+  const recast = Math.floor((2500 * (1000 + Math.ceil((-130 * pointsOf(gear, 'sps')) / DIV))) / 1000);
   assert.equal(text.gcd, `${(Math.floor(recast / 10) / 100).toFixed(2)}s`);
-  assert.equal(text.crit, pct(Math.floor((200 * gear.crit) / DIV) + 50));
-  assert.equal(text.critDmg, `+${pct(Math.floor((200 * gear.crit) / DIV) + 400)}`);
-  assert.equal(text.det, `+${pct(Math.floor((140 * gear.det) / DIV))}`);
-  assert.equal(text.dh, pct(Math.floor((550 * gear.dh) / DIV)));
-  assert.equal(text.spec, `+${Math.floor((150 * gear.piety) / DIV)} MP`);
-  assert.equal(text.dot, `+${(Math.floor((130 * gear.sps) / DIV) / 10).toFixed(1)}%`);
+  assert.equal(text.crit, pct(Math.floor((200 * pointsOf(gear, 'crit')) / DIV) + 50));
+  assert.equal(text.critDmg, `+${pct(Math.floor((200 * pointsOf(gear, 'crit')) / DIV) + 400)}`);
+  assert.equal(text.det, `+${pct(Math.floor((140 * pointsOf(gear, 'det')) / DIV))}`);
+  assert.equal(text.dh, pct(Math.floor((550 * pointsOf(gear, 'dh')) / DIV)));
+  assert.equal(text.spec, `+${Math.floor((150 * pointsOf(gear, 'piety')) / DIV)} MP`);
+  assert.equal(text.dot, `+${(Math.floor((130 * pointsOf(gear, 'sps')) / DIV) / 10).toFixed(1)}%`);
 });
 
 test('a job without a special substat has no such figure (Dragoon); the other figures stay', () => {
@@ -183,12 +200,18 @@ test('a job with an always-on haste labels the GCD "with Haste" and shows it wit
   let hastedLabel = '';
   for (const [jobId, hasted] of Object.entries(expected)) {
     const sheet = sheetOf(jobId, [], { sync: { on: false, cap: 795 } });
-    const gcd = setFigures(evaluateInSheet(sheet, { ...warSet(), pieces: [{ slot: 'weapon' }] })).find(f => f.key === 'gcd');
+    const gcd = mustFind(
+      setFigures(evaluateInSheet(sheet, { ...warSet(), pieces: [{ slot: 'weapon' }] })).find(f => f.key === 'gcd'),
+      'the GCD figure',
+    );
     assert.deepEqual([gcd.text, gcd.shown], [hasted, `2.50s (${hasted})`], jobId);
     hastedLabel = gcd.label;
   }
   // a job without haste keeps the plain label and no `shown`
-  const sage = setFigures(evaluateInSheet(sheetOf('SGE', []), sageSet())).find(f => f.key === 'gcd');
+  const sage = mustFind(
+    setFigures(evaluateInSheet(sheetOf('SGE', []), sageSet())).find(f => f.key === 'gcd'),
+    'the GCD figure',
+  );
   assert.equal(sage.shown, undefined);
   assert.notEqual(sage.label, hastedLabel, 'the haste is said in the label');
   assert.ok(hastedLabel.includes('Haste'), hastedLabel);
@@ -203,13 +226,13 @@ test("figureChange: signed difference in the figure's own unit and decimals; equ
 });
 
 test('figuresAgainst: green when better, red when worse; the GCD is better lower', () => {
-  const before = [
+  const before: Figure[] = [
     { key: 'main', label: 'MND', text: '6406' },
     { key: 'gcd', label: 'GCD', text: '2.49s' },
     { key: 'crit', label: 'CRT', text: '19.3%' },
     { key: 'det', label: 'DET', text: '+8.1%' },
   ];
-  const after = [
+  const after: Figure[] = [
     { key: 'main', label: 'MND', text: '6400' },
     { key: 'gcd', label: 'GCD', text: '2.48s' },
     { key: 'crit', label: 'CRT', text: '19.9%' },

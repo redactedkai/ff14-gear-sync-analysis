@@ -5,9 +5,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { materiaMenuView } from '../../../../src/ui/views/stone-menu.ts';
-import { placePiece } from '../../../../src/ui/sheets/set-edits.ts';
-import { hasNumber, hasParts, piece } from '../../helpers/common.ts';
-import { sageSet } from '../../helpers/sheet-fixtures.ts';
+import { hasNumber, hasParts, mustFind, piece } from '../../helpers/common.ts';
+import { placed, sageSet } from '../../helpers/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 const HEAD = 2;
@@ -22,7 +21,10 @@ test('the materia menu: the best grades the item level takes, the room under the
     menu.bands[0].columns.map(c => c.roman),
     ['IV', 'III', 'II', 'I'],
   );
-  const crit = menu.bands[0].rows.find(r => r.stat === 'crit');
+  const crit = mustFind(
+    menu.bands[0].rows.find(r => r.stat === 'crit'),
+    'the Critical Hit row',
+  );
   assert.deepEqual(
     crit.cells.map(c => [c.text, c.on, c.fit]),
     [
@@ -50,11 +52,11 @@ test('the materia menu: the best grades the item level takes, the room under the
 /* The overmeld odds in the materia menu: the Wiki's Advanced Materia Melding table (HQ pieces) and the MateriaGrade sheet
    (NQ pieces), as in core/meld.overmeld-odds.test.ts. Courtly Lover's Earrings of Healing (item level 770, 1 slot +
    overmeld, can be HQ) and Axe of the Fury (item level 205, 2 slots + overmeld, cannot be HQ). */
-const odds = menu => menu.bands.flatMap(b => b.columns).map(c => c.odds);
+const odds = (menu: ReturnType<typeof materiaMenuView>) => menu.bands.flatMap(b => b.columns).map(c => c.odds);
 
 test('the materia menu: odds in an overmeld slot of an HQ piece, none in a guaranteed slot', () => {
-  const earringsId = piece(SGE, "Courtly Lover's Earrings of Healing").gameId;
-  const set = placePiece(SGE, sageSet(), EAR, earringsId).gearSet;
+  const earringsId = mustFind(piece(SGE, "Courtly Lover's Earrings of Healing").gameId, 'the earrings game id');
+  const set = placed(SGE, sageSet(), EAR, earringsId);
 
   const guaranteed = materiaMenuView(SGE, set, EAR, 0, false);
   assert.ok(hasParts(guaranteed.title, 'Earring') && hasNumber(guaranteed.title, 1), guaranteed.title);
@@ -81,8 +83,8 @@ test('the materia menu: odds in an overmeld slot of an HQ piece, none in a guara
 
 test('the materia menu: an NQ piece uses the NQ odds and says so', () => {
   const WAR = makeJobContext('WAR');
-  const axeId = piece(WAR, 'Axe of the Fury').gameId;
-  const set = placePiece(WAR, sageSet(), 0, axeId).gearSet;
+  const axeId = mustFind(piece(WAR, 'Axe of the Fury').gameId, 'the axe game id');
+  const set = placed(WAR, sageSet(), 0, axeId);
   const guaranteed = materiaMenuView(WAR, set, 0, 1, false);
   assert.deepEqual([guaranteed.showOdds, odds(guaranteed), guaranteed.nqNote], [false, ['', '', '', ''], '']);
   const first = materiaMenuView(WAR, set, 0, 2, false);

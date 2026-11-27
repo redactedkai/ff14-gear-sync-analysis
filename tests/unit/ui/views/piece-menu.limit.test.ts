@@ -9,13 +9,16 @@ import { categoryOf, jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { FIRST_ROWS, limitRows } from '../../../../src/ui/views/limit-rows.ts';
 import { piecePickerView } from '../../../../src/ui/views/piece-menu.ts';
+import { mustFind } from '../../helpers/common.ts';
 import { sageSet } from '../../helpers/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 const GEAR = jobGear(SGE);
 const RING_1 = 10;
 const HEAD = 2;
-const keys = view => view.groups.flatMap(g => g.items.map(x => x.key));
+/* The game ids of the pieces a picker view lists, in order. */
+const keys = (view: { groups: readonly { items: readonly { key?: number }[] }[] }): number[] =>
+  view.groups.flatMap(g => g.items.flatMap(x => (x.key === undefined ? [] : [x.key])));
 
 test('limitRows keeps the first rows in order, drops empty groups, and does not change the groups it is given', () => {
   const groups = [
@@ -54,8 +57,11 @@ test('a limited head menu is the start of the full one; the count and the footer
 
 test('a search finds a piece that is past the drawn rows, and the count is of the search', () => {
   const full = piecePickerView(SGE, GEAR, sageSet(), HEAD, '');
-  const last = keys(full).at(-1);
-  const lastName = GEAR.find(item => item.gameId === last).name;
+  const last = mustFind(keys(full).at(-1), 'the last piece of the full view');
+  const lastName = mustFind(
+    GEAR.find(item => item.gameId === last),
+    'the last piece',
+  ).name;
   const whole = piecePickerView(SGE, GEAR, sageSet(), HEAD, lastName);
   const found = { ...whole, groups: limitRows(whole.groups, FIRST_ROWS) };
   assert.ok(keys(found).includes(last));
@@ -64,21 +70,30 @@ test('a search finds a piece that is past the drawn rows, and the count is of th
 
 test('what depends on the set is read at each call, not kept with the cached lines of the slot', () => {
   const AGATE = 49579; // Bygone Brass Ring of Healing (item level 780), a Unique ring
-  const unique = GEAR.find(item => item.gameId === AGATE);
+  const unique = mustFind(
+    GEAR.find(item => item.gameId === AGATE),
+    'the Agate ring',
+  );
   const wornTwice = sageSet();
   wornTwice.pieces[RING_1] = { slot: 'ring', gameId: AGATE, stones: [] };
   wornTwice.pieces[RING_1 + 1] = { slot: 'ring', gameId: AGATE, stones: [] };
-  const taken = piecePickerView(SGE, GEAR, wornTwice, RING_1, '')
-    .groups.flatMap(g => g.items)
-    .find(x => x.key === AGATE);
+  const taken = mustFind(
+    piecePickerView(SGE, GEAR, wornTwice, RING_1, '')
+      .groups.flatMap(g => g.items)
+      .find(x => x.key === AGATE),
+    'the ring in the picker',
+  );
   assert.equal(unique.copies, 1);
   assert.equal(taken.unique, true);
   assert.equal(taken.taken, true, 'the other ring row holds it');
   assert.equal(taken.on, true, 'and this row shows it');
   const alone = sageSet();
-  const free = piecePickerView(SGE, GEAR, alone, RING_1, '')
-    .groups.flatMap(g => g.items)
-    .find(x => x.key === AGATE);
+  const free = mustFind(
+    piecePickerView(SGE, GEAR, alone, RING_1, '')
+      .groups.flatMap(g => g.items)
+      .find(x => x.key === AGATE),
+    'the free ring in the picker',
+  );
   assert.equal(free.taken, false, 'taken from the call before is not kept');
   const otherRow = piecePickerView(SGE, GEAR, alone, HEAD, '');
   assert.equal(otherRow.groups.flatMap(g => g.items).filter(x => x.on).length, 1, 'only the head shown is marked');
@@ -90,17 +105,31 @@ test('what the template shows is in the view: the row class, the category pill, 
   held.pieces[RING_1] = { slot: 'ring', gameId: AGATE, stones: [] };
   held.pieces[RING_1 + 1] = { slot: 'ring', gameId: AGATE, stones: [] };
   const items = piecePickerView(SGE, GEAR, held, RING_1, '').groups.flatMap(g => g.items);
-  const agate = items.find(x => x.key === AGATE);
+  const agate = mustFind(
+    items.find(x => x.key === AGATE),
+    'the Agate ring in the picker',
+  );
+  const agateItem = mustFind(
+    GEAR.find(item => item.gameId === AGATE),
+    'the Agate ring',
+  );
+  const agateCategory = mustFind(categoryOf(agateItem), 'its category');
   assert.equal(agate.onClass, 'on');
   assert.ok(agate.uniqueText.trim().length > 0, 'a Unique ring held in the other row says so');
-  assert.equal(agate.pillClass, `pill cat-${categoryOf(GEAR.find(item => item.gameId === AGATE)).key}`);
-  assert.equal(agate.pillLabel, categoryOf(GEAR.find(item => item.gameId === AGATE)).label);
+  assert.equal(agate.pillClass, `pill cat-${agateCategory.key}`);
+  assert.equal(agate.pillLabel, agateCategory.label);
   // a ring that is not Unique, and a ring that is Unique and free
-  const plain = items.find(x => !x.unique);
+  const plain = mustFind(
+    items.find(x => !x.unique),
+    'a ring that is not Unique',
+  );
   assert.deepEqual([plain.onClass, plain.uniqueText], ['', '']);
-  const free = piecePickerView(SGE, GEAR, sageSet(), RING_1, '')
-    .groups.flatMap(g => g.items)
-    .find(x => x.key === AGATE);
+  const free = mustFind(
+    piecePickerView(SGE, GEAR, sageSet(), RING_1, '')
+      .groups.flatMap(g => g.items)
+      .find(x => x.key === AGATE),
+    'the free ring in the picker',
+  );
   assert.ok(free.uniqueText.trim().length > 0 && free.uniqueText !== agate.uniqueText, 'a free Unique ring says Unique only');
   assert.equal(free.onClass, '');
 });

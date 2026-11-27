@@ -7,14 +7,18 @@ import { ACCESSORY_SLOTS, SLOT_LABEL } from '../../../../src/core/constants.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { capsFor } from '../../../../src/core/formulas.ts';
 import { slotGroups } from '../../../../src/ui/views/piece.ts';
+import { mustFind } from '../../helpers/common.ts';
 import { gearOf, explainerViewOf, makeApp, pieceViewOf } from '../../helpers/views.ts';
 
 // one job per role: tank, healer, melee, physical ranged, caster
 const JOBS = ['PLD', 'SGE', 'MNK', 'BRD', 'BLM'];
+/* The accessory slots as plain names, to test any piece's slot against. */
+const accessorySlotNames: readonly string[] = ACCESSORY_SLOTS;
+
 const ITEM_LEVELS = [123, 275, 475, 640, 790];
 
 /* A view as text with the slot's own name replaced, so the four slots' views can be compared. */
-function withoutSlotName(view) {
+function withoutSlotName(view: unknown): string {
   let text = JSON.stringify(view);
   for (const type of ACCESSORY_SLOTS) {
     text = text.split(SLOT_LABEL[type].toLowerCase()).join('SLOT');
@@ -24,7 +28,10 @@ function withoutSlotName(view) {
 
 test('Slot menu: the four accessories are one choice, "Accessories", whatever the job', () => {
   for (const jobId of JOBS) {
-    const group = slotGroups(makeJobContext(jobId)).find(g => g.slots.includes('ear'));
+    const group = mustFind(
+      slotGroups(makeJobContext(jobId)).find(g => g.slots.includes('ear')),
+      'the accessories group',
+    );
     assert.equal(group.label, 'Accessories', jobId);
     assert.deepEqual(group.slots, ACCESSORY_SLOTS, jobId);
     assert.equal(group.value, 'ear', jobId);
@@ -48,7 +55,7 @@ test('the four accessory slots have the same share, and the Wiki caps at item le
 test('Stat Allocation: the four accessory slots give the same stats, ceilings, tables and chart at every item level and cap', () => {
   for (const jobId of JOBS) {
     const job = makeJobContext(jobId);
-    for (const subs of [job.substats.slice(0, 2), [job.substats.at(-1), null]]) {
+    for (const subs of [job.substats.slice(0, 2), [job.substats[job.substats.length - 1], null]]) {
       for (const ilvl of ITEM_LEVELS) {
         // no sync, then a cap below, at and above the item level
         for (const cap of [null, ilvl - 10, ilvl, ilvl + 10]) {
@@ -69,7 +76,7 @@ test('Stat Allocation: the four accessory slots give the same stats, ceilings, t
 test('real item level 475 accessories of each job: the four slots carry the same main stat and Vitality', () => {
   for (const jobId of JOBS) {
     const job = makeJobContext(jobId);
-    const pieces = gearOf(job).filter(piece => piece.ilvl === 475 && ACCESSORY_SLOTS.includes(piece.type));
+    const pieces = gearOf(job).filter(piece => piece.ilvl === 475 && accessorySlotNames.includes(piece.type));
     const types = new Set(pieces.map(piece => piece.type));
     assert.equal(types.size, 4, `${jobId}: a real item level 475 piece in every accessory slot`);
     const shapes = new Set(pieces.map(piece => `${piece.stats[job.mainKey]}/${piece.stats.vit}`));

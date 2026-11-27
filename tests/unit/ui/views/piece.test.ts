@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { slotGroups, withSub } from '../../../../src/ui/views/piece.ts';
-import { hasNumber, hasParts } from '../../helpers/common.ts';
+import { hasNumber, hasParts, mustFind } from '../../helpers/common.ts';
 import { gamePool } from '../../helpers/exhaustive.js';
 import { makeApp, pieceViewOf } from '../../helpers/views.ts';
 
@@ -34,20 +34,24 @@ test('Piece stats view: every real item level 130 Sage head piece with three sub
   const app = makeApp('SGE', { cap: 123, sync: true });
   const job = app.jobCtx;
   const heads = gamePool(job, { type: 'head', ilvlMin: 130, ilvlMax: 130, lvlMax: 50 }).filter(
-    i => job.substats.filter(s => i.stats[s] > 0).length === 3,
+    i => job.substats.filter(s => (i.stats[s] ?? 0) > 0).length === 3,
   );
   assert.ok(heads.length >= 2);
-  const CAP = { mind: 30, vit: 29, sub: 29 }; // head caps at item level 123: main stat 30, everything else 29
+  const CAP: Record<string, number> = { mind: 30, vit: 29, sub: 29 }; // head caps at item level 123: main stat 30, everything else 29
   for (const head of heads) {
     // the third line is the fixed Direct Hit of Mind-only gear, which Piece stats does not model
     const subs = job.substats
-      .filter(s => head.stats[s] > 0)
-      .sort((a, b) => head.stats[b] - head.stats[a])
+      .filter(s => (head.stats[s] ?? 0) > 0)
+      .sort((a, b) => (head.stats[b] ?? 0) - (head.stats[a] ?? 0))
       .slice(0, 2);
     assert.ok(!subs.includes('dh'), head.name);
     app.piece = { ...app.piece, ilvl: 130, slot: 'head', subs };
     const v = pieceViewOf(app);
-    const want = ['mind', 'vit', ...subs].map(s => [s, head.stats[s], Math.min(head.stats[s], CAP[s] ?? CAP.sub)]);
+    const want = (['mind', 'vit', ...subs] as const).map((s): [string, number, number] => [
+      s,
+      head.stats[s] ?? 0,
+      Math.min(head.stats[s] ?? 0, CAP[s] ?? CAP.sub),
+    ]);
     assert.deepEqual(
       v.rows.map(r => [r.stat, r.raw, r.syn]),
       want,
@@ -65,7 +69,7 @@ test('Piece stats view: every real item level 130 Sage head piece with three sub
       h.stats.mind,
       h.stats.vit,
       ...job.substats
-        .map(s => h.stats[s])
+        .flatMap(s => h.stats[s] ?? [])
         .filter(Boolean)
         .sort((a, b) => b - a),
     ]),
@@ -142,7 +146,10 @@ test('Piece stats: an off-hand is the two-handed value minus the one-handed one,
   const app = makeApp('PLD', { cap: 130, sync: true, level: 100 });
   app.piece = { ...app.piece, ilvl: 170, slot: 'offhand', subs: ['crit', 'det'] };
   const v = pieceViewOf(app);
-  const crit = v.rows.find(r => r.stat === 'crit');
+  const crit = mustFind(
+    v.rows.find(r => r.stat === 'crit'),
+    'the Critical Hit row',
+  );
   assert.ok(hasParts(crit.ownText, 'two-handed', 'one-handed'), crit.ownText);
   assert.ok(hasParts(crit.capText, 'two-handed', 'one-handed'), crit.capText);
   assert.equal(v.slotShare, null);
@@ -160,7 +167,7 @@ test('Piece stats steps: the sentences and headings of the section', () => {
   const body = makeApp('SGE', { level: 100 });
   body.piece = { ...body.piece, slot: 'body' };
   const sync = pieceViewOf(body, 300);
-  assert.ok(hasParts(sync.shareText, 'body', sync.slotShare), sync.shareText);
+  assert.ok(hasParts(sync.shareText, 'body', String(sync.slotShare)), sync.shareText);
   assert.ok(hasParts(sync.ownHead, 'body') && hasNumber(sync.ownHead, 300), sync.ownHead);
   assert.ok(hasNumber(sync.capHead, 123), sync.capHead);
   assert.equal(sync.byLevelText, '');
@@ -168,7 +175,7 @@ test('Piece stats steps: the sentences and headings of the section', () => {
   app.piece = { ...app.piece, slot: 'offhand' };
   const byLevel = pieceViewOf(app);
   assert.ok(byLevel.shareText.length > 0 && byLevel.shareText !== sync.shareText, 'an off-hand has its own share text');
-  assert.ok(hasNumber(byLevel.byLevelText, 90) && hasNumber(byLevel.byLevelText, byLevel.cap), byLevel.byLevelText); // the level and the cap it gives
+  assert.ok(hasNumber(byLevel.byLevelText, 90) && hasNumber(byLevel.byLevelText, String(byLevel.cap)), byLevel.byLevelText); // the level and the cap it gives
 });
 
 /* The math bar's 1st and 2nd substat menus (withSub): a substat holds at most one rank. */
@@ -214,7 +221,7 @@ test('substat ranks: no substat ever appears twice', () => {
 });
 
 test('Slot menu: slots with the same budget share are one choice; a shield job has its own weapon and off-hand', () => {
-  const labels = jobId => slotGroups(makeJobContext(jobId)).map(group => group.label);
+  const labels = (jobId: string) => slotGroups(makeJobContext(jobId)).map(group => group.label);
   const accessories = 'Accessories';
   // shares in per mille: two-handed weapon 140, head, hands, feet 85, body, legs 135, accessories 67 (math.md section 3)
   assert.deepEqual(labels('SGE'), ['Weapon', 'Head / Hands / Feet', 'Body / Legs', accessories]);

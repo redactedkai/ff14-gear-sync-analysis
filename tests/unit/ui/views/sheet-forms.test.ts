@@ -54,7 +54,7 @@ test('Copy sheet: the jobs of the gear group, its own included; Blue Mage copies
     ],
   );
   assert.deepEqual([sage.warning, sage.disabled, sage.buttonText], [null, false, 'Copy sheet']);
-  const blu = copySheetFormView(sheetOf('BLU', [], { level: 80 }), { name: 'x', job: 'BLU' });
+  const blu = copySheetFormView(sheetOf('BLU', [], { level: 80 }), { name: 'x', job: 'BLU', ack: false });
   assert.deepEqual(
     blu.jobs.map(j => j.id),
     ['BLU'],
@@ -62,7 +62,7 @@ test('Copy sheet: the jobs of the gear group, its own included; Blue Mage copies
   assert.equal(blu.level.max, 80);
   // melee is three groups: Samurai copies to Monk only
   assert.deepEqual(
-    copySheetFormView(sheetOf('SAM', []), { name: 'x', job: 'SAM' }).jobs.map(j => j.id),
+    copySheetFormView(sheetOf('SAM', []), { name: 'x', job: 'SAM', ack: false }).jobs.map(j => j.id),
     ['MNK', 'SAM'],
   );
 });
@@ -113,7 +113,7 @@ test('the Copy sheet help: the groups of jobs that copy to each other, the own g
   );
   assert.equal(help.outcomes.length, 2, 'what is kept and what is not');
   assert.ok(hasParts(help.footText, 'Blue Mage', 'Beastmaster'), help.footText);
-  assert.deepEqual(copySheetFormView(sheetOf('SGE', []), { name: 'x', job: 'SGE' }).help, help);
+  assert.deepEqual(copySheetFormView(sheetOf('SGE', []), { name: 'x', job: 'SGE', ack: false }).help, help);
 });
 
 /* The place of each reason: the four messages a New sheet or Copy sheet press can give, as the store gives them. */

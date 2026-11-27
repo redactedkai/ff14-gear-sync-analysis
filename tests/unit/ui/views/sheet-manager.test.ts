@@ -19,8 +19,35 @@ import {
 import { plural } from '../../../../src/ui/text.ts';
 import { localDate, settingsLine, syncShort } from '../../../../src/ui/views/sheet-text.ts';
 import { sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.ts';
+import type { SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
+import type { FigureId } from '../../../../src/ui/views/set-totals.ts';
+import type { ListSort, SetListRow } from '../../../../src/ui/views/sheet-sets.ts';
 
-const loaded = (sheets, extra = {}) => ({ available: true, sheets, unreadable: [], indexProblem: null, ...extra });
+/* A gear set's list row with the figures and points the sort reads; the other fields are filled in. */
+function listRow(
+  name: string,
+  figures: { key: FigureId; text: string; shown?: string }[],
+  points: { key: string; text: string }[] = [],
+): SetListRow {
+  return {
+    id: name,
+    href: '',
+    name,
+    description: '',
+    descriptionLine: '',
+    originText: '',
+    figures: figures.map(figure => ({ label: figure.key, ...figure })),
+    points: points.map(point => ({ label: point.key, ...point })),
+  };
+}
+
+const loaded = (sheets: SavedSheet[], extra: Record<string, unknown> = {}) => ({
+  available: true,
+  sheets,
+  unreadable: [],
+  indexProblem: null,
+  ...extra,
+});
 
 test('the manager: one row per sheet in the given order, with job, settings, set count, dates and game data', () => {
   const bahamut = sheetOf('SGE', [sageSet(), sageSet({ id: 'g_2', name: 'Set 2' })], {
@@ -54,7 +81,7 @@ test('the manager: one row per sheet in the given order, with job, settings, set
 });
 
 test('the manager: the Patch cell names the patch of the data date; a missing commit, a missing date and a date before every patch', () => {
-  const stamped = gameData => ({ ...sheetOf('SGE', [], { id: 's_x' }), gameData });
+  const stamped = (gameData: SavedSheet['gameData']) => ({ ...sheetOf('SGE', [], { id: 's_x' }), gameData });
   const [boundary, noCommit, noDate, noStamp, ancient] = sheetManagerView(
     loaded([
       stamped({ commit: 'd9582a6', date: '2026-09-08' }), // 7.56's release day
@@ -191,7 +218,7 @@ test('the sheet page: a heading starts best first (the GCD lowest first, names A
   );
   // in the stat points view there is no GCD column: every number starts high first
   assert.equal(firstSortDir('gcd', 'points'), 'desc');
-  const none = { key: '', dir: '' };
+  const none: ListSort = { key: '', dir: '' };
   const first = nextListSort(none, 'crit', 'effects');
   assert.deepEqual(first, { key: 'crit', dir: 'desc' });
   const second = nextListSort(first, 'crit', 'effects');
@@ -204,31 +231,28 @@ test('the sheet page: a heading starts best first (the GCD lowest first, names A
 
 test('the sheet page: a hasted GCD column sorts by the hasted GCD, then by the GCD shown in front of it', () => {
   // Monk-style figures: `text` is the hasted GCD (2.22s for all three sets), `shown` leads with the GCD without the haste
-  const row = (name, shown) => ({
-    name,
-    figures: [{ key: 'gcd', text: '2.22s', shown }],
-    points: [],
-  });
+  const row = (name: string, shown: string) => listRow(name, [{ key: 'gcd', text: '2.22s', shown }]);
   const rows = [row('B', '2.47s (2.22s)'), row('A', '2.46s (2.22s)'), row('C', '2.48s (2.22s)')];
-  const names = dir => sortSetRows(rows, { key: 'gcd', dir }, 'effects').map(r => r.name);
+  const names = (dir: ListSort['dir']) => sortSetRows(rows, { key: 'gcd', dir }, 'effects').map(r => r.name);
   assert.deepEqual(names('asc'), ['A', 'B', 'C']);
   assert.deepEqual(names('desc'), ['C', 'B', 'A']);
   // a different hasted GCD still comes first: 2.21s beats 2.22s whatever the number in front
-  const hastier = { name: 'D', figures: [{ key: 'gcd', text: '2.21s', shown: '2.50s (2.21s)' }], points: [] };
+  const hastier = listRow('D', [{ key: 'gcd', text: '2.21s', shown: '2.50s (2.21s)' }]);
   assert.equal(sortSetRows([...rows, hastier], { key: 'gcd', dir: 'asc' }, 'effects')[0].name, 'D');
 });
 
 test('the sheet page: sorting the set rows by the numbers in their figures; ties and no sort keep the saved order', () => {
-  const row = (name, gcd, crit) => ({
-    name,
-    figures: [
-      { key: 'gcd', text: gcd },
-      { key: 'crit', text: crit },
-    ],
-    points: [{ key: 'crit', text: '1,000'.replace(',', '') }],
-  });
+  const row = (name: string, gcd: string, crit: string) =>
+    listRow(
+      name,
+      [
+        { key: 'gcd', text: gcd },
+        { key: 'crit', text: crit },
+      ],
+      [{ key: 'crit', text: '1,000'.replace(',', '') }],
+    );
   const rows = [row('B', '2.48s', '22.9%'), row('A', '2.37s', '14.0%'), row('C', '2.45s', '22.9%')];
-  const names = sort => sortSetRows(rows, sort, 'effects').map(r => r.name);
+  const names = (sort: ListSort) => sortSetRows(rows, sort, 'effects').map(r => r.name);
   assert.deepEqual(names({ key: '', dir: '' }), ['B', 'A', 'C']);
   assert.deepEqual(names({ key: 'gcd', dir: 'asc' }), ['A', 'C', 'B']);
   assert.deepEqual(names({ key: 'crit', dir: 'desc' }), ['B', 'C', 'A']); // B and C tie: the saved order
@@ -241,14 +265,14 @@ test('the sheet page: sorting the set rows by the numbers in their figures; ties
   );
   // a real sheet: the main stat, highest first
   const v = sheetPageView(sheetOf('SGE', [sageSet(), warSet()]));
-  const main = r => Number(r.figures[0].text);
+  const main = (r: SetListRow) => Number(r.figures[0].text);
   const sorted = sortSetRows(v.rows, { key: 'main', dir: 'desc' }, 'effects');
   assert.ok(main(sorted[0]) >= main(sorted[1]));
 });
 
 test('the sheet page: the list draws the figures of the mode in the sort in force; a sort whose column is not on the page is dropped', () => {
   const page = sheetPageView(sheetOf('SGE', [sageSet(), warSet()]));
-  const none = { key: '', dir: '' };
+  const none: ListSort = { key: '', dir: '' };
   const effects = sheetListView(page, none, 'effects');
   assert.deepEqual(
     effects.columns.map(column => column.key),

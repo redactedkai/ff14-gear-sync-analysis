@@ -73,7 +73,7 @@ test('a substat chosen as the other menu holds swaps the two; the 2nd can be emp
 });
 
 test('item level box: a value is held to the slider, a number with a fraction is rounded, text that is no number changes nothing', () => {
-  const range = [100, 200];
+  const range: [number, number] = [100, 200];
   assert.deepEqual(ilvlEdit('250', range), { ilvl: 200 });
   assert.deepEqual(ilvlEdit('50', range), { ilvl: 100 });
   assert.deepEqual(ilvlEdit('150.6', range), { ilvl: 151 });

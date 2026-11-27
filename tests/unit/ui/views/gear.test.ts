@@ -50,7 +50,7 @@ test('gear view: the Slot menu counts the matches of each slot under the other f
   assert.deepEqual([...new Set(slots.map(p => p.group))], [1, 2, 3]);
   app.browse.type = 'ring';
   const rings = gearViewOf(app);
-  assert.equal(rings.shown.length, slots.find(p => p.key === 'ring').count);
+  assert.equal(rings.shown.length, slots.find(p => p.key === 'ring')?.count);
   assert.ok(rings.shown.every(x => x.type === 'ring'));
   // the counts stay those of every slot, so another pill can be picked
   assert.deepEqual(
@@ -66,7 +66,7 @@ test('gear view: the Slot menu counts the matches of each slot under the other f
 test('gear view: the pieces per Gear categories box, whatever boxes are ticked; the chosen slot narrows them', () => {
   const app = makeApp('SGE');
   Object.assign(app.browse, { min: 790, max: 795, lvl: '', exclude: [] });
-  const nonzero = v => Object.fromEntries(Object.entries(v.fromCounts).filter(([, n]) => n));
+  const nonzero = (v: { fromCounts: Record<string, number> }) => Object.fromEntries(Object.entries(v.fromCounts).filter(([, n]) => n));
   const all = gearViewOf(app);
   assert.deepEqual(
     Object.keys(all.fromCounts),
@@ -92,7 +92,7 @@ test('gear view: the pieces per Gear categories box, whatever boxes are ticked; 
 test('gear view: a heading sorts high first, again low first; names A to Z', () => {
   const app = makeApp('SGE');
   Object.assign(app.browse, { min: 100, max: 140, lvl: 50, exclude: [] });
-  const order = (sort, dir) => {
+  const order = (sort: string, dir: string) => {
     app.browse.sort = sort;
     app.browse.dir = dir;
     return gearViewOf(app).shown;
