@@ -6,6 +6,7 @@ import { check, checkNoBadText, expect, poll } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { hasHScroll } from '../../lib/nav.ts';
 import { expectApplyCount, expectMealEmpty, expectPieceEmpty, openSageSet, seedSheet } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 /** Longest main-thread task allowed while a set page's piece menu or Food menu opens and draws its rows, at 4x slower CPU
  * (ms), on a machine as fast as the one it was measured on (CALIBRATION_REFERENCE_MS); a slower or busier machine gets a
@@ -35,14 +36,14 @@ const menuLimit = calibrationMs => MENU_LONG_TASK_MS * Math.max(1, calibrationMs
 /** The menus of a set page draw a long list in steps (ui/views/limit-rows.ts): on open the menu shows a window of rows and
  * the later ones follow, so no task is long at 4x slower CPU; every piece is still there at the end (the footer's count),
  * the search finds the last piece of the list, and the Food menu ends with all its meals. */
-export async function checkMenuSteps(pg) {
+export async function checkMenuSteps(pg: Page) {
   await pg.setViewportSize({ width: 1280, height: 900 });
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);
   const cdp = await pg.context().newCDPSession(pg);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
   // Open `buttonSel`; the row counts of `menuSel` at its first frame and when they stop growing; the longest task
-  const open = (buttonSel, menuSel) =>
+  const open = (buttonSel: string, menuSel: string) =>
     pg.evaluate(
       async ([buttonSelector, menuSelector]) => {
         const frame = () => new Promise(done => requestAnimationFrame(done));
@@ -92,7 +93,7 @@ export async function checkMenuSteps(pg) {
   // Open the menu MENU_RUNS times (shut between); the rows are checked on every run, the longest task is the best of the runs.
   // `limit` is what the longest task may be (ms): the calibration task is timed before and after, and the shorter of the two
   // sets it (menuLimit), so a machine that is busy for the whole step is allowed what it is slower by
-  const openBest = async (buttonSel, menuSel) => {
+  const openBest = async (buttonSel: string, menuSel: string) => {
     let best;
     let calibrationMs = await calibrate();
     for (let run = 0; run < MENU_RUNS; run++) {
@@ -153,7 +154,7 @@ export async function checkMenuSteps(pg) {
 /** The rows of the piece menu and the Food menu are picked through one click handler on the list (the rows carry
  * data-game-id and data-meal): a piece row picks its piece, Empty this slot empties the row, a Unique ring worn in the other
  * ring row is disabled and a click on it does nothing, a meal row picks its meal and No food clears it. */
-export async function checkMenuClicks(pg) {
+export async function checkMenuClicks(pg: Page) {
   await pg.setViewportSize({ width: 1280, height: 900 });
   const AGATE = 49579; // Bygone Brass Ring of Healing, a Unique ring
   const sheet = structuredClone(SET_SHEET);
@@ -222,7 +223,7 @@ export async function checkMenuClicks(pg) {
  * and inside its right edge; Escape closes it; a row's menu button scrolled under the sticky heading stays under it (the
  * header and the column names draw over it); the search box takes the keys, a search with no match says so and Clear
  * search brings the pieces back; a picked piece is what the row shows and a draft of one change that Discard undoes. */
-export async function checkPickMenu(pg) {
+export async function checkPickMenu(pg: Page) {
   await pg.setViewportSize({ width: 960, height: 700 });
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);

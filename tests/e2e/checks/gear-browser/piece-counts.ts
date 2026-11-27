@@ -8,6 +8,7 @@ import { check, expect, poll, same } from '../../lib/expect.ts';
 import { setJob, showTab } from '../../lib/nav.ts';
 import { openSet, seedSheet } from '../../lib/sheets.ts';
 import { DIALOG_SHEET } from '../auto-fill/dialog.ts';
+import type { Page } from 'playwright';
 
 /** Sage's gear of item level 790 to 795 (the highest there is) by box: the Savage set (nine armor pieces and the weapon) and the
  * augmented tomestone set (nine armor pieces and a weapon, each armor piece a hunt seal upgrade and a Savage upgrade, the weapon a
@@ -17,8 +18,8 @@ const TOP_GEAR = { savage_current: 20, tomes_current: 10, hunts: 9, ultimate: 1 
 
 /** Every box of the open menu of `pre` ('b' the browser, 's' the Auto-fill settings): {key: {text}} read from the DOM (the tabs not
  * shown have layout too): the number at the end of its title line. */
-function readBoxes(pg, pre) {
-  return pg.evaluate(menuSel => {
+function readBoxes(pg: Page, pre: string) {
+  return pg.evaluate((menuSel: string) => {
     const result = {};
     for (const input of document.querySelectorAll(`${menuSel} input[data-activity]`)) {
       result[input.dataset.activity] = { text: input.closest('label').querySelector('.from-count').textContent.trim() };
@@ -31,7 +32,7 @@ function readBoxes(pg, pre) {
 const printed = boxes => Object.fromEntries(Object.entries(boxes).map(([key, box]) => [key, box.text]));
 
 /** Wait until every box of the menu of `pre` shows a number (the count has landed). */
-async function waitForCounts(pg, pre) {
+async function waitForCounts(pg: Page, pre: string) {
   await poll(`the ${pre} menu's boxes all show a number`, async () => {
     const boxes = await readBoxes(pg, pre);
     return { ok: ACTIVITY_KEYS.every(key => /\d/.test(boxes[key]?.text ?? '')), got: printed(boxes) };
@@ -39,11 +40,11 @@ async function waitForCounts(pg, pre) {
 }
 
 /** The number a box's text is, from its printed form ("1,380" -> 1380). */
-const numberOf = text => Number(text.replace(/,/g, ''));
+const numberOf = (text: string) => Number(text.replace(/,/g, ''));
 
 /** What the menu of `pre` shows for its numbers: a number on every box, written with thousands separators; `zeroKey` is a box that
  * must be 0. Returns the boxes read. */
-async function checkNumbers(pg, pre, zeroKey) {
+async function checkNumbers(pg: Page, pre: string, zeroKey) {
   await waitForCounts(pg, pre);
   const boxes = await readBoxes(pg, pre);
   check(same(Object.keys(boxes).sort(), [...ACTIVITY_KEYS].sort()), `${pre} menu: the boxes are ${Object.keys(boxes)}`);
@@ -59,7 +60,7 @@ async function checkNumbers(pg, pre, zeroKey) {
 
 /** The menu of `pre` (open, at the Everyday tab) through the whole story: numbers on every box; Item level min 790 (`minId`) changes
  * the numbers to Sage's top gear (the boxes with none show 0); a box ticked and the market board switch change no number. */
-async function checkCounts(pg, pre, minId, wait, relicsAtTop) {
+async function checkCounts(pg: Page, pre: string, minId, wait, relicsAtTop) {
   const before = await checkNumbers(pg, pre, 'gold_saucer');
   check(
     numberOf(before.crafted.text) > 0 && numberOf(before.quests.text) > 0,
@@ -103,7 +104,7 @@ async function checkCounts(pg, pre, minId, wait, relicsAtTop) {
 }
 
 /** The Gear browser's menu: Sage, the browser's own filters. */
-export async function checkGearFromCountsBrowser(pg) {
+export async function checkGearFromCountsBrowser(pg: Page) {
   await showTab(pg, 'browse');
   await setJob(pg, 'SGE');
   await pg.click('#b-from');
@@ -112,7 +113,7 @@ export async function checkGearFromCountsBrowser(pg) {
 }
 
 /** The Auto-fill settings' menu: a Sage set, Gear to search. */
-export async function checkGearFromCountsFill(pg) {
+export async function checkGearFromCountsFill(pg: Page) {
   await seedSheet(pg, DIALOG_SHEET);
   await openSet(pg, DIALOG_SHEET.name, 'Empty');
   await pg.click('#sh-settings');

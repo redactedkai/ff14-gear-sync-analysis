@@ -4,12 +4,13 @@ import { NARROW } from '../../lib/constants.ts';
 import { check, expect } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { expectApplyCount, openSet, seedSheet } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 /** How long, in ms, to wait for a second Auto-fill that a double-click might have started. */
 const SECOND_FILL_WAIT_MS = 1500;
 
 /** Picks the first other piece for the Hands row: a draft with changes. */
-async function pickHands(pg) {
+async function pickHands(pg: Page) {
   await pg.locator('#sh-gear tr[data-row="4"] [data-pick]').click();
   await pg.locator('.pick-menu .same-item[data-game-id]').first().click();
   await expectApplyCount(pg, 1);
@@ -19,7 +20,7 @@ async function pickHands(pg) {
  * ignored, so no Auto-fill starts (it would end in an error on the page, since the bar had changed).  Escape pressed the
  * moment the leave question opens keeps the draft and leaves no error (the question's focus move found the question gone).
  * Page errors fail the step through the runner. */
-export async function checkQuickClicks(pg) {
+export async function checkQuickClicks(pg: Page) {
   await pg.setViewportSize(NARROW);
   await seedSheet(pg, SET_SHEET);
   await openSet(pg, SET_SHEET.name, 'Mine');

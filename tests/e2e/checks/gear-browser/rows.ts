@@ -4,6 +4,7 @@
 import { check, expect } from '../../lib/expect.ts';
 import { browserRows, chooseSlot, fillBrowser, setJob, showTab } from '../../lib/nav.ts';
 import { SHARED_SETUP } from '../../lib/setup.ts';
+import type { Page } from 'playwright';
 
 /* Installed in the page: window.__rowsMismatch() describes the first way the table's rows differ from the Gear browser element's
    `view.shown` (the rows the table should show), or '' when they match. Every row is read the way the template binds it:
@@ -30,8 +31,8 @@ function installRowsCheck() {
         [slotCell.querySelector('.slotname').textContent, item.slotText, 'slot text'],
         [slotCell.querySelector('.x2').hidden, !item.twice, 'x2 mark hidden'],
         [nameCell.title, item.name, 'name title'],
-        [nameSpans.map(span => span.textContent).join('|'), item.nameParts.map(part => part.text).join('|'), 'name parts'],
-        [nameSpans.map(span => span.className).join('|'), item.nameParts.map(part => part.cls).join('|'), 'name part classes'],
+        [nameSpans.map(span => span.textContent).join('|'), item.nameParts.map((part: string) => part.text).join('|'), 'name parts'],
+        [nameSpans.map(span => span.className).join('|'), item.nameParts.map((part: string) => part.cls).join('|'), 'name part classes'],
         [nameCell.querySelector('.hqg').hidden, !item.hq, 'HQ mark hidden'],
         [lvlCell.textContent, String(item.lvl), 'equip level'],
         [ilvlCell.textContent, String(item.ilvl), 'item level'],
@@ -82,7 +83,7 @@ function installRowsCheck() {
  * drawn while it ran (a kept row must not show the item it had before: its name, HQ mark, x2 mark, classes or cells). The
  * actions are sorts (both ways, name, item level, a stat), page buttons (the last, shorter page too), the Slot menu
  * (rings carry the x2 mark), a search typed and cleared, and a job change. Leaves the job, sort and filters as it found them. */
-export async function checkBrowserRowsMatchView(pg) {
+export async function checkBrowserRowsMatchView(pg: Page) {
   await showTab(pg, 'browse');
   await fillBrowser(pg, '', '', '');
   await pg.evaluate(installRowsCheck);
@@ -99,7 +100,7 @@ export async function checkBrowserRowsMatchView(pg) {
     check((await rowCount()) > 0 || label.includes('no match'), `${label}: no rows`);
   };
   const pages = pg.locator('#b-pages');
-  const sort = key => () => pg.click(`#gear-table [data-sort="${key}"]`);
+  const sort = (key: string) => () => pg.click(`#gear-table [data-sort="${key}"]`);
   await watched('sort by Item', sort('name'));
   await watched('sort by Item, the other way', sort('name'));
   await watched('sort by ilvl', sort('ilvl'));

@@ -4,13 +4,14 @@ import { NARROW, STORE_KEY } from '../../lib/constants.ts';
 import { check, expect, poll } from '../../lib/expect.ts';
 import { focusedId, hasHScroll, setNumber, waitSaved } from '../../lib/nav.ts';
 import { seedSheet } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 /** The Sheets tab's dialogs and menus as a user types into them: New sheet shows the range texts (1–100, 1–795) and the
  * default name for the job, a blank name is refused with its reason at the Name label, the box stays empty, and the dialog stays
  * open; Copy sheet refuses a blank name the same way; a dialog's first box takes the focus and Escape gives it back to the button that opened the
  * dialog; the sheet page's switch menu gives the focus to the current sheet; a new set's page shows the breadcrumb and the
  * sheet's settings read-only (item level sync off here; checkSheets has it on). At 960 px. */
-export async function checkSheetForms(pg) {
+export async function checkSheetForms(pg: Page) {
   await pg.setViewportSize(NARROW);
   await pg.click('[data-tab=sheets]');
   await pg.click('#sh-new-first');
@@ -118,7 +119,7 @@ export async function checkSheetForms(pg) {
  * 40: 43) and never raised again, and a cap typed too high is lowered once it commits. The field's own rules (the errors, the
  * ranges, the up arrow at the limit, the settings row keeping its shape) are `tests/stories/sheets/sheet-page.spec.ts`'s and
  * `tests/stories/app/cap-field.spec.ts`'s; the manager's Patch column is `views/sheet-manager`'s. */
-export async function checkSheetCap(pg) {
+export async function checkSheetCap(pg: Page) {
   // saved at level 70 with cap 500: read as 405, the best gear made for level 70 (its weapons)
   const sheet = { v: 1, id: 's_cap', name: 'Cap', description: '', job: 'SGE', level: 70, sync: { on: true, cap: 500 }, sets: [] };
   await seedSheet(pg, { ...sheet, gameData: { commit: 'd9582a6', date: '2026-09-30' }, createdAt: 0, updatedAt: 0 });
@@ -140,7 +141,7 @@ export async function checkSheetCap(pg) {
   await expect(pg.locator('#sh-cap-lowered')).toHaveTextParts([135, 50]);
   await waitSaved(pg, 's => true');
   check(
-    await pg.evaluate(key => JSON.parse(localStorage.getItem(`${key}:sheet:s_cap`)).sync.cap === 135, STORE_KEY),
+    await pg.evaluate((key: string) => JSON.parse(localStorage.getItem(`${key}:sheet:s_cap`)).sync.cap === 135, STORE_KEY),
     'Sheets: the lowered cap was not saved',
   );
   await pg.click('[data-tab=browse]');

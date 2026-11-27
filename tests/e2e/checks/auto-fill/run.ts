@@ -7,12 +7,13 @@ import { afterFrames, runFill } from '../../lib/nav.ts';
 import { checkTotals } from '../../lib/shared-checks.ts';
 import { openSet, seedSheet } from '../../lib/sheets.ts';
 import { pickOption } from '../../lib/select.ts';
+import type { Page } from 'playwright';
 
 /** A set page's Auto-fill when its worker cannot run (ui/solver.ts workerSolver's fallback, main.js): the search runs on the
  * page's thread with the core's numbers and its result can be applied; the Gear to search line and a changed goal are
  * answered too (a settings change searches again); Cancel right after Auto-fill drops the search; the next Auto-fill works; and no
  * worker is left running. The group's page errors are the runner's. */
-export async function checkWorkerFallback(pg) {
+export async function checkWorkerFallback(pg: Page) {
   const sync = { cap: 123, sync: true, level: 50 };
   const [mind, crit] = await Promise.all([coreRecipe('SGE', sync, {}), coreRecipe('SGE', sync, { target: 'crit' })]);
   await seedSheet(pg, FILL_SHEET);
@@ -63,7 +64,7 @@ export async function checkWorkerFallback(pg) {
 /** A set page's Auto-fill on every piece a Sage can wear, at the shared setup's level and cap, with the Auto-fill settings'
  * defaults: the set it suggests, applied, has the Mind the core finds for the same gear in Node (Total row: gear plus
  * the character's base). */
-export async function checkFillRealGear(pg) {
+export async function checkFillRealGear(pg: Page) {
   const want = await coreGear('SGE', { cap: 123, sync: true, level: 50 }, 'mind');
   await seedSheet(pg, FILL_SHEET);
   await openSet(pg, FILL_SHEET.name, 'Empty');

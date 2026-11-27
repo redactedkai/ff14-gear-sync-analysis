@@ -5,6 +5,7 @@ import { check, checkNoBadText, expect, same } from '../../lib/expect.ts';
 import { pieceSheet } from '../../lib/fixtures.ts';
 import { hasHScroll } from '../../lib/nav.ts';
 import { openSet, seedSheets } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 /** The overmeld odds in a set page's materia menu (docs/mechanics/materia.md): an overmeld slot's menu has an "odds" row with
  * one figure per grade column, a guaranteed slot's has none, and a piece that cannot be high quality says its odds are
@@ -12,7 +13,7 @@ import { openSet, seedSheets } from '../../lib/sheets.ts';
  * possible) in its second overmeld slot give 10% for each of the four grades shown, and have no note; its guaranteed slot
  * has no odds row; Axe of the Fury (14756, no high quality) in its first overmeld slot give 12% 48% 60% 72% and the note.
  * Overmeld chips stay locked until the slots before them hold a stone, so those are seeded. */
-export async function checkOvermeldOdds(pg) {
+export async function checkOvermeldOdds(pg: Page) {
   await pg.setViewportSize(NARROW);
   const stone = (stat, grade) => ({ stat, grade });
   await seedSheets(pg, [

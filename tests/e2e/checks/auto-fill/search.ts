@@ -20,11 +20,12 @@ import { checkFromMenu, runFill, setFrom, setNumber, ticked, waitReady } from '.
 import { checkTotals } from '../../lib/shared-checks.ts';
 import { openSet, seedSheet } from '../../lib/sheets.ts';
 import { pickOption } from '../../lib/select.ts';
+import type { Page } from 'playwright';
 
 /** An Auto-fill that leaves a slot empty because no piece of it has an equip level within the Auto-fill settings' Gear to search says
  * why under the bar: Sage has no weapon below level 60 (the lowest equip level in the item data), so an Auto-fill up to equip
  * level 50 leaves the weapon empty and says so; the default (the job's cap) does not. */
-export async function checkEmptySlotNote(pg) {
+export async function checkEmptySlotNote(pg: Page) {
   const low = { ...DIALOG_SHEET, id: 's_low_level', name: 'Level 50 sheet', level: 50 };
   // the set's Auto-fill settings with Gear to search up to equip level 50 (the rest is read as the defaults)
   low.sets = low.sets.map(set => ({ ...set, fillSettings: { searchCriteria: { lvl: 50 } } }));
@@ -41,7 +42,7 @@ export async function checkEmptySlotNote(pg) {
  * switch each change the line "searching N of M pieces" and the answer by what the core finds for the same filters; a
  * filter nothing passes turns the Auto-fill button off with a title; they are saved, kept across a reload, and not shared with the Gear browser's own
  * boxes. */
-export async function checkFillSearch(pg) {
+export async function checkFillSearch(pg: Page) {
   const filter = { expOff: ['ARR', 'HW', 'SB', 'ShB'], ilvlMax: 700 };
   const full = await coreGear('SGE', DIALOG_SYNC, 'crit');
   const noMarket = await coreGear('SGE', DIALOG_SYNC, 'crit', ['crafted'], DEFAULT_EXCLUDE, false);
@@ -196,7 +197,7 @@ const CANCEL_SHEET = {
  * numbers the core finds. Auto-fill and Cancel are clicked in one task, so no reply can arrive between them whatever the
  * machine's speed (a worker answers in a later task); the data (every box under Gear categories, three goal stats, a Target GCD,
  * food) keeps the worker busy when it is ended, but nothing here depends on how long a search takes. */
-export async function checkFillCancel(pg) {
+export async function checkFillCancel(pg: Page) {
   const quick = { target: 'det', tb: '', tb2: '', food: false, gcd: '', exclude: [] };
   const want = await coreRecipe('WAR', { cap: null, sync: false, level: 100 }, quick);
   await seedSheet(pg, CANCEL_SHEET);

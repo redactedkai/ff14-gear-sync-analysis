@@ -7,6 +7,7 @@ import { coreSet } from '../../lib/core.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { checkTotals } from '../../lib/shared-checks.ts';
 import { expectApplyCount, expectMealEmpty, openSageSet, seedSheet } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 /** The seeded Sage sheet's item level sync, as the core takes it (the sheet's own: level 100, item level sync 123). */
 const SAGE_SYNC = { cap: SET_SHEET.sync.cap, sync: SET_SHEET.sync.on, level: SET_SHEET.level };
@@ -23,7 +24,7 @@ function setWithHeadStones(stones, meal = null) {
 /** Picking a stone in the head piece's materia menu: the chip shows the stone, the change waits as a draft, and the Total row is the
  * core's for the head piece with that stone (the first stone of the menu that changes the Total, so the pick cannot pass by adding
  * nothing); Discard puts the Total back. */
-export async function checkMateriaPick(pg) {
+export async function checkMateriaPick(pg: Page) {
   await pg.setViewportSize({ width: 1280, height: 900 });
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);
@@ -72,7 +73,7 @@ export async function checkMateriaPick(pg) {
 
 /** Picking a meal in the Food menu: the Food row names it, the change waits as a draft, and the Total row is the core's for the set
  * with that meal (the menu's first meal; at least one stat differs from the set without it); No food and Discard put the Total back. */
-export async function checkMealPick(pg) {
+export async function checkMealPick(pg: Page) {
   await pg.setViewportSize({ width: 1280, height: 900 });
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);

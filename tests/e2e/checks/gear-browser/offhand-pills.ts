@@ -3,9 +3,10 @@
 import { check, expect } from '../../lib/expect.ts';
 import { setJob, showMath, showTab } from '../../lib/nav.ts';
 import { selectOptions } from '../../lib/select.ts';
+import type { Page } from 'playwright';
 
 /** For White Mage and Black Mage the Gear browser's Slot menu and Piece stats' Slot menu list the Off-hand; for Sage they do not. */
-export async function checkOffhandPills(pg) {
+export async function checkOffhandPills(pg: Page) {
   for (const job of ['WHM', 'BLM']) {
     await setJob(pg, job);
     await showTab(pg, 'browse');

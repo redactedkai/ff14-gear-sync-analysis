@@ -4,11 +4,12 @@ import { columnsDiffer, measureColumns } from '../../lib/columns.ts';
 import { check, expect, same } from '../../lib/expect.ts';
 import { browserRows, chooseSlot, fillBrowser, setCap, setJob, showTab, waitReady } from '../../lib/nav.ts';
 import { SHARED_SETUP } from '../../lib/setup.ts';
+import type { Page } from 'playwright';
 
 /** The browser's page line (owner's pick P1 a, 2026-10-20): Next and a page number show other rows and scroll the
  * table's box to its first row; a slot choice or a sort goes back to page 1; the line keeps its place (and the table its
  * top) whether the key at its right shows or not. Leaves the shared setup as it found it. */
-export async function checkBrowserPages(pg) {
+export async function checkBrowserPages(pg: Page) {
   // every Sage piece: many pages
   await fillBrowser(pg, '', '', '');
   const pages = pg.locator('#b-pages');
@@ -61,7 +62,7 @@ export async function checkBrowserPages(pg) {
  * edge and every row's height are those of the first sort, at the narrowest and the widest window, for a job with a
  * special substat (PLD) and one without (SGE, the shared setup). Sync is on, so some rows have a second line. Leaves the
  * window and the job as it found them. */
-export async function checkBrowserColumnsStay(pg) {
+export async function checkBrowserColumnsStay(pg: Page) {
   const state = () =>
     pg.evaluate(() => {
       const table = document.querySelector('#gear-table');
@@ -132,7 +133,7 @@ export async function checkBrowserColumnsStay(pg) {
  * edges no more. The five windows of docs/engineering/testing.md section 3.1 less the 1536 one, a job with a special
  * substat (PLD) and one without (SGE, the shared setup). The numbers are written into the page's cells, so the step
  * reloads the page to leave it as it found it. */
-export async function checkBrowserFourDigits(pg) {
+export async function checkBrowserFourDigits(pg: Page) {
   const fill = withSecondLine =>
     pg.evaluate(second => {
       for (const cell of document.querySelectorAll('#gear-table tbody td.n')) {

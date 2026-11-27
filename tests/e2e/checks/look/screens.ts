@@ -3,6 +3,7 @@
 import { edgeSheet } from '../sheets/edges.ts';
 import { FILL_SHEET, pieceSheet } from '../../lib/fixtures.ts';
 import { openSet } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 const VIEW_STONES = [
   { stat: 'crit', grade: 12 },
@@ -31,6 +32,6 @@ export function viewSheets() {
 }
 
 /** On the Sheets tab: open the sheet `sheetName`, then its set `setName`; the sheet manager first. */
-export async function openViewSet(pg, sheetName, setName) {
+export async function openViewSet(pg: Page, sheetName: string, setName: string) {
   await openSet(pg, sheetName, setName);
 }

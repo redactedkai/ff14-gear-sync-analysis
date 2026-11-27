@@ -5,12 +5,13 @@ import { check, expect, poll } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { focusedId, runFill } from '../../lib/nav.ts';
 import { openSageSet, seedSheet } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 /** The edit lock while an Auto-fill runs, on the real page (docs/engineering/sheets.md): leaving the running set page by "Leave and
  * cancel the Auto-fill" opens the sheet's page with every control on again (level, item level, IL Sync, New set, Edit, Copy,
  * Delete and the reorder handles, which can be dragged). Which controls the lock turns off, Cancel, and the question's Keep and X
  * are `tests/stories/set-page/set-page.spec.ts`'s ("FillHeld"). A held worker (HOLD_SOLVE) keeps the Auto-fill running. */
-export async function checkEditLock(pg) {
+export async function checkEditLock(pg: Page) {
   await pg.evaluate(() => {
     window.__holdSolve = true;
   });
@@ -52,7 +53,7 @@ export async function checkEditLock(pg) {
  * Save button of its own. Where the focus goes after an Auto-fill result: Apply (Discard if Apply is disabled), with a real search,
  * so the held worker lets it through. The popover's keys, focus, roles and closing are
  * `tests/stories/set-page/settings-popover.spec.ts`'s and `set-page.spec.ts`'s. */
-export async function checkSetPageFocus(pg) {
+export async function checkSetPageFocus(pg: Page) {
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);
 
@@ -69,7 +70,7 @@ export async function checkSetPageFocus(pg) {
   });
   check(popover.goalFirst, 'Goal does not come before Gear to search in the Auto-fill settings');
   check(
-    !popover.buttons.some(text => /auto-fill|save/i.test(text) && text !== 'Close settings'),
+    !popover.buttons.some((text: string) => /auto-fill|save/i.test(text) && text !== 'Close settings'),
     `the popover has no start or Save button: ${popover.buttons}`,
   );
   await pg.keyboard.press('Escape');

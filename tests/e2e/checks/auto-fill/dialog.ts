@@ -7,6 +7,7 @@ import { FILL_SHEET } from '../../lib/fixtures.ts';
 import { runFill } from '../../lib/nav.ts';
 import { expectSelectValue } from '../../lib/select.ts';
 import { checkTotals } from '../../lib/shared-checks.ts';
+import type { Page } from 'playwright';
 
 export const DIALOG_SYNC = { cap: null, sync: false, level: 100 };
 
@@ -22,7 +23,7 @@ export const searchLine = (searched, all) => {
 };
 
 /** Open the Auto-fill settings popover of the open set page if it is closed. */
-export async function openFillSettings(pg) {
+export async function openFillSettings(pg: Page) {
   if (!(await pg.locator('#sh-settings-dialog').isVisible())) {
     await pg.click('#sh-settings');
   }
@@ -31,7 +32,7 @@ export async function openFillSettings(pg) {
 }
 
 /** Wait until the Auto-fill settings saved on the sheet's first set satisfy `test` (the set page saves a change at once). */
-export async function expectSavedFill(pg, sheet, what, test) {
+export async function expectSavedFill(pg: Page, sheet, what: string, test) {
   await poll(`saved Auto-fill settings: ${what}`, async () => {
     const saved = await pg.evaluate(
       ([key, id]) => JSON.parse(localStorage.getItem(`${key}:sheet:${id}`))?.sets[0]?.fillSettings ?? null,
@@ -43,7 +44,7 @@ export async function expectSavedFill(pg, sheet, what, test) {
 
 /** Auto-fill from the bar's button (the settings popover stays open until it is pressed), check the suggestion's Total row against the core's `want` (coreRecipe's shape),
  * run `more` while the result waits, then Discard. */
-export async function checkFilled(pg, what, want, more = null) {
+export async function checkFilled(pg: Page, what: string, want, more = null) {
   await openFillSettings(pg);
   await runFill(pg);
   await checkTotals(pg, what, want.totals);
@@ -55,7 +56,7 @@ export async function checkFilled(pg, what, want, more = null) {
 }
 
 /** The dialog's boxes against `want` ({id: value}): selects and number boxes by their value, switches by state. */
-export async function expectDialog(pg, want) {
+export async function expectDialog(pg: Page, want) {
   for (const [id, value] of Object.entries(want)) {
     const box = pg.locator(`#${id}`);
     if (typeof value === 'boolean') {

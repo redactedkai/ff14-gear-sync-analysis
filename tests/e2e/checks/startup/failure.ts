@@ -7,14 +7,16 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.ts';
 import { OUT, PAGE_PATH, STORE_KEY } from '../../lib/constants.ts';
-import { check, expect } from '../../lib/expect.ts';
+import { check, expect, mustFind } from '../../lib/expect.ts';
 import { afterFrames, newPage } from '../../lib/nav.ts';
+import type { ShellRecord } from '../../lib/page-globals.d.ts';
+import type { Page } from 'playwright';
 
 // where the app's script begins: the first <script> after the style (a later "<script>" is text inside the bundle)
-const APP_SCRIPT_START = html => html.indexOf('<script>', html.indexOf('</style>')) + '<script>'.length;
+const APP_SCRIPT_START = (html: string) => html.indexOf('<script>', html.indexOf('</style>')) + '<script>'.length;
 
 /** A copy of the built page with `edit(html)` applied, written as startup-<name>.html; returns its file URL. */
-function variantUrl(name, edit) {
+function variantUrl(name: string, edit: (html: string) => string) {
   const file = resolve(OUT, `startup-${name}.html`);
   writeFileSync(file, edit(readFileSync(PAGE_PATH, 'utf8')), 'utf8');
   return pathToFileURL(file).href;
@@ -22,7 +24,7 @@ function variantUrl(name, edit) {
 
 /** A script text, put first in the app's script, that makes the render of the element `tag` throw a ReferenceError naming `missing`
  * (no bundle code is edited: customElements.define is patched ahead of the bundle). */
-const brokenRender = (tag, missing) => `{
+const brokenRender = (tag: string, missing: string) => `{
   const define = customElements.define.bind(customElements);
   customElements.define = (name, constructor, options) => {
     if (name === ${JSON.stringify(tag)}) {
@@ -38,18 +40,19 @@ const brokenRender = (tag, missing) => `{
 const BROKEN_SHEETS_SCREEN = brokenRender('gsa-sheets-screen', 'sheetsMissing');
 
 /** The copy with a top-level throw first in the app's script: nothing of the app runs. */
-const throwing = html => {
+const throwing = (html: string) => {
   const at = APP_SCRIPT_START(html);
   return `${html.slice(0, at)}throw new Error('injected failure (smoke test)');${html.slice(at)}`;
 };
 
 /** The copy cut after `keep(html)` characters. */
-const cut = keep => html => html.slice(0, keep(html));
+const cut = (keep: (html: string) => number) => (html: string) => html.slice(0, keep(html));
 
 /** A new page of the group's context (so with its saved data), or, when `init` is given, of a new context that runs `init`
  * first in every page. Returns {page, close}. */
-async function openPage(pg, init) {
-  const context = init ? await pg.context().browser().newContext() : pg.context();
+async function openPage(pg: Page, init?: (() => void) | string) {
+  const browser = mustFind(pg.context().browser(), 'the browser of the page');
+  const context = init ? await browser.newContext() : pg.context();
   if (init) {
     await context.addInitScript(init);
   }
@@ -58,12 +61,12 @@ async function openPage(pg, init) {
 }
 
 /** Open `url`, wait for the message and return what it says: {heading, error}. */
-async function failedStart(page, url) {
+async function failedStart(page: Page, url: string) {
   await page.goto(url);
   await expect(page.locator('#startfail')).toBeVisible();
   return {
-    heading: (await page.locator('#startfail h2').textContent()).trim(),
-    error: (await page.locator('#startfail-error').textContent()).trim(),
+    heading: mustFind(await page.locator('#startfail h2').textContent(), 'the heading of the message').trim(),
+    error: mustFind(await page.locator('#startfail-error').textContent(), 'the error text of the message').trim(),
   };
 }
 
@@ -76,7 +79,7 @@ const SEEDED = {
 const FOREIGN = { 'other-app': 'keep', [`${STORE_KEY}0`]: 'keep too' }; // another page's key that starts like ours
 
 /** A healthy load shows no message (the group's own page, loaded by the runner), and the page itself shows. */
-export async function checkStartupHealthy(pg) {
+export async function checkStartupHealthy(pg: Page) {
   check((await pg.locator('#startfail').count()) === 0, 'a healthy page shows the failed-to-start message');
   check((await pg.locator('#boot').count()) === 0, 'the boot shell is still in a page that has started');
   check(await pg.locator('[data-tab=sheets]').isVisible(), 'the healthy page is not showing');
@@ -85,7 +88,7 @@ export async function checkStartupHealthy(pg) {
 /** A throw in the app's script: the message shows (blank page) with the error's text. An error while an element draws, in the page's
  * root or in a screen: the same message, the rest of the page hidden. A file cut inside the style or inside the app's script: the
  * message shows. */
-export async function checkStartupFailures(pg) {
+export async function checkStartupFailures(pg: Page) {
   const { page, close } = await openPage(pg);
   try {
     const blank = await failedStart(page, variantUrl('throw', throwing));
@@ -95,7 +98,7 @@ export async function checkStartupFailures(pg) {
 
     // an error while the page is built, in a known spot: the Sheets screen's element (a Lit element, drawn in a microtask after the app's
     // script) gets a render that first calls a function nobody defines; the patch of customElements.define runs ahead of the bundle
-    const partUrl = variantUrl('part', html => {
+    const partUrl = variantUrl('part', (html: string) => {
       const at = APP_SCRIPT_START(html);
       return `${html.slice(0, at)}${BROKEN_SHEETS_SCREEN}${html.slice(at)}`;
     });
@@ -105,7 +108,7 @@ export async function checkStartupFailures(pg) {
     check(!(await page.locator('[data-tab=sheets]').isVisible()), 'a partly built page hides the rest of the page');
 
     // the same when the page's root element itself fails to draw: no start marker, the error's text
-    const rootUrl = variantUrl('root', html => {
+    const rootUrl = variantUrl('root', (html: string) => {
       const at = APP_SCRIPT_START(html);
       return `${html.slice(0, at)}${brokenRender('gsa-app', 'rootMissing')}${html.slice(at)}`;
     });
@@ -142,13 +145,18 @@ export async function checkStartupFailures(pg) {
       const addListener = window.addEventListener.bind(window);
       const removeListener = window.removeEventListener.bind(window);
       const delivering = new Map();
-      window.addEventListener = (type, listener, options) => {
+      window.addEventListener = (
+        type: string,
+        listener: EventListenerOrEventListenerObject,
+        options?: boolean | AddEventListenerOptions,
+      ) => {
         if (type !== 'unhandledrejection') {
           addListener(type, listener, options);
           return;
         }
-        const afterCheck = event => {
-          const deliver = () => setTimeout(() => setTimeout(() => listener(event), 0), 0);
+        const afterCheck = (event: Event) => {
+          const deliverEvent = () => (typeof listener === 'function' ? listener(event) : listener.handleEvent(event));
+          const deliver = () => setTimeout(() => setTimeout(deliverEvent, 0), 0);
           if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', deliver);
           } else {
@@ -158,7 +166,8 @@ export async function checkStartupFailures(pg) {
         delivering.set(listener, afterCheck);
         addListener(type, afterCheck, options);
       };
-      window.removeEventListener = (type, listener, options) => removeListener(type, delivering.get(listener) ?? listener, options);
+      window.removeEventListener = (type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions) =>
+        removeListener(type, delivering.get(listener) ?? listener, options);
     });
     try {
       const got = await failedStart(late.page, partUrl);
@@ -168,8 +177,8 @@ export async function checkStartupFailures(pg) {
     }
 
     const cuts = {
-      'inside the style': cut(html => html.indexOf('<style>') + 1000),
-      "inside the app's script": cut(html => html.length - 300),
+      'inside the style': cut((html: string) => html.indexOf('<style>') + 1000),
+      "inside the app's script": cut((html: string) => html.length - 300),
     };
     for (const [what, edit] of Object.entries(cuts)) {
       const got = await failedStart(page, variantUrl('cut', edit));
@@ -186,7 +195,7 @@ const STARTED_MARKER = 'document.documentElement.dataset.started=""';
 
 /** The copy without the statement that marks the page as started: every script runs and throws nothing, but the page never
  * says it finished. */
-const withoutStartMarker = html => {
+const withoutStartMarker = (html: string) => {
   if (!html.includes(STARTED_MARKER)) {
     throw new Error('the page has no started-marker statement to remove');
   }
@@ -194,7 +203,7 @@ const withoutStartMarker = html => {
 };
 
 /** A page whose start marker is missing and that threw no error: the message still shows, saying the page was not built. */
-export async function checkStartupMarkerMissing(pg) {
+export async function checkStartupMarkerMissing(pg: Page) {
   const { page, close } = await openPage(pg);
   try {
     const got = await failedStart(page, variantUrl('nomarker', withoutStartMarker));
@@ -209,15 +218,16 @@ export async function checkStartupMarkerMissing(pg) {
 /** The start marker is set only once the page's root element has drawn: a patch of customElements.define from before the page's scripts
  * reads the marker as `<gsa-app>` draws (absent), and it is set after the page has loaded. A marker set before the start would claim
  * a start that has not happened. */
-export async function checkStartupMarkerAfterStart(pg) {
+export async function checkStartupMarkerAfterStart(pg: Page) {
   const { page, close } = await openPage(pg, () => {
-    window.__markerAt = [];
+    const markerAt: boolean[] = [];
+    window.__markerAt = markerAt;
     const define = customElements.define.bind(customElements);
     customElements.define = (name, elementClass, options) => {
       if (name === 'gsa-app') {
         const render = elementClass.prototype.render;
         elementClass.prototype.render = function () {
-          window.__markerAt.push('started' in document.documentElement.dataset);
+          markerAt.push('started' in document.documentElement.dataset);
           return render.call(this);
         };
       }
@@ -227,7 +237,7 @@ export async function checkStartupMarkerAfterStart(pg) {
   try {
     await page.goto(pathToFileURL(PAGE_PATH).href);
     await expect(page.locator('[data-tab=sheets][aria-current=page]')).toBeVisible();
-    const markerAt = await page.evaluate(() => window.__markerAt);
+    const markerAt = await page.evaluate(() => window.__markerAt ?? []);
     check(markerAt.length >= 1, `the root's draws seen: ${JSON.stringify(markerAt)}`);
     check(!markerAt[0], 'the start marker was already set when the root drew for the first time');
     check(await page.evaluate(() => 'started' in document.documentElement.dataset), 'the started page has no start marker');
@@ -238,7 +248,7 @@ export async function checkStartupMarkerAfterStart(pg) {
 
 /** Reset: Cancel keeps every key; Delete removes the page's keys (the settings key and every key that starts with it and a
  * colon) and no other page's, then reloads. */
-export async function checkStartupReset(pg) {
+export async function checkStartupReset(pg: Page) {
   const { page, close } = await openPage(pg);
   // the smoke runner's own dev flag (init-scripts.mjs NO_UNLOAD_GUARD) is not one of the page's saved data
   const keys = async () => (await page.evaluate(() => Object.keys(localStorage).sort())).filter(key => key !== UNLOAD_GUARD_OFF_KEY);
@@ -275,7 +285,7 @@ export async function checkStartupReset(pg) {
 }
 
 /** A browser that does not let the page read its storage: the message says so and has no Reset button. */
-export async function checkStartupBlockedStorage(pg) {
+export async function checkStartupBlockedStorage(pg: Page) {
   const { page, close } = await openPage(pg, () =>
     Object.defineProperty(window, 'localStorage', {
       get() {
@@ -307,32 +317,39 @@ const SHELL_TABS = [
  * tab's loading line) shows from the first frame until the page has started and is gone after, nothing of the page shows
  * beside it, and the page that replaces it has its tab bar in the same place. The CPU is slowed 4x so the shell stays up long
  * enough to be seen. */
-export async function checkStartupShell(pg) {
+export async function checkStartupShell(pg: Page) {
   // the init script as text, so the settings key and the saved state go into it
-  const watchShell = (key, saved) => {
+  const watchShell = (key: string, saved: string) => {
     localStorage.setItem(key, saved);
-    window.__shell = { shown: false, selected: '', line: '', title: '', leaked: '' };
-    const rectOf = el => {
-      const box = el.getBoundingClientRect();
+    const record: ShellRecord = { shown: false, selected: '', line: '', title: '', leaked: '' };
+    window.__shell = record;
+    const rectOf = (element: Element) => {
+      const box = element.getBoundingClientRect();
       return [box.x, box.y, box.width, box.height].map(n => Math.round(n * 10) / 10);
     };
     const watch = () => {
-      const shell = document.querySelector('#boot');
+      const shell = document.querySelector<HTMLElement>('#boot');
       if (shell && shell.offsetParent !== null) {
+        const loadLine = shell.querySelector('.bootload');
+        const title = shell.querySelector('h1');
+        const tabBar = shell.querySelector('nav.tabs');
+        if (!loadLine || !title || !tabBar) {
+          throw new Error('the boot shell lacks its loading line, title or tab bar');
+        }
         const chosen = [...shell.querySelectorAll('[data-boot]')].filter(b => getComputedStyle(b).fontWeight === '600');
-        window.__shell.shown = true;
-        window.__shell.selected = chosen.map(b => b.textContent.trim()).join(',');
-        window.__shell.line = getComputedStyle(shell.querySelector('.bootload'), '::after').content;
-        window.__shell.title = shell.querySelector('h1').textContent;
-        window.__shell.bar = rectOf(shell.querySelector('nav.tabs'));
+        record.shown = true;
+        record.selected = chosen.map(b => (b.textContent ?? '').trim()).join(',');
+        record.line = getComputedStyle(loadLine, '::after').content;
+        record.title = title.textContent ?? '';
+        record.bar = rectOf(tabBar);
         // anything of the page itself painted beside the shell
         const root = document.querySelector('.wrap');
         if (root && getComputedStyle(root).display !== 'none') {
-          window.__shell.leaked = 'the page root';
+          record.leaked = 'the page root';
         }
         const panel = [...document.querySelectorAll('.tab')].find(tab => tab.getClientRects().length > 0);
         if (panel) {
-          window.__shell.leaked = `the ${panel.id} panel`;
+          record.leaked = `the ${panel.id} panel`;
         }
       }
       requestAnimationFrame(watch);
@@ -351,14 +368,18 @@ export async function checkStartupShell(pg) {
       await page.goto(pathToFileURL(PAGE_PATH).href + hash);
       await expect(page.locator(`[data-tab=${tab}][aria-current=page]`)).toBeVisible();
       await expect(page.locator('#boot')).toHaveCount(0);
-      const shell = await page.evaluate(() => window.__shell);
+      const shell = mustFind(await page.evaluate(() => window.__shell), 'the boot shell record');
       check(shell.shown, `${what}: the boot shell was never painted before the page started`);
       check(shell.selected === label, `${what}: the boot shell's selected tab: '${shell.selected}', expected '${label}'`);
       check(shell.line === line, `${what}: the boot shell's loading line: ${shell.line}`);
       check(shell.title === 'Gear Sync Analysis', `${what}: the boot shell's title: '${shell.title}'`);
       check(shell.leaked === '', `${what}: ${shell.leaked} was painted while the boot shell showed`);
       const live = await page.evaluate(() => {
-        const box = document.querySelector('.wrap nav.tabs').getBoundingClientRect();
+        const tabBar = document.querySelector('.wrap nav.tabs');
+        if (!tabBar) {
+          throw new Error('no tab bar in the page');
+        }
+        const box = tabBar.getBoundingClientRect();
         return [box.x, box.y, box.width, box.height].map(n => Math.round(n * 10) / 10);
       });
       check(JSON.stringify(live) === JSON.stringify(shell.bar), `${what}: the tab bar moved from ${shell.bar} (shell) to ${live} (page)`);

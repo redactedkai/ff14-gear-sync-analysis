@@ -6,6 +6,7 @@ import { check, expect, same, stepRecord } from '../../lib/expect.ts';
 import { runFill, setNumber } from '../../lib/nav.ts';
 import { seedSheets } from '../../lib/sheets.ts';
 import { judge, parseComputed, probeText, probeTheme, readStyles, tokenColor, tokensFor } from '../../lib/visual.ts';
+import type { Page } from 'playwright';
 
 /** Probes of the theme checks: `named` are `{ name, selector }` elements whose text must reach WCAG AA (an `optional` one may be
  * missing); `surfaces` are `{ name, selector, token }` elements whose background is the token's color. */
@@ -115,7 +116,7 @@ const THEME_COMBINATIONS = [
  * stylesheet's for the scheme shown (read from src/styles/tokens.css, not from the page), the body and the listed surfaces are painted
  * in them, and every probed text reaches WCAG AA against the background it sits on (4.5, large text 3). Screenshots of the two
  * system settings go to the output folder. */
-async function inEveryTheme(pg, screenName, seen) {
+async function inEveryTheme(pg: Page, screenName: string, seen) {
   const screen = THEME_SCREENS[screenName];
   const css = readStyles();
   const tokens = { light: tokensFor(css, 'light'), dark: tokensFor(css, 'dark') };
@@ -135,7 +136,7 @@ async function inEveryTheme(pg, screenName, seen) {
     // the tokens, and the body and surfaces painted with them
     const shown = await pg.evaluate(probeTheme, { names, surfaces: screen.surfaces });
     // a computed custom property is written the way the browser prints numbers (.18 for 0.18)
-    const printed = text => text.replace(/0\./g, '.');
+    const printed = (text: string) => text.replace(/0\./g, '.');
     const wrongTokens = names.filter(name => printed(shown.tokens[name]) !== printed(tokens[scheme][name]));
     check(
       !wrongTokens.length,
@@ -144,8 +145,8 @@ async function inEveryTheme(pg, screenName, seen) {
         .map(n => `${n} ${JSON.stringify(printed(shown.tokens[n]))} (want ${JSON.stringify(printed(tokens[scheme][n]))})`)
         .join('; ')}`,
     );
-    const rgbOf = token => tokenColor(tokens[scheme][token]).slice(0, 3);
-    const isColor = (text, token) => same(parseComputed(text)?.slice(0, 3), rgbOf(token));
+    const rgbOf = (token: string) => tokenColor(tokens[scheme][token]).slice(0, 3);
+    const isColor = (text: string, token: string) => same(parseComputed(text)?.slice(0, 3), rgbOf(token));
     check(
       isColor(shown.body, '--bg'),
       `theme (${where}): the page background is ${shown.body}, not ${scheme} --bg ${tokens[scheme]['--bg']}`,
@@ -197,7 +198,7 @@ async function inEveryTheme(pg, screenName, seen) {
  * a lowered cap's note, a set page with an Auto-fill suggestion, its materia menu (an overmeld slot, with the odds row) and the New
  * sheet dialog with a field note and an error line. The stylesheet itself is checked for literal colors in
  * tests/unit/styles/theme-tokens.test.ts. */
-export async function checkThemes(pg) {
+export async function checkThemes(pg: Page) {
   const seen = new Set(); // the known contrast findings that happened (KNOWN_LOW_CONTRAST), as "id|scheme"
   await seedSheets(pg, viewSheets());
   await pg.click('[data-tab=sheets]');

@@ -4,6 +4,7 @@ import { openViewSet, viewSheets } from './screens.ts';
 import { axeViolations, splitKnown } from '../../lib/axe.ts';
 import { check, expect, stepRecord } from '../../lib/expect.ts';
 import { seedSheets } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 // TODO: each entry goes when the page is fixed: names for the drag handles, an h4 before the materia menu title, a <main> around
 // the page, and the visible text inside the two aria-labels.
@@ -20,7 +21,7 @@ const KNOWN_AXE = [
 
 /** Runs axe on the open screen `name` and records what it finds: a failed check for each new violation (rule, level, and the
  * first elements), a KNOWN FAILURE line for each known one. `seen` collects the KNOWN_AXE entries that happened. */
-async function checkScreen(pg, name, seen) {
+async function checkScreen(pg: Page, name: string, seen) {
   const { fresh, matched } = splitKnown(await axeViolations(pg), KNOWN_AXE);
   for (const entry of matched) {
     seen.add(entry);
@@ -39,7 +40,7 @@ async function checkScreen(pg, name, seen) {
 }
 
 /** Opens math sub-tab `sub` ('piece', 'gcd' or 'tiers'). */
-async function openMathTab(pg, sub) {
+async function openMathTab(pg: Page, sub) {
   await pg.click(`[data-sub=${sub}]`);
   await expect(pg.locator(`#tab-${sub}`)).toBeVisible();
 }
@@ -47,7 +48,7 @@ async function openMathTab(pg, sub) {
 /** axe-core's rules on the Sheets list, the New sheet dialog, a sheet's page, a set page and its materia menu, the Gear
  * browser with its Job menu open, and the three Math sub-tabs, in the dark scheme (light is not checked for now). The page has
  * no iframes, so one run of the injected script covers each state. */
-export async function checkAccessibility(pg) {
+export async function checkAccessibility(pg: Page) {
   const seen = new Set(); // the KNOWN_AXE entries that happened
   await pg.emulateMedia({ colorScheme: 'dark' });
   await seedSheets(pg, viewSheets());

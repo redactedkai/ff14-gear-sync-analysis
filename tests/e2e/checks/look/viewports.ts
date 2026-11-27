@@ -6,11 +6,12 @@ import { check, expect, placedByZag, poll, stepRecord } from '../../lib/expect.t
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { hasHScroll, runFill, showMath } from '../../lib/nav.ts';
 import { expectPieceEmpty, openSageSet, seedSheet, seedSheets, sheetNames } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 /** Rules that switch at a width, each with a window one pixel either side (testing.md section 3.1): the set page's column
  * widths (72 px for the stat columns up to 1099 px, 80 from 1100), and Piece stats' two panels (one column up to 1299 px,
  * two from 1300). No sideways page scroll at any of the four widths. */
-export async function checkBreakpoints(pg) {
+export async function checkBreakpoints(pg: Page) {
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);
   const statColumn = () => pg.locator('#sh-gear thead th[data-col="crit"]').evaluate(th => Math.round(th.getBoundingClientRect().width));
@@ -73,7 +74,7 @@ const probeSetBoxes = () => {
     return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
   };
   const names = document.querySelector('#sh-gear thead th');
-  const centerHit = (el, selector) => {
+  const centerHit = (el, selector: string) => {
     const r = el.getBoundingClientRect();
     return Boolean(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest(selector));
   };
@@ -92,7 +93,7 @@ const probeSetBoxes = () => {
 };
 
 /** In the page: the box of the open menu `selector` and the sticky header's bottom edge. */
-const probeMenu = selector => {
+const probeMenu = (selector: string) => {
   const r = document.querySelector(selector).getBoundingClientRect();
   return {
     top: r.top,
@@ -108,7 +109,7 @@ const probeMenu = selector => {
 /** Assert the width rules of one screen at the window `vp` ([name, width, height]): no sideways scroll (the page's
  * scrollWidth within the window's innerWidth), and the container as wide as the documented cap allows, min(1280, the
  * page's width less its side padding), centered. */
-async function checkWidths(pg, vp, screenName) {
+async function checkWidths(pg: Page, vp, screenName: string) {
   const w = await pg.evaluate(probeWidths);
   const where = `${vp[0]} (${vp[1]} x ${vp[2]}), ${screenName}`;
   check(w.scroll <= w.inner, `viewport ${where}: scrollWidth ${w.scroll} is more than innerWidth ${w.inner}`);
@@ -129,7 +130,7 @@ const KNOWN_MENU_OVERFLOW = new Map();
 
 /** Assert an open menu `selector` fits the window and stays below the sticky header (the piece menu check of checkPickMenu, here at
  * every window). */
-async function checkMenuFits(pg, vp, what, selector, seen) {
+async function checkMenuFits(pg: Page, vp, what: string, selector: string, seen) {
   const m = await pg.evaluate(probeMenu, selector);
   const where = `${vp[0]} (${vp[1]} x ${vp[2]}), ${what}`;
   check(
@@ -157,7 +158,7 @@ async function checkMenuFits(pg, vp, what, selector, seen) {
 
 /** Scroll a set page so the row `selector` sits just under the sticky header and the column names: the most room a menu opened
  * from the row can have below it, the same at every run (a click would scroll the row to wherever it first shows). */
-async function alignRowUnderHeader(pg, selector) {
+async function alignRowUnderHeader(pg: Page, selector: string) {
   // the header's height and the column names' place settle after a window resize, so scroll again until the scroll position
   // holds still (a row near the page's end cannot reach the top: the page stops at its end, which is the most room it has)
   await pg.evaluate(async rowSelector => {
@@ -178,7 +179,7 @@ async function alignRowUnderHeader(pg, selector) {
 
 /** Press Tab from the set page's breadcrumb until the focus is on the element `id` (at most `limit` presses), and say whether it
  * got there with the element in view (the point at its center belongs to it, not to the sticky header over it). */
-async function tabTo(pg, id, limit = 60) {
+async function tabTo(pg: Page, id: string, limit = 60) {
   for (let i = 0; i < limit; i++) {
     await pg.keyboard.press('Tab');
     const at = await pg.evaluate(() => {
@@ -200,7 +201,7 @@ async function tabTo(pg, id, limit = 60) {
  * 1280 px cap and the page's width allow, centered; each menu inside the window and below the sticky header; the column names
  * below the sticky header at the top and, scrolled to the bottom, the header and the column names still on top of the rows; and
  * the Tab key reaching Auto-fill, then (a piece picked by hand) Apply and Discard, each in view. */
-export async function checkViewports(pg) {
+export async function checkViewports(pg: Page) {
   const seen = new Set(); // the known menu overflows that happened (KNOWN_MENU_OVERFLOW)
   await seedSheets(pg, viewSheets());
   await pg.setViewportSize({ width: VIEWPORTS[0][1], height: VIEWPORTS[0][2] });

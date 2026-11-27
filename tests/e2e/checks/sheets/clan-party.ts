@@ -6,6 +6,7 @@ import { pieceSheet } from '../../lib/fixtures.ts';
 import { hasHScroll } from '../../lib/nav.ts';
 import { pickOption } from '../../lib/select.ts';
 import { seedSheet } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 // Warrior (a Strength job), one gear set holding the Ironworks head piece (game id 9901), level 100, no item level sync
 const WAR_SHEET = pieceSheet('s_clan', 'Clan check', 'WAR', 2, 9901, []);
@@ -16,7 +17,7 @@ const WAR_SHEET = pieceSheet('s_clan', 'Clan check', 'WAR', 2, 9901, []);
  * boxes' names, entries, height, widths and the line's place are `sheet-page.spec.ts`'s; the clan's and the roles' own numbers are
  * `core/set.bonuses`', `views/set-totals.bonuses`' and `sheets/bonus-options`'; keeping them across a reload is
  * `sheets/storage.clan-party`'s and `store/sheets-actions.clan-party`'s. */
-export async function checkClanParty(pg) {
+export async function checkClanParty(pg: Page) {
   await pg.setViewportSize(NARROW);
   await seedSheet(pg, WAR_SHEET);
   await pg.click('[data-tab=sheets]');

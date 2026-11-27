@@ -11,6 +11,7 @@ import { check, expect, sleep } from '../../lib/expect.ts';
 import { FILL_SHEET, SET_SHEET } from '../../lib/fixtures.ts';
 import { newPage, waitReady } from '../../lib/nav.ts';
 import { seedSheets } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 const FOUR = '4px 4px 4px 4px'; // the one radius: fields, buttons, panels, tables, menus, dialogs
 
@@ -25,8 +26,8 @@ const RADII = {
 };
 
 /** The four computed corner radii of the first element matching `selector`, as "tl tr br bl". */
-const radiiAt = (pg, selector) =>
-  pg.evaluate(sel => {
+const radiiAt = (pg: Page, selector: string) =>
+  pg.evaluate((sel: string) => {
     const el = document.querySelector(sel);
     if (!el) {
       return 'not found';
@@ -36,7 +37,7 @@ const radiiAt = (pg, selector) =>
   }, selector);
 
 /** Check every row of RADII[screen] on the open screen. */
-async function checkRadiiOf(pg, screen) {
+async function checkRadiiOf(pg: Page, screen) {
   for (const [surface, selector, want] of RADII[screen]) {
     const got = await radiiAt(pg, selector);
     check(got === want, `radius: ${surface} (${selector}) is ${got}, not ${want}`);
@@ -63,7 +64,7 @@ async function pixelsOf(reader, png, points) {
  * corner, so the rows scrolling under it never show their square side borders through the curve; the table's bottom
  * corners are rounded; every surface has the documented radius. Each assertion fails when its CSS is taken out (verified
  * on a broken copy of the page). */
-export async function checkRadii(pg) {
+export async function checkRadii(pg: Page) {
   const ctx = await pg
     .context()
     .browser()

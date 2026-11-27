@@ -16,6 +16,7 @@ import { check, checkNoBadText, expect, poll, same } from '../../lib/expect.ts';
 import { runFill, setNumber, ticked, waitReady } from '../../lib/nav.ts';
 import { openSet, seedSheet, reloadAtSheets } from '../../lib/sheets.ts';
 import { pickOption, selectOptions } from '../../lib/select.ts';
+import type { Page } from 'playwright';
 
 /** The checked radio of the Target GCD mode (value exact or min). */
 const MODE_CHECKED = '#sh-settings-dialog input[name="s-gcd-mode"]:checked';
@@ -23,7 +24,7 @@ const MODE_CHECKED = '#sh-settings-dialog input[name="s-gcd-mode"]:checked';
 /** The goal part of the Auto-fill settings dialog: Maximize, the tiebreaks, Spare points to tiebreaks, Materia and the Target
  * GCD, each wired (it saves into the set's fillSettings and changes what Auto-fill finds, against the core), and all of it
  * kept across a reload. A change under a waiting Auto-fill result drops the result. Food and the filters are in the next steps. */
-export async function checkFillGoal(pg) {
+export async function checkFillGoal(pg: Page) {
   const fill = fields => coreRecipe('SGE', DIALOG_SYNC, fields);
   const crit = { target: 'crit', food: false }; // the goal's own steps run with Food off (it is on by default); checkFillFood has it on
   const [free, noMelds, tier, plain, gcd, gcdMin] = await Promise.all([
@@ -108,7 +109,7 @@ export async function checkFillGoal(pg) {
   await expect(pg.locator('#s-rank-pop')).toBeVisible();
   await poll('the Spare points note right edge on the ? button, inside the dialog', async () => {
     const edges = await pg.evaluate(() => {
-      const right = selector => document.querySelector(selector).getBoundingClientRect().right;
+      const right = (selector: string) => document.querySelector(selector).getBoundingClientRect().right;
       return { note: right('#s-rank-pop'), button: right('#sh-settings-dialog .shelp'), dialog: right('#sh-settings-dialog') };
     });
     return { ok: Math.abs(edges.note - edges.button) <= 1 && edges.note <= edges.dialog, got: edges };

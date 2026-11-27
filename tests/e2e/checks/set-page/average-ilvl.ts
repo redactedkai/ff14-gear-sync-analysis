@@ -4,12 +4,13 @@ import { NARROW } from '../../lib/constants.ts';
 import { check, expect } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { expectApplyCount, openSet, seedSheet } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 /** The Sage set "Mine" (eight pieces of item level 115, no weapon, no hands or feet) shows ~77 in the Stat Total row's item
  * level cell (the tilde marks an average; the cell's aria-label is "Average item level 77"): 8 x 115 = 920, over 12 slots = 76.67,
  * as a whole number. The number fits its cell at 960 px. Picking a hands
  * piece by hand (a draft) raises it to round((920 + the piece's item level) / 12), the piece's level read from its row. */
-export async function checkAverageIlvl(pg) {
+export async function checkAverageIlvl(pg: Page) {
   await pg.setViewportSize(NARROW);
   await seedSheet(pg, SET_SHEET);
   await openSet(pg, SET_SHEET.name, 'Mine');

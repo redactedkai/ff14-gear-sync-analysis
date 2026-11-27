@@ -4,6 +4,7 @@ import { check, expect, placedByZag, poll } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { openSageSet, openSet, seedSheet, seedSheets } from '../../lib/sheets.ts';
 import { pickOption } from '../../lib/select.ts';
+import type { Page } from 'playwright';
 
 const ALIGN_TOLERANCE_PX = 1;
 // the field and popover heights must not move at all (a pixel is a visible jump)
@@ -13,7 +14,7 @@ const WIDTHS_PX = [960, 1280];
 /** The Target GCD box and the Spare points to tiebreaks switch line up with the controls of Gear to search below them (docs/engineering/ui.md,
  * Auto-fill settings): the box ends where the item level pair ends, the exactly / or faster buttons start where Gear categories
  * starts, and the switch starts where the item level pair starts. At 960 and 1280 px, with no sideways scroll. */
-export async function checkSettingsAlignment(pg) {
+export async function checkSettingsAlignment(pg: Page) {
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);
   for (const width of WIDTHS_PX) {
@@ -22,7 +23,7 @@ export async function checkSettingsAlignment(pg) {
     await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
     await placedByZag(pg, '#sh-settings-dialog');
     const edges = await pg.evaluate(() => {
-      const box = selector => document.querySelector(`#sh-settings-dialog ${selector}`).getBoundingClientRect();
+      const box = (selector: string) => document.querySelector(`#sh-settings-dialog ${selector}`).getBoundingClientRect();
       return {
         gcdRight: box('#s-gcd').right,
         segLeft: box('.gcd-field .seg').left,
@@ -35,7 +36,7 @@ export async function checkSettingsAlignment(pg) {
         pageScrolls: document.documentElement.scrollWidth > innerWidth,
       };
     });
-    const near = (name, got, want) =>
+    const near = (name: string, got, want) =>
       check(
         Math.abs(got - want) <= ALIGN_TOLERANCE_PX,
         `at ${width} px the ${name} is at ${got.toFixed(1)}, the control below it at ${want.toFixed(1)}`,
@@ -68,10 +69,10 @@ const OFF_CASE = {
 };
 
 /** How many GCD figures (like 2.50) a label sentence holds: the range of the Target GCD, two when it is on. */
-const gcdFigures = text => (text.match(/\d\.\d\d/g) ?? []).length;
+const gcdFigures = (text: string) => (text.match(/\d\.\d\d/g) ?? []).length;
 
 /** A saved sheet for `job` with one empty set named "Empty" (every slot empty), for the label cases. */
-function emptySheetFor(job, id = `s_${job}`, name = `Label ${job}`) {
+function emptySheetFor(job: string, id = `s_${job}`, name = `Label ${job}`) {
   const empty = SET_SHEET.sets[0];
   const pieces = empty.pieces.map(piece => ({ slot: piece.slot }));
   return {
@@ -84,7 +85,7 @@ function emptySheetFor(job, id = `s_${job}`, name = `Label ${job}`) {
 }
 
 /** What the Target GCD field shows now, measured: the label line's parts and the field's and popover's boxes. */
-async function measureGcdField(pg) {
+async function measureGcdField(pg: Page) {
   return pg.evaluate(() => {
     const dialog = document.querySelector('#sh-settings-dialog');
     const rect = element => element.getBoundingClientRect();
@@ -115,7 +116,7 @@ async function measureGcdField(pg) {
  * speed stat), at 960 and 1280 px: the name and range at the left, whole and on one line; the always-on haste or "Off: goal
  * is speed" at the right (only when there is one); the input's accessible name is the whole sentence; and the field's height
  * and the box and button edges are the same in every case. */
-export async function checkGcdLabel(pg) {
+export async function checkGcdLabel(pg: Page) {
   await seedSheets(pg, [...LABEL_CASES.map(({ job }) => emptySheetFor(job)), emptySheetFor('PLD', 's_PLD_off', OFF_CASE.sheet)]);
   let base = null;
   for (const width of WIDTHS_PX) {

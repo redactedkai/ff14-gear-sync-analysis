@@ -5,6 +5,7 @@ import { expect } from '../../lib/expect.ts';
 import { pieceSheet } from '../../lib/fixtures.ts';
 import { seedSheet } from '../../lib/sheets.ts';
 import { capLineShape, checkCapLineStable } from '../../lib/shared-checks.ts';
+import type { Page } from 'playwright';
 
 // the New and Copy sheet dialog's cap field: its label line, the two inputs, and the boxes beside it
 const DIALOG_CAP = {
@@ -21,7 +22,7 @@ const WAR_SHEET = { ...pieceSheet('s_capflag', 'Flag check', 'WAR', 2, 9901, [])
  * move nothing (the label stays one line, the input stays where it was and as big, level with the Level input, no box beside it
  * moves: capLineShape, checkCapLineStable). The sheet page's settings row is `tests/stories/sheets/sheet-page.spec.ts`'s and the
  * field's own states `tests/stories/app/cap-field.spec.ts`'s; the dialog has no story with its cap field yet. */
-export async function checkCapFlag(pg) {
+export async function checkCapFlag(pg: Page) {
   await pg.setViewportSize(NARROW);
   await seedSheet(pg, WAR_SHEET);
   await pg.click('[data-tab=sheets]');

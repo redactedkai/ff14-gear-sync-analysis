@@ -5,9 +5,10 @@ import { check, expect } from '../../lib/expect.ts';
 import { waitReady } from '../../lib/nav.ts';
 import { figuresRadio, seedSheets, reloadAtSheets } from '../../lib/sheets.ts';
 import { edgeSheet } from './edges.ts';
+import type { Page } from 'playwright';
 
 /* A sheet of `job` with two empty gear sets. */
-const twoSetSheet = (id, name, job) => {
+const twoSetSheet = (id: string, name: string, job: string) => {
   const sheet = edgeSheet(id, name, job, 100, { on: false, cap: 795 });
   return { ...sheet, sets: [sheet.sets[0], { ...sheet.sets[0], id: `g_${id}_2`, name: 'Other' }] };
 };
@@ -19,9 +20,9 @@ const twoSetSheet = (id, name, job) => {
  *  - sorting by each heading leaves the heading edges where they were;
  *  - the Effects / Stat points switch has the same size and place whichever is chosen.
  * The numbers are written into the page's cells, so each round reloads the page. */
-export async function checkSetListColumns(pg) {
+export async function checkSetListColumns(pg: Page) {
   await seedSheets(pg, [twoSetSheet('s_mnk', 'Monk list', 'MNK'), twoSetSheet('s_sge', 'Sage list', 'SGE')]);
-  const open = async (name, width, height, figures) => {
+  const open = async (name: string, width, height, figures) => {
     await pg.setViewportSize({ width, height });
     await reloadAtSheets(pg);
     await waitReady(pg);

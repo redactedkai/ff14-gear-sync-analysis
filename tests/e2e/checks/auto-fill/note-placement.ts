@@ -4,9 +4,10 @@
 import { check, expect, placedByZag, poll } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { openSageSet, seedSheet } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 /** The note's box and its button's, in px of the window, rounded. */
-const noteAndButton = pg =>
+const noteAndButton = (pg: Page) =>
   pg.evaluate(() => {
     const round = Math.round;
     const note = document.querySelector('#s-rank-pop').getBoundingClientRect();
@@ -22,7 +23,7 @@ const noteAndButton = pg =>
 
 /** The Spare points note stays under its "?" button and has its right edge on the button's, however the page moves it: a
  * page scroll (the settings popover is in the header, which scrolls until it sticks) and a window resize. */
-export async function checkSparePointsNoteFollowsButton(pg) {
+export async function checkSparePointsNoteFollowsButton(pg: Page) {
   await pg.setViewportSize({ width: 1600, height: 720 }); // wide: the page content is centred, so a narrower window moves the button
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);

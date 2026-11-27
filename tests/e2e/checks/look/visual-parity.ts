@@ -8,11 +8,12 @@
 import { check, expect } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { seedSheet } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 /** The computed value of a design token's colour (read through a probe element, so it holds in either theme), and the computed
  * `properties` of the first element matching `selector`, joined by spaces. */
-const tokenColour = (pg, token) =>
-  pg.evaluate(name => {
+const tokenColour = (pg: Page, token: string) =>
+  pg.evaluate((name: string) => {
     const probe = document.createElement('i');
     probe.style.color = `var(${name})`;
     document.body.append(probe);
@@ -23,7 +24,7 @@ const tokenColour = (pg, token) =>
 
 /** The sheet page's Copy dialog with the clearing warning (Copy a Sage sheet holding a Sage-only weapon to Scholar): its left rule is
  * the cap-part colour, 3 px wide. */
-export async function checkVisualParity(pg) {
+export async function checkVisualParity(pg: Page) {
   // the seeded Sage set with a Sage-only weapon (Phantom Pendulums Eclipticum), so that Copy to Scholar has a piece to clear
   const [mine] = SET_SHEET.sets;
   const withWeapon = {

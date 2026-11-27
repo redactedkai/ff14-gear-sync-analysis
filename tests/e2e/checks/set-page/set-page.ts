@@ -5,10 +5,11 @@ import { check, checkNoBadText, expect } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { hasHScroll, waitReady, waitSaved, waitStateSaved } from '../../lib/nav.ts';
 import { expectApplyCount, openSageSet, openSet, seedSheet, reloadAtSheets } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 /** Leaving the Sheets tab by a tab link while a set page has a draft asks first, with the set page's own dialog:
  * Keep editing stays on the set page, Discard and leave opens the tab asked for. */
-export async function checkTabGuard(pg) {
+export async function checkTabGuard(pg: Page) {
   await seedSheet(pg, SET_SHEET);
   await openSet(pg, SET_SHEET.name, 'Mine');
   const hands = pg.locator('#sh-gear tr[data-row="4"]');
@@ -31,7 +32,7 @@ export async function checkTabGuard(pg) {
 /** A set page: the header (breadcrumb, sheet settings, notes, Auto-fill), a piece picked by hand as a draft (Discard, then
  * Apply, which pins it), a pin, the question before leaving a draft, a real Auto-fill with its Take boxes (Discard, the
  * question before leaving a result, then Apply), and a reload keeping it all; no sideways scroll at 960 px. */
-export async function checkSetPage(pg) {
+export async function checkSetPage(pg: Page) {
   await pg.setViewportSize(NARROW);
   await waitStateSaved(pg); // the shared setup is saved before the reload below, or the reload would open the defaults
   await pg.evaluate(

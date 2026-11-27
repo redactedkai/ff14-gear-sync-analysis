@@ -5,6 +5,7 @@
 import { check, expect } from '../../lib/expect.ts';
 import { pieceSheet } from '../../lib/fixtures.ts';
 import { expectApplyCount, openSet, seedSheet } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 const TIDAL_WAVE_BUCKLER = 7823; // White Mage, item level 100, equip level 50
 const TIDAL_WAVE_WAND = 7818; // White Mage, item level 100, one-handed
@@ -14,7 +15,7 @@ const OFFHAND_ROW = 1; // the saved set's second row
 
 /** A White Mage set holding a wand and a shield: picking a 2H cane empties the Off-hand row in the same draft and a note
  * names the shield; Discard brings the shield and the wand back. */
-export async function checkTwoHandedPick(pg) {
+export async function checkTwoHandedPick(pg: Page) {
   const sheet = pieceSheet('s_whm_2h', 'WHM 2H', 'WHM', WEAPON_ROW, TIDAL_WAVE_WAND, []);
   const pieces = sheet.sets[0].pieces.map((piece, i) =>
     i === OFFHAND_ROW ? { slot: piece.slot, gameId: TIDAL_WAVE_BUCKLER, stones: [] } : piece,

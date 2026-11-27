@@ -4,11 +4,12 @@ import { ACTIVITY_KEYS } from '../../lib/constants.ts';
 import { DEFAULT_EXCLUDE } from '../../lib/core-worker.ts';
 import { check, expect, same } from '../../lib/expect.ts';
 import { checkFromMenu, fromMenuFit, openFrom, setFrom, showTab, ticked, waitSaved } from '../../lib/nav.ts';
+import type { Page } from 'playwright';
 
 /** The browser's "Gear categories": the default boxes ticked, the button reads "11 of 20", the menu (tabs with the boxes' texts, one size
  * at every width from 960 px, inside the window; checkFromMenu) works; the market board switch off says so on the button, and the
  * choice is saved. */
-export async function checkGearFrom(pg) {
+export async function checkGearFrom(pg: Page) {
   await showTab(pg, 'browse');
   const searchedDefault = ACTIVITY_KEYS.filter(k => !DEFAULT_EXCLUDE.includes(k));
   const t0 = await ticked(pg, 'b');
@@ -71,8 +72,8 @@ const MARKET_OFF_WORDS = 'Market board gear not included';
 const MARKET_ON_WORDS = 'Market board gear included';
 
 /** The color a token resolves to on the page (what the glyph's color must equal), as the browser's computed rgb string. */
-async function tokenColor(pg, token) {
-  return pg.evaluate(name => {
+async function tokenColor(pg: Page, token: string) {
+  return pg.evaluate((name: string) => {
     const probe = document.createElement('span');
     probe.style.color = `var(${name})`;
     document.body.append(probe);
@@ -86,7 +87,7 @@ async function tokenColor(pg, token) {
  * ("11 of 20", whole, not clipped) and always the market glyph with its accessible name and the button's title: with market board
  * gear on it is gold with no slash ("included"); with it off it is the delete button's red with the slash ("not included").
  * Leaves the switch on. */
-export async function checkFromField(pg, pre) {
+export async function checkFromField(pg: Page, pre: string) {
   const normal = pg.viewportSize();
   const count = `${ACTIVITY_KEYS.length - DEFAULT_EXCLUDE.length} of ${ACTIVITY_KEYS.length}`;
   const glyph = pg.locator(`#${pre}-from svg.from-market`);

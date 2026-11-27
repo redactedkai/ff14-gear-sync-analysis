@@ -5,12 +5,13 @@ import { coreRings } from '../../lib/core.ts';
 import { check, expect } from '../../lib/expect.ts';
 import { afterFrames, browserRows, fillBrowser, setJob, setNumber, showTab, waitSaved } from '../../lib/nav.ts';
 import { setUpShared } from '../../lib/setup.ts';
+import type { Page } from 'playwright';
 
 // Gear browser rings window: [job, item level from, item level to, equip level up to].
 const RINGS_WINDOW = ['SGE', 140, 150, 60];
 
 /** The gear browser marks every non-Unique ring x2 (it can be worn on both hands) and no Unique one. */
-export async function checkRingCopies(pg) {
+export async function checkRingCopies(pg: Page) {
   const [job, lo, hi, lvl] = RINGS_WINDOW;
   const want = await coreRings(job, lo, hi, lvl);
   if (!check(want.x2 > 0 && want.x2 < want.count, `${job} rings ${lo}-${hi}: no mix of Unique and non-Unique rings; pick another window`)) {
@@ -63,7 +64,7 @@ export async function checkRingCopies(pg) {
 }
 
 /** The Expansion dropdown's checkboxes, with the dropdown opened. */
-async function expBoxes(pg) {
+async function expBoxes(pg: Page) {
   if ((await pg.locator('#b-exp').getAttribute('aria-expanded')) !== 'true') {
     await pg.click('#b-exp');
   }
@@ -71,7 +72,7 @@ async function expBoxes(pg) {
 }
 
 /** Tick every expansion in the gear browser again, then close the dropdown. */
-export async function allExpansions(pg) {
+export async function allExpansions(pg: Page) {
   for (const box of await (await expBoxes(pg)).all()) {
     if (!(await box.isChecked())) {
       await box.check();
@@ -82,7 +83,7 @@ export async function allExpansions(pg) {
 
 /** Every expansion is ticked by default; with only Endwalker ticked, the browser keeps gear of its equip level band
  * (81 to 90) and the button names it; the choice is saved. */
-export async function checkExpansionFilter(pg) {
+export async function checkExpansionFilter(pg: Page) {
   await setJob(pg, 'WHM');
   await showTab(pg, 'browse');
   const allText = (await pg.locator('#b-exp').innerText()).trim(); // the default, before any filter is filled in
@@ -117,7 +118,7 @@ export async function checkExpansionFilter(pg) {
  * and another Gear browser filter changes: only a change of the box's own setting rewrites the box. The strip's Synced level, which
  * counts each valid keystroke, keeps the text typed key by key while it has focus: "60.7" (counted as 61) and "1e1" ("1e" is no number
  * to the browser on the way). */
-export async function checkTypedNumberStaysAfterOtherFilter(pg) {
+export async function checkTypedNumberStaysAfterOtherFilter(pg: Page) {
   await showTab(pg, 'browse');
   const level = pg.locator('#level');
   for (const typed of ['60.7', '1e1']) {
@@ -146,7 +147,7 @@ export async function checkTypedNumberStaysAfterOtherFilter(pg) {
 }
 
 /** PLD (1H weapon + shield) offers an Off-hand slot in the browser; two-handed jobs do not. */
-export async function checkPldOffhand(pg) {
+export async function checkPldOffhand(pg: Page) {
   await setJob(pg, 'PLD');
   await showTab(pg, 'browse');
   // the Slot menu's choices (data-slot keys); waited for, since the list is worked out after the job switch

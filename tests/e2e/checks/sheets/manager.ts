@@ -4,6 +4,7 @@ import { NARROW, STORE_KEY, shot } from '../../lib/constants.ts';
 import { check, checkNoBadText, expect, focusInsideLayer, poll, same } from '../../lib/expect.ts';
 import { hasHScroll, setNumber, waitReady, waitSaved } from '../../lib/nav.ts';
 import { figuresRadio, rowAction, sheetNames } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 /** A saved sheet record for White Mage holding one set with the Ironworks Magitek Cane (item level 120, a White Mage
  * weapon no other healer can wear) in its weapon row, pinned: written straight to storage, since the step needs only the
@@ -40,7 +41,7 @@ const CANE_SHEET = {
  * New set and the set page's read-only line, set notes, reordering by keyboard and by drag, Copy sheet (and its list of
  * pieces to clear, from a seeded White Mage cane), Delete, and a reload keeping it all; no panel on the tab, no
  * sideways scroll at 960 px. */
-export async function checkSheets(pg) {
+export async function checkSheets(pg: Page) {
   await pg.setViewportSize(NARROW);
   await pg.click('[data-tab=sheets]');
   await expect(pg.locator('#tab-sheets')).toBeVisible();
@@ -97,7 +98,7 @@ export async function checkSheets(pg) {
   await pg.click('#sh-dlg-ok');
   await expect(pg.locator('#sh-sets .setnotes')).toHaveText('My own set');
   // the figures switch: the effects (the default) or the stat points of the set page's Total row; the choice is kept (saved)
-  const listHeads = async () => (await pg.locator('#sh-sets thead th.n').allInnerTexts()).map(text => text.trim());
+  const listHeads = async () => (await pg.locator('#sh-sets thead th.n').allInnerTexts()).map((text: string) => text.trim());
   check(same(await listHeads(), ['MND', 'GCD', 'CRT', 'CRIT DMG', 'DET', 'DHT', 'PIE', 'DOT']), `effects columns: ${await listHeads()}`);
   await pg.click(figuresRadio('points'));
   check(same(await listHeads(), ['MND', 'VIT', 'CRT', 'DET', 'DHT', 'SPS', 'PIE']), `stat points columns: ${await listHeads()}`);

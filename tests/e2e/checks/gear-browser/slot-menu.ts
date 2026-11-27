@@ -3,12 +3,13 @@
 import { ANY_SLOT_LABEL } from '../../../../src/ui/elements/gear-browser/slot-menu-names.ts';
 import { check, expect } from '../../lib/expect.ts';
 import { chooseSlot, fillBrowser, showTab } from '../../lib/nav.ts';
+import type { Page } from 'playwright';
 
 /** The Slot menu on the real page: the open menu stays above the table's sticky header after the pointer lit a row (the story has
  * no table; every row, the ones over the header included, is still the top element at its centre). The menu's width, border, keys,
  * wheel and short windows are the stories' (`tests/stories/gear-browser/slot-menu.spec.ts`); the counts' text is `views/gear`'s.
  * Leaves the browser's filters at their defaults. */
-export async function checkSlotMenu(pg) {
+export async function checkSlotMenu(pg: Page) {
   await showTab(pg, 'browse');
   await fillBrowser(pg, '', '', '');
   await expect(pg.locator('#b-slot')).toHaveText(ANY_SLOT_LABEL);
@@ -38,7 +39,7 @@ export async function checkSlotMenu(pg) {
 /** The Slot menu wired to the page's store: every slot it offers (the weapon and the armor and accessory slots; the run uses Sage,
  * which has no off-hand, so that row is covered by the stories) sets the browser's slot to its own key when picked; opening the
  * Expansion menu or the Gear categories menu closes it. Leaves the browser's filters at their defaults. */
-export async function checkSlotMenuPicksAndLayers(pg) {
+export async function checkSlotMenuPicksAndLayers(pg: Page) {
   await showTab(pg, 'browse');
   await fillBrowser(pg, '', '', '');
 

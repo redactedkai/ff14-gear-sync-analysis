@@ -4,6 +4,7 @@ import { check, expect } from '../../lib/expect.ts';
 import { pieceSheet } from '../../lib/fixtures.ts';
 import { runFill } from '../../lib/nav.ts';
 import { openSet, seedSheet } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 const TIDAL_WAVE_BUCKLER = 7823; // White Mage, item level 100, equip level 50
 const TIDAL_WAVE_WAND = 7818; // White Mage, item level 100, one-handed
@@ -13,7 +14,7 @@ const OFFHAND_ROW = 1; // the saved set's second row
 /** An Auto-fill suggestion on a White Mage set holding a wand and a shield that suggests a 2H cane: the Off-hand row reads just
  * "Unavailable", and its Take box is ticked, dimmed and disabled (it follows the weapon's: the cane covers the Off-hand). With the
  * weapon's Take box off, the saved wand stays and the Off-hand's box is free again. */
-export async function checkTakeBoxFollowsWeapon(pg) {
+export async function checkTakeBoxFollowsWeapon(pg: Page) {
   const sheet = pieceSheet('s_whm_take', 'WHM take', 'WHM', WEAPON_ROW, TIDAL_WAVE_WAND, []);
   const pieces = sheet.sets[0].pieces.map((piece, i) =>
     i === OFFHAND_ROW ? { slot: piece.slot, gameId: TIDAL_WAVE_BUCKLER, stones: [] } : piece,

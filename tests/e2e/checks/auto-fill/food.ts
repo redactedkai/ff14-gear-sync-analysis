@@ -8,13 +8,14 @@ import { runFill, setNumber } from '../../lib/nav.ts';
 import { checkTotals } from '../../lib/shared-checks.ts';
 import { expectApplyCount, expectMealEmpty, openSet, seedSheet } from '../../lib/sheets.ts';
 import { pickOption } from '../../lib/select.ts';
+import type { Page } from 'playwright';
 
 /** Food in the Auto-fill settings: switched on, Auto-fill picks the meal with the core's numbers (every stat of the Total row,
  * meal included), the Food row names it, and the Take boxes agree with what Apply does: one per changed row and one for
  * the meal, Apply's count follows them, and declining the meal leaves the totals the core finds without it. With a Target
  * GCD the meal and the gear are chosen together, so the GCD asked is the one reached with the meal; a second Auto-fill on the
  * applied set suggests only the meal. */
-export async function checkFillFood(pg) {
+export async function checkFillFood(pg: Page) {
   const fill = fields => coreRecipe('SGE', DIALOG_SYNC, { target: 'crit', ...fields });
   const [noFood, food, withGcd] = await Promise.all([fill({ food: false }), fill({}), fill({ gcd: 2.4 })]);
   const usable = [
@@ -90,14 +91,14 @@ export async function checkFillFood(pg) {
  * waits; the menu opens on the tagged meals alone (N rows, the switch on) and the switch off lists every meal with the tagged
  * ones wearing the pill; a meal picked by hand and applied shows no note. The computed layout is B17's: the note 10 px from
  * the meal button, the pill 0.64rem bold with 6 px before it. */
-export async function checkFillBestMeal(pg) {
+export async function checkFillBestMeal(pg: Page) {
   // item level sync 123: several meals tie; sync off: one meal is best (the note, no count)
   await bestMealCase(pg, { ...DIALOG_SHEET, id: 's_best_sync', name: 'Best meal sync', sync: { on: true, cap: 123 } }, true);
   await bestMealCase(pg, DIALOG_SHEET, false);
 }
 
 /** One sheet of checkFillBestMeal: `several` says whether an Auto-fill ties several meals. */
-async function bestMealCase(pg, sheet, several) {
+async function bestMealCase(pg: Page, sheet, several) {
   await seedSheet(pg, sheet);
   await openSet(pg, sheet.name, 'Empty');
   await pg.click('#sh-settings');

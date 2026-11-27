@@ -4,12 +4,20 @@ import { NARROW } from '../../lib/constants.ts';
 import { check, expect, same } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { seedSheets, sheetNames } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 /* A saved Sage sheet of three gear sets saved in this order: "Alpha" (all 12 rows, with a note), "Beta" (no pieces) and
    "Gamma" (3 pieces). Sorted by main stat, best first, the order is Alpha, Gamma, Beta: not the saved one. */
 const [FULL_SET] = SET_SHEET.sets;
 const keepOnly = slots => FULL_SET.pieces.map(piece => (slots.includes(piece.gameId) ? piece : { slot: piece.slot }));
-const setOf = (id, name, description, pieces) => ({ ...FULL_SET, id, name, description, pieces, pinned: { pieces: [], meal: false } });
+const setOf = (id: string, name: string, description, pieces) => ({
+  ...FULL_SET,
+  id,
+  name,
+  description,
+  pieces,
+  pinned: { pieces: [], meal: false },
+});
 const ROW_SHEET = {
   ...SET_SHEET,
   id: 's_rows',
@@ -30,7 +38,7 @@ const inCell = (row, cell) => row.locator('td').nth(cell);
  * the set of its own row, not the one at that place in the saved order (the one test that joins the sort and the open). Which parts
  * of a row open it, what must not (the Edit button, the drag handle, a drag that selects text) and Enter on the name link are
  * `sheet-page.spec.ts`'s and `open-row.test.js`'s. At 960 px. */
-export async function checkOpenRow(pg) {
+export async function checkOpenRow(pg: Page) {
   await pg.setViewportSize(NARROW);
   await seedSheets(pg, [ROW_SHEET, OTHER_SHEET]);
   await pg.click('[data-tab=sheets]');
@@ -38,8 +46,8 @@ export async function checkOpenRow(pg) {
   await pg.locator('#sh-list a.sname', { hasText: 'Row sheet' }).click();
   await expect(pg.locator('#sh-sheet')).toBeVisible();
 
-  const setRow = name => pg.locator('#sh-sets tbody tr', { has: pg.locator('a.sname', { hasText: name }) });
-  const expectSetPage = async (where, name) => {
+  const setRow = (name: string) => pg.locator('#sh-sets tbody tr', { has: pg.locator('a.sname', { hasText: name }) });
+  const expectSetPage = async (where: string, name: string) => {
     await expect(pg.locator('#sh-gear')).toBeVisible();
     const open = (await pg.locator('.setcrumb .crumbhere').textContent()).trim();
     check(open === name, `${where}: the set page of "${open}" opened, expected "${name}"`);
@@ -59,11 +67,11 @@ export async function checkOpenRow(pg) {
 
 /** A click on a row of the sheet list opens the sheet on the real page (the job cell). Which parts of a row open it, what must not
  * and Enter on the name link are `sheet-manager.spec.ts`'s and `open-row.test.js`'s. At 960 px. */
-export async function checkOpenSheetRow(pg) {
+export async function checkOpenSheetRow(pg: Page) {
   await pg.setViewportSize(NARROW);
   await seedSheets(pg, [ROW_SHEET, OTHER_SHEET]);
   await pg.click('[data-tab=sheets]');
-  const sheetRow = name => pg.locator('#sh-list tbody tr', { has: pg.locator('a.sname', { hasText: name }) });
+  const sheetRow = (name: string) => pg.locator('#sh-list tbody tr', { has: pg.locator('a.sname', { hasText: name }) });
   await inCell(sheetRow('Row sheet'), 1).click();
   await expect(pg.locator('#sh-sheet')).toBeVisible();
   const open = (await pg.locator('.setcrumb .crumbhere').textContent()).trim();
