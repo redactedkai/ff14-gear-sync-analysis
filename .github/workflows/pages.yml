@@ -47,12 +47,18 @@ jobs:
       - if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium firefox webkit
 
-      # lint, typecheck, build, unit tests, the component stories in Chromium and the browser smoke test; a failure stops the deploy
+      # lint, typecheck, build, unit tests, the component stories in Chromium and the browser smoke test; a failure stops the deploy.
+      # The smoke test waits 30 s (not its 10 s default) for anything the page does: on this runner its Auto-fill and reload steps
+      # met a slow frame or search often enough to fail at random (a different step each run, none of them on a developer machine).
       - run: npm run check
+        env:
+          SMOKE_TIMEOUT: '30000'
       # `check` stops at its first failing step; when it fails, the smoke test runs alone as well, so its result is not hidden
       # behind an earlier failure (the build it needs is already there)
       - if: failure()
         run: npm run test:smoke
+        env:
+          SMOKE_TIMEOUT: '30000'
       # the component stories in Chromium, Firefox and WebKit (check ran them in Chromium only)
       - run: npm run test:stories:all
       # the long random sweep of tier ranking against its reference (tests/sweep/), kept out of npm test for speed
