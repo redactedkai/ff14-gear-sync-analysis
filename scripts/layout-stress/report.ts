@@ -1,7 +1,7 @@
 /* The HTML report of a stress run: one self-contained page, dark, with the findings, a table per screen and setup, and
    the breakpoint table. Pure: it turns the run's data into text. */
-import { STRESS_ITEM_LEVEL, STRESS_LEVEL } from './build.mjs';
-import { RULES } from './rules.mjs';
+import { STRESS_ITEM_LEVEL, STRESS_LEVEL } from './build.ts';
+import { RULES } from './rules.ts';
 
 /* `text` safe to put in HTML. */
 export function escapeHtml(text) {
@@ -68,7 +68,7 @@ th{background:#142023}.n{color:#92a5a5}.fail{background:#3b1c19}.warn{background
 code{background:#142023;padding:1px 4px;border-radius:3px}ul{margin:4px 0}li{margin:2px 0}
 `;
 
-/* The whole report. `run` is what index.mjs collected. */
+/* The whole report. `run` is what index.ts collected. */
 export function renderReport(run) {
   const {
     options,

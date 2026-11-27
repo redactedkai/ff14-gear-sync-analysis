@@ -1,7 +1,7 @@
-/* The known failures of the layout stress tool (scripts/layout-stress/known-failures.mjs): a listed finding does not fail the run, and a listed finding that stops happening does. */
+/* The known failures of the layout stress tool (scripts/layout-stress/known-failures.ts): a listed finding does not fail the run, and a listed finding that stops happening does. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { KNOWN_FAILURES, applyKnownFailures } from '../../../../scripts/layout-stress/known-failures.mjs';
+import { KNOWN_FAILURES, applyKnownFailures } from '../../../../scripts/layout-stress/known-failures.ts';
 
 const finding = (rule: string, screen: string, view: string, extra: Record<string, string> = {}) => ({
   rule,

@@ -1,4 +1,4 @@
-/* The layout stress tool's windows (scripts/layout-stress/matrix.mjs): the screen and scale matrix, the sweep's widths and the text setups. */
+/* The layout stress tool's windows (scripts/layout-stress/matrix.ts): the screen and scale matrix, the sweep's widths and the text setups. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -12,7 +12,7 @@ import {
   setupFor,
   windowsForSetup,
   FONT_SETUP_WINDOWS,
-} from '../../../../scripts/layout-stress/matrix.mjs';
+} from '../../../../scripts/layout-stress/matrix.ts';
 
 /* The windows testing.md section 3.1 names for CSS screens: 1280 x 720 -> 1265 x 565, 1536 x 864 -> 1521 x 709, 1920 x 1080 -> 1905 x 925,
    2560 x 1440 -> 2545 x 1285 (the scrollbar 15 px wide, the taskbar and browser bars 155 px tall). Those are the doc's own numbers. */

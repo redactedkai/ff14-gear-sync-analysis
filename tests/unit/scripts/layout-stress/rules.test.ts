@@ -1,4 +1,4 @@
-/* The layout stress tool's rules (scripts/layout-stress/rules.mjs) on small made-up measures. Boxes are {l, t, r, b} in px. */
+/* The layout stress tool's rules (scripts/layout-stress/rules.ts) on small made-up measures. Boxes are {l, t, r, b} in px. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -20,7 +20,7 @@ import {
   rowsIncreaseWhenWidening,
   rulesMarkdown,
   severityOf,
-} from '../../../../scripts/layout-stress/rules.mjs';
+} from '../../../../scripts/layout-stress/rules.ts';
 
 const control = (id: string, l: number, t: number, r: number, b: number, extra: Record<string, unknown> = {}) => ({
   id,

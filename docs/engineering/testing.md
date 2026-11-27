@@ -546,7 +546,7 @@ Screen shares (Steam hardware survey, October 2026, primary display, [source](ht
 
 **The content.** Fixtures are seeded into `localStorage` before the page loads: ordinary sheets, an extreme set (23 job sheets, 60-character names, 40 sets, the longest piece names), empty sheets and sets, no sheets, and a storage that rejects writes (the failing-save message). Each screen is visited in its views (the sheet manager, a sheet, a set, the Gear browser, the three How the math works sub-tabs), with its menus and dialogs opened one by one, all 23 jobs picked in the Job menu, the sub-tabs switched back and forth, the pinned bar scrolled, and Tab pressed through the focus stops.
 
-**The rules.** Each check is a named rule with a severity (`scripts/layout-stress/rules.mjs` and `math-rules.mjs`; `npm run stress:layout -- --rules` prints this table). A `fail` finding makes the run exit 1; a `warn` is only reported.
+**The rules.** Each check is a named rule with a severity (`scripts/layout-stress/rules.ts` and `math-rules.ts`; `npm run stress:layout -- --rules` prints this table). A `fail` finding makes the run exit 1; a `warn` is only reported.
 
 | Rule | Severity | What it checks |
 | --- | --- | --- |
@@ -589,7 +589,7 @@ Screen shares (Steam hardware survey, October 2026, primary display, [source](ht
 | `npm run stress:layout -- --fonts` | Also the font and text setups | about 16 min (6 workers) |
 | `npm run stress:layout -- --quick --browsers=firefox,webkit` | The quick run in Firefox and WebKit (`npx playwright install firefox webkit` once); Firefox is the slow one | about 13 min (6 workers); Firefox alone about 10 min with 3 |
 
-Other options: `--screens=sheets,set,gear,math-piece,math-gcd,math-tiers`, `--report=<path>` (a self-contained dark HTML report, with a `.json` next to it), `--workers=<n>` (pages measured at once, default 4), `--no-stress` (leave out the 888 build) and `--keep` (keep the private builds). Customizable selects exist in Chromium only; Firefox and WebKit show their own lists, which are not measured. A finding the page has not fixed yet is listed in `scripts/layout-stress/known-failures.mjs` and printed as `KNOWN FAILURE (...)` with a count; the run fails when a listed finding stops happening, as in the smoke test. Today: none.
+Other options: `--screens=sheets,set,gear,math-piece,math-gcd,math-tiers`, `--report=<path>` (a self-contained dark HTML report, with a `.json` next to it), `--workers=<n>` (pages measured at once, default 4), `--no-stress` (leave out the 888 build) and `--keep` (keep the private builds). Customizable selects exist in Chromium only; Firefox and WebKit show their own lists, which are not measured. A finding the page has not fixed yet is listed in `scripts/layout-stress/known-failures.ts` and printed as `KNOWN FAILURE (...)` with a count; the run fails when a listed finding stops happening, as in the smoke test. Today: none.
 
 **What it does not cover.** Real devices and real display scaling (fractional scales are rounded, text size is simulated), other browser versions, the light theme (dark only), a window narrower than 960 px (not supported), and any content the fixtures do not hold. Findings are measures of the layout: a menu that ends below the window may be a menu the page scrolls to by design, so read the report before changing the page.
 

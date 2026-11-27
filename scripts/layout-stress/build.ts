@@ -78,7 +78,7 @@ export function buildPrivate({ patches = [], branch = 'dev', root = REPO_ROOT } 
     const path = join(dir, patch.file);
     writeFileSync(path, applyPatch(readFileSync(path, 'utf8'), patch));
   }
-  execFileSync(process.execPath, [join(dir, 'scripts', 'build', 'build.mjs')], {
+  execFileSync(process.execPath, [join(dir, 'scripts', 'build', 'build.ts')], {
     cwd: dir,
     stdio: ['ignore', 'ignore', 'inherit'],
     env: { ...process.env, GITHUB_REF_NAME: branch, GITHUB_SHA: '' },

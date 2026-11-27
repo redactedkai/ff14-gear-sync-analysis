@@ -1,11 +1,11 @@
 /* The width sweep of one view: one page is reached once and resized from 960 to 2560 px (a coarse step, then each change
-   bisected to 1 px, breakpoints.mjs). It gives the breakpoint table, the rules judged at every width, `widening-adds-rows`,
+   bisected to 1 px, breakpoints.ts). It gives the breakpoint table, the rules judged at every width, `widening-adds-rows`,
    and `resize-equals-fresh` (the resized page against a page loaded at the same width, and against itself narrowing). */
-import { findChangePoints } from './breakpoints.mjs';
-import { judgeProbe, measureAgain, reachAndMeasure } from './checks.mjs';
-import { SWEEP_FROM, SWEEP_STEP, SWEEP_TO } from './matrix.mjs';
-import { compareProbes, describeKeyChange, layoutKey, makeFindings, rowCounts, rowsIncreaseWhenWidening } from './rules.mjs';
-import { openPage, settle } from './session.mjs';
+import { findChangePoints } from './breakpoints.ts';
+import { judgeProbe, measureAgain, reachAndMeasure } from './checks.ts';
+import { SWEEP_FROM, SWEEP_STEP, SWEEP_TO } from './matrix.ts';
+import { compareProbes, describeKeyChange, layoutKey, makeFindings, rowCounts, rowsIncreaseWhenWidening } from './rules.ts';
+import { openPage, settle } from './session.ts';
 
 /* How many widths of the sweep are also loaded fresh and compared: every change point and its neighbour below, and
    every `FRESH_EVERY`th coarse width. */
@@ -18,7 +18,7 @@ async function measureAt(page, view, width, height) {
   return measureAgain(page, view);
 }
 
-/* Sweeps `view` of `screen` at window height `height`. `fixtures`: as in checks.mjs. Returns
+/* Sweeps `view` of `screen` at window height `height`. `fixtures`: as in checks.ts. Returns
    {changes: [{at, changes}], measured, findings}: the findings are `widening-adds-rows`, `resize-equals-fresh` and the
    page rules at every width, each with the range of widths it happens in (`widths: [first, last]`, `count`). */
 export async function sweepView({ browser, file, view, fixtures, setup, height, step = SWEEP_STEP, from = SWEEP_FROM, to = SWEEP_TO }) {

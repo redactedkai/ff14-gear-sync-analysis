@@ -1,6 +1,6 @@
 /* The rules that belong to the math bar of How the math works (the sticky bar above Stat Allocation, GCD Scaling and Substat
    tiers; src/ui/elements/math-page/math-screen.ts, src/styles/math-bar.css and math-controls.css): its dividers, its row breakpoints and its box heights. They judge
-   what `measureView` returns as `mathBar` when a view asks for it (probe.mjs). Pure: plain data in, a list of
+   what `measureView` returns as `mathBar` when a view asks for it (probe.ts). Pure: plain data in, a list of
    {rule, detail} out. Ported from the Stat Allocation stress script of the math bar port (the probe of j3-stress.mjs). */
 
 /* The widths of the bar's row, in rem, where Stat Allocation's controls change rows (src/styles/math-bar.css): from
@@ -65,7 +65,7 @@ export function mathBarState(mathBar) {
   return `${barLayout(mathBar.tops) ?? 'no-item-level'}|${dividers}`;
 }
 
-/* The findings for the bar measure `mathBar` (probe.mjs, measureView):
+/* The findings for the bar measure `mathBar` (probe.ts, measureView):
    [{rule, detail}] with the rules bar-dividers, bar-breakpoints, bar-box-height and bar-slider-track. */
 export function judgeMathBar(mathBar) {
   const out = [];

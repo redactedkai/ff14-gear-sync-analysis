@@ -3,9 +3,9 @@
    with `reach`, measures with `measure`, and then opens each of its `menus`.
 
    A view is {id, label, fixture, reach(page, open), measure, menus, ...}:
-   - fixture: which saved sheets the page opens on ('standard', 'extreme', 'empty', 'none' or 'failing', fixtures.mjs);
+   - fixture: which saved sheets the page opens on ('standard', 'extreme', 'empty', 'none' or 'failing', fixtures.ts);
    - reach(page, open): puts the page on the view; `open` has the ids of the sheet and set the fixture names;
-   - measure: what the probe measures (see measureView in probe.mjs), merged with the screen's `common`;
+   - measure: what the probe measures (see measureView in probe.ts), merged with the screen's `common`;
    - twin: another view that shows the same place with other content; the `stable` scopes must lay out the same in both;
    - stable: the scopes whose layout must not depend on content (names, jobs, numbers);
    - menus: [{id, open(page), selector, inPinnedHeader}], each opened, measured against the window, and shut again
@@ -19,14 +19,14 @@
      the base state did not have belongs to the state;
    - pinnedBar: the selector of a sticky bar that must stay at the top after scrolling;
    - widest: types the widest numbers into the page (run in the stress build);
-   - mathBar: also measure the math bar (probe.mjs, math-rules.mjs).
+   - mathBar: also measure the math bar (probe.ts, math-rules.ts).
    A screen may have `crossCheck(page)` (checks that span views, run on a page of its `crossFixture`) and `waiting` (a text:
    the screen is listed in the report and not visited, for a screen whose markup is being changed). The three math sub-tabs
    are screens of their own (math-piece, math-gcd, math-tiers). */
 
-import { measureView } from './probe.mjs';
-import { compareProbes } from './rules.mjs';
-import { settle } from './session.mjs';
+import { measureView } from './probe.ts';
+import { compareProbes } from './rules.ts';
+import { settle } from './session.ts';
 
 /* The controls every screen measures, the boxes that share rows, and the text that must fit. */
 const CONTROLS = 'button, a[href], input:not([type="hidden"]), select, textarea, [role="button"][tabindex]';

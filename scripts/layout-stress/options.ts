@@ -1,5 +1,5 @@
 /* The command line of `npm run stress:layout`. Pure: it reads an argument list and returns the options or an error text. */
-import { SCREENS, defaultScreenIds } from './targets.mjs';
+import { SCREENS, defaultScreenIds } from './targets.ts';
 
 /* The browsers the tool can launch (Playwright's names). */
 export const BROWSER_NAMES = Object.freeze(['chromium', 'firefox', 'webkit']);

@@ -1,7 +1,7 @@
-/* The command line of the layout stress tool (scripts/layout-stress/options.mjs). */
+/* The command line of the layout stress tool (scripts/layout-stress/options.ts). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseArgs } from '../../../../scripts/layout-stress/options.mjs';
+import { parseArgs } from '../../../../scripts/layout-stress/options.ts';
 
 /* The options `argv` parses to; fails the test when it names an error. */
 function optionsOf(argv: string[]) {

@@ -1,8 +1,8 @@
-/* The layout stress tool's report (scripts/layout-stress/report.mjs): grouping, escaping and the page's sections, on made-up findings. */
+/* The layout stress tool's report (scripts/layout-stress/report.ts): grouping, escaping and the page's sections, on made-up findings. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { FONT_SETUPS } from '../../../../scripts/layout-stress/matrix.mjs';
-import { escapeHtml, groupFindings, renderReport, shortList, windowRows } from '../../../../scripts/layout-stress/report.mjs';
+import { FONT_SETUPS } from '../../../../scripts/layout-stress/matrix.ts';
+import { escapeHtml, groupFindings, renderReport, shortList, windowRows } from '../../../../scripts/layout-stress/report.ts';
 
 const finding = (rule: string, severity: string, window: string, extra: Record<string, unknown> = {}) => ({
   rule,

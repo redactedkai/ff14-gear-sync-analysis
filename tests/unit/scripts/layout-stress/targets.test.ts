@@ -1,7 +1,7 @@
-/* The layout stress tool's screens and views (scripts/layout-stress/targets.mjs): each view is complete and refers only to what exists. */
+/* The layout stress tool's screens and views (scripts/layout-stress/targets.ts): each view is complete and refers only to what exists. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SCREENS, defaultScreenIds, measureOf, probeConfig, subTabVisits } from '../../../../scripts/layout-stress/targets.mjs';
+import { SCREENS, defaultScreenIds, measureOf, probeConfig, subTabVisits } from '../../../../scripts/layout-stress/targets.ts';
 
 /* The parts of a screen and its views these tests read (targets.mjs gives them as plain objects). */
 interface StressView {

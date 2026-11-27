@@ -1,9 +1,9 @@
-/* The layout stress tool's private builds (scripts/layout-stress/build.mjs): the patches of the stress build apply to the page's source as it is now. */
+/* The layout stress tool's private builds (scripts/layout-stress/build.ts): the patches of the stress build apply to the page's source as it is now. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { REPO_ROOT, STRESS_ITEM_LEVEL, STRESS_LEVEL, STRESS_PATCHES, applyPatch } from '../../../../scripts/layout-stress/build.mjs';
+import { REPO_ROOT, STRESS_ITEM_LEVEL, STRESS_LEVEL, STRESS_PATCHES, applyPatch } from '../../../../scripts/layout-stress/build.ts';
 
 test('a patch replaces its text, and throws when the text is not in the source any more', () => {
   const patch = { file: 'x.js', from: 'MAX = 1;', to: 'MAX = 2;' };

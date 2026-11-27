@@ -1,7 +1,7 @@
 /* Opening the page in a browser for the stress tool: one fresh browser context per page, with the saved sheets of a
    fixture in its storage, the fonts and text setup forced, and page errors collected. */
 import { pathToFileURL } from 'node:url';
-import { seedArgument, seedStorage } from './fixtures.mjs';
+import { seedArgument, seedStorage } from './fixtures.ts';
 
 /* The style added to every page: no animation or smooth scrolling, so a measure never catches a page half-way, and no
    scrollbar, so a window is as wide as the matrix says in every browser (the matrix has already taken the 15 px of a
@@ -26,8 +26,8 @@ export async function settle(page) {
 }
 
 /* Opens the page `file` (a path) in a new context of `browser`, in a window `width` x `height`, dark. `fixture` is the
-   saved sheets to start with (fixtures.mjs); `failWrites` makes every write to storage fail; `setup` is a font setup
-   (matrix.mjs FONT_SETUPS: its Google Fonts requests are refused and its style added). Returns {context, page, errors,
+   saved sheets to start with (fixtures.ts); `failWrites` makes every write to storage fail; `setup` is a font setup
+   (matrix.ts FONT_SETUPS: its Google Fonts requests are refused and its style added). Returns {context, page, errors,
    fonts}: `errors` fills with the page's script errors, `fonts` says whether the page's own fonts were loaded. */
 export async function openPage(browser, { file, width, height, fixture, failWrites = false, setup }) {
   const context = await browser.newContext({ viewport: { width, height }, colorScheme: 'dark' });

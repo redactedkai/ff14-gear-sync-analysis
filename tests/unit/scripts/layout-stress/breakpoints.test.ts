@@ -1,7 +1,7 @@
-/* The width sweep's bisection (scripts/layout-stress/breakpoints.mjs) against a made-up layout with known breakpoints. */
+/* The width sweep's bisection (scripts/layout-stress/breakpoints.ts) against a made-up layout with known breakpoints. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { findChangePoints } from '../../../../scripts/layout-stress/breakpoints.mjs';
+import { findChangePoints } from '../../../../scripts/layout-stress/breakpoints.ts';
 
 /* A layout that is "stacked" below 1100 px, "side by side" from 1100 px, and has a third state from 1299 px. */
 const layoutAt = (width: number): string => {

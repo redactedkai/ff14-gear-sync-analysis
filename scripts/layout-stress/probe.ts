@@ -1,14 +1,14 @@
 /* The functions that run inside the page (Playwright serialises each one, so none may use anything outside itself: no
-   imports, no helpers of this file). They only measure and return plain data; rules.mjs judges it. Every box is in the
+   imports, no helpers of this file). They only measure and return plain data; rules.ts judges it. Every box is in the
    window's coordinates, rounded to 0.1 px. */
 
-/* Measures the open view. `config` (plain data from targets.mjs):
+/* Measures the open view. `config` (plain data from targets.ts):
    - scopes: {name: CSS selector} the areas whose controls, boxes and labels are measured; a scope's first match is its root;
    - controls: the CSS selector of the controls, labels: selectors of the texts that must stay on one line,
      boxes: the selectors of the boxes that share rows (fields, menu buttons), clipped: the selector of elements whose
      text must fit them, names: the selector of item names (their line count), pinned: {header, columns} (the selectors of
      the pinned header and of a column-name cell), rows: {rows, marker} (the gear rows and what marks a row that holds a piece).
-   mathBar: true adds the math bar's measures (`mathBar`, judged by math-rules.mjs).
+   mathBar: true adds the math bar's measures (`mathBar`, judged by math-rules.ts).
    Returns {width, height, hscroll, past, clipped, wrapped, nameLines, pinned, rows, scopes: {name: {rect, height, controls,
    containers, boxes}}, mathBar?}. */
 export function measureView(config) {

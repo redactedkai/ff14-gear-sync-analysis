@@ -1,10 +1,10 @@
 /* The layout rules: their names, severities and thresholds, and the pure functions that judge what the page-side probe
-   measured (probe.mjs). The probe only measures; every decision is here, so it can be tested on small made-up inputs.
+   measured (probe.ts). The probe only measures; every decision is here, so it can be tested on small made-up inputs.
 
    A measured control is {id, l, t, r, b} (its box in the window's coordinates, in px) plus, where a rule needs it,
    `up` (the index of the nearest control around it, or -1) and `c` (the index of its container). A container is
    {id, l, t, r, b, scrolls} (`scrolls`: it scrolls on its own, so what is beyond its edge is reachable). */
-import { mathBarState } from './math-rules.mjs';
+import { mathBarState } from './math-rules.ts';
 
 /* The thresholds, in px unless named. */
 export const THRESHOLDS = Object.freeze({

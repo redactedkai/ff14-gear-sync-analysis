@@ -1,7 +1,7 @@
-/* The math bar's rules of the layout stress tool (scripts/layout-stress/math-rules.mjs) on made-up measures of the bar. */
+/* The math bar's rules of the layout stress tool (scripts/layout-stress/math-rules.ts) on made-up measures of the bar. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { barLayout, expectedBarLayout, judgeMathBar, mathBarState } from '../../../../scripts/layout-stress/math-rules.mjs';
+import { barLayout, expectedBarLayout, judgeMathBar, mathBarState } from '../../../../scripts/layout-stress/math-rules.ts';
 
 /* A bar measure of Stat Allocation at the page's own text size (16 px), one row, with its two dividers in place. */
 function oneRowBar(overrides = {}) {

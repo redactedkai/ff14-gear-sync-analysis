@@ -3,7 +3,7 @@
    (src/ui/test-sheets.json, read only) plus made-up ones. The records have the shape src/ui/sheets/storage.ts reads. */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { REPO_ROOT } from './build.mjs';
+import { REPO_ROOT } from './build.ts';
 
 /* The page's saved-data key (src/ui/store-key.ts) and the keys of the sheets' index and records. */
 export const STORE_KEY = 'ilvl-stat-lab-v4';

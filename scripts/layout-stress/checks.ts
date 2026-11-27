@@ -1,5 +1,5 @@
 /* The checks of one window: open the page, visit every view of a screen, measure it, and judge the measures by the rules
-   (rules.mjs). A finding is {rule, severity, detail, where, view}; the runner adds the screen, setup, window and browser. */
+   (rules.ts). A finding is {rule, severity, detail, where, view}; the runner adds the screen, setup, window and browser. */
 import {
   findBoxRowProblems,
   findOutside,
@@ -11,11 +11,11 @@ import {
   makeFindings,
   compareProbes,
   THRESHOLDS,
-} from './rules.mjs';
-import { judgeMathBar } from './math-rules.mjs';
-import { measureDialog, measureFocusRing, measureMenu, measureView } from './probe.mjs';
-import { openPage, settle } from './session.mjs';
-import { probeConfig } from './targets.mjs';
+} from './rules.ts';
+import { judgeMathBar } from './math-rules.ts';
+import { measureDialog, measureFocusRing, measureMenu, measureView } from './probe.ts';
+import { openPage, settle } from './session.ts';
+import { probeConfig } from './targets.ts';
 
 /* The most Tab stops a focus walk visits in one view. */
 const MAX_FOCUS_STOPS = 70;
@@ -31,7 +31,7 @@ export async function pinHeader(page, selector = '.shead') {
   await settle(page);
 }
 
-/* Reaches `view` on `page` and measures it (with the widest numbers typed in when `widest`: the stress build). Returns the probe (rules.mjs shape). Waits for the page to be still. */
+/* Reaches `view` on `page` and measures it (with the widest numbers typed in when `widest`: the stress build). Returns the probe (rules.ts shape). Waits for the page to be still. */
 export async function reachAndMeasure(page, view, open, widest = false) {
   await view.reach(page, open);
   if (widest && view.widest) {
@@ -272,7 +272,7 @@ async function checkJobs(page, view, jobIds, baseProbe, found) {
   }
 }
 
-/* The findings of one window for one screen. `views` are the screen's views to visit (targets.mjs), grouped by fixture:
+/* The findings of one window for one screen. `views` are the screen's views to visit (targets.ts), grouped by fixture:
    `fixtures` maps a fixture name to {fixture, failWrites}. Returns {findings, probes: {viewId: probe}, fonts}. A
    view that cannot be reached is a `check-completed` finding, and the rest are still visited. */
 export async function checkScreenInWindow({

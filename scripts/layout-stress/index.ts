@@ -1,14 +1,14 @@
-/* Layout stress tool: `npm run stress:layout -- [options]` (options.mjs, or --help). Builds the page into private copies
-   (build.mjs), opens it in each browser, window and text setup, measures the layout (probe.mjs), judges it by the rules
-   (rules.mjs), and writes an HTML report (report.mjs). Not part of `npm run check`: run it before a merge to `main`.
+/* Layout stress tool: `npm run stress:layout -- [options]` (options.ts, or --help). Builds the page into private copies
+   (build.ts), opens it in each browser, window and text setup, measures the layout (probe.ts), judges it by the rules
+   (rules.ts), and writes an HTML report (report.ts). Not part of `npm run check`: run it before a merge to `main`.
    Exit code 1 when a finding of severity `fail` is not a known failure, or a known failure stopped happening. */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium, firefox, webkit } from 'playwright';
-import { STRESS_ITEM_LEVEL, STRESS_LEVEL, STRESS_PATCHES, buildPrivate } from './build.mjs';
-import { checkScreenInWindow } from './checks.mjs';
+import { STRESS_ITEM_LEVEL, STRESS_LEVEL, STRESS_PATCHES, buildPrivate } from './build.ts';
+import { checkScreenInWindow } from './checks.ts';
 import {
   emptyFixture,
   extremeFixture,
@@ -18,8 +18,8 @@ import {
   readTestSheets,
   standardFixture,
   withStressNumbers,
-} from './fixtures.mjs';
-import { applyKnownFailures, KNOWN_FAILURES } from './known-failures.mjs';
+} from './fixtures.ts';
+import { applyKnownFailures, KNOWN_FAILURES } from './known-failures.ts';
 import {
   QUICK_SWEEP_HEIGHTS,
   QUICK_WINDOWS,
@@ -29,13 +29,13 @@ import {
   chooseSetups,
   parseWindow,
   windowsForSetup,
-} from './matrix.mjs';
-import { USAGE, parseArgs } from './options.mjs';
-import { groupFindings, renderReport, shortList } from './report.mjs';
-import { rulesMarkdown } from './rules.mjs';
-import { pageFontsLoaded } from './session.mjs';
-import { sweepView } from './sweep.mjs';
-import { SCREENS } from './targets.mjs';
+} from './matrix.ts';
+import { USAGE, parseArgs } from './options.ts';
+import { groupFindings, renderReport, shortList } from './report.ts';
+import { rulesMarkdown } from './rules.ts';
+import { pageFontsLoaded } from './session.ts';
+import { sweepView } from './sweep.ts';
+import { SCREENS } from './targets.ts';
 
 /* How many grouped findings the run prints to the console (the report and its .json have them all). */
 const MAX_PRINTED_FINDINGS = 40;
@@ -107,7 +107,7 @@ function windowsFor(quick) {
   return keys.map(key => ({ key, ...parseWindow(key), setups: windows.get(key) ?? [] }));
 }
 
-/* The windows one setup is visited in (matrix.mjs windowsForSetup), from all the windows. */
+/* The windows one setup is visited in (matrix.ts windowsForSetup), from all the windows. */
 function windowsOfSetup(windows, setup, quick) {
   const keys = windowsForSetup(
     windows.map(window => window.key),
@@ -268,7 +268,7 @@ export async function main(argv) {
     ? []
     : stale.map(
         entry =>
-          `KNOWN FAILURE no longer happens (${entry.rule}, ${entry.screen}${entry.view ? `/${entry.view}` : ''}): remove it from known-failures.mjs`,
+          `KNOWN FAILURE no longer happens (${entry.rule}, ${entry.screen}${entry.view ? `/${entry.view}` : ''}): remove it from known-failures.ts`,
       );
 
   const reportPath = resolve(options.report ?? join(tmpdir(), 'layout-stress', 'report.html'));
