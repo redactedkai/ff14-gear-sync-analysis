@@ -102,7 +102,7 @@ test('Auto-fill is repeatable and survives pinning and picking its own result', 
 
     // the result's pieces as the player's picks (rings are not picked by row): the set shown is unchanged
     const pieces: Record<number, number | null> = {};
-    for (const piece of rows.filter(piece => piece.slot !== 'ring')) {
+    for (const piece of rows.filter(row => row.slot !== 'ring')) {
       pieces[first.set.pieces.indexOf(piece)] = piece.gameId;
     }
     const picked = runRecipe(job, sync, level, recipe, session, { pieces, meal: first.set.meal ?? undefined });

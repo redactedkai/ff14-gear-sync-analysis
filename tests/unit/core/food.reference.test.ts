@@ -6,7 +6,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS } from '../../../src/core/constants.ts';
 import type { FoodChoice } from '../../../src/core/food.ts';
-import type { Totals } from '../../../src/core/types.ts';
 import { allMeals, bestFood, foodBonus, foodChoices, gearNeeded, withFood } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { rng } from '../helpers/common.ts';
