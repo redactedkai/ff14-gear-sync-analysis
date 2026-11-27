@@ -78,7 +78,16 @@ async function runGroup(browser, group) {
       });
       const fail = async (name, e) => {
         rec.failures.push(`${name}: ${String(e.message ?? e).split('\n')[0]}`);
-        await pg.screenshot({ path: shot(`fail-${name.replaceAll(' ', '-')}.png`), fullPage: true }).catch(() => {});
+        const file = `fail-${name.replaceAll(' ', '-')}`;
+        await pg.screenshot({ path: shot(`${file}.png`), fullPage: true }).catch(() => {});
+        // what the page held (address, saved keys with their sizes), for a failure that only shows on a loaded runner
+        const held = await pg
+          .evaluate(() => ({
+            address: location.href,
+            saved: Object.keys(localStorage).map(key => `${key} (${localStorage.getItem(key).length} characters)`),
+          }))
+          .catch(error => ({ unreadable: String(error.message ?? error) }));
+        writeFileSync(shot(`${file}.json`), JSON.stringify(held, null, 2), 'utf-8');
       };
       try {
         await pg.goto(PAGE);
@@ -129,7 +138,7 @@ export async function main() {
   mkdirSync(OUT, { recursive: true });
   // screenshots of failures from earlier runs would make a passing run look failed
   for (const file of readdirSync(OUT)) {
-    if (/^fail-.*\.png$/.test(file)) {
+    if (/^fail-.*\.(png|json)$/.test(file)) {
       rmSync(resolve(OUT, file));
     }
   }

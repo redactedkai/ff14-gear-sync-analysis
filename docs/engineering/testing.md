@@ -431,7 +431,7 @@ Notes:
   - in `checkThemes`, the five screens in dark and light (`theme-<screen>-<scheme>.png`);
   - in `checkViewports`, each screen at each window (`viewport-<width>x<height>-<screen>.png`, geometry asserted, no pixel baselines);
   - an Auto-fill with food, the edit lock, the piece menu and the overmeld odds;
-  - one per failed step.
+  - one per failed step (`fail-<step>.png`), with `fail-<step>.json` beside it: the page's address and the keys it had saved, with their sizes.
 
   All are written to the smoke test's output folder (gitignored).
 - **Known failures.** A finding the look checks make that the page has not fixed yet is a named line printed before `no errors` (`KNOWN FAILURE (contrast, ...)`, `KNOWN FAILURE (layout, ...)`, `KNOWN FAILURE (accessibility, ...)`), from `KNOWN_LOW_CONTRAST` (`checks/look/themes.mjs`), `KNOWN_MENU_OVERFLOW` (`checks/look/viewports.mjs`) and `KNOWN_AXE` (`checks/look/accessibility.mjs`). It does not fail the run, and the run fails when a listed finding stops happening, so the list is emptied as the page is fixed. Today, in `KNOWN_AXE`: no `<main>` landmark (`landmark-one-main`); the drag handles of the sheet and set lists have no accessible name (`aria-command-name`); the materia menu title is an h5 with no h4 before it (`heading-order`); the Gear from button and the piece chip have an `aria-label` that leaves out their visible text (`label-content-name-mismatch`).
