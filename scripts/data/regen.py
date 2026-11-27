@@ -14,10 +14,12 @@ import argparse
 import subprocess
 import sys
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
 
 import progress
 import provenance
+from provenance import Source
 
 ROOT = Path(__file__).resolve().parents[2]
 CSV = ROOT / 'data' / 'ffxiv-datamining' / 'csv' / 'en'
@@ -30,7 +32,7 @@ OUT = ROOT / 'src' / 'data'
 PYTHON = [sys.executable, '-X', 'utf8']
 
 
-def read_clone(directory, repo, what, restore, allow_dirty):
+def read_clone(directory: Path, repo: str, what: str, restore: str, allow_dirty: bool) -> tuple[Source, list[str]]:
     """(source, edits) of the clone that holds `directory`: its {repo, commit, date} and its local edits (git status
     lines, [] when clean). Exits when git cannot tell, and when there are edits (unless `allow_dirty`, which warns).
     `repo`: "owner/name" it must be a clone of; `what`: its name in messages; `restore`: the path to undo edits of."""
@@ -53,7 +55,7 @@ def read_clone(directory, repo, what, restore, allow_dirty):
     return source, edits
 
 
-def build_steps(source, patch_source, edited, report_path):
+def build_steps(source: Source, patch_source: Source, edited: bool, report_path: str) -> list[tuple[str, list[str]]]:
     """[(label, command)] for every step, in the order they run. `source`, `patch_source`: the provenance of the data
     clone and of the patch list clone; `edited`: whether the data clone has local edits (the changelog line is then
     skipped); `report_path`: where the item generator writes its counts, for the summary step."""
@@ -83,12 +85,12 @@ def build_steps(source, patch_source, edited, report_path):
     ]
 
 
-def is_python_step(command):
+def is_python_step(command: Sequence[str]) -> bool:
     """Whether a step's command runs Python (as built from PYTHON), whose output is UTF-8 and is shown."""
     return command[: len(PYTHON)] == PYTHON
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> None:
     """Regenerate src/data/ and rebuild dist/ (see the module docstring). Exits with the first failing step's status."""
     ap = argparse.ArgumentParser(description='Regenerate src/data/ from the data clones in data/, then rebuild dist/.')
     ap.add_argument('--allow-dirty', action='store_true', help='run even when a data clone has local edits (do not commit the result)')

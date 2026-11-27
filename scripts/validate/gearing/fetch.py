@@ -16,11 +16,11 @@ REPO = 'https://github.com/Asvel/ffxiv-gearing.git'
 COMMIT = '8d75ef89c317401727066a28025fb4d860a92f20'  # 2026-10-13, "Update game data to 7.57."
 
 
-def run(*cmd):
+def run(*cmd: str) -> None:
     subprocess.run(cmd, cwd=CLONE, check=True, shell=False)
 
 
-def main():
+def main() -> None:
     npm = shutil.which('npm')
     if not npm:
         raise SystemExit('npm not found')

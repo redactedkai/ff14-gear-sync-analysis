@@ -18,6 +18,8 @@ import re
 import subprocess
 import sys
 import urllib.request
+from argparse import Namespace
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -56,15 +58,15 @@ FRAMED_JOB_ICON = 62100  # + ClassJob row
 ICON_URL = 'https://v2.xivapi.com/api/asset?path=ui/icon/{folder:06d}/{icon:06d}_hr1.tex&format=png'  # _hr1: 64 x 64
 
 
-def git(*args, cwd=None):
+def git(*args: str, cwd: Path | None = None) -> None:
     subprocess.run(['git', *args], cwd=cwd, check=True)
 
 
-def icon_url(icon):
+def icon_url(icon: int) -> str:
     return ICON_URL.format(folder=icon // 1000 * 1000, icon=icon)
 
 
-def job_icon_numbers(csv_dir):
+def job_icon_numbers(csv_dir: Path | str) -> dict[str, int]:
     """{job: icon number} for every job in item-format.json, from ClassJob.csv."""
     rows = {r['Abbreviation']: int(r['#']) for r in read_csv(Path(csv_dir) / 'ClassJob.csv', ['#', 'Abbreviation'])}
     missing = [j for j in load_format()['jobs'] if j not in rows]
@@ -73,7 +75,7 @@ def job_icon_numbers(csv_dir):
     return {j: FRAMED_JOB_ICON + rows[j] for j in load_format()['jobs']}
 
 
-def download_icon(url, dest):
+def download_icon(url: str, dest: Path) -> None:
     """Download the PNG at `url` to `dest`. It is written to `dest` + '.part' first and renamed only when it is a whole 64 x
     64 PNG, so a failed or cut-short download never replaces a good icon (and the generator never sees half a file). Exits
     with a message naming the file when the download is not a whole icon."""
@@ -88,7 +90,7 @@ def download_icon(url, dest):
     part.replace(dest)
 
 
-def fetch_icons(csv_dir):
+def fetch_icons(csv_dir: Path) -> None:
     ICON_DIR.mkdir(parents=True, exist_ok=True)
     icons = job_icon_numbers(csv_dir).items()
     for job, icon in progress.bar(icons, 'Downloading the job icons', unit='icon'):
@@ -97,13 +99,13 @@ def fetch_icons(csv_dir):
     (ICON_DIR / gen_job_icons.FETCH_RECORD).write_text(datetime.now(UTC).date().isoformat() + '\n', encoding='utf-8')
 
 
-def git_out(*args, cwd=None):
+def git_out(*args: str, cwd: Path | None = None) -> str | None:
     """A git command's output, stripped, or None when it fails."""
     r = subprocess.run(['git', *args], cwd=cwd, capture_output=True, text=True, check=False)
     return r.stdout.strip() if r.returncode == 0 else None
 
 
-def parse_args(argv=None):
+def parse_args(argv: Sequence[str] | None = None) -> Namespace:
     """Command line options: --commit SHA checks out that datamining commit instead of the newest one."""
     ap = argparse.ArgumentParser(description='Fetch the datamining CSVs, the patch list and the job icons into data/.')
     ap.add_argument(
@@ -122,7 +124,7 @@ def parse_args(argv=None):
     return args
 
 
-def update_clone(commit=None, dest=DEST, url=URL, paths=None):
+def update_clone(commit: str | None = None, dest: Path = DEST, url: str = URL, paths: Sequence[str] | None = None) -> None:
     """Clone, or update, the sparse, shallow clone of `url` in `dest` (the datamining one by default), keeping the files
     `paths` (patterns from the repository's root; by default the CSVs of FILES). Without `commit`, move to the newest
     commit of its branch (a fast-forward pull). With `commit`, fetch just that commit and check it out (a detached HEAD);
@@ -146,7 +148,7 @@ def update_clone(commit=None, dest=DEST, url=URL, paths=None):
         git('checkout', '--quiet', '--detach', 'FETCH_HEAD', cwd=dest)
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
     print('Fetching the game data' + (f' at commit {args.commit}' if args.commit else '') + '...', flush=True)
     update_clone(args.commit)

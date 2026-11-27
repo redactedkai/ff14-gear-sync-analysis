@@ -19,11 +19,11 @@ COMMIT = '6c3c878e708b9d98f1c4cb091723a2a0a6343603'  # 2026-10-11, "Use specific
 PNPM = 'pnpm@9.12.3'  # package.json packageManager at COMMIT
 
 
-def run(*cmd):
+def run(*cmd: str) -> None:
     subprocess.run(cmd, cwd=CLONE, check=True, shell=False)
 
 
-def main():
+def main() -> None:
     npx = shutil.which('npx')
     if not npx:
         raise SystemExit('npx not found')

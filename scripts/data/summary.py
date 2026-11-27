@@ -23,10 +23,16 @@ its subject, and the rows and meals with their change since the previous summary
 import argparse
 import json
 import subprocess
+from collections.abc import Iterable, Mapping
 from pathlib import Path
+from typing import Any, TypeVar
 
 import provenance
-from item_format import ROOT, load_format, run_main
+from item_format import ROOT, ItemFormat, load_format, run_main
+from provenance import Source
+
+Counts = dict[str, Any]  # the counts of summary.json: whole numbers, and maps of them (by slot, by category, ...)
+CountKey = TypeVar('CountKey', int, str)
 
 SUMMARY = ROOT / 'src' / 'data' / 'summary.json'
 CHANGELOG = ROOT / 'docs' / 'data-changelog.md'
@@ -35,7 +41,7 @@ DRIFT_SHARE = 0.10  # a count that moves by more than this share of its old valu
 DRIFT_MIN = 5  # ... and by more than this many, so small counts (4 seasonal event pieces) do not flag on noise
 
 
-def csv_blobs(csv_dir, sheets):
+def csv_blobs(csv_dir: Path | str, sheets: list[str]) -> dict[str, str] | None:
     """{sheet: git blob id} of each sheets' CSV at the clone's HEAD, or None when git cannot tell (not a clone)."""
     try:
         run = subprocess.run(
@@ -48,14 +54,14 @@ def csv_blobs(csv_dir, sheets):
         return None
     if run.returncode:
         return None
-    blobs = {}
+    blobs: dict[str, str] = {}
     for line in run.stdout.splitlines():
         meta, _, path = line.partition('\t')
         blobs[Path(path).stem] = meta.split()[2]
     return dict(sorted(blobs.items()))
 
 
-def summarize(items_doc, food_doc, report, fmt):
+def summarize(items_doc: Mapping[str, Any], food_doc: Mapping[str, Any], report: Mapping[str, Any], fmt: ItemFormat) -> Counts:
     """The counts of summary.json (see the module docstring) from the generated item and food files and the item
     generator's report."""
     rows = items_doc['items']
@@ -63,13 +69,13 @@ def summarize(items_doc, food_doc, report, fmt):
     boxes = [a['key'] for a in fmt['activities']] + ['market_board']
     categories = [c['key'] for c in fmt['category']['list']]
 
-    def count(keys):
-        out = {}
+    def count(keys: Iterable[CountKey]) -> dict[CountKey, int]:
+        out: dict[CountKey, int] = {}
         for key in keys:
             out[key] = out.get(key, 0) + 1
         return dict(sorted(out.items()))
 
-    def has_bit(routes, bit):
+    def has_bit(routes: Iterable[int], bit: int) -> bool:
         return any(mask >> bit & 1 for mask in routes)
 
     return {
@@ -89,9 +95,9 @@ def summarize(items_doc, food_doc, report, fmt):
     }
 
 
-def flatten(counts, prefix=''):
+def flatten(counts: Mapping[str, Any], prefix: str = '') -> dict[str, int]:
     """{'dropped.name': 1921, 'rows': 20031, ...}: the counts as one level, for comparing two summaries."""
-    flat = {}
+    flat: dict[str, int] = {}
     for key, value in counts.items():
         if isinstance(value, dict):
             flat.update(flatten(value, f'{prefix}{key}.'))
@@ -100,11 +106,11 @@ def flatten(counts, prefix=''):
     return flat
 
 
-def drift(old, new):
+def drift(old: Mapping[str, Any], new: Mapping[str, Any]) -> list[str]:
     """The counts that moved by more than DRIFT_SHARE and DRIFT_MIN between two `counts`, or appeared or went away, as
     text such as 'byCategory.savage 1,117 -> 0 (-100%)'."""
     before, after = flatten(old), flatten(new)
-    lines = []
+    lines: list[str] = []
     for key in sorted(set(before) | set(after)):
         was, now = before.get(key), after.get(key)
         if was is None:
@@ -117,7 +123,7 @@ def drift(old, new):
     return lines
 
 
-def commit_subject(csv_dir):
+def commit_subject(csv_dir: Path | str) -> str:
     """The subject line of the clone's HEAD commit, or ''."""
     try:
         run = subprocess.run(['git', '-C', str(csv_dir), 'log', '-1', '--format=%s'], capture_output=True, text=True, check=False)
@@ -126,11 +132,11 @@ def commit_subject(csv_dir):
     return run.stdout.strip() if run.returncode == 0 else ''
 
 
-def changelog_line(source, subject, counts, old_counts):
+def changelog_line(source: Source, subject: str, counts: Mapping[str, int], old_counts: Mapping[str, int] | None) -> str:
     """One changelog line, for example '- 2026-09-30, `d9582a6` "TC 7.25 (#119)": 20,031 rows (+0), 296 meals (+0)'.
     old_counts: the previous summary's counts, or None (no change shown)."""
 
-    def with_change(key, label):
+    def with_change(key: str, label: str) -> str:
         change = f' ({counts[key] - old_counts[key]:+,})' if old_counts and key in old_counts else ''
         return f'{counts[key]:,} {label}{change}'
 
@@ -138,7 +144,9 @@ def changelog_line(source, subject, counts, old_counts):
     return f'- {source["date"][:10]}, `{source["commit"][:7]}`{title}: {with_change("rows", "rows")}, {with_change("meals", "meals")}'
 
 
-def main(csv_dir, report_path, changelog=True, summary_path=SUMMARY, changelog_path=CHANGELOG):
+def main(
+    csv_dir: Path | str, report_path: Path | str, changelog: bool = True, summary_path: Path = SUMMARY, changelog_path: Path = CHANGELOG
+) -> None:
     """Write the summary, print the drift since the previous one, and add the changelog line (see the module
     docstring)."""
     fmt = load_format()

@@ -20,6 +20,7 @@ import io
 import subprocess
 import sys
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
 
 import gen_food
@@ -40,7 +41,7 @@ MAX_SPEED_SCRIPT = ROOT / 'scripts' / 'data' / 'gen_max_speed.mjs'
 MAX_DIFF_LINES = 6  # lines of a text difference shown per file
 
 
-def first_difference(committed, made):
+def first_difference(committed: str, made: str) -> str:
     """A few lines that show where two texts differ (unified diff, cut short), or a note on the length when only the
     ending differs."""
     diff = list(difflib.unified_diff(committed.splitlines(), made.splitlines(), 'src/data', 'generated', n=0, lineterm=''))
@@ -50,7 +51,7 @@ def first_difference(committed, made):
     return '\n'.join('  ' + line for line in shown) + ('\n  ...' if len(diff) > MAX_DIFF_LINES else '')
 
 
-def generate(work, full):
+def generate(work: Path, full: bool) -> list[str]:
     """Run every generator into the directory `work` and return the names of the files made, in regen.py's order. Output
     the generators print (drop reports, warnings) is held back. `full`: also make max-speed.json (the long search)."""
     with contextlib.redirect_stdout(io.StringIO()):
@@ -70,7 +71,7 @@ def generate(work, full):
     return names
 
 
-def max_speed_is_current():
+def max_speed_is_current() -> bool:
     """Whether src/data/max-speed.json's `inputs` hash matches the data and the src/core code now (a quick check; the
     table itself is not searched again)."""
     result = subprocess.run(
@@ -79,7 +80,7 @@ def max_speed_is_current():
     return result.returncode == 0
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> int:
     """Exit code 0 when every generated file equals its committed copy, 1 otherwise."""
     ap = argparse.ArgumentParser(description='Compare src/data/ with what the generators make from the data clones.')
     ap.add_argument('--full', action='store_true', help='also run the five-minute search for max-speed.json and compare it byte for byte')
