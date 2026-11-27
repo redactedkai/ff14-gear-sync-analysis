@@ -54,7 +54,7 @@ test('Stat Allocation: the four accessory slots give the same stats, ceilings, t
         for (const cap of [null, ilvl - 10, ilvl, ilvl + 10]) {
           const app = makeApp(jobId, cap === null ? { sync: false, cap: null, level: 100 } : { sync: true, cap, level: 100 });
           const views = ACCESSORY_SLOTS.map(slot => {
-            app.piece = { ilvl, slot, subs };
+            app.piece = { ...app.piece, ilvl, slot, subs };
             return withoutSlotName({ steps: pieceViewOf(app, ilvl), chart: explainerViewOf(app, { piece: 900 }) });
           });
           for (const view of views.slice(1)) {
