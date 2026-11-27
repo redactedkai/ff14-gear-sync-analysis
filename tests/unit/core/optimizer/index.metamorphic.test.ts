@@ -9,20 +9,30 @@ import { GEAR_GROUPS } from '../../../../src/core/gear-groups.ts';
 import { jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { optimize } from '../../../../src/core/optimizer/index.ts';
-import { rng } from '../../helpers/common.ts';
+import { must } from '../../../../src/core/guards.ts';
+import type { OptimizeOptions } from '../../../../src/core/optimizer/index.ts';
+import type { JobContext, PoolItem, SolveResult, SolveSuccess, StatKey, Sync } from '../../../../src/core/types.ts';
+import { mustFind, mustSolve, rng } from '../../helpers/common.ts';
 import { lexCompare } from '../../helpers/exact-solver.ts';
 
-const SYNCS = [
+const SYNCS: Sync[] = [
   { cap: 123, sync: true, level: 100 },
   { cap: null, sync: false, level: 100 },
   { cap: 660, sync: true, level: 90 },
 ];
 const jobs = JOBS.map(job => makeJobContext(job.id));
 const pools = new Map(jobs.map(job => [job.jobId, jobGear(job)]));
-const solve = (job, sync, options, pool = pools.get(job.jobId)) => optimize(job, pool, sync, options);
+/* The pool of a job: every piece it can wear. */
+const poolOfJob = (job: JobContext): readonly PoolItem[] => must(pools, job.jobId, `pool of ${job.jobId}`);
+/* optimize() on a job's pool (or `pool`): its result, a failure included. */
+const search = (job: JobContext, sync: Sync, options: OptimizeOptions, pool: readonly PoolItem[] = poolOfJob(job)): SolveResult =>
+  optimize(job, pool, sync, options);
+/* The same, for a search that must find a loadout. */
+const solve = (job: JobContext, sync: Sync, options: OptimizeOptions, pool: readonly PoolItem[] = poolOfJob(job)): SolveSuccess =>
+  mustSolve(search(job, sync, options, pool));
 /* What the search ranks first: weapon damage (none for Blue Mage) and the goal. */
-const rankOf = (result, goal) => [result.totals.wd ?? 0, result.totals[goal]];
-const pickFrom = (rand, list) => list[Math.floor(rand() * list.length)];
+const rankOf = (result: SolveSuccess, goal: StatKey): number[] => [result.totals.wd ?? 0, result.totals[goal]];
+const pickFrom = <Item>(rand: () => number, list: readonly Item[]): Item => list[Math.floor(rand() * list.length)];
 
 test('removing pieces the search did not choose keeps the totals; removing a chosen one never improves them', () => {
   const rand = rng(4242);
@@ -30,14 +40,14 @@ test('removing pieces the search did not choose keeps the totals; removing a cho
     const sync = SYNCS[Math.floor(rand() * SYNCS.length)];
     const goal = pickFrom(rand, [job.mainKey, job.speedKey, pickFrom(rand, job.substats)]);
     const options = { target: goal, tiebreak: [job.mainKey] };
-    const pool = pools.get(job.jobId);
-    const keyOf = result => [...rankOf(result, goal), result.totals[job.mainKey]];
+    const pool = poolOfJob(job);
+    const keyOf = (result: SolveSuccess): number[] => [...rankOf(result, goal), result.totals[job.mainKey]];
     const label = `${job.jobId} ${JSON.stringify(sync)} goal ${goal}`;
     const base = solve(job, sync, options);
 
     // three pieces the best set does not use
-    const chosen = new Set(base.picks.filter(pick => pick.item).map(pick => pick.item));
-    const dropped = new Set();
+    const chosen = new Set(base.picks.flatMap(pick => (pick.item ? [pick.item] : [])));
+    const dropped = new Set<PoolItem>();
     while (dropped.size < 3) {
       const item = pickFrom(rand, pool);
       if (!chosen.has(item)) {
@@ -91,14 +101,15 @@ test('a looser speed maximum or minimum never lowers the goal and never turns a 
     const limit = Math.floor(rand() * (best + 1));
     const looser = 1 + Math.floor(rand() * 20);
     const label = `${job.jobId} ${JSON.stringify(sync)} limit ${limit} looser by ${looser}`;
-    const tightMax = solve(job, sync, { target: goal, spdMax: limit });
-    const looseMax = solve(job, sync, { target: goal, spdMax: limit + looser });
-    const tightMin = solve(job, sync, { target: goal, spdMin: limit });
-    const looseMin = solve(job, sync, { target: goal, spdMin: Math.max(0, limit - looser) });
-    for (const [tight, loose, what] of [
-      [tightMax, looseMax, 'maximum'],
-      [tightMin, looseMin, 'minimum'],
-    ]) {
+    const tightMax = search(job, sync, { target: goal, spdMax: limit });
+    const looseMax = search(job, sync, { target: goal, spdMax: limit + looser });
+    const tightMin = search(job, sync, { target: goal, spdMin: limit });
+    const looseMin = search(job, sync, { target: goal, spdMin: Math.max(0, limit - looser) });
+    const pairs: { tight: SolveResult; loose: SolveResult; what: string }[] = [
+      { tight: tightMax, loose: looseMax, what: 'maximum' },
+      { tight: tightMin, loose: looseMin, what: 'minimum' },
+    ];
+    for (const { tight, loose, what } of pairs) {
       if (!tight.ok) {
         continue;
       }
@@ -110,30 +121,33 @@ test('a looser speed maximum or minimum never lowers the goal and never turns a 
 
 test('jobs of one gear group reach the same totals on the pieces all of them wear', () => {
   for (const group of GEAR_GROUPS) {
-    const groupJobs = group.map(id => jobs.find(job => job.jobId === id));
+    const groupJobs = group.map(id =>
+      mustFind(
+        jobs.find(job => job.jobId === id),
+        `job ${id}`,
+      ),
+    );
     // some pieces are one job's own (artifact gear): compare on the game ids every job of the group can wear
-    const common = new Set(pools.get(groupJobs[0].jobId).map(item => item.gameId));
+    const common = new Set(poolOfJob(groupJobs[0]).map(item => item.gameId));
     for (const job of groupJobs) {
-      const ids = new Set(pools.get(job.jobId).map(item => item.gameId));
+      const ids = new Set(poolOfJob(job).map(item => item.gameId));
       for (const id of [...common]) {
         if (!ids.has(id)) {
           common.delete(id);
         }
       }
     }
-    const poolOf = job => pools.get(job.jobId).filter(item => common.has(item.gameId));
+    const poolOf = (job: JobContext): PoolItem[] => poolOfJob(job).filter(item => common.has(item.gameId));
     for (const sync of SYNCS.slice(0, 2)) {
-      for (const goal of ['crit', 'speed']) {
-        const runs = groupJobs
-          .map(job => {
-            const key = goal === 'speed' ? job.speedKey : goal;
-            return job.stats.includes(key)
-              ? { job, key, result: solve(job, sync, { target: key, tiebreak: ['crit'], melds: true }, poolOf(job)) }
-              : null;
-          })
-          .filter(Boolean);
+      for (const goal of ['crit', 'speed'] as const) {
+        const runs = groupJobs.flatMap(job => {
+          const key = goal === 'speed' ? job.speedKey : goal;
+          return job.stats.includes(key)
+            ? [{ job, key, result: solve(job, sync, { target: key, tiebreak: ['crit'], melds: true }, poolOf(job)) }]
+            : [];
+        });
         // each job against the first job of its own weapon mode, else the first job of the group
-        const totalsOf = r => [r.result.totals.wd, r.result.totals[r.key], r.result.totals.crit];
+        const totalsOf = (r: (typeof runs)[number]): (number | undefined)[] => [r.result.totals.wd, r.result.totals[r.key], r.result.totals.crit];
         for (const run of runs.slice(1)) {
           const reference = runs.find(candidate => candidate.job.weaponMode === run.job.weaponMode) ?? runs[0];
           if (reference === run) {
