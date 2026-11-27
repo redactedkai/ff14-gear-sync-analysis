@@ -8,6 +8,7 @@
      (prepare), so only the search repeats.
    - Among meals the winner has the highest totals with food on weapon damage (ranked first, rankedKeys), the target and
      tiebreaks, then the most food points, then the first in the job's food choices (pickMeal in food.ts, as bestFood). */
+import { must } from './guards.ts';
 import { gearNeeded, mealsFor, mealTotals, pickMeal } from './food.ts';
 import { prepare, rankedKeys, solve } from './optimizer/index.ts';
 import { BASE_GCD_MS, gcdFor, hasteFor, speedForGcd, type GcdMode, type Haste } from './speed.ts';
@@ -126,7 +127,7 @@ export function optimizeGcd(
     if (!runs.has(key)) {
       runs.set(key, solve(searchPrep, { spdMin: gearMin, spdMax: gearMax, nodeLimit: opts.nodeLimit }));
     }
-    const r = runs.get(key) as SolveResult;
+    const r = must(runs, key, 'cached run');
     if (r.ok) {
       entries.push({ meal, totals: r.totals, r, band: { gearMin, gearMax } });
     }

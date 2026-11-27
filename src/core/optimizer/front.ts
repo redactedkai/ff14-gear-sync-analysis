@@ -17,6 +17,7 @@
    search's: a slot is empty when a chosen piece blocks it (checked on the whole loadout), when it has no candidates,
    or, for the second ring, when no ring has a copy left; the two ring slots are filled together, as a pair (the same
    item twice only with 2 copies). */
+import { must } from '../guards.ts';
 import type { Candidate, Limit, SlotEntry } from '../types.ts';
 import { blockableTypes, positionMask, slotPositions, type SearchSlot } from './slot-index.ts';
 
@@ -143,7 +144,7 @@ export function frontSearch(
         for (let k = 0; k < nL; k++) {
           c.vals[k] += a.eff[limits[k].stat] || 0;
         }
-        c.blocks |= blocksOf.get(a) as number;
+        c.blocks |= must(blocksOf, a, 'block mask');
       }
     }
   }
@@ -257,7 +258,7 @@ export function frontSearch(
     if (slot.cand) {
       return;
     }
-    const by = chosen.find(a => (blocksOf.get(a) as number) & (1 << i));
+    const by = chosen.find(a => must(blocksOf, a, 'block mask') & (1 << i));
     if (by) {
       slot.blockedBy = by;
     }

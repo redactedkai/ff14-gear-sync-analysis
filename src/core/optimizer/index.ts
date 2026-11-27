@@ -1,6 +1,7 @@
 /* Gear optimizer: pick one item per slot (two rings) from a pool to maximize a target stat, with up to two tiebreak
    stats, an optional speed range (Target GCD: a speed minimum, or a band for an exact GCD) and optional minimums on
    other stats (tier ranking). */
+import { must } from '../guards.ts';
 import { buildCandidates } from './candidates.ts';
 import { branchAndBound } from './search.ts';
 import { realSlotType } from './slot-index.ts';
@@ -205,7 +206,7 @@ export function seedStart(prep: Prepared, picks: readonly SlotPick[]): Start {
     if (!byType.has(p.type)) {
       byType.set(p.type, []);
     }
-    (byType.get(p.type) as SlotPick[]).push(p);
+    must(byType, p.type, 'slot picks').push(p);
   }
   let score = 0;
   const best = prep.slotList.map(type => {

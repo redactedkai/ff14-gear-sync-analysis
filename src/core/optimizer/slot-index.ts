@@ -2,6 +2,7 @@
    A loadout's slots are numbered by their position in its slotList (buildCandidates: the slots that have items, 'ring'
    twice, blockable slots last). A candidate's `blocks` lists the slot types it leaves empty (a two-handed weapon the
    off-hand, a cloak the head); as a bit mask, bit p stands for position p. */
+import { must } from '../guards.ts';
 import { SLOT_TYPES } from '../constants.ts';
 import type { SlotType } from '../types.ts';
 
@@ -17,7 +18,7 @@ export function slotPositions(slotList: readonly SearchSlot[]): Map<SearchSlot, 
 /* The positions of the slot types `blocks` as a bit mask (bit p: position p of `positions`, slotPositions). A type the
    loadout has no slot for adds nothing. */
 export function positionMask(blocks: readonly SearchSlot[], positions: ReadonlyMap<SearchSlot, number>): number {
-  return blocks.reduce((mask, type) => (positions.has(type) ? mask | (1 << (positions.get(type) as number)) : mask), 0);
+  return blocks.reduce((mask, type) => (positions.has(type) ? mask | (1 << must(positions, type, 'slot position')) : mask), 0);
 }
 
 /* The slot types some candidate in `lists` (candidate lists) can leave empty, as a Set. */
@@ -31,7 +32,7 @@ const TYPE_BIT = new Map<SlotType, number>(SLOT_TYPES.map((type, i) => [type, 1 
 /* The slot types `blocks` as a bit mask numbered by SLOT_TYPES, the same for every loadout: for comparing which slots
    two candidates leave empty when no slotList is at hand (pruning). Not a position mask (positionMask). */
 export function typeMask(blocks: readonly SlotType[]): number {
-  return blocks.reduce((mask, type) => mask | (TYPE_BIT.get(type) as number), 0);
+  return blocks.reduce((mask, type) => mask | must(TYPE_BIT, type, 'slot bit'), 0);
 }
 
 /* The name of the search slot for the one free ring while the other ring is pinned (fixed pieces, buildCandidates). It is

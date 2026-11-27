@@ -8,6 +8,7 @@
    In reading order: the bounds and filters that run before the search (suffixBounds to shortListsFirst), the parts the
    search builds from them (combinedLimitBound, childGroups, bandReachTables, makeMemo), the search (prepareSearch,
    newSearch, dfs and its steps) and branchAndBound, which runs them. */
+import { must, present } from '../guards.ts';
 import { frontSearch } from './front.ts';
 import { addRegainCuts } from './regain.ts';
 import type { Candidate, Limit, PoolItem, Proven, SlotEntry } from '../types.ts';
@@ -556,7 +557,7 @@ export function dropShortfalls(
     const filtered = new Map<Candidate[], Candidate[]>();
     posList = posList.map((list, pos) => {
       if (filtered.has(list)) {
-        return filtered.get(list) as Candidate[];
+        return must(filtered, list, 'filtered list');
       }
       const isRing = slotList[pos] === 'ring';
 
@@ -796,7 +797,7 @@ function childGroups(
     const byKey = new Map<string, Omit<ChildGroup, 'firstSeen'>>();
     list.forEach((cand, rank) => {
       const values = limitStats.map(stat => Math.max(0, cand.eff[stat] || 0));
-      const mask = blockMaskOf.get(cand) as number;
+      const mask = must(blockMaskOf, cand, 'block mask');
       let key = `${values[0]}|${mask}`;
       for (let k = 1; k < nLimits; k++) {
         if (isBand[k]) {
@@ -999,7 +1000,7 @@ function prepareSearch({
       if (!filtered.has(list)) {
         filtered.set(list, fixByReducedCost(list, lagr as Lagrange, pos, known));
       }
-      return filtered.get(list) as Candidate[];
+      return must(filtered, list, 'filtered list');
     });
     if (hasMinimum) {
       posList = dropShortfalls(slotList, posList, dims, limits);
@@ -1214,7 +1215,7 @@ function lagrangeCutsChild(search: Search, pos: number, nodeLagr: number, cand: 
   if (!search.lagr) {
     return false;
   }
-  const bound = nodeLagr - (search.lagr.slotAug[pos] - (search.augOf.get(cand) as number));
+  const bound = nodeLagr - (search.lagr.slotAug[pos] - must(search.augOf, cand, 'priced value'));
   return bound + lagrSlack(bound) <= search.bestScore;
 }
 
@@ -1261,7 +1262,7 @@ function tryChild(search: Search, pos: number, rank: number, cand: Candidate, is
     limitTotals[k] += cand.eff[limitStats[k]];
   }
   used.set(cand.item.id, usedCount + 1);
-  const laterBlocked = cand.blocks.map(type => search.positions.get(type) as number).filter(blockedPos => blockedPos > pos);
+  const laterBlocked = present(cand.blocks.map(type => search.positions.get(type))).filter(blockedPos => blockedPos > pos);
   for (const type of cand.blocks) {
     blockedBy.set(type, cand);
   }
@@ -1269,7 +1270,7 @@ function tryChild(search: Search, pos: number, rank: number, cand: Candidate, is
     blockSlot(search, blockedPos, 1);
   }
   const prevMask = search.blockedMask;
-  search.blockedMask |= search.blockMaskOf.get(cand) as number;
+  search.blockedMask |= must(search.blockMaskOf, cand, 'block mask');
   search.chosen[pos] = { cand, rank };
 
   dfs(search, pos + 1, scoreSoFar + cand.score);

@@ -14,6 +14,7 @@
      versions every meld version of the piece, this one among them (itemVersions only): a regain cut (regain.ts) may
              swap a ring for any of them, including those pruning dropped
      fixed   true on a pinned piece (fixedCandidate): worn as it is, in a slot the search does not fill */
+import { must } from '../guards.ts';
 import { SLOT_TYPES } from '../constants.ts';
 import { WD_KEY, weaponDamage } from '../damage-defense.ts';
 import { meldInfo, slotInfo } from '../items.ts';
@@ -218,7 +219,7 @@ function itemVersions(
   if (!byKey.has(key)) {
     byKey.set(key, build());
   }
-  return (byKey.get(key) as Candidate[]).map(v => ({ ...v }));
+  return must(byKey, key, 'cached candidates').map(v => ({ ...v }));
 }
 
 /* A (`rival` in the code) beats B (`cand`) when A is >= on every dimension and either > on one of them or, for an exact tie, comes first, and A
@@ -297,7 +298,7 @@ export function pruneForLimits(
       if (!bySpd.has(s)) {
         bySpd.set(s, []);
       }
-      (bySpd.get(s) as Candidate[]).push(a);
+      must(bySpd, s, 'speed group').push(a);
     }
     const kept = new Set<Candidate>();
     for (const group of bySpd.values()) {
@@ -482,7 +483,7 @@ export function buildCandidates(
     ? SLOT_TYPES.flatMap((t, k): FixedBlocked[] => {
         const hasPieces = pool.some(i => i.type === t);
         if (pinned.covered.has(t)) {
-          return hasPieces ? [{ type: t, blockedBy: pinned.coveredBy.get(t) as PoolItem }] : [];
+          return hasPieces ? [{ type: t, blockedBy: must(pinned.coveredBy, t, 'covering piece') }] : [];
         }
         const open = t === 'ring' ? pinned.rings < 2 : !pinned.filled.has(t);
         return open && hasPieces && !candsByType[slotNames[k]].length ? [{ type: t, blockedBy: null }] : [];

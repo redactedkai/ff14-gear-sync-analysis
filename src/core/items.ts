@@ -304,7 +304,7 @@ function rowFacts(item: PoolItem): ItemFacts | null {
   if (!factsByKey.has(key)) {
     factsByKey.set(key, factsOfRows(rowsByKey.get(key)));
   }
-  return factsByKey.get(key) as ItemFacts | null;
+  return factsByKey.get(key) ?? null;
 }
 
 /* The facts (rowFacts) of the database rows `rows` that share a pool key, or null for none. Several rows could share a
@@ -357,7 +357,7 @@ export function poolItemById(job: JobContext, gameId: number): PoolItem | null {
     const row = itemById(gameId);
     byId.set(gameId, row ? poolItemFromRow(job, parseRow(row)) : null);
   }
-  return byId.get(gameId) as PoolItem | null;
+  return byId.get(gameId) ?? null;
 }
 
 /* A pool item's weapon damage and defense facts: {slotCode, kind, values: {damagePhys, damageMag, defensePhys,

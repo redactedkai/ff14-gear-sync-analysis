@@ -14,6 +14,7 @@
    - With a Target GCD the meal's speed band holds in every search (gearBand, as optimizeGcd).
    - Each stage that finishes proves the most of its key under its limits; every later search of the meal gets that
      proof (solve's `proven`) and cuts by it (optimizer/regain.js). */
+import { must } from './guards.ts';
 import { gearNeeded, mealsFor, mealTotals, pickMeal } from './food.ts';
 import { prepare, solve } from './optimizer/index.ts';
 import { speedForGcd } from './speed.ts';
@@ -172,7 +173,7 @@ export function rankByTier(
     const limits = { spdMin: state.gear?.gearMin, spdMax: state.gear?.gearMax, mins: state.mins };
     const runKey = `${prepKey}|${JSON.stringify(limits)}|${JSON.stringify(state.proven)}`;
     if (!runs.has(runKey)) {
-      const r = solve(cache.get(prepKey) as Prepared, {
+      const r = solve(must(cache, prepKey, 'prepared search'), {
         ...limits,
         seed: state.last?.picks,
         nodeLimit: opts.nodeLimit,
@@ -182,7 +183,7 @@ export function rankByTier(
       nodes += r.nodes || 0;
       runs.set(runKey, r);
     }
-    return runs.get(runKey) as SolveResult;
+    return must(runs, runKey, 'cached run');
   };
   const none = (): TierRankFailure => ({
     ok: false,

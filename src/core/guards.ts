@@ -9,9 +9,9 @@ export function mustHave<T>(value: T | null | undefined, what: string): T {
   return value;
 }
 
-/* The value of `key` in `map`. Throws `Missing <what>` when there is none: a map built for every key that lacks one is a
+/* The value of `key` in `map` (a Map or WeakMap). Throws `Missing <what>` when there is none: a map built for every key that lacks one is a
    bug, and a thrown error shows it where a default would give a wrong score. */
-export function must<K, V>(map: ReadonlyMap<K, V>, key: K, what: string): V {
+export function must<K, V>(map: { get(key: K): V | undefined }, key: K, what: string): V {
   return mustHave(map.get(key), what);
 }
 

@@ -8,6 +8,7 @@
 
    Gear comes from one source for the whole session (`gear`, by default every piece the job can wear): a test with its
    own pool makes its own session. */
+import { must } from './guards.ts';
 import { jobGear } from './items.ts';
 import type { JobContext, PoolItem } from './types.ts';
 
@@ -33,7 +34,7 @@ export function makeSession({
   return Object.freeze({
     gear: (job: JobContext) => {
       if (kept.has(job.jobId)) {
-        const items = kept.get(job.jobId) as readonly PoolItem[];
+        const items = must(kept, job.jobId, 'kept items');
         kept.delete(job.jobId);
         kept.set(job.jobId, items);
         return items;

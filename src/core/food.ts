@@ -7,6 +7,7 @@
    A meal's effect never falls with more gear points and gear + food rises with every gear point, so ranking gear sets by
    gear totals gives the same order as ranking them with food: the optimizer needs no change, and the best food for a goal
    can be picked after the search (bestFood). */
+import { must } from './guards.ts';
 import { statBase } from './base-stats.ts';
 import { FOODS } from './tables.ts';
 import type { DimKey, JobContext, RawStatKey, StatKey, StatMap, Totals } from './types.ts';
@@ -72,7 +73,7 @@ const mealCache = new Map<string, readonly Meal[]>();
    Food menu lists them all; foodChoices keeps the few the searches need. Cached per job. */
 export function allMeals(job: JobContext): readonly Meal[] {
   if (mealCache.has(job.jobId)) {
-    return mealCache.get(job.jobId) as readonly Meal[];
+    return must(mealCache, job.jobId, 'cached meals');
   }
   const out: Meal[] = [];
   for (const [name, ilvl, stats, vitality] of FOODS) {
@@ -102,7 +103,7 @@ const choiceCache = new Map<string, readonly FoodChoice[]>();
    meal next to a newer pair with that stat. So the best of these is the best of every meal (allMeals). Cached per job. */
 export function foodChoices(job: JobContext): readonly FoodChoice[] {
   if (choiceCache.has(job.jobId)) {
-    return choiceCache.get(job.jobId) as readonly FoodChoice[];
+    return must(choiceCache, job.jobId, 'cached food choices');
   }
   // allMeals is oldest first, so a later meal with the same stats replaces an older one
   const byKey = new Map<string, Omit<Meal, 'key' | 'pair'>>();

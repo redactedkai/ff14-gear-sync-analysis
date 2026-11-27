@@ -1,6 +1,7 @@
 /* A JobContext is an immutable description of everything that depends on the selected job:
    which raw stats the stat keys mean, labels, weapon mode and slot shares.
    Core functions take it as their first argument instead of reading shared globals. */
+import { must } from './guards.ts';
 import {
   JOBS,
   DEFAULT_JOB,
@@ -48,7 +49,7 @@ export function makeJobContext(jobId: string | null | undefined): JobContext {
   }
   const { id, name: jobName, profile: profileId } = JOBS[jobIndex];
   if (cache.has(id)) {
-    return cache.get(id) as JobContext;
+    return must(cache, id, 'cached job context');
   }
 
   const { mainKey, speedKey, specKey } = PROFILES[profileId];

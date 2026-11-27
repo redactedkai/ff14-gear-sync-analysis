@@ -18,6 +18,7 @@
    put stones, or a whole piece, against the held keys: the room (most - held) is usually less than one stone. Its
    origin and measured gain: tier-ranking.md, section 4.4. */
 
+import { must } from '../guards.ts';
 import type { Candidate, Limit, Proven } from '../types.ts';
 import type { SearchSlot } from './slot-index.ts';
 
@@ -125,7 +126,7 @@ export function addRegainCuts({
   const done = new Map<Candidate[], Candidate[]>();
   const cutLists = posList.map((list, i) => {
     if (done.has(list)) {
-      return done.get(list) as Candidate[];
+      return must(done, list, 'regain list');
     }
     const isRing = slotList[i] === 'ring';
     const buckets = new Map<string, Candidate[]>();

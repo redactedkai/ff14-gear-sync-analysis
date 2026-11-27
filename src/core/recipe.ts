@@ -17,6 +17,7 @@
 
    Pins are no part of a recipe either: they are the set's own pieces and meal that a solve must keep (runRecipe's
    `pins`; pinProblems). A set's pinned rows are pins, the other rows are what the solve fills. */
+import { must } from './guards.ts';
 import { allMeals, bestFood, foodChoices } from './food.ts';
 import { activityCounts, allocatedRelic, filterGear, gearFilter, itemRoutes, poolItemById, wearable, withActivities } from './items.ts';
 import { buildCandidates, fixedCandidate, optimize, pinProblem } from './optimizer/index.ts';
@@ -179,7 +180,7 @@ function gearById(gear: readonly PoolItem[]): Map<number | undefined, PoolItem> 
   if (!gearIndexes.has(gear)) {
     gearIndexes.set(gear, new Map(gear.map(item => [item.gameId, item])));
   }
-  return gearIndexes.get(gear) as Map<number | undefined, PoolItem>;
+  return must(gearIndexes, gear, 'gear index');
 }
 
 /* The pins a solve keeps, resolved for `job` under `sync`, with pieces taken from `gear` (the session's gear for the
