@@ -39,6 +39,15 @@ export function check(cond: unknown, msg: string): boolean {
   return Boolean(cond);
 }
 
+/** `value`, or a thrown error naming `what` when it is null or undefined: the typed way to say that a lookup (a bounding box, a
+ * find) must have found something. The failure is the step's, recorded by the runner. */
+export function mustFind<Value>(value: Value | null | undefined, what: string): Value {
+  if (value === null || value === undefined) {
+    throw new Error(`not found: ${what}`);
+  }
+  return value;
+}
+
 export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const norm = (s: string) => s.replace(/\s+/g, ' ').trim();

@@ -5,11 +5,13 @@ import { check, expect, same } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { waitReady, waitSaved } from '../../lib/nav.ts';
 import { openSageSet } from '../../lib/sheets.ts';
+import type { FirstPaintFrame } from '../../lib/page-globals.d.ts';
+import type { Page } from 'playwright';
 
 const FIRST_PAINT_PROBE = () => {
-  const frames = [];
+  const frames: FirstPaintFrame[] = [];
   window.__firstPaint = frames;
-  const shown = el => Boolean(el) && el.getClientRects().length > 0;
+  const shown = (element: Element | null) => element !== null && element.getClientRects().length > 0;
   const record = () => {
     if (document.body) {
       frames.push({
@@ -31,11 +33,11 @@ const FIRST_PAINT_PROBE = () => {
  * Job and sync panel shows only on the Gear browser. Checked with the CPU slowed 4 times (the window was wider
  * there), on a fresh page (the Sheets tab), with the Gear browser and How the math works open by their addresses, and on
  * a reload from a set page (which opens the same set page). */
-export async function checkFirstPaint(pg) {
+export async function checkFirstPaint(pg: Page) {
   const cdp = await pg.context().newCDPSession(pg);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
   await pg.addInitScript(FIRST_PAINT_PROBE);
-  const load = async (where, saved, hash) => {
+  const load = async (where: string, saved: object | null, hash: string) => {
     await pg.evaluate(
       ([key, state, address]) => {
         localStorage.clear();
@@ -44,7 +46,7 @@ export async function checkFirstPaint(pg) {
         }
         history.replaceState(null, '', address); // the address names the open tab
       },
-      [STORE_KEY, saved, hash],
+      [STORE_KEY, saved, hash] as const,
     );
     await pg.reload();
     await waitReady(pg);
@@ -60,7 +62,7 @@ export async function checkFirstPaint(pg) {
       localStorage.setItem(`${key}:sheet:${sheet.id}`, JSON.stringify(sheet));
       localStorage.setItem(`${key}:sheets`, JSON.stringify({ v: 1, order: [sheet.id] }));
     },
-    [STORE_KEY, SET_SHEET],
+    [STORE_KEY, SET_SHEET] as const,
   );
   await pg.reload();
   await waitReady(pg);
@@ -76,11 +78,14 @@ export async function checkFirstPaint(pg) {
 
 /** Check the frames FIRST_PAINT_PROBE recorded since the last load: the page settled with the Job and sync panel only
  * on the Gear browser, and every frame that showed the page showed it as it settled. */
-async function checkPaints(pg, where) {
-  await pg.waitForFunction(() => window.__firstPaint?.length >= 30); // a few frames after the page is ready
+async function checkPaints(pg: Page, where: string) {
+  await pg.waitForFunction(() => (window.__firstPaint?.length ?? 0) >= 30); // a few frames after the page is ready
   const tab = await pg.locator('[data-tab][aria-current="page"]').getAttribute('data-tab');
-  const frames = await pg.evaluate(() => window.__firstPaint);
+  const frames = await pg.evaluate(() => window.__firstPaint ?? []);
   const settled = frames.at(-1);
+  if (!settled) {
+    throw new Error(`first paint, ${where}: the probe recorded no frame`);
+  }
   check(
     settled.page && settled.panel === (tab === 'browse'),
     `first paint, ${where}: the page settled as ${JSON.stringify(settled)} on the ${tab} tab`,

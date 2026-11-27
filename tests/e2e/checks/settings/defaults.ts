@@ -5,11 +5,12 @@ import { DEFAULT_CAP, DEFAULT_JOB, DEFAULT_LEVEL } from '../../lib/constants.ts'
 import { check, expect } from '../../lib/expect.ts';
 import { browserRows, fieldValue, pickJob, setJob, setNumber, showTab, waitSaved } from '../../lib/nav.ts';
 import { setUpShared } from '../../lib/setup.ts';
+import type { Page } from 'playwright';
 
 /** Switching job takes effect at once (nothing is lost but the job-specific choices, so the page does not ask): the
  * gear browser sorted by Critical Hit stays so on a job with the same stat, and goes back to item level when the stat
  * it is sorted by is the old job's own (Tenacity is not Piety). */
-export async function checkJobSwitch(pg) {
+export async function checkJobSwitch(pg: Page) {
   await showTab(pg, 'browse');
   await setJob(pg, 'WAR');
   await expect(browserRows(pg).first()).toBeVisible();
@@ -28,7 +29,7 @@ export async function checkJobSwitch(pg) {
  * (at level 40 a cap of 123 is lowered to 43, the best gear made for level 40; back at 50 it stays 43), and a cap typed above what
  * the level allows is lowered once it commits (500 at level 50 becomes 135). The field's own rules (the errors, the ranges, the up
  * arrow, the label line keeping its shape) are `tests/stories/app/cap-field.spec.ts`'s. */
-async function checkCapLowering(pg) {
+async function checkCapLowering(pg: Page) {
   await pg.locator('#sync').check();
   await pg.fill('#cap', '123');
   await expect(pg.locator('#cap-error')).toBeHidden();
@@ -47,7 +48,7 @@ async function checkCapLowering(pg) {
 
 /** Limited jobs: picking Blue Mage (level cap 80) or Beastmaster (50) clamps the synced level and the equip level
  * filter to the cap and both inputs' maximum follows it (a typed level above the cap is `level-cap.level-text`'s and `level-field.spec`'s). */
-export async function checkJobLevelCap(pg) {
+export async function checkJobLevelCap(pg: Page) {
   await setJob(pg, 'SGE');
   await showTab(pg, 'browse');
   await setNumber(pg, '#level', '100');
@@ -71,7 +72,7 @@ export async function checkJobLevelCap(pg) {
 }
 
 /** The checks that need a fresh page with nothing set: the title, the defaults and the cap field's wiring. */
-export async function checkDefaults(pg) {
+export async function checkDefaults(pg: Page) {
   // the page opens on the Sheets list: its title names the screen (ui/router/routes.ts titleOf)
   const title = await pg.title();
   check(title === titleOf(DEFAULT_ROUTE), `title is '${title}'`);

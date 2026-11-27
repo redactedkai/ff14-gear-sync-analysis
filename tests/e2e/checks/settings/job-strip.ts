@@ -1,9 +1,10 @@
 // Settings panel: the job strip under the tabs.
 
 import { NARROW } from '../../lib/constants.ts';
-import { check, expect } from '../../lib/expect.ts';
+import { check, expect, mustFind } from '../../lib/expect.ts';
 import { afterFrames, hasHScroll, pickJob, setCap, setJob, setNumber, showTab } from '../../lib/nav.ts';
 import { SHARED_SETUP } from '../../lib/setup.ts';
+import type { Page } from 'playwright';
 
 /** The strip's gap under the tab bar, in px (on the Gear browser). */
 const STRIP_GAP_UNDER_TABS = 18;
@@ -16,17 +17,22 @@ const SHORT_WINDOW_HEIGHT = 400;
 const MATH_BAR_GAP_UNDER_TABS = 12;
 
 /** The y of the tab bar and how far the strip's top is under the tab bar, read from the page. */
-const measureTabBar = pg =>
+const measureTabBar = (pg: Page) =>
   pg.evaluate(() => {
-    const tabs = document.querySelector('nav.tabs').getBoundingClientRect();
-    const strip = document.querySelector('.jobstrip').getBoundingClientRect();
+    const tabBar = document.querySelector('nav.tabs');
+    const stripElement = document.querySelector('.jobstrip');
+    if (!tabBar || !stripElement) {
+      throw new Error('the tab bar or the job strip is missing');
+    }
+    const tabs = tabBar.getBoundingClientRect();
+    const strip = stripElement.getBoundingClientRect();
     return { tabs: tabs.top, stripUnderTabs: strip.top - tabs.bottom, stripHeight: strip.height, stripShown: strip.height > 0 };
   });
 
 /** The Gear browser shows one narrow Job and sync strip under the tab bar (How the math works has none: its Job box is in the math
  * bar): the job box (icon, name, code) opens a menu of job icons by role, Reset sits at the right, the tab bar stays put on every
  * tab, the strip is one row at 960 px, and a job switch asks nothing. */
-export async function checkJobStrip(pg) {
+export async function checkJobStrip(pg: Page) {
   await pg.setViewportSize(NARROW);
   await showTab(pg, 'browse');
   await setJob(pg, 'SGE');
@@ -62,9 +68,14 @@ export async function checkJobStrip(pg) {
     Math.abs(onMath.tabs - onSheets.tabs) <= 1,
     `the tab bar sits ${onMath.tabs - onSheets.tabs} px lower on How the math works than on Sheets`,
   );
-  const barUnderTabs = await pg.evaluate(
-    () => document.querySelector('#m-bar').getBoundingClientRect().top - document.querySelector('nav.tabs').getBoundingClientRect().bottom,
-  );
+  const barUnderTabs = await pg.evaluate(() => {
+    const bar = document.querySelector('#m-bar');
+    const tabBar = document.querySelector('nav.tabs');
+    if (!bar || !tabBar) {
+      throw new Error('the math bar or the tab bar is missing');
+    }
+    return bar.getBoundingClientRect().top - tabBar.getBoundingClientRect().bottom;
+  });
   check(
     Math.abs(barUnderTabs - MATH_BAR_GAP_UNDER_TABS) <= 1,
     `the math bar is ${barUnderTabs} px under the tab bar, expected ${MATH_BAR_GAP_UNDER_TABS}`,
@@ -79,10 +90,10 @@ export async function checkJobStrip(pg) {
   check((await pg.locator('#job-menu [data-job-id]').count()) === 23, 'the job menu lists all 23 combat jobs');
   await expect(pg.locator('#job-menu [data-job-id="SGE"]')).toHaveAttribute('aria-checked', 'true');
   // a job tile does not move under the pointer: hover lifts only its icon, so a pointer on the tile's bottom edge keeps hovering
-  const tileBefore = await pg.locator('.jobbtn').first().boundingBox();
+  const tileBefore = mustFind(await pg.locator('.jobbtn').first().boundingBox(), 'the first job tile');
   await pg.mouse.move(tileBefore.x + tileBefore.width / 2, tileBefore.y + tileBefore.height / 2);
   await pg.evaluate(() => Promise.all(document.getAnimations().map(animation => animation.finished))); // the hover lift's transition has ended
-  const tileHovered = await pg.locator('.jobbtn').first().boundingBox();
+  const tileHovered = mustFind(await pg.locator('.jobbtn').first().boundingBox(), 'the first job tile');
   check(
     Math.abs(tileHovered.y - tileBefore.y) < 0.01,
     `a job tile moves ${tileHovered.y - tileBefore.y} px when hovered, it should stay put (hover flicker on its bottom edge)`,
@@ -106,7 +117,13 @@ export async function checkJobStrip(pg) {
   await pg.setViewportSize({ width: NARROW.width, height: SHORT_WINDOW_HEIGHT }); // shorter than the page, so it scrolls whatever the layout
   await pg.evaluate(() => window.scrollTo(0, 400));
   await pg.waitForFunction(() => window.scrollY > 100);
-  const pinnedBarTop = await pg.evaluate(() => document.querySelector('#m-bar').getBoundingClientRect().top);
+  const pinnedBarTop = await pg.evaluate(() => {
+    const bar = document.querySelector('#m-bar');
+    if (!bar) {
+      throw new Error('the math bar is missing');
+    }
+    return bar.getBoundingClientRect().top;
+  });
   check(Math.abs(pinnedBarTop) <= 1, `scrolled, the math bar is ${pinnedBarTop} px from the top, expected 0`);
   await pg.evaluate(() => window.scrollTo(0, 0));
   await pg.setViewportSize(NARROW);
