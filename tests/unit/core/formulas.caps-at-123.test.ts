@@ -94,7 +94,7 @@ test('real pieces at 120 and 125 carry round(row x slot percent) as main stat an
 const CAPS_123 = Object.fromEntries(SLOT_NAMES.map(slot => [slot, derived(123, slot)]));
 /* The derived caps (substat, main stat) of a slot at 123. */
 function capsOf(slot: CapSlot): { main: number; sub: number } {
-  const caps = capsOf(slot);
+  const caps = CAPS_123[slot];
   assert.ok(caps, slot);
   return caps;
 }

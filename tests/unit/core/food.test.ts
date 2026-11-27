@@ -2,6 +2,8 @@
    and the property the optimizer relies on (gear plus food rises with every gear point). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { DimKey, JobContext, PoolItem, SlotType, StatKey, Totals } from '../../../src/core/types.ts';
+import type { FoodChoice, FoodLines } from '../../../src/core/food.ts';
 import { allMeals, bestFood, foodBonus, foodChoices, gearNeeded, mealRank, withFood } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { mkItem } from '../../../src/core/items.ts';
@@ -11,6 +13,14 @@ import { rngInt } from '../helpers/common.ts';
 
 const SGE = makeJobContext('SGE');
 const DRG = makeJobContext('DRG');
+/* The ranked keys of a goal (target and tiebreaks), without the empty ones. */
+const rankedKeys = (keys: readonly (DimKey | '' | null | undefined)[]): DimKey[] => keys.filter((key): key is DimKey => Boolean(key));
+/* The best meal of `choices` for a goal; the job has some. */
+function bestMeal(...args: Parameters<typeof bestFood>): FoodChoice {
+  const meal = bestFood(...args);
+  assert.ok(meal, 'a best meal');
+  return meal;
+}
 const JOB_IDS = ['PLD', 'WHM', 'SGE', 'DRG', 'NIN', 'BLM', 'BLU', 'BST'];
 
 /* The Food menu lists every meal (allMeals); the searches try only foodChoices. Dropping the meals another one covers
@@ -36,20 +46,20 @@ test('allMeals: every meal the job can use, oldest first; the best of foodChoice
       c.name,
     );
   }
-  const keySets = [['mind'], ['crit'], ['mind', 'vit', 'dh'], ['sps', 'det'], ['piety', 'crit', 'vit']];
+  const keySets: DimKey[][] = [['mind'], ['crit'], ['mind', 'vit', 'dh'], ['sps', 'det'], ['piety', 'crit', 'vit']];
   for (const level of [50, 70, 100]) {
     const int = rngInt(level);
     for (let t = 0; t < 40; t++) {
       // gear points from none to well past the meals' maximums
       const totals = Object.fromEntries(AST.stats.map(s => [s, int(level * 30)]));
       for (const keys of keySets) {
-        const rankOf = m => {
+        const rankOf = (m: FoodChoice) => {
           const b = foodBonus(AST, m, totals, level);
           return mealRank(keys, withFood(totals, b), b).join();
         };
         assert.equal(
-          rankOf(bestFood(AST, foodChoices(AST), totals, level, keys)),
-          rankOf(bestFood(AST, meals, totals, level, keys)),
+          rankOf(bestMeal(AST, foodChoices(AST), totals, level, keys)),
+          rankOf(bestMeal(AST, meals, totals, level, keys)),
           `${level} ${keys}`,
         );
       }
@@ -104,7 +114,7 @@ test('within a stat pair, a newer meal never has a lower maximum (each choice ca
 test('bonus: xivgear test values (custom food 12% up to 200 Critical Hit, 10% up to 100 Direct Hit on 420)', () => {
   // xivgear custom_items_test.ts "Supports a custom food": 420 Critical Hit -> 470, 420 Direct Hit -> 462. 420 is the
   // level 100 base, so these are a character with no gear points in either stat.
-  const food = {
+  const food: FoodLines = {
     stats: [
       { stat: 'crit', pct: 12, max: 200 },
       { stat: 'dh', pct: 10, max: 100 },
@@ -112,11 +122,11 @@ test('bonus: xivgear test values (custom food 12% up to 200 Critical Hit, 10% up
   };
   const b = foodBonus(DRG, food, { crit: 0, dh: 0 }, 100);
   assert.deepEqual(b, { crit: { bonus: 50, capped: false }, dh: { bonus: 42, capped: false } });
-  assert.deepEqual([420 + b.crit.bonus, 420 + b.dh.bonus], [470, 462]);
+  assert.deepEqual([420 + (b.crit?.bonus ?? 0), 420 + (b.dh?.bonus ?? 0)], [470, 462]);
 });
 
 test('bonus: a percentage of base plus gear, rounded down, up to the maximum', () => {
-  const food = {
+  const food: FoodLines = {
     stats: [
       { stat: 'sps', pct: 10, max: 151 },
       { stat: 'det', pct: 10, max: 91 },
@@ -136,7 +146,7 @@ test('bonus: a percentage of base plus gear, rounded down, up to the maximum', (
   assert.deepEqual(foodBonus(SGE, food, { sps: 1090 }, 100).sps, { bonus: 151, capped: true });
   assert.deepEqual(foodBonus(SGE, food, { sps: 1089 }, 100).sps, { bonus: 150, capped: false });
   // a stat with no gear points still gets the percentage of its base
-  assert.equal(foodBonus(SGE, food, {}, 50).det.bonus, 20);
+  assert.equal(foodBonus(SGE, food, {}, 50).det?.bonus, 20);
   assert.deepEqual(withFood({ sps: 344, crit: 5 }, foodBonus(SGE, food, { sps: 344 }, 50)), { sps: 412, crit: 5, det: 20 });
 });
 
@@ -148,7 +158,9 @@ test('gear plus food rises with every gear point, for every choice, stat and lev
         for (const s of c.stats) {
           let last = -1;
           for (let g = 0; g <= 4000; g += 1) {
-            const v = g + foodBonus(job, c, { [s.stat]: g }, level)[s.stat].bonus;
+            const line = foodBonus(job, c, { [s.stat]: g }, level)[s.stat];
+            assert.ok(line, `${id} ${c.key} ${s.stat} has a bonus line`);
+            const v = g + line.bonus;
             assert.ok(v > last, `${id} ${c.key} ${s.stat} level ${level} gear ${g}`);
             last = v;
           }
@@ -168,12 +180,13 @@ test('choices: only stats the job has, none covered by another, and every releva
       id,
     );
     assert.equal(new Set(choices.map(c => c.key)).size, choices.length, id);
-    const covers = (a, b) => b.stats.every(s => a.stats.some(x => x.stat === s.stat && x.pct >= s.pct && x.max >= s.max));
+    const covers = (a: FoodLines, b: FoodLines) =>
+      b.stats.every(s => a.stats.some(x => x.stat === s.stat && x.pct >= s.pct && x.max >= s.max));
     for (const c of choices) {
       assert.ok(!choices.some(d => d !== c && covers(d, c)), `${id} ${c.key} is covered`);
     }
     // every meal the job can use is matched or beaten on each stat by some choice, so leaving it out loses nothing
-    const raw = {
+    const raw: Record<string, StatKey> = {
       crit: 'crit',
       det: 'det',
       dh: 'dh',
@@ -181,10 +194,17 @@ test('choices: only stats the job has, none covered by another, and every releva
       ...(job.specKey ? { [job.specKey]: job.specKey } : {}),
     };
     for (const [name, , stats] of FOODS) {
-      if (!stats.every(([k]) => raw[k])) {
+      const lines: FoodLines['stats'][number][] = [];
+      for (const [k, pct, max] of stats) {
+        const stat = raw[k];
+        if (stat) {
+          lines.push({ stat, pct, max });
+        }
+      }
+      if (lines.length < stats.length) {
         continue;
       }
-      const meal = { stats: stats.map(([k, pct, max]) => ({ stat: raw[k], pct, max })) };
+      const meal: FoodLines = { stats: lines };
       assert.ok(
         choices.some(c => covers(c, meal)),
         `${id}: ${name} is not covered`,
@@ -197,19 +217,25 @@ test('choices: only stats the job has, none covered by another, and every releva
 });
 
 /* every choice, compared on (keys..., food points in all), the highest first; the first in the list on a tie */
-function bruteBest(job, choices, totals, level, keys) {
-  const vals = c => {
+function bruteBest(
+  job: JobContext,
+  choices: readonly FoodChoice[],
+  totals: Totals,
+  level: number,
+  keys: readonly (DimKey | '' | null | undefined)[],
+) {
+  const vals = (c: FoodChoice) => {
     const b = foodBonus(job, c, totals, level);
     const t = withFood(totals, b);
     // then the substat food points, Vitality's left out
     const subPoints = Object.entries(b).reduce((n, [stat, x]) => (stat === 'vit' ? n : n + x.bonus), 0);
-    return [...keys.filter(Boolean).map(k => t[k] || 0), subPoints];
+    return [...rankedKeys(keys).map(k => t[k] || 0), subPoints];
   };
   return [...choices].sort((a, b) => {
     const va = vals(a),
       vb = vals(b);
     const i = va.findIndex((v, j) => v !== vb[j]);
-    return i < 0 ? choices.indexOf(a) - choices.indexOf(b) : vb[i] - va[i];
+    return i < 0 ? choices.indexOf(a) - choices.indexOf(b) : (vb[i] ?? 0) - (va[i] ?? 0);
   })[0];
 }
 
@@ -221,7 +247,11 @@ test('best food for the goal equals trying every choice', () => {
     for (let k = 0; k < 40; k++) {
       const totals = Object.fromEntries(job.stats.map(s => [s, rand(3000)]));
       const level = [50, 70, 90, 100][k % 4];
-      const keys = [job.stats[rand(job.stats.length)], rand(2) ? job.substats[rand(job.substats.length)] : '', ''];
+      const keys: (DimKey | '' | undefined)[] = [
+        job.stats[rand(job.stats.length)],
+        rand(2) ? job.substats[rand(job.substats.length)] : '',
+        '',
+      ];
       assert.equal(bestFood(job, choices, totals, level, keys), bruteBest(job, choices, totals, level, keys), `${id} ${keys}`);
     }
   }
@@ -229,9 +259,10 @@ test('best food for the goal equals trying every choice', () => {
 
 test('optimizer gear plus best food equals the best (gear set, meal) pair over every loadout and meal', () => {
   // three pieces in each of four slots: 81 loadouts, each with every Sage choice
-  const stat = (a, b, c) => ({ sps: a, crit: b, det: c, mind: 10, vit: 10 });
-  const pool = [];
-  ['head', 'body', 'hands', 'legs'].forEach((t, i) => {
+  const stat = (a: number, b: number, c: number) => ({ sps: a, crit: b, det: c, mind: 10, vit: 10 });
+  const pool: PoolItem[] = [];
+  const types: SlotType[] = ['head', 'body', 'hands', 'legs'];
+  types.forEach((t, i) => {
     pool.push(
       mkItem(`${t} a`, t, 130, stat(20 + i, 5, 0)),
       mkItem(`${t} b`, t, 130, stat(18, 9 + i, 3)),
@@ -239,23 +270,25 @@ test('optimizer gear plus best food equals the best (gear set, meal) pair over e
     );
   });
   const choices = foodChoices(SGE);
-  for (const [target, tb] of [
+  const goals: [target: DimKey, tb: DimKey | ''][] = [
     ['sps', 'crit'],
     ['crit', 'det'],
     ['det', ''],
     ['mind', 'sps'],
-  ]) {
-    const keys = [target, tb, ''];
+  ];
+  for (const [target, tb] of goals) {
+    const keys: (DimKey | '')[] = [target, tb, ''];
     const opt = optimize(SGE, pool, { cap: null, sync: false, level: 50 }, { target, tiebreak: [tb, ''] });
-    const meal = bestFood(SGE, choices, opt.totals, 50, keys);
+    assert.ok(opt.ok, `${target}/${tb}`);
+    const meal = bestMeal(SGE, choices, opt.totals, 50, keys);
     const mine = withFood(opt.totals, foodBonus(SGE, meal, opt.totals, 50));
-    let best = null;
-    const by = t => pool.filter(i => i.type === t);
+    let best: number[] | null = null;
+    const by = (t: SlotType) => pool.filter(i => i.type === t);
     for (const a of by('head')) {
       for (const b of by('body')) {
         for (const c of by('hands')) {
           for (const d of by('legs')) {
-            const g = {};
+            const g: Totals = {};
             for (const it of [a, b, c, d]) {
               for (const s of SGE.stats) {
                 g[s] = (g[s] || 0) + (it.stats[s] || 0);
@@ -263,9 +296,9 @@ test('optimizer gear plus best food equals the best (gear set, meal) pair over e
             }
             for (const f of choices) {
               const t = withFood(g, foodBonus(SGE, f, g, 50));
-              const v = keys.filter(Boolean).map(k => t[k]);
-              const i = best ? v.findIndex((x, j) => x !== best[j]) : 0;
-              if (!best || (i >= 0 && v[i] > best[i])) {
+              const v = rankedKeys(keys).map(k => t[k] ?? 0);
+              const i: number = best ? v.findIndex((x, j) => x !== best?.[j]) : 0;
+              if (!best || (i >= 0 && (v[i] ?? 0) > (best[i] ?? 0))) {
                 best = v;
               }
             }
@@ -274,7 +307,7 @@ test('optimizer gear plus best food equals the best (gear set, meal) pair over e
       }
     }
     assert.deepEqual(
-      keys.filter(Boolean).map(k => mine[k]),
+      rankedKeys(keys).map(k => mine[k] ?? 0),
       best,
       `${target}/${tb}`,
     );
@@ -285,10 +318,11 @@ test('optimizer gear plus best food equals the best (gear set, meal) pair over e
    tier held Vitality at its total with the meal's Vitality but asked the gear for all of it, so no set met it. */
 test("gearNeeded: Vitality counts the meal's Vitality", () => {
   const food = foodChoices(SGE).find(c => c.vit);
+  assert.ok(food);
   for (const level of [50, 100]) {
     for (let total = 0; total <= 3000; total += 37) {
       const g = gearNeeded(SGE, food, 'vit', total, level);
-      const reach = x => x + foodBonus(SGE, food, { vit: x }, level).vit.bonus >= total;
+      const reach = (x: number) => x + (foodBonus(SGE, food, { vit: x }, level).vit?.bonus ?? 0) >= total;
       assert.ok(reach(g) && (g === 0 || !reach(g - 1)), `level ${level}, total ${total}`);
     }
   }
@@ -296,6 +330,7 @@ test("gearNeeded: Vitality counts the meal's Vitality", () => {
 
 test('gearNeeded: the fewest gear points that reach a total with food', () => {
   const [food] = foodChoices(SGE).filter(c => c.key === 'sps+dh');
+  assert.ok(food);
   assert.equal(gearNeeded(SGE, food, 'sps', 412, 50), 344); // 344 + 68
   assert.equal(gearNeeded(SGE, food, 'sps', 411, 50), 343); // 343 + floor(68.4)
   assert.equal(gearNeeded(SGE, null, 'sps', 412, 50), 412);
@@ -303,7 +338,7 @@ test('gearNeeded: the fewest gear points that reach a total with food', () => {
   for (const level of [50, 100]) {
     for (let total = 0; total <= 3000; total += 37) {
       const g = gearNeeded(SGE, food, 'sps', total, level);
-      const reach = x => x + foodBonus(SGE, food, { sps: x }, level).sps.bonus >= total;
+      const reach = (x: number) => x + (foodBonus(SGE, food, { sps: x }, level).sps?.bonus ?? 0) >= total;
       assert.ok(reach(g) && (g === 0 || !reach(g - 1)), `level ${level}, total ${total}`);
     }
   }

@@ -2,7 +2,7 @@
    without changing what the result does, and which one it shows. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import type { Candidate, Eff, FilledPick, JobContext, SlotType, StatKey, StatMap, Totals } from '../../../src/core/types.ts';
+import type { Candidate, Eff, FilledPick, JobContext, SlotType, StatKey, StatMap } from '../../../src/core/types.ts';
 import type { ResultContext, SameRow } from '../../../src/core/same-result.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { equipLevel, mkItem } from '../../../src/core/items.ts';

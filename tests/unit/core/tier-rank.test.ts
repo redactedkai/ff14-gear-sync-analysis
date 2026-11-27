@@ -3,6 +3,8 @@
    tests/sweep/ (npm run test:full). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { DimKey, SlotType, StatKey, Sync } from '../../../src/core/types.ts';
+import type { GoalOptions } from '../../../src/core/target-gcd.ts';
 import { foodChoices } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { optimize } from '../../../src/core/optimizer/index.ts';
@@ -44,22 +46,23 @@ test('rank by tier with Vitality as a key and food matches the reference', () =>
   const rand = rng(5150);
   let runs = 0;
   // 'main' stands for the job's own main stat
-  for (const [t, names] of [
+  const keyLists: ('main' | StatKey)[][] = [
     ['main', 'vit', 'dh'],
     ['main', 'vit'],
     ['crit', 'vit'],
     ['vit', 'det'],
-  ].entries()) {
+  ];
+  for (const [t, names] of keyLists.entries()) {
     for (const jobId of ['AST', 'WAR']) {
       const job = makeJobContext(jobId);
-      const keys = names.map(k => (k === 'main' ? job.mainKey : k));
+      const keys = names.map((k): StatKey => (k === 'main' ? job.mainKey : k));
       const level = t % 2 ? 100 : 50;
-      const sync = { cap: null, sync: false, level };
+      const sync: Sync = { cap: null, sync: false, level };
       const pool = smallPool(job, rand, ['weapon', 'head', 'body', 'ring'], 2);
       if (!pool.length) {
         continue;
       }
-      const meals = foodChoices(job);
+      const meals = [...foodChoices(job)];
       const want = tierLex(job, pool, sync, { keys, melds: true, meals, level });
       const r = rankByTier(job, pool, sync, { target: keys[0], tiebreak: keys.slice(1), melds: true, food: 'best', level });
       const label = `${jobId} L${level} ${keys.join('>')}`;
@@ -73,18 +76,25 @@ test('rank by tier with Vitality as a key and food matches the reference', () =>
 
 test('rank by tier: only raw keys give the raw optimizer; a key is held at its tier start', () => {
   const job = makeJobContext('SGE');
-  const sync = { cap: null, sync: false, level: 100 };
+  const sync: Sync = { cap: null, sync: false, level: 100 };
   const pool = smallPool(job, rng(12), ['head', 'body', 'neck', 'ring'], 2, 1, { ilvlMin: 690, ilvlMax: 730 });
   // main stat alone has no tiers: the same totals as optimize
   const raw = optimize(job, pool, sync, { target: 'mind', tiebreak: ['vit'], melds: true });
   const r = rankByTier(job, pool, sync, { target: 'mind', tiebreak: ['vit'], melds: true, level: 100 });
+  assert.ok(raw.ok && r.ok);
   assert.deepEqual([r.totals.mind, r.totals.vit], [raw.totals.mind, raw.totals.vit]);
   // every held key with a tier is held at its tier start, and the loadout reaches it
   const t = rankByTier(job, pool, sync, { target: 'crit', tiebreak: ['det', 'piety'], melds: true, level: 100 });
+  assert.ok(t.ok);
+  const withFood: Record<string, number | undefined> = t.withFood;
   for (const h of t.held) {
-    assert.ok(t.withFood[h.stat] >= h.hold, h.stat);
+    assert.ok((withFood[h.stat] ?? 0) >= h.hold, h.stat);
     if (h.tier != null) {
-      assert.equal(h.hold, tierStart(rankTierOf(job, h.stat, 100), h.hold), `${h.stat}: the hold is a tier start`);
+      const stat = job.stats.find(key => key === h.stat);
+      assert.ok(stat, h.stat);
+      const tierOf = rankTierOf(job, stat, 100);
+      assert.ok(tierOf, h.stat);
+      assert.equal(h.hold, tierStart(tierOf, h.hold), `${h.stat}: the hold is a tier start`);
     }
   }
 });
@@ -95,13 +105,14 @@ test('rank by tier: only raw keys give the raw optimizer; a key is held at its t
    where a limit of a few dozen nodes stops some stage but not the first. */
 test('rank by tier: a stage stopped at its node limit gives none or a held set, marked truncated', () => {
   const job = makeJobContext('SGE');
-  const sync = { cap: null, sync: false, level: 100 };
-  const types = ['weapon', 'head', 'body', 'hands', 'legs', 'feet', 'neck', 'ear', 'ring'];
+  const sync: Sync = { cap: null, sync: false, level: 100 };
+  const types: SlotType[] = ['weapon', 'head', 'body', 'hands', 'legs', 'feet', 'neck', 'ear', 'ring'];
   const pool = smallPool(job, rng(5), types, 5, 2, { ilvlMin: 690, ilvlMax: 730 });
-  const opts = { target: 'crit', tiebreak: ['det', 'dh'], melds: true };
+  const opts: GoalOptions = { target: 'crit', tiebreak: ['det', 'dh'], melds: true };
   const full = rankByTier(job, pool, sync, opts);
   assert.ok(full.ok && !full.truncated);
-  const lex = r => ['wd', 'crit', 'det', 'dh'].map(stat => r.totals[stat] || 0);
+  const lexKeys: DimKey[] = ['wd', 'crit', 'det', 'dh'];
+  const lex = (r: { totals: Partial<Record<DimKey, number>> }) => lexKeys.map(stat => r.totals[stat] || 0);
 
   const first = rankByTier(job, pool, sync, { ...opts, nodeLimit: 1 });
   assert.equal(first.ok, false);
@@ -114,12 +125,13 @@ test('rank by tier: a stage stopped at its node limit gives none or a held set, 
     if (!r.ok || !r.truncated) {
       continue;
     }
+    const heldTotals: Record<string, number | undefined> = r.withFood;
     for (const h of r.held) {
-      assert.ok(r.withFood[h.stat] >= h.hold, `${nodeLimit}: ${h.stat} held`);
+      assert.ok((heldTotals[h.stat] ?? 0) >= h.hold, `${nodeLimit}: ${h.stat} held`);
     }
     const [mine, best] = [lex(r), lex(full)];
     const firstDiff = mine.findIndex((v, i) => v !== best[i]);
-    assert.ok(firstDiff < 0 || mine[firstDiff] < best[firstDiff], `${nodeLimit}: ${mine} beats ${best}`);
+    assert.ok(firstDiff < 0 || (mine[firstDiff] ?? 0) < (best[firstDiff] ?? 0), `${nodeLimit}: ${mine} beats ${best}`);
     stoppedWithSet++;
   }
   assert.ok(stoppedWithSet >= 1, 'no run stopped after its first stage');
@@ -129,14 +141,14 @@ test('rank by tier: a stage stopped at its node limit gives none or a held set, 
    mode), 'none' when no loadout lands in its band; both name the fastest GCD the pool reaches. */
 test('rank by tier: an infeasible Target GCD gives unreachable or none, with the fastest GCD', () => {
   const job = makeJobContext('SGE');
-  const sync = { cap: null, sync: false, level: 100 };
-  const types = ['weapon', 'head', 'body', 'hands', 'legs', 'feet', 'neck', 'ring'];
+  const sync: Sync = { cap: null, sync: false, level: 100 };
+  const types: SlotType[] = ['weapon', 'head', 'body', 'hands', 'legs', 'feet', 'neck', 'ring'];
   const pool = smallPool(job, rng(3), types, 4, 2, { ilvlMin: 690, ilvlMax: 730 });
-  const opts = { target: 'crit', tiebreak: ['det'], melds: true, mode: 'exact' };
+  const opts: GoalOptions = { target: 'crit', tiebreak: ['det'], melds: true, mode: 'exact' };
   const tooFast = rankByTier(job, pool, sync, { ...opts, gcd: 2.0 });
   assert.equal(tooFast.ok, false);
   assert.equal(tooFast.reason, 'none');
-  assert.ok(tooFast.fastest > 2.0, `fastest ${tooFast.fastest}`);
+  assert.ok(tooFast.fastest !== null && tooFast.fastest > 2.0, `fastest ${tooFast.fastest}`);
   const tooSlow = rankByTier(job, pool, sync, { ...opts, gcd: 3.0 });
   assert.equal(tooSlow.ok, false);
   assert.equal(tooSlow.reason, 'unreachable');
