@@ -13,7 +13,7 @@ With that said, this is a hobby project that I work on my free time. Bug reports
 ## Requirements
 
 - Node 22.18 or later (it runs `.ts` files by stripping their types). Run `npm install` once (or `npm ci` for a clean install that matches `package-lock.json` exactly, as CI does), and `npx playwright install chromium` once for the smoke test and the component stories (`npx playwright install firefox webkit` too for `test:stories:all`). Building and testing the page needs only Node.
-- Python 3.11 or later, only for the data pipeline, its generator tests and Ruff: `python -m pip install -r requirements-dev.txt`. CI runs Ruff and the generator tests on 3.11 (the oldest supported) and 3.13 (`.python-version`). The npm scripts run `python3` or `python`, whichever exists (`scripts/py.mjs`).
+- Python 3.11 or later, only for the data pipeline, its generator tests, Ruff and Pyrefly: `python -m pip install -r requirements-dev.txt`. CI runs Ruff, Pyrefly and the generator tests on 3.11 (the oldest supported) and 3.13 (`.python-version`). The npm scripts run `python3` or `python`, whichever exists (`scripts/py.mjs`).
 
 Run all commands from the repo root.
 
@@ -48,7 +48,7 @@ Every npm command, in one place (other pages link here). Times are from the owne
 | `npm run lint` | Biome (JavaScript, TypeScript, JSON, CSS and `src/index.html`): lint and format check, no file changes; a warning fails it; then `lint:lit` |
 | `npm run lint:lit` | ESLint with `eslint-plugin-lit` and `eslint-plugin-lit-a11y` on the Lit elements (`src/ui/elements/**`), the markup Biome cannot read |
 | `npm run typecheck` | `tsc --noEmit` over the `.ts` files (`tsconfig.json`: strict, erasable syntax only, `.js` files not checked); part of `check` |
-| `npm run lint:py` | Ruff (Python): lint and format check, no file changes |
+| `npm run lint:py` | Ruff (Python): lint and format check, then Pyrefly type check; no file changes |
 | `npm run format`, `npm run format:py` | Rewrite files with Biome, or with Ruff |
 | `npm run test:stories` | Builds the story gallery and runs the component stories (`tests/stories/`) in Chromium (time: docs/engineering/testing.md, section 1); part of `check` |
 | `npm run test:stories:all` | The same stories in Chromium, Firefox and WebKit, about 30 s; run by CI and `check:all` |

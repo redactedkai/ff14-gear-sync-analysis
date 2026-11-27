@@ -28,7 +28,7 @@
     "test:tooling": "node scripts/test.mjs --domain tooling",
     "test:changed": "node scripts/test.mjs --changed",
     "lint": "biome lint --error-on-warnings . && biome format . && npm run lint:lit",
-    "lint:py": "node scripts/py.mjs -m ruff check . && node scripts/py.mjs -m ruff format --check .",
+    "lint:py": "node scripts/py.mjs -m ruff check . && node scripts/py.mjs -m ruff format --check . && node scripts/py.mjs -m pyrefly check",
     "format": "biome format --write .",
     "format:py": "node scripts/py.mjs -m ruff format .",
     "check": "node scripts/check-deps.mjs && npm run lint && npm run typecheck && npm run build && npm test && npm run test:stories && npm run test:smoke",
