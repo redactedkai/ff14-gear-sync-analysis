@@ -3,6 +3,7 @@
    wear cleared (a real White Mage cane), and moving a list's rows. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { mustFind } from '../../helpers/common.ts';
 import { MAX_REAL } from '../../../../src/core/tables.ts';
 import { capCeiling } from '../../../../src/core/sync-target.ts';
 import { SET_ROW_SLOTS, parseSheet } from '../../../../src/ui/sheets/storage.ts';
@@ -119,10 +120,11 @@ test("Copy sheet to another healer: the White Mage's cane is listed, emptied in 
       ['g_2x', 'Set 2'],
     ],
   );
-  assert.deepEqual(copy.sets[0].pieces[0], { slot: 'weapon' });
-  assert.deepEqual(copy.sets[0].pinned.pieces, [2]);
-  assert.deepEqual(copy.sets[0].pieces.slice(2), whmSet.pieces.slice(2), 'the armor every healer wears stays');
-  assert.equal(sheet.sets[0].pieces[0].gameId, WHM_CANE, 'the original is not changed');
+  const copied = mustFind(copy.sets[0], 'the first copied set');
+  assert.deepEqual(copied.pieces[0], { slot: 'weapon' });
+  assert.deepEqual(copied.pinned?.pieces, [2]);
+  assert.deepEqual(copied.pieces.slice(2), whmSet.pieces.slice(2), 'the armor every healer wears stays');
+  assert.equal(sheet.sets[0]?.pieces[0]?.gameId, WHM_CANE, 'the original is not changed');
   assert.ok(parseSheet(JSON.stringify(copy), 's_c').sheet);
 });
 
@@ -136,7 +138,8 @@ test('moveItem: one row to another place; out of range changes nothing', () => {
    the sheet page took a cap above what its level allows). Level 70: the best gear made for it is item level 405 (the
    level 70 weapons, 5 above the level's 400); level 50: 135. */
 test('sheetSettings: the cap is lowered to what the level allows, as on the Job and sync panel', () => {
-  const at = (jobId, level, on, cap, fallback) => sheetSettings(jobId, { level, sync: { on, cap } }, fallback);
+  const at = (jobId: string, level: unknown, on: boolean, cap: unknown, fallback?: Parameters<typeof sheetSettings>[2]) =>
+    sheetSettings(jobId, { level, sync: { on, cap } }, fallback);
   assert.deepEqual(at('SGE', 70, true, 500), { level: 70, sync: { on: true, cap: 405 }, lowered: { from: 500, to: 405, level: 70 } });
   assert.deepEqual(at('SGE', 50, true, '300'), { level: 50, sync: { on: true, cap: 135 }, lowered: { from: 300, to: 135, level: 50 } });
   // at level 100 the ceiling is the highest real item level

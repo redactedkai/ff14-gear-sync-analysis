@@ -7,7 +7,9 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { poolItemById } from '../../../../src/core/items.ts';
 import { evaluateSet, makeSet } from '../../../../src/core/set.ts';
 import { placePiece, removedNote } from '../../../../src/ui/sheets/set-edits.ts';
-import { SAGE_IDS, sageSet } from '../../helpers/sheet-fixtures.ts';
+import { mustFind } from '../../helpers/common.ts';
+import type { SavedGearSet } from '../../../../src/ui/sheets/saved-types.ts';
+import { SAGE_IDS, sageSet, placedOk } from '../../helpers/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 const HEAD = 2;
@@ -21,22 +23,22 @@ function setWithHead() {
 }
 
 test('a cloak picked over a held head empties and unpins the head row and names the head', () => {
-  const placed = placePiece(SGE, setWithHead(), BODY, VERMILION_CLOAK_OF_HEALING);
+  const placed = placedOk(placePiece(SGE, setWithHead(), BODY, VERMILION_CLOAK_OF_HEALING));
   assert.equal(placed.ok, true);
   assert.equal(placed.gearSet.pieces[BODY].gameId, VERMILION_CLOAK_OF_HEALING);
   assert.equal(placed.gearSet.pieces[HEAD].gameId, undefined);
-  assert.deepEqual(placed.gearSet.pinned.pieces, [BODY]);
-  const headName = poolItemById(SGE, SAGE_IDS.head).name;
-  assert.equal(placed.removedNote, removedNote([headName], poolItemById(SGE, VERMILION_CLOAK_OF_HEALING).name));
+  assert.deepEqual(placed.gearSet.pinned?.pieces, [BODY]);
+  const headName = mustFind(poolItemById(SGE, SAGE_IDS.head), 'the head').name;
+  assert.equal(placed.removedNote, removedNote([headName], mustFind(poolItemById(SGE, VERMILION_CLOAK_OF_HEALING), 'the cloak').name));
   assert.ok(placed.removedNote.includes(headName));
 });
 
 test('the set the cloak makes counts the cloak alone, not the cloak and the head', () => {
-  const placed = placePiece(SGE, setWithHead(), BODY, VERMILION_CLOAK_OF_HEALING);
+  const placed = placedOk(placePiece(SGE, setWithHead(), BODY, VERMILION_CLOAK_OF_HEALING));
   const cloakAlone = sageSet();
   cloakAlone.pieces[HEAD] = { slot: 'head' };
   cloakAlone.pieces[BODY] = { slot: 'body', gameId: VERMILION_CLOAK_OF_HEALING, stones: [] };
-  const mind = set => evaluateSet(SGE, makeSet(set.pieces), NO_SYNC, 100).gear.mind;
+  const mind = (set: SavedGearSet) => evaluateSet(SGE, makeSet(set.pieces), NO_SYNC, 100).gear.mind;
   assert.equal(mind(placed.gearSet), mind(cloakAlone));
 });
 
@@ -48,7 +50,7 @@ test('a head picked while the cloak is worn is refused and the set is unchanged'
 });
 
 test('a body piece that covers nothing removes nothing', () => {
-  const placed = placePiece(SGE, setWithHead(), BODY, SAGE_IDS.body);
+  const placed = placedOk(placePiece(SGE, setWithHead(), BODY, SAGE_IDS.body));
   assert.equal(placed.ok, true);
   assert.equal(placed.gearSet.pieces[HEAD].gameId, SAGE_IDS.head);
   assert.equal(placed.removedNote, '');

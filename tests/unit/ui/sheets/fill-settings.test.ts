@@ -24,8 +24,8 @@ test('Auto-fill settings: the defaults, a stat the job lacks put back, the level
 });
 
 test('the goal line: stat abbreviations in rank order, then the Target GCD', () => {
-  const goal = { target: 'mind', tb: 'crit', tb2: 'det', gcd: '', gcdMode: 'exact' };
+  const goal: Parameters<typeof goalText>[1] = { target: 'mind', tb: 'crit', tb2: 'det', gcd: '', gcdMode: 'exact' };
   assert.equal(goalText(SGE, goal), 'MND › CRT › DET');
   assert.equal(goalText(SGE, { ...goal, tb2: '', gcd: 2.45, gcdMode: 'min' }), 'MND › CRT, GCD 2.45 or faster');
-  assert.equal(goalText(SGE, { ...goal, tb: '', tb2: '', gcd: '2.5' }), 'MND, GCD 2.50');
+  assert.equal(goalText(SGE, { ...goal, tb: '', tb2: '', gcd: 2.5 }), 'MND, GCD 2.50');
 });

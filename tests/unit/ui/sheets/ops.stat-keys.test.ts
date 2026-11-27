@@ -6,7 +6,9 @@ import assert from 'node:assert/strict';
 import { copySheet } from '../../../../src/ui/sheets/ops.ts';
 import { fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
+import { mustFind } from '../../helpers/common.ts';
 import { sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import type { SavedGearSet, SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 
 const AT = 1762800000000;
 
@@ -26,9 +28,17 @@ function sageGoalSheet() {
   );
   return sheetOf('SGE', [set]);
 }
-const copyFor = (sheet, job) => copySheet(sheet, { name: 'Copy', job, level: 100, sync: sheet.sync }, 's_2', AT, () => 'g_c1');
-const goalOf = set => [set.fillSettings.goal.target, set.fillSettings.goal.tb, set.fillSettings.goal.tb2];
-const ringStones = set => set.pieces.find(row => row.slot === 'ring').stones;
+const copyFor = (sheet: SavedSheet, job: string) =>
+  copySheet(sheet, { name: 'Copy', job, level: 100, sync: sheet.sync }, 's_2', AT, () => 'g_c1');
+const goalOf = (set: SavedGearSet) => {
+  const goal = mustFind(set.fillSettings?.goal, 'the set goal');
+  return [goal.target, goal.tb, goal.tb2];
+};
+const ringStones = (set: SavedGearSet) =>
+  mustFind(
+    set.pieces.find(row => row.slot === 'ring'),
+    'a ring row',
+  ).stones;
 
 test('Copy sheet healer to tank: Mind, Spell Speed and Piety become Strength, Skill Speed and Tenacity', () => {
   const sheet = sageGoalSheet();
@@ -47,9 +57,9 @@ test('Copy sheet healer to Dexterity and caster jobs: the main stat and speed fo
     ['BLM', 'int', 'sps'],
     ['SAM', 'str', 'sks'],
   ]) {
-    const set = copyFor(sageGoalSheet(), job).sets[0];
+    const set = mustFind(copyFor(sageGoalSheet(), job).sets[0], 'the copied set');
     assert.deepEqual(goalOf(set), [main, speed, 'piety'], job);
-    assert.equal(ringStones(set)[0].stat, speed, job);
+    assert.equal(mustFind(ringStones(set), 'the ring stones')[0]?.stat, speed, job);
     // the Auto-fill settings of the copy: the stat the job lacks is put back to the default, never a stat of the old job
     const goal = fillSettingsOf(makeJobContext(job), set).goal;
     assert.deepEqual([goal.target, goal.tb, goal.tb2], [main, speed, ''], job);

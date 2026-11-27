@@ -6,7 +6,56 @@ import { ACK_REQUIRED_TEXT, EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT, SHEET_GONE_TEXT 
 import { FORM_FIELD } from '../../../../src/ui/sheets/ops.ts';
 import { shownName, submitDialog } from '../../../../src/ui/sheets/dialogs.ts';
 import { WHM_CANE, fakeStorage, piece, sageSet } from '../../helpers/sheet-fixtures.ts';
-import { createSheetsFacade } from '../../helpers/stores.ts';
+import { mustFind } from '../../helpers/common.ts';
+import { createSheetsFacade, idOf, openSetOf, savedSheet } from '../../helpers/stores.ts';
+import type { DialogForm } from '../../../../src/ui/elements/sheets/sheet-dialogs-model.ts';
+
+/* The forms the dialogs hold, whole: every field of the kind, `fields` over the defaults. */
+type FormOf<Kind extends DialogForm['kind']> = Extract<DialogForm, { kind: Kind }>;
+const REFUSAL_NONE = { error: '', errorField: '' };
+const newForm = (fields: Partial<FormOf<'new'>> = {}): FormOf<'new'> => ({
+  kind: 'new',
+  name: '',
+  nameTyped: false,
+  description: '',
+  job: 'SGE',
+  level: 100,
+  sync: { on: true, cap: 123 },
+  capLowered: null,
+  ...REFUSAL_NONE,
+  ...fields,
+});
+const copyForm = (fields: Partial<FormOf<'copy'>> = {}): FormOf<'copy'> => ({
+  kind: 'copy',
+  id: '',
+  name: '',
+  job: 'SGE',
+  level: 100,
+  sync: { on: true, cap: 123 },
+  capLowered: null,
+  ack: false,
+  helpOpen: false,
+  ...REFUSAL_NONE,
+  ...fields,
+});
+const editForm = (
+  kind: 'edit-sheet' | 'edit-set',
+  fields: Partial<FormOf<'edit-sheet' | 'edit-set'>> = {},
+): FormOf<'edit-sheet' | 'edit-set'> => ({
+  kind,
+  id: '',
+  name: '',
+  description: '',
+  ...REFUSAL_NONE,
+  ...fields,
+});
+const deleteForm = (what: 'sheet' | 'set', id: string, target: FormOf<'delete'>['target']): FormOf<'delete'> => ({
+  kind: 'delete',
+  what,
+  id,
+  target,
+  ...REFUSAL_NONE,
+});
 
 function makeStore() {
   let next = 0;
@@ -15,15 +64,15 @@ function makeStore() {
 const SAGE = { name: 'Bahamut T13', job: 'SGE', level: 100, sync: { on: true, cap: 123 } };
 
 test('shownName: the New sheet form shows the default name until one is typed', () => {
-  const form = { kind: 'new', name: '', nameTyped: false, job: 'SGE', level: 100, sync: { on: true, cap: 123 } };
+  const form = newForm();
   assert.equal(shownName(form), 'Sage Lv 100 ilvl 123');
   assert.equal(shownName({ ...form, nameTyped: true, name: 'Mine' }), 'Mine');
-  assert.equal(shownName({ kind: 'edit-set', name: 'Set 1' }), 'Set 1');
+  assert.equal(shownName(editForm('edit-set', { name: 'Set 1' })), 'Set 1');
 });
 
 test('New sheet: no job is refused with the reason and its field; a blank typed name is refused and stays blank', () => {
   const store = makeStore();
-  const form = { kind: 'new', name: '', nameTyped: false, description: '', job: '', level: 100, sync: { on: false, cap: 795 } };
+  const form = newForm({ job: '', sync: { on: false, cap: 795 } });
   assert.deepEqual(submitDialog(store, form), { ok: false, error: JOB_REQUIRED_TEXT, field: FORM_FIELD.job });
   form.job = 'PLD';
   form.name = '  ';
@@ -39,8 +88,8 @@ test('New sheet: no job is refused with the reason and its field; a blank typed 
 test('Copy sheet: a blank name is refused and stays blank; the pieces the job cannot wear need the box; a ticked copy is made', () => {
   const store = makeStore();
   store.createSheet(SAGE);
-  const id = store.sheetId;
-  const form = { kind: 'copy', id, name: '', job: 'SGE', level: 100, sync: { on: true, cap: 123 }, ack: false };
+  const id = mustFind(store.sheetId, 'the open sheet id');
+  const form = copyForm({ id });
   assert.deepEqual(submitDialog(store, form), { ok: false, error: EMPTY_NAME_TEXT, field: FORM_FIELD.name });
   assert.equal(form.name, '', 'the box stays empty');
   form.name = 'Bahamut T13 (1)';
@@ -52,9 +101,9 @@ test('Copy sheet: a blank name is refused and stays blank; the pieces the job ca
   // a cane the Astrologian cannot wear: the box has to be ticked first
   const canes = makeStore();
   canes.createSheet({ ...SAGE, job: 'WHM', name: 'Canes' });
-  const set = canes.newSet();
-  canes.updateSet(set.id, { pieces: sageSet().pieces.map((row, i) => (i === 0 ? piece('weapon', WHM_CANE) : row)) });
-  const caneForm = { kind: 'copy', id: canes.sheetId, name: 'Astro', job: 'AST', level: 100, sync: { on: false, cap: 795 }, ack: false };
+  const setId = idOf(canes.newSet());
+  canes.updateSet(setId, { pieces: sageSet().pieces.map((row, i) => (i === 0 ? piece('weapon', WHM_CANE) : row)) });
+  const caneForm = copyForm({ id: mustFind(canes.sheetId, 'the open sheet id'), name: 'Astro', job: 'AST', sync: { on: false, cap: 795 } });
   assert.deepEqual(submitDialog(canes, caneForm), { ok: false, error: ACK_REQUIRED_TEXT, field: FORM_FIELD.ack });
   caneForm.ack = true;
   assert.equal(submitDialog(canes, caneForm).ok, true);
@@ -62,7 +111,7 @@ test('Copy sheet: a blank name is refused and stays blank; the pieces the job ca
 
 test('Copy sheet of a sheet that is gone: the reason has no field', () => {
   const store = makeStore();
-  const form = { kind: 'copy', id: 'gone', name: 'x', job: 'SGE', level: 100, sync: { on: false, cap: 795 }, ack: false };
+  const form = copyForm({ id: 'gone', name: 'x', sync: { on: false, cap: 795 } });
   assert.deepEqual(submitDialog(store, form), { ok: false, error: SHEET_GONE_TEXT, field: '' });
 });
 
@@ -70,26 +119,29 @@ test('Edit sheet and Edit gear set: a blank name is refused with its field and t
   const store = makeStore();
   store.createSheet(SAGE);
   store.newSet();
-  const sheetForm = { kind: 'edit-sheet', id: store.sheetId, name: '', description: '' };
+  const sheetId = mustFind(store.sheetId, 'the open sheet id');
+  const sheetForm = editForm('edit-sheet', { id: sheetId });
   assert.deepEqual(submitDialog(store, sheetForm), { ok: false, error: EMPTY_NAME_TEXT, field: FORM_FIELD.name });
   assert.equal(sheetForm.name, '');
-  assert.equal(store.sheet(store.sheetId).name, 'Bahamut T13', 'the saved name is unchanged');
-  const setForm = { kind: 'edit-set', id: store.setId, name: '', description: '' };
+  assert.equal(savedSheet(store, sheetId).name, 'Bahamut T13', 'the saved name is unchanged');
+  const setForm = editForm('edit-set', { id: mustFind(store.setId, 'the open set id') });
   assert.deepEqual(submitDialog(store, setForm), { ok: false, error: EMPTY_NAME_TEXT, field: FORM_FIELD.name });
   assert.equal(setForm.name, '');
   setForm.name = 'Raid';
   assert.equal(submitDialog(store, setForm).ok, true);
-  assert.equal(store.currentSet.name, 'Raid');
+  assert.equal(openSetOf(store).name, 'Raid');
 });
 
 test('Delete: a set, then a sheet; a thing already gone is refused', () => {
   const store = makeStore();
   store.createSheet(SAGE);
   store.newSet();
-  const setId = store.setId;
-  assert.equal(submitDialog(store, { kind: 'delete', what: 'set', id: setId }).ok, true);
+  const setId = mustFind(store.setId, 'the open set id');
+  assert.equal(submitDialog(store, deleteForm('set', setId, openSetOf(store))).ok, true);
   assert.equal(store.list().sheets[0].sets.length, 0);
-  assert.equal(submitDialog(store, { kind: 'delete', what: 'sheet', id: store.sheetId }).ok, true);
+  const sheetId = mustFind(store.sheetId, 'the open sheet id');
+  const sheet = savedSheet(store, sheetId);
+  assert.equal(submitDialog(store, deleteForm('sheet', sheetId, sheet)).ok, true);
   assert.equal(store.list().sheets.length, 0);
-  assert.deepEqual(submitDialog(store, { kind: 'delete', what: 'sheet', id: 'gone' }), { ok: false, error: SHEET_GONE_TEXT, field: '' });
+  assert.deepEqual(submitDialog(store, deleteForm('sheet', 'gone', sheet)), { ok: false, error: SHEET_GONE_TEXT, field: '' });
 });

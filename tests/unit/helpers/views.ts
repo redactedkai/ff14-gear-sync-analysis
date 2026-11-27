@@ -67,6 +67,13 @@ export function solveOf(app: TestAppState, gear?: readonly PoolItem[], choices: 
 /* A solve that found a set: `solved` with `run` narrowed to RecipeSuccess and `set` to a SetEvaluation. Throws, naming
    the status, when the run found none. */
 export type SolvedOk = Solved & { run: RecipeSuccess; set: SetEvaluation };
+/* `run` narrowed to RecipeSuccess; throws, naming the status, when it found no set. */
+export function okRunOf(run: RecipeResult): RecipeSuccess {
+  if (run.status !== 'ok') {
+    throw new Error(`the solve found no set (${run.status})`);
+  }
+  return run;
+}
 export function okOf(solved: Solved): SolvedOk {
   const { run, set } = solved;
   if (run.status !== 'ok' || !set) {

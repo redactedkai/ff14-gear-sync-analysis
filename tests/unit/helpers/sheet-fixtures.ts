@@ -5,6 +5,8 @@
 import { poolItemById } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { placePiece } from '../../../src/ui/sheets/set-edits.ts';
+import type { ParsedSheet } from '../../../src/ui/sheets/storage.ts';
+import type { PlaceResult } from '../../../src/ui/sheets/set-edits.ts';
 import type { JobContext, SlotType, StatKey } from '../../../src/core/types.ts';
 import type { GearPins, SavedFillSettings, SavedGearSet, SavedRow, SavedSheet, SavedStone } from '../../../src/ui/sheets/saved-types.ts';
 
@@ -85,6 +87,37 @@ export function sageSet({
     fillSettings,
     createdAt: 1762700000000,
     updatedAt: 1762703600000,
+  };
+}
+
+/* The slot of each of a saved set's 12 rows (the off-hand row is empty for a two-handed job; two ring rows). */
+export const SLOT_OF_ROW: SlotType[] = [
+  'weapon',
+  'offhand',
+  'head',
+  'body',
+  'hands',
+  'legs',
+  'feet',
+  'ear',
+  'neck',
+  'wrist',
+  'ring',
+  'ring',
+];
+
+/* A saved set made of `pieces` (every row empty when omitted), with `fields` over the defaults: no meal, nothing pinned. */
+export function setOfRows(pieces: SavedRow[] = SLOT_OF_ROW.map(slot => ({ slot })), fields: Partial<SavedGearSet> = {}): SavedGearSet {
+  return {
+    id: 'g_1',
+    name: 'Set 1',
+    description: '',
+    pieces,
+    meal: null,
+    pinned: { pieces: [], meal: false },
+    createdAt: 1762700000000,
+    updatedAt: 1762703600000,
+    ...fields,
   };
 }
 
@@ -175,4 +208,28 @@ export function placed(job: JobContext, gearSet: SavedGearSet, index: number, ga
     throw new Error(`row ${index} refused the piece ${gameId}`);
   }
   return result.gearSet;
+}
+
+/* A placePiece result that placed the piece ({ok: true, gearSet, note, removedNote}); throws when it was refused. */
+export function placedOk(result: PlaceResult): Extract<PlaceResult, { ok: true }> {
+  if (!result.ok) {
+    throw new Error('placePiece refused the piece');
+  }
+  return result;
+}
+
+/* The sheet a parseSheet result holds, which the test knows is readable (throws, with the cause, when it is not). */
+export function readable(parsed: ParsedSheet): SavedSheet {
+  if (!parsed.sheet) {
+    throw new Error(`the record is unreadable: ${parsed.cause}`);
+  }
+  return parsed.sheet;
+}
+
+/* The cause a parseSheet result gives for a record it cannot read (throws when the record was readable). */
+export function causeOf(parsed: ParsedSheet): string {
+  if (parsed.sheet) {
+    throw new Error('the record is readable');
+  }
+  return parsed.cause;
 }

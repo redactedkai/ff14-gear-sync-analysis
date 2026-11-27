@@ -8,13 +8,14 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { solverRequest } from '../../../../src/ui/solver.ts';
 import { defaultFillSettings, fillRecipe, fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.ts';
+import type { FillSettings } from '../../../../src/ui/sheets/saved-types.ts';
 import { sageSet } from '../../helpers/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 const SYNC = syncSettings({ cap: 123, sync: true, level: 100 });
 
 /* a value that differs from `v` and has the same kind */
-const other = v => {
+const other = (v: unknown): unknown => {
   if (typeof v === 'boolean') {
     return !v;
   }
@@ -27,17 +28,29 @@ const other = v => {
   return v === 'x' ? 'y' : 'x';
 };
 
+/* The list `field` of `owner` (a recipe), as a list the test may change. */
+function listOf(owner: object, field: string): unknown[] {
+  const list = Reflect.get(owner, field);
+  if (!Array.isArray(list)) {
+    throw new Error(`${field} is not a list`);
+  }
+  return list;
+}
+
 test('every Auto-fill setting changes the recipe and the solver request, and no other field comes with it', () => {
   const base = defaultFillSettings(SGE);
-  const request = settings => solverRequest('solve', { job: SGE, sync: SYNC, level: 100, recipe: fillRecipe(settings) }, { key: 'g_1' });
+  const request = (settings: FillSettings) =>
+    solverRequest('solve', { job: SGE, sync: SYNC, level: 100, recipe: fillRecipe(settings) }, { key: 'g_1' });
   const baseRecipe = fillRecipe(base);
   const baseRequest = JSON.stringify(request(base));
-  for (const group of ['goal', 'searchCriteria']) {
+  for (const group of ['goal', 'searchCriteria'] as const) {
     for (const field of Object.keys(base[group])) {
       const changed = structuredClone(base);
-      changed[group][field] = other(base[group][field]);
+      Reflect.set(changed[group], field, other(Reflect.get(base[group], field)));
       const recipe = fillRecipe(changed);
-      const differing = Object.keys(recipe).filter(k => JSON.stringify(recipe[k]) !== JSON.stringify(baseRecipe[k]));
+      const differing = Object.keys(recipe).filter(
+        k => JSON.stringify(Reflect.get(recipe, k)) !== JSON.stringify(Reflect.get(baseRecipe, k)),
+      );
       assert.deepEqual(differing, [field], `${group}.${field}`);
       assert.notEqual(JSON.stringify(request(changed)), baseRequest, `${group}.${field} reaches the request`);
     }
@@ -56,15 +69,16 @@ test("the recipe depends on the Auto-fill settings only: the set's name, pieces,
 test('a recipe does not share its lists with the settings: editing one never edits the other', () => {
   const settings = defaultFillSettings(SGE);
   const recipe = fillRecipe(settings);
-  recipe.exclude.push('x');
-  recipe.expOff.push('DT');
+  listOf(recipe, 'exclude').push('x');
+  listOf(recipe, 'expOff').push('DT');
   assert.equal(settings.searchCriteria.exclude.includes('x'), false);
   assert.deepEqual(settings.searchCriteria.expOff, []);
 });
 
 test("Food is on by default; a save's old meal choice (foodPair) or a missing field adds nothing to the recipe", () => {
   assert.equal(defaultFillSettings(SGE).goal.food, true);
-  const old = sageSet({ fillSettings: { goal: { target: 'crit', foodPair: 'spd+spec' } } });
+  const oldGoal = { target: 'crit', foodPair: 'spd+spec' } as const;
+  const old = sageSet({ fillSettings: { goal: oldGoal } });
   const recipe = fillRecipe(fillSettingsOf(SGE, old));
   assert.equal('foodPair' in recipe, false);
   assert.deepEqual([recipe.food, recipe.target, recipe.melds], [true, 'crit', true]);

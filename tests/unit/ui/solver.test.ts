@@ -10,8 +10,9 @@ import { inProcessSolver, isCancelled, makeSolverHandler, solverRequest, workerS
 import { gearToSearchView, solveView } from '../../../src/ui/solve.ts';
 import { mustFind } from '../helpers/common.ts';
 import { solverReply } from '../helpers/set-page-bind.ts';
+import { answered, badPinResult, okResult } from '../helpers/solver-answers.ts';
 import { inputsOf, makeApp } from '../helpers/views.ts';
-import type { HandlerAnswer, Solver, SolverKind, SolverRequest, SolverWorker } from '../../../src/ui/solver.ts';
+import type { Solver, SolverKind, SolverRequest, SolverWorker } from '../../../src/ui/solver.ts';
 
 /* Sage at item level 123, a set's Auto-fill settings with Food on. */
 const SGE = (() => {
@@ -19,32 +20,6 @@ const SGE = (() => {
   app.recipe.food = true;
   return inputsOf(app);
 })();
-
-/* A handler's answer that is not an error: {result, ms}. */
-function answered(answer: HandlerAnswer) {
-  if ('error' in answer) {
-    throw new Error(`the handler answered with an error: ${answer.error}`);
-  }
-  return answer;
-}
-
-/* The result of a `solve` answer that found a set. */
-function okResult(answer: HandlerAnswer) {
-  const { result } = answered(answer);
-  if (!('kind' in result) || result.kind !== 'ok') {
-    throw new Error('the answer is not a solve that found a set');
-  }
-  return result;
-}
-
-/* The result of a `solve` answer that held a pin the solve cannot keep. */
-function badPinResult(answer: HandlerAnswer) {
-  const { result } = answered(answer);
-  if (!('kind' in result) || result.kind !== 'badpin') {
-    throw new Error('the answer is not a bad pin');
-  }
-  return result;
-}
 
 test('solver handler: a solve and a Gear to search request give the view builders own results, cloned intact', () => {
   const session = makeSession();

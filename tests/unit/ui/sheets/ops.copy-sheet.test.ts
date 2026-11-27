@@ -12,15 +12,17 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { copySheet, piecesToClear } from '../../../../src/ui/sheets/ops.ts';
 import { SET_ROW_SLOTS, parseSheet } from '../../../../src/ui/sheets/storage.ts';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
-import { rng } from '../../helpers/common.ts';
+import { must } from '../../../../src/core/guards.ts';
+import { mustFind, rng } from '../../helpers/common.ts';
+import type { SavedGearSet, SavedRow, SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 
 const SHEETS = 900;
 const SYNC = { on: true, cap: 660 };
 
 test('Copy sheet keeps what the new job can wear, moves the goal and stones to its stats and changes nothing else', () => {
   const rand = rng(515151);
-  const int = count => Math.floor(rand() * count);
-  const pick = list => list[int(list.length)];
+  const int = (count: number) => Math.floor(rand() * count);
+  const pick = <Item>(list: readonly Item[]): Item => mustFind(list[int(list.length)], 'a pick from a list');
   const jobs = JOBS.map(job => makeJobContext(job.id));
   const gearOf = new Map(jobs.map(job => [job.jobId, jobGear(job)]));
   let nextSetId = 0;
@@ -29,9 +31,9 @@ test('Copy sheet keeps what the new job can wear, moves the goal and stones to i
   for (let n = 0; n < SHEETS; n++) {
     // a random sheet: one to three sets of random real pieces with random stones, a goal and some pins
     const job = pick(jobs);
-    const gear = gearOf.get(job.jobId);
-    const sets = Array.from({ length: 1 + int(3) }, (_, k) => {
-      const pieces = SET_ROW_SLOTS.map(slot => {
+    const gear = must(gearOf, job.jobId, 'the job gear');
+    const sets = Array.from({ length: 1 + int(3) }, (_, k): SavedGearSet => {
+      const pieces = SET_ROW_SLOTS.map((slot): SavedRow => {
         const items = gear.filter(item => item.type === slot);
         if (!items.length || rand() < 0.2) {
           return { slot };
@@ -53,7 +55,7 @@ test('Copy sheet keeps what the new job can wear, moves the goal and stones to i
         updatedAt: 1,
       };
     });
-    const sheet = {
+    const sheet: SavedSheet = {
       v: 1,
       id: `s_${n}`,
       name: 'x',
@@ -68,8 +70,15 @@ test('Copy sheet keeps what the new job can wear, moves the goal and stones to i
     };
     const frozen = JSON.stringify(sheet);
 
-    for (const to of GEAR_GROUPS.find(group => group.includes(job.jobId)).filter(id => id !== job.jobId)) {
-      const newJob = jobs.find(candidate => candidate.jobId === to);
+    const groupOfJob = mustFind(
+      GEAR_GROUPS.find(group => group.includes(job.jobId)),
+      `the gear group of ${job.jobId}`,
+    );
+    for (const to of groupOfJob.filter(id => id !== job.jobId)) {
+      const newJob = mustFind(
+        jobs.find(candidate => candidate.jobId === to),
+        to,
+      );
       const label = `${job.jobId} to ${to}`;
       const copy = copySheet(sheet, { name: 'copy', job: to, level: newJob.maxLevel, sync: SYNC }, `s_c${n}`, 2, setId);
 
@@ -86,12 +95,16 @@ test('Copy sheet keeps what the new job can wear, moves the goal and stones to i
       const jobBit = 1 << newJob.jobIndex;
       const cleared = piecesToClear(sheet, to);
       copy.sets.forEach((set, setIndex) => {
+        const sourceSet = mustFind(sheet.sets[setIndex], 'the source set');
         set.pieces.forEach((row, index) => {
-          const before = sheet.sets[setIndex].pieces[index];
+          const before = mustFind(sourceSet.pieces[index], 'the source row');
           if (row.gameId != null) {
-            assert.ok(itemById(row.gameId)[ROW.jobMask] & jobBit, `${label}: kept ${row.gameId}, which ${to} cannot wear`);
+            assert.ok(
+              mustFind(itemById(row.gameId), `item ${row.gameId}`)[ROW.jobMask] & jobBit,
+              `${label}: kept ${row.gameId}, which ${to} cannot wear`,
+            );
           }
-          const wasCleared = cleared.some(entry => entry.setId === sheet.sets[setIndex].id && entry.index === index);
+          const wasCleared = cleared.some(entry => entry.setId === sourceSet.id && entry.index === index);
           assert.equal(
             wasCleared,
             before.gameId != null && row.gameId == null,
@@ -104,14 +117,18 @@ test('Copy sheet keeps what the new job can wear, moves the goal and stones to i
           }
         });
         const goal = set.fillSettings?.goal;
-        for (const key of ['target', 'tb', 'tb2']) {
-          if (goal?.[key]) {
-            assert.ok(newJob.stats.includes(goal[key]), `${label}: goal ${key} ${goal[key]}`);
+        for (const key of ['target', 'tb', 'tb2'] as const) {
+          const stat = goal?.[key];
+          if (stat) {
+            assert.ok(
+              newJob.stats.some(own => own === stat),
+              `${label}: goal ${key} ${stat}`,
+            );
           }
         }
-        for (const index of set.pinned.pieces) {
+        for (const index of set.pinned?.pieces ?? []) {
           assert.ok(
-            set.pieces[index].gameId != null || sheet.sets[setIndex].pieces[index].gameId == null,
+            set.pieces[index]?.gameId != null || mustFind(sourceSet.pieces[index], 'the source row').gameId == null,
             `${label}: a pin on cleared row ${index}`,
           );
         }
@@ -130,15 +147,15 @@ test('Copy sheet keeps what the new job can wear, moves the goal and stones to i
       if (!cleared.length) {
         const back = copySheet(copy, { name: 'back', job: job.jobId, level: job.maxLevel, sync: SYNC }, 's_back', 3, () => 'g_back');
         back.sets.forEach((set, setIndex) => {
-          const started = sheet.sets[setIndex];
-          const goalBefore = started.fillSettings.goal;
-          const goalAfter = set.fillSettings.goal;
+          const started = mustFind(sheet.sets[setIndex], 'the source set');
+          const goalBefore = mustFind(started.fillSettings?.goal, 'the goal it started with');
+          const goalAfter = mustFind(set.fillSettings?.goal, 'the goal after copying back');
           assert.equal(goalAfter.target, goalBefore.target, `${label}: goal after copying back`);
           if (goalBefore.tb) {
             assert.equal(goalAfter.tb, goalBefore.tb, `${label}: tiebreak after copying back`);
           }
           set.pieces.forEach((row, index) => {
-            const statsOf = piece => (piece.stones ?? []).map(stone => stone?.stat ?? null);
+            const statsOf = (piece: SavedRow) => (piece.stones ?? []).map(stone => stone?.stat ?? null);
             assert.deepEqual(statsOf(row), statsOf(started.pieces[index]), `${label}: stones of row ${index} after copying back`);
           });
         });

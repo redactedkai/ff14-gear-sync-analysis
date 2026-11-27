@@ -22,39 +22,30 @@ import { makeSolverHandler, solverRequest } from '../../../../src/ui/solver.ts';
 import { applyFill } from '../../../../src/ui/sheets/fill.ts';
 import { defaultFillSettings, fillRecipe } from '../../../../src/ui/sheets/fill-settings.ts';
 import { localDate } from '../../../../src/ui/views/sheet-text.ts';
+import { mustFind } from '../../helpers/common.ts';
+import { fakeStorage, quotaError } from '../../helpers/sheet-fixtures.ts';
+import { okResult } from '../../helpers/solver-answers.ts';
 import { createSheetsFacade } from '../../helpers/stores.ts';
+import type { SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
+import type { SaveResult } from '../../../../src/ui/sheets/storage.ts';
 
-/* A Storage stand-in. `failWith`: an error every setItem throws (a full storage: name 'QuotaExceededError'). */
-function fakeStorage({ failWith = null } = {}) {
-  const data = new Map();
-  return {
-    data,
-    get length() {
-      return data.size;
-    },
-    key: i => [...data.keys()][i] ?? null,
-    getItem: k => (data.has(k) ? data.get(k) : null),
-    setItem(k, v) {
-      if (failWith) {
-        throw failWith;
-      }
-      data.set(k, String(v));
-    },
-    removeItem: k => data.delete(k),
-  };
-}
-const quotaError = () => Object.assign(new Error('full'), { name: 'QuotaExceededError', code: 22 });
+/* A record as a hand edit or an older build may leave it: any field of any type (its fields read as `any`, which is how
+   Object.fromEntries types them). */
+const looseCopy = (value: object) => Object.fromEntries(Object.entries(structuredClone(value)));
+type LooseRecord = ReturnType<typeof looseCopy>;
+/* The reason a save, delete or reorder gave for failing (none when it worked). */
+const reasonOf = (result: SaveResult) => ('reason' in result ? result.reason : undefined);
 
 /* A real set: a Sage Auto-fill at item level 123 with food, as the solve reply carries it, put on a gear set's 12 rows. */
 const SGE = makeJobContext('SGE');
 const settings = defaultFillSettings(SGE);
 settings.goal.food = true;
 const INPUTS = { job: SGE, sync: syncSettings({ cap: 123, sync: true, level: 100 }), level: 100, recipe: fillRecipe(settings) };
-const SOLVED = makeSolverHandler()(solverRequest('solve', INPUTS)).result;
+const SOLVED = okResult(makeSolverHandler()(solverRequest('solve', INPUTS)));
 const FILLED = applyFill(SGE, newGearSet('Set 1', 'g_1', 1), SOLVED.set);
 
 /* A sheet record (data-model-types.md) holding that set; `id` and `name` vary. */
-function makeSheet(id, name = 'Sage Lv 100') {
+function makeSheet(id: string, name = 'Sage Lv 100'): SavedSheet {
   return {
     v: 1,
     id,
@@ -83,11 +74,10 @@ function makeSheet(id, name = 'Sage Lv 100') {
 }
 
 /* makeSheet(id) with its one gear set changed by `fields` (replaced), or by `change(set)` when given a function. */
-function withSet(id, fields) {
+function withSet(id: string, fields: LooseRecord | ((set: LooseRecord) => unknown)) {
   const sheet = makeSheet(id);
-  const [set] = sheet.sets;
-  sheet.sets = [typeof fields === 'function' ? fields(structuredClone(set)) : { ...set, ...fields }];
-  return sheet;
+  const set = looseCopy(mustFind(sheet.sets[0], 'the set'));
+  return { ...sheet, sets: [typeof fields === 'function' ? fields(set) : { ...set, ...fields }] };
 }
 
 test('a saved sheet reads back as it was written, and its set still evaluates to the solve', () => {
@@ -99,7 +89,7 @@ test('a saved sheet reads back as it was written, and its set still evaluates to
   assert.deepEqual(read.sheets, [sheet]);
   assert.deepEqual(read.unreadable, []);
   const { job, sync, level } = INPUTS;
-  const saved = read.sheets[0].sets[0];
+  const saved = mustFind(mustFind(read.sheets[0], 'the saved sheet').sets[0], 'its set');
   const kept = evaluateSet(job, makeSet(saved.pieces, saved.meal), sync, level);
   assert.deepEqual(kept.gear, evaluateSet(job, SOLVED.set, sync, level).gear);
 });
@@ -108,8 +98,9 @@ test('the saved data has no text limit: a long name and long notes are read back
   const storage = fakeStorage();
   const sheet = makeSheet('s_long');
   sheet.name = 'n'.repeat(300);
-  sheet.sets[0].name = 's'.repeat(300);
-  sheet.sets[0].description = 'x'.repeat(5000);
+  const set = mustFind(sheet.sets[0], 'the set');
+  set.name = 's'.repeat(300);
+  set.description = 'x'.repeat(5000);
   assert.deepEqual(saveSheet(sheet, storage), { ok: true });
   const read = loadSheets(storage);
   assert.deepEqual(read.unreadable, []);
@@ -121,7 +112,7 @@ test('the index lists the ids; a new sheet goes to the top and a changed one kee
   for (const id of ['s_a', 's_b', 's_c']) {
     saveSheet(makeSheet(id), storage);
   }
-  assert.deepEqual(JSON.parse(storage.getItem(SHEETS_KEY)), { v: 1, order: ['s_c', 's_b', 's_a'] });
+  assert.deepEqual(JSON.parse(mustFind(storage.getItem(SHEETS_KEY), 'the index')), { v: 1, order: ['s_c', 's_b', 's_a'] });
   saveSheet({ ...makeSheet('s_b'), name: 'Renamed' }, storage);
   assert.deepEqual(
     loadSheets(storage).sheets.map(s => [s.id, s.name]),
@@ -195,7 +186,13 @@ test('a record that cannot be read is listed with its cause and left alone', () 
     s_desc_type: 'a gear set with a damaged description',
     s_null: 'not a sheet',
   });
-  assert.equal(read.unreadable.find(u => u.id === 's_job').key, sheetKey('s_job'));
+  assert.equal(
+    mustFind(
+      read.unreadable.find(u => u.id === 's_job'),
+      'the s_job record',
+    ).key,
+    sheetKey('s_job'),
+  );
   assert.deepEqual([...storage.data], [...before], 'reading changes nothing');
 });
 
@@ -211,7 +208,7 @@ test('deleteSheet removes a record and its id; it also removes an unreadable rec
   assert.deepEqual(deleteSheet('s_b', storage), { ok: true });
   assert.deepEqual(deleteSheet('s_never', storage), { ok: true });
   assert.equal(storage.getItem(sheetKey('s_bad')), null);
-  assert.deepEqual(JSON.parse(storage.getItem(SHEETS_KEY)).order, ['s_a']);
+  assert.deepEqual(JSON.parse(mustFind(storage.getItem(SHEETS_KEY), 'the index')).order, ['s_a']);
   const read = loadSheets(storage);
   assert.deepEqual([read.sheets.map(s => s.id), read.unreadable], [['s_a'], []]);
 });
@@ -237,17 +234,18 @@ test('a full storage: the save reports it, nothing is written and the sheet is u
   assert.deepEqual(result, { ok: false, reason: 'quota', message: QUOTA_MESSAGE });
   assert.deepEqual(sheet, copy);
   assert.equal(storage.data.size, 0);
-  assert.equal(saveOrder(['s_a'], storage).reason, 'quota');
+  assert.equal(reasonOf(saveOrder(['s_a'], storage)), 'quota');
 });
 
 test('storage that is missing or throws: unavailable, never an exception', () => {
-  const refuse = () => {
+  const refuse = (): never => {
     throw new Error('blocked');
   };
-  const blocked = {
-    get length() {
+  const blocked: Storage = {
+    get length(): number {
       return refuse();
     },
+    clear: refuse,
     key: refuse,
     getItem: refuse,
     setItem: refuse,
@@ -256,8 +254,8 @@ test('storage that is missing or throws: unavailable, never an exception', () =>
   for (const storage of [null, blocked]) {
     assert.deepEqual(loadSheets(storage), { available: false, sheets: [], unreadable: [], indexProblem: null });
     assert.deepEqual(saveSheet(makeSheet('s_a'), storage), { ok: false, reason: 'unavailable', message: UNAVAILABLE_MESSAGE });
-    assert.equal(deleteSheet('s_a', storage).reason, 'unavailable');
-    assert.equal(saveOrder([], storage).reason, 'unavailable');
+    assert.equal(reasonOf(deleteSheet('s_a', storage)), 'unavailable');
+    assert.equal(reasonOf(saveOrder([], storage)), 'unavailable');
   }
 });
 
@@ -270,11 +268,11 @@ test('parseSheet takes a record text and the id of its key', () => {
    manager lists it with a Delete button instead of a view breaking on it (fillPlan reads row.slot, the manager reads
    the dates, fillRecipe copies the Auto-fill settings' lists). */
 test('a damaged row, meal, pin, Auto-fill setting or date makes the record unreadable, with the cause', () => {
-  const row = (index, value) => set => {
+  const row = (index: number, value: unknown) => (set: LooseRecord) => {
     set.pieces[index] = value;
     return set;
   };
-  const damaged = {
+  const damaged: Record<string, [object, string]> = {
     s_null_row: [withSet('s_null_row', row(0, null)), 'a gear set whose row 1 is not a weapon row'],
     s_order: [withSet('s_order', row(2, { slot: 'body' })), 'a gear set whose row 3 is not a head row'],
     s_eleven: [withSet('s_eleven', set => ({ ...set, pieces: set.pieces.slice(1) })), 'a gear set with 11 of its 12 rows'],
@@ -322,7 +320,7 @@ test('a damaged row, meal, pin, Auto-fill setting or date makes the record unrea
 
 /* The saved times must be dates the views can format: the range of a JavaScript Date, 8.64e15 ms either side of 1970. */
 test('a time at the end of the Date range is readable; one past it, or not finite, is not', () => {
-  const read = createdAt => parseSheet(JSON.stringify({ ...makeSheet('s_t'), createdAt }), 's_t');
+  const read = (createdAt: number) => parseSheet(JSON.stringify({ ...makeSheet('s_t'), createdAt }), 's_t');
   for (const ok of [0, -8.64e15, 8.64e15]) {
     assert.ok(read(ok).sheet, String(ok));
     assert.doesNotThrow(() => localDate(ok, 'UTC'), String(ok));

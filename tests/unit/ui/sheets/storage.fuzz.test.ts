@@ -9,16 +9,18 @@ import { repairSheet } from '../../../../src/ui/sheets/ops.ts';
 import { loadSheets, parseSheet } from '../../../../src/ui/sheets/storage.ts';
 import { sheetManagerView } from '../../../../src/ui/views/sheet-manager.ts';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
-import { rng } from '../../helpers/common.ts';
+import { mustFind, rng } from '../../helpers/common.ts';
+import type { ParsedSheet } from '../../../../src/ui/sheets/storage.ts';
+import type { SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 import { damage } from '../../helpers/fuzz.ts';
 import { fakeStorage, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.ts';
 
 const CASES = 20000;
-const isTotal = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
+const isTotal = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0;
 
 test('damaged sheet records never throw in the readers or the views built from them', () => {
   const rand = rng(20261113);
-  const pick = list => list[Math.floor(rand() * list.length)];
+  const pick = <Item>(list: readonly Item[]): Item => mustFind(list[Math.floor(rand() * list.length)], 'a pick from a list');
   const good = [
     sheetOf('SGE', [sageSet()]),
     sheetOf('WAR', [warSet()], { level: 90, sync: { on: false, cap: 795 } }),
@@ -31,21 +33,22 @@ test('damaged sheet records never throw in the readers or the views built from t
     const label = JSON.stringify(raw).slice(0, 500);
 
     // reading it, listing it and the manager's row for it
-    let parsed;
+    const parsed: { read: ParsedSheet | null } = { read: null }; // set inside the callback below
     assert.doesNotThrow(() => {
-      parsed = parseSheet(JSON.stringify(raw), original.id);
+      parsed.read = parseSheet(JSON.stringify(raw), original.id);
       const storage = fakeStorage();
       storage.setItem(`ilvl-stat-lab-v4:sheet:${original.id}`, JSON.stringify(raw));
       sheetManagerView(loadSheets(storage));
     }, label);
-    if (!parsed.sheet) {
+    const readSheet: SavedSheet | undefined = parsed.read?.sheet;
+    if (!readSheet) {
       continue;
     }
     readable++;
 
     // a readable record repaired, evaluated and planned for Auto-fill
     assert.doesNotThrow(() => {
-      const sheet = repairSheet(parsed.sheet);
+      const sheet = repairSheet(readSheet);
       for (const set of sheet.sets) {
         const { evaluated, job } = evaluateInSheet(sheet, set);
         const totals = [
