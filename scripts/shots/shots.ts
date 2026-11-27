@@ -17,7 +17,7 @@ dist/index.html alone. Run it on the base commit and on the change, into two fol
 in each folder. --page shoots a page built elsewhere instead; one with the DEV badge still works, and the script warns.
 
 Run: npm run shots -- --out <dir> [--page <file.html>] [--only <regex on view names>] [--workers 4] [--web-fonts]
-Then compare two folders: npm run shots:compare -- <dirA> <dirB> (scripts/shots/compare.mjs).
+Then compare two folders: npm run shots:compare -- <dirA> <dirB> (scripts/shots/compare.ts).
 Exits 1 on a JavaScript error in the page or a sideways scroll at either width.
 */
 
@@ -27,7 +27,7 @@ import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 import { buildReleasePage } from '../build/build.ts';
 import { flag, numberOption, option } from '../perf/args.mjs';
-import { VIEWS, openView, prepareContext, viewUrl } from './views.mjs';
+import { VIEWS, openView, prepareContext, viewUrl } from './views.ts';
 
 const WIDTHS = [1440, 960];
 const SCHEMES = ['light', 'dark'];
@@ -35,7 +35,7 @@ const VIEWPORT_HEIGHT = 900;
 
 const outDir = option('out');
 if (!outDir) {
-  console.error('error: --out <dir> is required (see the header of scripts/shots/shots.mjs)');
+  console.error('error: --out <dir> is required (see the header of scripts/shots/shots.ts)');
   process.exit(1);
 }
 // the page shot: --page, or one built here as the live page looks (dist/ is left as it is)

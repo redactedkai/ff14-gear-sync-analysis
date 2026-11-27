@@ -1,4 +1,4 @@
-/* Pixel comparison of two folders of screenshots (scripts/shots/shots.mjs; docs/engineering/testing.md, "Run by hand").
+/* Pixel comparison of two folders of screenshots (scripts/shots/shots.ts; docs/engineering/testing.md, "Run by hand").
 
 Compares each PNG in <dirA> with the PNG of the same name in <dirB>. Byte-identical files are skipped; the others are
 decoded in Chromium (Playwright, no image library) and compared pixel by pixel. A pixel differs when one of its four
@@ -18,7 +18,7 @@ import { numberOption } from '../perf/args.mjs';
 // the two folders: the first two arguments that are not an option or an option's value
 const folders = process.argv.slice(2).filter((arg, at, args) => !arg.startsWith('--') && !args[at - 1]?.startsWith('--'));
 if (folders.length !== 2) {
-  console.error('usage: node scripts/shots/compare.mjs <dirA> <dirB> [--threshold 2]');
+  console.error('usage: node scripts/shots/compare.ts <dirA> <dirB> [--threshold 2]');
   process.exit(1);
 }
 const [dirA, dirB] = folders.map(dir => resolve(dir));

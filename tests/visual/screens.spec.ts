@@ -1,10 +1,10 @@
-/* One screenshot per view of the page (the VIEWS of scripts/shots/views.mjs) at 1440 and 960 px wide, dark scheme, full
+/* One screenshot per view of the page (the VIEWS of scripts/shots/views.ts) at 1440 and 960 px wide, dark scheme, full
    page: 72 baselines in `__screenshots__/`. The views, their saved states and their steps are shared with
    `npm run shots`, so a new view there is a new baseline here. */
 
 import { pathToFileURL } from 'node:url';
 import { expect, test } from 'playwright/test';
-import { VIEWS, openView, prepareContext, viewUrl } from '../../scripts/shots/views.mjs';
+import { VIEWS, openView, prepareContext, viewUrl } from '../../scripts/shots/views.ts';
 import { PAGE_ENV } from './global-setup.ts';
 import { stubWebFonts } from './fonts-stub.ts';
 

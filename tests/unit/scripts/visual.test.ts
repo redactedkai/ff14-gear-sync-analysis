@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { VIEWS } from '../../../scripts/shots/views.mjs';
+import { VIEWS } from '../../../scripts/shots/views.ts';
 import { IMAGE_ENV, PINNED_IMAGE, hasBaselines, pinnedTag, plan } from '../../../scripts/visual.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..');
@@ -74,6 +74,6 @@ test('the view list: numbered names that stay unique, and the counts the docs an
   assert.ok(testing.includes(`${names.length} views) at 1440 and 960 px wide`), `testing.md names ${names.length} views for the baselines`);
   assert.ok(testing.includes(`${names.length * 2} images expected`), `testing.md names ${names.length * 2} baseline images`);
   assert.ok(testing.includes(`${names.length * 4} shots for the ${names.length} views`), `testing.md names ${names.length * 4} shots`);
-  assert.ok(read('scripts/shots/shots.mjs').includes(`${names.length} views, ${names.length * 4} shots`), 'shots.mjs header count');
+  assert.ok(read('scripts/shots/shots.ts').includes(`${names.length} views, ${names.length * 4} shots`), 'shots.mjs header count');
   assert.ok(read('tests/visual/screens.spec.ts').includes(`${names.length * 2} baselines`), 'screens.spec.ts header count');
 });

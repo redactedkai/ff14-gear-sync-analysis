@@ -1,4 +1,4 @@
-/* The views of the page that the screenshot scripts shoot: scripts/shots/shots.mjs (before and after a change, by hand) and
+/* The views of the page that the screenshot scripts shoot: scripts/shots/shots.ts (before and after a change, by hand) and
    tests/visual/ (the baselines CI compares). Each view is a saved state to open the page with and the clicks that lead to
    what it shows. */
 
