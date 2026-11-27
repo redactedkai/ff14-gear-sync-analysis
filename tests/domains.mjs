@@ -142,7 +142,7 @@ export const DOMAINS = {
     tests: [
       'tests/e2e/checks/{settings,saved-state,startup,tabs}/**',
       'tests/e2e/lib/{setup,shared-checks,select}.ts',
-      'tests/unit/ui/views/level-sync.test.js',
+      'tests/unit/ui/views/level-sync.test.ts',
       'tests/unit/startup-failure.test.ts',
       'tests/unit/helpers/{fuzz,views}.ts',
       'tests/unit/helpers/{stores,revision-reads,dom-fakes}.ts',

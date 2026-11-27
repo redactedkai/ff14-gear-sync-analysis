@@ -1,6 +1,6 @@
 /* The Food menu's state (src/ui/elements/set-page/food-menu-model.ts): the pills starting empty and kept while they still list a
    meal, the sort and its fallback, the click on a row, and the page's wiring of the element's events. The filters themselves
-   (mealsPassing, mealPillOff, mealEmptyReason, sortMeals, mealList) are checked in ui/views/meal-menu.test.js. */
+   (mealsPassing, mealPillOff, mealEmptyReason, sortMeals, mealList) are checked in ui/views/meal-menu.test.ts. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

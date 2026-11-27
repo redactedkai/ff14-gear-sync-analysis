@@ -1,7 +1,7 @@
 /* The Food-related fields of a saved gear set (src/ui/sheets/storage.ts): the set's `meal` (an allMeals key or null) and the
    Auto-fill settings' food, materia and tier switches. A field of the wrong type makes the record unreadable with the cause
    (the manager lists it with Delete) instead of a view breaking on it; a meal key the game data no longer has reads fine
-   and the Food row says "missing meal" (ui/views/set-rows.test.js). Replaces the old state test "Food: off by default,
+   and the Food row says "missing meal" (ui/views/set-rows.test.ts). Replaces the old state test "Food: off by default,
    a wrong type falls back". */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
