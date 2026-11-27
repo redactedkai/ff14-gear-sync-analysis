@@ -13,11 +13,11 @@ const SLOT_2H = 0,
   SLOT_SHIELD = 2;
 
 /* Per job id, how many rows of each weapon slot code its job mask holds: {twoHanded, oneHanded, shield}. */
-function weaponCounts() {
+function weaponCounts(): Record<string, { twoHanded: number; oneHanded: number; shield: number }> {
   return Object.fromEntries(
     JOBS.map(({ id }, bit) => {
       const own = ITEMS.filter(r => r[ROW.jobMask] & (1 << bit));
-      const count = code => own.filter(r => r[ROW.slotCode] === code).length;
+      const count = (code: number) => own.filter(r => r[ROW.slotCode] === code).length;
       return [id, { twoHanded: count(SLOT_2H), oneHanded: count(SLOT_1H), shield: count(SLOT_SHIELD) }];
     }),
   );
@@ -55,11 +55,12 @@ test('every job: weaponMode, the Off-hand row and the hand-made weapon share fol
 });
 
 test('White Mage and Black Mage hold a real wand and shield at every level; Sage and Scholar hold none', () => {
-  const sets = { WHM: [7818, 7823], BLM: [8378, 2309] }; // Tidal Wave Wand and Buckler; Tremor Cudgel and Ancient Buckler
+  const sets: Record<string, [wand: number, shield: number]> = { WHM: [7818, 7823], BLM: [8378, 2309] }; // Tidal Wave Wand and Buckler; Tremor Cudgel and Ancient Buckler
   for (const [id, [wand, shield]] of Object.entries(sets)) {
     const bit = 1 << makeJobContext(id).jobIndex;
     const wandRow = ITEMS.find(r => r[ROW.gameId] === wand);
     const shieldRow = ITEMS.find(r => r[ROW.gameId] === shield);
+    assert.ok(wandRow && shieldRow, `${id} rows`);
     assert.equal(wandRow[ROW.slotCode], SLOT_1H, `${id} wand`);
     assert.equal(shieldRow[ROW.slotCode], SLOT_SHIELD, `${id} shield`);
     assert.ok(wandRow[ROW.jobMask] & bit && shieldRow[ROW.jobMask] & bit, `${id} can wear both`);

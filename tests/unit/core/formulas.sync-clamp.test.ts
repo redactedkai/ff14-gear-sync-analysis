@@ -2,6 +2,7 @@
    the caps derived from the raw ItemLevel rows; plus the Wiki's item level 475 caps for Paladin's weapon and shield. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { StatKey } from '../../../src/core/types.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { capsFor, syncStats } from '../../../src/core/formulas.ts';
 import { browseItems, poolItemFromRow } from '../../../src/core/items.ts';
@@ -21,9 +22,10 @@ const HEAD_CAP_123 = { sub: 29, main: 30 }; // head caps at item level 123 (subs
    Vitality for an Int/Mind job takes its 90% first: floor(row x 0.9), then floor(x 85 / 100), then / 10 rounded
    (the cap order of in-game sync values; docs/mechanics/math.md section 5). Only the healer's columns are needed here. */
 const HEAD_PCT = SLOT_PERMILLE.head;
-const headCap = (col, ilvl) => Math.round((IL[col][ilvl] * HEAD_PCT) / 1000);
-const headCapFactor = (col, ilvl, f) => Math.round(Math.floor((Math.floor((IL[col][ilvl] * f) / 100) * HEAD_PCT) / 100) / 10);
-function healerHeadCaps(ilvl) {
+const headCap = (col: StatKey, ilvl: number) => Math.round(((IL[col][ilvl] ?? 0) * HEAD_PCT) / 1000);
+const headCapFactor = (col: StatKey, ilvl: number, f: number) =>
+  Math.round(Math.floor((Math.floor(((IL[col][ilvl] ?? 0) * f) / 100) * HEAD_PCT) / 100) / 10);
+function healerHeadCaps(ilvl: number) {
   return {
     mind: headCap('mind', ilvl),
     vit: headCapFactor('vit', ilvl, 90),
@@ -34,10 +36,12 @@ function healerHeadCaps(ilvl) {
     piety: headCap('piety', ilvl),
   };
 }
+/* A stat of a map by a plain name, 0 for one the map does not hold (the keys come from Object.keys of another map). */
+const statOf = (map: Record<string, number | undefined>, key: string): number => map[key] ?? 0;
 const hood = browseItems(sge, { type: 'head', ilvlMin: 130, ilvlMax: 130, lvlMax: 50 })
   .map(r => poolItemFromRow(sge, r).stats)
-  .find(st => st.sps > HEAD_CAP_123.sub && sge.substats.some(k => st[k] > 0 && st[k] < HEAD_CAP_123.sub));
-assert.ok(hood && hood.mind > HEAD_CAP_123.main, 'a real item level 130 healer head piece with stats on both sides of the 123 cap');
+  .find(st => (st.sps ?? 0) > HEAD_CAP_123.sub && sge.substats.some(k => (st[k] ?? 0) > 0 && (st[k] ?? 0) < HEAD_CAP_123.sub));
+assert.ok(hood && (hood.mind ?? 0) > HEAD_CAP_123.main, 'a real item level 130 healer head piece with stats on both sides of the 123 cap');
 
 test('an item exactly at the cap is untouched (and returned as a copy)', () => {
   const out = syncStats(sge, hood, 'head', 130, 130);
@@ -55,11 +59,11 @@ test('one item level above the cap clamps every stat (head at cap 123: substats 
   assert.equal(out.sps, 29);
   assert.equal(out.mind, 30);
   for (const k of sge.substats) {
-    assert.equal(out[k], Math.min(hood[k], HEAD_CAP_123.sub), k); // lower ones untouched
+    assert.equal(out[k], Math.min(hood[k] ?? 0, HEAD_CAP_123.sub), k); // lower ones untouched
   }
   const c = healerHeadCaps(123);
   for (const k of Object.keys(out)) {
-    assert.equal(out[k], Math.min(hood[k], c[k]), k);
+    assert.equal(statOf(out, k), Math.min(statOf(hood, k), statOf(c, k)), k);
   }
 });
 
@@ -70,13 +74,13 @@ test('the head piece one item level below its own: capped at the 129 values (fro
   assert.deepEqual([c.mind, c.vit, c.sps], [32, 31, 31]);
   const out = syncStats(sge, hood, 'head', 129, 130);
   for (const k of Object.keys(hood)) {
-    assert.equal(out[k], Math.min(hood[k], c[k]), k);
+    assert.equal(statOf(out, k), Math.min(statOf(hood, k), statOf(c, k)), k);
   }
 });
 
 test('item level unknown (null) is treated as above the cap', () => {
   assert.equal(syncStats(sge, hood, 'head', 123, null).sps, 29);
-  assert.equal(syncStats(sge, hood, 'head', 123).sps, 29);
+  assert.equal(syncStats(sge, hood, 'head', 123, undefined).sps, 29);
 });
 
 test('a job without a special substat has no cap and no stat for one', () => {

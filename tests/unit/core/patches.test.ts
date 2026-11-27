@@ -6,6 +6,12 @@ import assert from 'node:assert/strict';
 import { DATA_SOURCE } from '../../../src/core/tables.ts';
 import { PATCHES, PATCHES_SOURCE, patchOnDay } from '../../../src/core/patches.ts';
 
+/* The recorded game data source; fails the test when the data does not record one. */
+function dataSource() {
+  assert.ok(DATA_SOURCE, 'the game data records its source');
+  return DATA_SOURCE;
+}
+
 test('the patch table names the patch list repository and a full commit, and is in date order with each version once', () => {
   assert.equal(PATCHES_SOURCE.repo, 'xivapi/ffxiv-datamining-patches');
   assert.match(PATCHES_SOURCE.commit, /^[0-9a-f]{40}$/);
@@ -24,8 +30,8 @@ test('the patch table names the patch list repository and a full commit, and is 
 
 test('the patch list is at least as new as the game data: a data update that left the patch table behind would name an older patch', () => {
   assert.ok(
-    Date.parse(PATCHES_SOURCE.date) >= Date.parse(DATA_SOURCE.date),
-    `patches.json is from ${PATCHES_SOURCE.date}, before the game data (${DATA_SOURCE.date}); run npm run data:update`,
+    Date.parse(PATCHES_SOURCE.date) >= Date.parse(dataSource().date),
+    `patches.json is from ${PATCHES_SOURCE.date}, before the game data (${dataSource().date}); run npm run data:update`,
   );
 });
 
@@ -35,7 +41,7 @@ test('patchOnDay: the newest patch released on or before the day, and the releas
   assert.equal(patchOnDay('2026-09-07'), '7.5'); // the day before
   assert.equal(patchOnDay('2026-10-13'), '7.57');
   assert.equal(patchOnDay('2026-04-29'), '7.5');
-  assert.equal(patchOnDay('2030-01-01'), PATCHES.at(-1)[0]); // later than every patch: the newest one
+  assert.equal(patchOnDay('2030-01-01'), PATCHES.at(-1)?.[0]); // later than every patch: the newest one
 });
 
 test('patchOnDay: patches of one day give the last of them; a day before the first patch or not a date gives nothing', () => {
@@ -47,7 +53,7 @@ test('patchOnDay: patches of one day give the last of them; a day before the fir
 });
 
 test('patchOnDay reads any table in the shape of PATCHES', () => {
-  const table = [
+  const table: [version: string, day: string][] = [
     ['1.0', '2020-01-01'],
     ['1.1', '2020-02-01'],
   ];

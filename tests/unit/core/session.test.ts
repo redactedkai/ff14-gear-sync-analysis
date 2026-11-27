@@ -2,7 +2,7 @@
    first, and a job's gear is built once while it is kept. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { jobGear } from '../../../src/core/items.ts';
+import { jobGear, mkItem } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { makeSession, SESSION_SIZE } from '../../../src/core/session.ts';
 
@@ -11,12 +11,11 @@ test('session: gear is built once per job and kept for the last SESSION_SIZE job
   const session = makeSession({
     gear: job => {
       builds++;
-      return [{ job: job.jobId }];
+      return [mkItem(`${job.jobId} piece`, 'head', 100, {})];
     },
   });
   assert.equal(SESSION_SIZE, 4);
-  const jobs = ['SGE', 'WHM', 'PLD', 'WAR', 'BLM'].map(makeJobContext);
-  const [sge, whm, pld, war, blm] = jobs;
+  const [sge, whm, pld, war, blm] = [makeJobContext('SGE'), makeJobContext('WHM'), makeJobContext('PLD'), makeJobContext('WAR'), makeJobContext('BLM')];
   for (const job of [sge, whm, pld, war]) {
     session.gear(job);
   }
@@ -44,6 +43,6 @@ test("session: a job's gear is every piece it can wear, built once and kept", ()
     jobGear(sge).map(i => i.gameId),
   );
   // a test's own pool
-  const pool = [{ name: 'x' }];
+  const pool = [mkItem('x', 'head', 100, {})];
   assert.equal(makeSession({ gear: () => pool }).gear(sge), pool);
 });

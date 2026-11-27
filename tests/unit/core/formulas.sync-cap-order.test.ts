@@ -11,6 +11,7 @@
    Budgets and real pieces come from the game data, never from the code under test. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { JobContext, SlotType } from '../../../src/core/types.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { capValue, capsFor, pieceValue, syncStats } from '../../../src/core/formulas.ts';
 import { browseItems, kindFactors, poolItemFromRow, rowStats } from '../../../src/core/items.ts';
@@ -19,7 +20,7 @@ import { IL, ITEMS, MAX_REAL } from '../../../src/core/tables.ts';
 import { itemRow } from '../helpers/common.ts';
 
 /* A database piece as the job sees it, synced to `cap` at its own slot share and item kind. */
-function synced(job, name, cap) {
+function synced(job: JobContext, name: string, cap: number) {
   const [p] = browseItems(job, { q: name });
   assert.ok(p, `${job.jobId} ${name}`);
   return syncStats(job, poolItemFromRow(job, p).stats, p.type, cap, p.ilvl, p.pct, kindFactors(job, p.kind));
@@ -65,7 +66,7 @@ test("Menphina's Earring (430) synced to 425 for Sage: the in-game 72 Vitality, 
 
 test('with a factor of 1 the cap order equals the item-stat order at every item level and slot share', () => {
   // one job per stat profile; every stat whose factor is 1 for it (all but Int/Mind Vitality), shares of every slot
-  const shares = [
+  const shares: [type: SlotType, pct: number | null][] = [
     ['head', 85],
     ['body', 135],
     ['ear', 67],
@@ -97,13 +98,13 @@ test('with a factor of 1 the cap order equals the item-stat order at every item 
 test('an off-hand cap is the two-handed cap minus the one-handed cap, each in the cap order', () => {
   const pld = makeJobContext('PLD');
   for (const il of [123, 475, 530, 795]) {
-    const c = capValue(pld, 'crit', il, 'offhand');
+    const c = capValue(pld, 'crit', il, 'offhand', undefined);
     assert.equal(c, capValue(pld, 'crit', il, 'weapon', 140) - capValue(pld, 'crit', il, 'weapon', 100));
   }
   // with a factor below 1: an Intelligence 2H weapon's Vitality minus a 1H weapon's, both factor first
   const rdm = makeJobContext('RDM');
-  const vit90 = (b, pct) => Math.round(Math.floor((Math.floor((b * 90) / 100) * pct) / 100) / 10);
+  const vit90 = (b: number | undefined, pct: number) => Math.round(Math.floor((Math.floor(((b ?? 0) * 90) / 100) * pct) / 100) / 10);
   for (const il of [123, 530, 795]) {
-    assert.equal(capValue(rdm, 'vit', il, 'offhand'), vit90(IL.vit[il], 140) - vit90(IL.vit[il], 100));
+    assert.equal(capValue(rdm, 'vit', il, 'offhand', undefined), vit90(IL.vit[il], 140) - vit90(IL.vit[il], 100));
   }
 });

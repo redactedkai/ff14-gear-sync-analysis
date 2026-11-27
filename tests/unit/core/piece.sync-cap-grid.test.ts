@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DB_SLOT_PCT, DB_SLOT_TYPE, JOBS, ROW } from '../../../src/core/constants.ts';
 import { browseItems, poolItemFromRow } from '../../../src/core/items.ts';
+import type { RawStatKey, StatKey, StatMap } from '../../../src/core/types.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { effStats } from '../../../src/core/piece.ts';
 import { IL, ITEMS, MAX_ILVL, MP } from '../../../src/core/tables.ts';
@@ -15,18 +16,22 @@ import { roundHalfUp } from '../helpers/common.ts';
 /* The cap of `stat` at cap item level `cap`: floor(floor(budget x factor / 100) x slot share / 100) / 10, rounded; an
    off-hand is the 2H weapon's cap less the 1H weapon's. `kind` is the item's stat factor kind (null: the job's own factor
    `jobFactor`, in percent). */
-function capOf(stat, kind, slotCode, cap, jobFactor) {
-  const factor = kind != null && MP.vit[kind] != null ? MP[stat][kind] : jobFactor;
-  const share = percent => roundHalfUp(Math.floor((Math.floor((IL[stat][cap] * factor) / 100) * percent) / 100) / 10);
-  if (DB_SLOT_TYPE[slotCode] === 'offhand' && DB_SLOT_PCT[slotCode] === 40) {
+function capOf(stat: RawStatKey, kind: number | null, slotCode: number, cap: number, jobFactor: number): number {
+  const factor = (kind != null && MP.vit[kind] != null ? MP[stat][kind] : undefined) ?? jobFactor;
+  const share = (percent: number) =>
+    roundHalfUp(Math.floor((Math.floor(((IL[stat][cap] ?? 0) * factor) / 100) * percent) / 100) / 10);
+  const slotPercent = DB_SLOT_PCT[slotCode];
+  assert.ok(slotPercent !== undefined, `slot code ${slotCode}`);
+  if (DB_SLOT_TYPE[slotCode] === 'offhand' && slotPercent === 40) {
     return share(140) - share(100);
   }
-  return share(DB_SLOT_PCT[slotCode]);
+  return share(slotPercent);
 }
-const isShield = slotCode => DB_SLOT_TYPE[slotCode] === 'offhand';
+const isShield = (slotCode: number) => DB_SLOT_TYPE[slotCode] === 'offhand';
 
 test('a slot cap never falls as the item level rises (shields left out)', () => {
-  const stats = ['vit', 'mind', 'str', 'dex', 'int', 'crit', 'det', 'dh', 'sks', 'sps', 'piety', 'ten'].filter(stat => MP[stat]);
+  const allStats: StatKey[] = ['vit', 'mind', 'str', 'dex', 'int', 'crit', 'det', 'dh', 'sks', 'sps', 'piety', 'ten'];
+  const stats = allStats.filter(stat => MP[stat]);
   for (let slotCode = 0; slotCode < DB_SLOT_TYPE.length; slotCode++) {
     if (isShield(slotCode)) {
       continue;
@@ -54,6 +59,7 @@ test('effStats equals the cap formula for every piece of every job over a grid o
     for (const view of browseItems(job, {})) {
       const item = poolItemFromRow(job, view);
       const row = rowOf.get(view.gameId);
+      assert.ok(row, `${view.name} has a database row`);
       const kind = row[ROW.kind];
       const slotCode = row[ROW.slotCode];
       const caps = [
@@ -76,7 +82,7 @@ test('effStats equals the cap formula for every piece of every job over a grid o
         view.ilvl + 1,
       ];
       const grid = [...new Set(caps.filter(cap => cap >= 1 && cap <= MAX_ILVL))].sort((a, b) => a - b);
-      let previous = null;
+      let previous: StatMap | null = null;
       for (const cap of grid) {
         const effective = effStats(job, item, { cap, sync: true, level: null });
         for (const stat of job.stats) {
@@ -85,10 +91,11 @@ test('effStats equals the cap formula for every piece of every job over a grid o
           const expected =
             cap >= view.ilvl ? own : Math.min(own, capOf(stat, kind, slotCode, cap, stat === 'vit' ? job.vitFactor * 100 : 100));
           const label = `${job.jobId} ${view.name} (item level ${view.ilvl}) ${stat} at cap ${cap}`;
+          const value = effective[stat] ?? 0;
           assert.equal(effective[stat], expected, label);
-          assert.ok(effective[stat] <= own, `${label}: above the piece's own value`);
+          assert.ok(value <= own, `${label}: above the piece's own value`);
           if (previous && !isShield(slotCode)) {
-            assert.ok(effective[stat] >= previous[stat], `${label}: fell from ${previous[stat]} as the cap rose`);
+            assert.ok(value >= (previous[stat] ?? 0), `${label}: fell from ${previous[stat]} as the cap rose`);
           }
         }
         previous = effective;

@@ -117,10 +117,10 @@ test('the materia table has one entry per grade', () => {
 
 test('the stat factor table has one row of percents per stat and weapon damage and defense value, one column per item kind', () => {
   assert.deepEqual(Object.keys(MP), [...ITEM_STAT_ORDER, ...DAMAGE_DEFENSE_KEYS]);
-  for (const k of Object.keys(MP)) {
-    assert.equal(MP[k].length, ITEM_FORMAT.statFactor.count, k);
+  for (const [k, column] of Object.entries(MP)) {
+    assert.equal(column.length, ITEM_FORMAT.statFactor.count, k);
     assert.ok(
-      MP[k].every(v => Number.isInteger(v) && v >= 1 && v <= 100),
+      column.every(v => Number.isInteger(v) && v >= 1 && v <= 100),
       k,
     );
   }
@@ -175,8 +175,11 @@ test('every job has at least one item for each of its active slots (a renamed jo
 test('job picker: every job appears exactly once, each with an embedded 64 x 64 PNG icon', () => {
   const picked = JOB_ROWS.flatMap(([, ids]) => ids);
   assert.deepEqual([...picked].sort(), JOBS.map(j => j.id).sort());
+  const icons = new Map(Object.entries(JOB_ICONS));
   for (const id of picked) {
-    const png = Buffer.from(JOB_ICONS[id].replace(/^data:image\/png;base64,/, ''), 'base64');
+    const icon = icons.get(id);
+    assert.ok(icon, id);
+    const png = Buffer.from(icon.replace(/^data:image\/png;base64,/, ''), 'base64');
     assert.equal(png.subarray(1, 4).toString('latin1'), 'PNG', id);
     assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [64, 64], id);
   }
@@ -197,8 +200,9 @@ test('ROW agrees with itemRow.fields and the sections that name a rowField', () 
     category: ITEM_FORMAT.category.rowField,
     ...Object.fromEntries(ITEM_FORMAT.damageDefense.entries.map(e => [e.key, e.rowField])),
   };
+  const rowPosition = new Map<string, number>(Object.entries(ROW));
   for (const [name, position] of Object.entries(sectionFields)) {
-    assert.equal(ROW[name], position, name);
+    assert.equal(rowPosition.get(name), position, name);
   }
   assert.equal(ITEMS[0].length, fields.length);
 });

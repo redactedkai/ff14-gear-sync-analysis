@@ -22,7 +22,9 @@ test('LEVEL_MAIN has a main stat base for every level up to MAX_LEVEL', () => {
 });
 
 test('the last of EXPANSIONS reaches MAX_LEVEL', () => {
-  const { short, levelCap } = EXPANSIONS.at(-1);
+  const last = EXPANSIONS.at(-1);
+  assert.ok(last);
+  const { short, levelCap } = last;
   assert.ok(levelCap >= MAX_LEVEL, `${short} caps at ${levelCap}: add the new expansion to EXPANSIONS in constants.ts`);
   for (const [a, b] of EXPANSIONS.slice(1).map((e, i) => [EXPANSIONS[i], e])) {
     assert.ok(a.levelCap < b.levelCap, `${a.short} before ${b.short}`);
@@ -37,10 +39,13 @@ test('HASTE steps are in level order, within 1 to MAX_LEVEL, and give a percent 
       [...levels].sort((a, b) => a - b),
       jobId,
     );
-    assert.ok(levels[0] >= 1 && levels.at(-1) <= MAX_LEVEL, `${jobId} steps ${levels}`);
-    for (let level = levels[0]; level <= MAX_LEVEL; level++) {
+    const firstLevel = levels[0];
+    const lastLevel = levels.at(-1);
+    assert.ok(firstLevel !== undefined && lastLevel !== undefined);
+    assert.ok(firstLevel >= 1 && lastLevel <= MAX_LEVEL, `${jobId} steps ${levels}`);
+    for (let level = firstLevel; level <= MAX_LEVEL; level++) {
       const pct = hasteFor(jobId, level)?.pct;
-      assert.ok(pct > 0 && pct < 100, `${jobId} level ${level}: ${pct}`);
+      assert.ok(pct !== undefined && pct > 0 && pct < 100, `${jobId} level ${level}: ${pct}`);
     }
   }
 });

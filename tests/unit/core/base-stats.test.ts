@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { LEVEL_MAIN, statBase } from '../../../src/core/base-stats.ts';
+import type { StatKey } from '../../../src/core/types.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { levelParams } from '../../../src/core/level-params.ts';
 import { PG } from '../../../src/core/tables.ts';
@@ -14,18 +15,18 @@ const WAR = makeJobContext('WAR');
 test('LEVEL_MAIN: 100 levels, equal to xivgear at 50, 60, ..., 100, never falling', () => {
   assert.equal(LEVEL_MAIN.length, 100);
   // xivgear LEVEL_STATS baseMainStat (packages/xivmath/src/xivconstants.ts, commit 6c3c878)
-  const xivgear = { 50: 202, 60: 218, 70: 292, 80: 340, 90: 390, 100: 440 };
+  const xivgear: Record<number, number> = { 50: 202, 60: 218, 70: 292, 80: 340, 90: 390, 100: 440 };
   for (const [lv, v] of Object.entries(xivgear)) {
-    assert.equal(LEVEL_MAIN[lv - 1], v, `level ${lv}`);
+    assert.equal(LEVEL_MAIN[Number(lv) - 1], v, `level ${lv}`);
   }
-  assert.ok(LEVEL_MAIN.every((v, i) => i === 0 || v >= LEVEL_MAIN[i - 1]));
+  assert.ok(LEVEL_MAIN.every((v, i) => i === 0 || v >= (LEVEL_MAIN[i - 1] ?? 0)));
 });
 
 test('base: Determination and Piety from the main stat base, the other substats from ParamGrow BaseSpeed', () => {
   assert.equal(statBase(SGE, 'det', 50), 202);
   assert.equal(statBase(SGE, 'piety', 50), 202); // Piety
   assert.equal(statBase(WAR, 'ten', 50), PG[49][0]); // Tenacity
-  for (const s of ['crit', 'dh', 'sps']) {
+  for (const s of ['crit', 'dh', 'sps'] as const) {
     assert.equal(statBase(SGE, s, 100), 420);
   }
   assert.equal(statBase(SGE, 'crit', 100), PG[99][0]);
@@ -36,11 +37,12 @@ test('base: Determination and Piety from the main stat base, the other substats 
    105, Vitality 110; Black Mage Intelligence 115, Vitality 100), floored, as AkhMorning and xivgear count it, without
    the clan's bonus. */
 test('panel base: AkhMorning level table (Determination and Piety from MAIN, the other substats from SUB, the main stat and Vitality from MAIN x the job modifier)', () => {
-  for (const [id, stats, mainMod, vitMod] of [
+  const cases: [id: string, stats: StatKey[], mainMod: number, vitMod: number][] = [
     ['SGE', ['crit', 'det', 'dh', 'sps', 'piety'], 115, 100],
     ['WAR', ['crit', 'det', 'dh', 'sks', 'ten'], 105, 110],
     ['BLM', ['crit', 'det', 'dh', 'sps'], 115, 100],
-  ]) {
+  ];
+  for (const [id, stats, mainMod, vitMod] of cases) {
     const job = makeJobContext(id);
     for (const [lv, [main, sub, div]] of Object.entries(AKH_LEVEL)) {
       assert.equal(levelParams(Number(lv)).div, div, `level ${lv} DIV`);

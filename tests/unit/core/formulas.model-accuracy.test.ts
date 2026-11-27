@@ -108,13 +108,14 @@ test('every piece with three substats is Mind-only gear whose lowest line is Dir
 /* On green, HQ-able Mind-only pieces with three substats the Direct Hit line is 25% (eight item level 110 crafted
    healer pieces, raised in patch 4.0); their blue crafted and green non-HQ siblings keep 20%. */
 test('green HQ-able healer pieces with three substats carry Direct Hit at 25%; their siblings at 20%', () => {
-  for (const [name, rarity, hq] of [
+  const pieces: [name: string, rarity: number, hq: number][] = [
     ['Ebony Cane', 2, 1], // two-handed: Direct Hit 11 = 25% of 44
     ['Arachne Robe', 2, 1], // body: 11 = 25% of 42 (10.5 rounds up)
     ['Platinum Circlet of Healing', 2, 1], // head: 7 = 25% of 27
     ["High Adjudicator's Gavel", 3, 1], // blue crafted sibling: 9 = 20% of 44
     ["Bogatyr's Circlet of Healing", 2, 0], // green, not HQ-able: 20%
-  ]) {
+  ];
+  for (const [name, rarity, hq] of pieces) {
     const r = itemRow(name);
     assert.equal(r[ROW.rarity], rarity, name);
     assert.equal(r[ROW.hq], hq, name);

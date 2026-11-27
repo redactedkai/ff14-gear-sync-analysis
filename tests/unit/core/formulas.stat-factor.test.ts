@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ITEMS, IL, MP } from '../../../src/core/tables.ts';
 import { ALL_JOBS_ACCESSORY_FACTORS, JOBS, ITEM_STAT_ORDER, RAW_MAIN_IDX, ROW } from '../../../src/core/constants.ts';
+import type { ItemRow, PoolItem, RawStatKey } from '../../../src/core/types.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { predictRaw, syncStats, capsFor, jobFactor } from '../../../src/core/formulas.ts';
 import { kindFactors, browseItems, poolItemFromRow, rowStats } from '../../../src/core/items.ts';
@@ -13,7 +14,7 @@ import { MODEL_MIN_ILVL } from '../helpers/model-validation.ts';
 import { appState, itemRow, roundHalfUp } from '../helpers/common.ts';
 import { gearViewOf } from '../helpers/views.ts';
 
-const at = (r, key) => rowStats(r)[ITEM_STAT_ORDER.indexOf(key)];
+const at = (r: ItemRow, key: RawStatKey) => rowStats(r)[ITEM_STAT_ORDER.indexOf(key)];
 
 test("the job's own factor equals the game files' factor on every piece of its own kind", () => {
   // every database piece a job can equip that carries its main stat and only that main stat: the item's factor for the
@@ -39,11 +40,12 @@ test("the job's own factor equals the game files' factor on every piece of its o
 });
 
 test('the only pieces whose factors differ from the job rule are kind 0: the four-main-stat pieces and the Main Attribute pieces', () => {
-  const odd = new Set();
+  const odd = new Set<string>();
   for (const { id } of JOBS) {
     const job = makeJobContext(id);
     for (const p of browseItems(job, { ilvlMin: MODEL_MIN_ILVL })) {
       const f = kindFactors(job, p.kind);
+      assert.ok(f, `${p.name} has kind factors`);
       if (f[job.mainKey] !== 1 || f.vit !== jobFactor(job, 'vit')) {
         odd.add(p.name);
       }
@@ -78,12 +80,13 @@ test('pieces with all four main stats: every main stat and Vitality at the full 
 test('Occult accessories at 745: "of Magic" Vitality 307 (x 0.9), "of Blood" 341 (full), from the item, not a job', () => {
   // Vitality row 745 = 5085; x 67 / 1000 = 340.695 -> 341; x 0.9 = 306.9 -> 307
   assert.equal(roundHalfUp((IL.vit[745] * 67) / 1000), 341);
-  for (const [name, vit] of [
+  const accessories: [name: string, vit: number][] = [
     ['Occult Earrings of Magic', 307],
     ['Occult Ring of Magic', 307],
     ['Occult Earrings of Blood', 341],
     ['Occult Ring of Blood', 341],
-  ]) {
+  ];
+  for (const [name, vit] of accessories) {
     const r = itemRow(name);
     assert.equal(at(r, 'vit'), vit, name);
     // no main stat on these pieces: the old rule (factor from the main stat) could not predict them at all
@@ -113,7 +116,7 @@ test("sync: a real piece is capped by its own factors; a piece with no item behi
   // the same stats as a hand-made piece (no database row): the job's caps, main 48, Vitality 51 / 45
   assert.deepEqual([capsFor(war, 'body', 123).str, capsFor(war, 'body', 123).vit], [48, 51]);
   assert.deepEqual([capsFor(sge, 'body', 123).mind, capsFor(sge, 'body', 123).vit], [48, 45]);
-  const handMade = { ...coatWar, src: 'custom' };
+  const handMade: PoolItem = { ...coatWar, src: 'custom' };
   assert.equal(effStats(war, handMade, sync).str, 48);
   // the gear browser shows the same synced values as the optimizer uses
   const app = appState({ job: 'WAR', sync: true, cap: 123 });
@@ -123,7 +126,9 @@ test("sync: a real piece is capped by its own factors; a piece with no item behi
   assert.deepEqual([v.shown[0].eff.str, v.shown[0].eff.vit], [43, 45]);
   // a piece of the job's own kind is unchanged by the switch: same caps as before
   const helm = ITEMS.find(r => r[ROW.slotCode] === 3 && r[ROW.ilvl] === 130 && r[ROW.kind] === 6);
+  assert.ok(helm, 'a kind 6 head piece of item level 130');
   const p = browseItems(sge, { q: helm[ROW.name], ilvlMin: 130, ilvlMax: 130 }).find(x => x.slotCode === 3);
+  assert.ok(p, 'the head piece in the browser');
   assert.deepEqual(
     syncStats(sge, poolItemFromRow(sge, p).stats, 'head', 123, 130, 85, kindFactors(sge, 6)),
     syncStats(sge, poolItemFromRow(sge, p).stats, 'head', 123, 130),

@@ -17,16 +17,18 @@ const SLOT_1H = 1,
    at 20% rounds to 0 at this tiny budget); the same row is worn by Paladin and Beastmaster, so it is off by one for them too. */
 const KNOWN_OFF_BY_ONE = new Set(['Round Shield']);
 
-for (const [id, wantShields, want1H] of [
+const JOBS: [id: string, wantShields: number, want1H: number][] = [
   ['WHM', 28, 28],
   ['BLM', 27, 42],
-]) {
+];
+for (const [id, wantShields, want1H] of JOBS) {
   test(`${id}: the formula reproduces the shields and one-handed weapons in the data`, () => {
     const bit = 1 << makeJobContext(id).jobIndex;
-    for (const [code, wantCount] of [
+    const slotCounts: [code: number, wantCount: number][] = [
       [SLOT_SHIELD, wantShields],
       [SLOT_1H, want1H],
-    ]) {
+    ];
+    for (const [code, wantCount] of slotCounts) {
       const rows = ITEMS.filter(r => r[ROW.jobMask] & bit && r[ROW.slotCode] === code);
       assert.equal(rows.length, wantCount, `${id} rows of slot code ${code}`);
       for (const r of rows) {
@@ -48,6 +50,7 @@ for (const [id, wantShields, want1H] of [
 test('named pieces: Tidal Wave Buckler (item level 100) and Ancient Buckler (item level 90) are the 2H value minus the 1H value', () => {
   for (const id of [7823, 2309]) {
     const r = ITEMS.find(row => row[ROW.gameId] === id);
+    assert.ok(r, `item ${id}`);
     assert.equal(r[ROW.slotCode], SLOT_SHIELD);
     const stats = rowStats(r);
     assert.deepEqual(predictRaw(r[ROW.ilvl], SLOT_SHIELD, stats, r[ROW.kind], rowItem(r)), stats, r[ROW.name]);

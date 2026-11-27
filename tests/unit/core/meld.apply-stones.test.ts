@@ -7,6 +7,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { browseItems, mkItem, poolItemFromRow } from '../../../src/core/items.ts';
+import type { StatKey, Sync } from '../../../src/core/types.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { applyStones, bestMeld, meldStones, meldText, meldVersions } from '../../../src/core/meld.ts';
 import { effStats } from '../../../src/core/piece.ts';
@@ -15,8 +16,8 @@ import { piece, rngInt } from '../helpers/common.ts';
 const war = makeJobContext('WAR');
 const sge = makeJobContext('SGE');
 const sam = makeJobContext('SAM');
-const NO_SYNC = { cap: null, sync: false, level: 100 };
-const stone = (stat, grade) => ({ stat, grade });
+const NO_SYNC: Sync = { cap: null, sync: false, level: 100 };
+const stone = (stat: StatKey, grade: number) => ({ stat, grade });
 const osode = piece(war, "Kirin's Osode of Fending");
 const ears = piece(sge, "Courtly Lover's Earrings of Healing");
 
@@ -48,6 +49,7 @@ test('gates: a grade above what the item level allows, or no such grade, is remo
     ],
   );
   assert.deepEqual(r.gain, { det: 16 });
+  assert.ok(r.meld);
   assert.equal(r.meld.free, 4);
 });
 
@@ -129,7 +131,7 @@ test("the optimizer's melds as stones give its gains back: bestMeld and every me
         assert.deepEqual(r.removed, [], item.name);
         assert.deepEqual(r.meld, meld, `${item.name} ${keys}`);
         for (const s of job.stats) {
-          assert.equal(r.stats[s], item.stats[s] + (meld?.gain[s] || 0), `${item.name} ${s}`);
+          assert.equal(r.stats[s], (item.stats[s] ?? 0) + (meld?.gain[s] || 0), `${item.name} ${s}`);
         }
       }
     }

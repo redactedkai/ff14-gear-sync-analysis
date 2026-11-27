@@ -38,6 +38,7 @@ test('a clan adds its offset to the five attributes and nothing else', () => {
   assert.equal(clanOffset('', 'str'), 0);
   assert.equal(clanOffset('Nobody', 'str'), 0);
   assert.equal(clanOffset('Midlander', 'crit'), 0);
+  // @ts-expect-error 'clan' is no stat key: the record's own field, passed on purpose
   assert.equal(clanOffset('Midlander', 'clan'), 0);
 });
 

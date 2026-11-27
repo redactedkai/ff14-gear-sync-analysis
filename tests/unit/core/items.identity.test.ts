@@ -23,11 +23,14 @@ test('every database row has its own gameId, and itemById finds each row by it',
 
 test('itemById: a real item by its game id; null for an id no row has', () => {
   const row = itemById(24850);
+  assert.ok(row);
   assert.equal(row[ROW.name], "Kirin's Osode of Fending");
   assert.equal(row[ROW.ilvl], 300);
   assert.equal(itemById(0), null);
   assert.equal(itemById(-1), null);
+  // @ts-expect-error a string id, passed on purpose
   assert.equal(itemById('24850'), null, 'a number, not a string');
+  // @ts-expect-error a missing id, passed on purpose
   assert.equal(itemById(undefined), null);
 });
 
@@ -43,6 +46,7 @@ test('pool items from the database carry their gameId; hand-made ones have none'
 
 test('poolItemById: the job pool item of a game id, one object per job and id', () => {
   const osode = poolItemById(war, 24850);
+  assert.ok(osode);
   const fromRow = piece(war, "Kirin's Osode of Fending");
   // the same piece as poolItemFromRow builds, but for its fresh `id`
   assert.deepEqual({ ...osode, id: null }, { ...fromRow, id: null });

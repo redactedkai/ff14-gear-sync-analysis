@@ -4,10 +4,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS, STAT_LABEL, STAT_SHORT } from '../../../src/core/constants.ts';
+import type { DamageKey, StatKey } from '../../../src/core/types.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 
 /* job id: [main stat, speed stat, special substat or null] */
-const EXPECTED = {
+const EXPECTED: Record<string, [main: StatKey, speed: StatKey, special: StatKey | null]> = {
   PLD: ['str', 'sks', 'ten'],
   WAR: ['str', 'sks', 'ten'],
   DRK: ['str', 'sks', 'ten'],
@@ -36,7 +37,9 @@ const EXPECTED = {
 test('all 23 jobs: main, speed and special key, and the stats in order (a job without a special substat has six)', () => {
   assert.deepEqual(JOBS.map(j => j.id).sort(), Object.keys(EXPECTED).sort());
   for (const { id } of JOBS) {
-    const [main, speed, special] = EXPECTED[id];
+    const expected = EXPECTED[id];
+    assert.ok(expected, id);
+    const [main, speed, special] = expected;
     const job = makeJobContext(id);
     assert.deepEqual([job.mainKey, job.speedKey, job.specKey], [main, speed, special], id);
     assert.deepEqual(job.substats, ['crit', 'det', 'dh', speed, ...(special ? [special] : [])], id);
@@ -105,7 +108,7 @@ test("the main stat's modifier is keyed by the main stat, and Vitality's factor 
     const job = makeJobContext(id);
     const caster = main === 'int' || main === 'mind';
     assert.equal(job.vitFactor, caster ? 0.9 : 1, id);
-    let expectedDamageKey = caster ? 'damageMag' : 'damagePhys';
+    let expectedDamageKey: DamageKey | null = caster ? 'damageMag' : 'damagePhys';
     if (id === 'BLU') {
       expectedDamageKey = null;
     }

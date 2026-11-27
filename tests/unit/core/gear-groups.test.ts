@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import ITEM_FORMAT from '../../../src/core/item-format.json' with { type: 'json' };
 import { GEAR_GROUPS, gearGroupName, piecesJobCannotWear } from '../../../src/core/gear-groups.ts';
 import { JOB_LEVEL_CAPS } from '../../../src/core/constants.ts';
+import type { ItemRow, PoolItem, SetPiece, SlotType } from '../../../src/core/types.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { itemRow } from '../helpers/common.ts';
 import { ROW } from '../../../src/core/constants.ts';
@@ -36,7 +37,7 @@ test('a group never mixes level caps', () => {
 
 const shield = itemRow("Grand Champion's Kite Shield"); // off-hand, item level 795, Paladin only
 const shirt = itemRow('Augmented Bygone Brass Shirt of Healing'); // body, item level 790, WHM SCH AST SGE
-const pieceOf = (row, slot) => ({ slot, gameId: row[ROW.gameId], stones: [] });
+const pieceOf = (row: ItemRow, slot: SlotType): SetPiece => ({ slot, gameId: row[ROW.gameId], stones: [] });
 
 test('piecesJobCannotWear lists the Paladin shield for a Warrior and the healing shirt for a Paladin, by slot and name', () => {
   const pieces = [pieceOf(shirt, 'body'), pieceOf(shield, 'offhand')];
@@ -55,7 +56,8 @@ test('piecesJobCannotWear lists the Paladin shield for a Warrior and the healing
 });
 
 test('piecesJobCannotWear skips empty slots, custom pieces and unknown game ids', () => {
-  const pieces = [{ slot: 'head' }, { slot: 'body', custom: {}, stones: [] }, { slot: 'feet', gameId: -1, stones: [] }];
+  const customBody: PoolItem = { id: 'custom-body', name: 'Custom body', type: 'body', ilvl: 100, stats: {}, copies: 1, src: 'custom' };
+  const pieces: SetPiece[] = [{ slot: 'head' }, { slot: 'body', custom: customBody, stones: [] }, { slot: 'feet', gameId: -1, stones: [] }];
   assert.deepEqual(piecesJobCannotWear(makeJobContext('WAR'), pieces), []);
 });
 
