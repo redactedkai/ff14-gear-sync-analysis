@@ -105,7 +105,7 @@ test('Sage: the Tier row is the spare points and the points to the next tier of 
   }
 });
 
-/* AkhMorning's level 100 2.5 s tier table (https://www.akhmorning.com/allagan-studies/stats/speed/, core/speed.test.js)
+/* AkhMorning's level 100 2.5 s tier table (https://www.akhmorning.com/allagan-studies/stats/speed/, core/speed.test.ts)
    lists the tier starting at 2,238 (2.28 s) and the next at 2,324 (2.27 s) in full speed: base 420 + gear 1,818 and 1,904.
    A Sage wearing ten real item level 725 to 790 pieces whose Spell Speed adds up to 1,839 (188 + 293 + 188 + 286 + 184
    + 148 + 142 + 148 + 133 + 129, read from the item data) sits 21 above the first start and 65 below the second

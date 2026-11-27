@@ -135,7 +135,7 @@ With one ring pinned, the other ring is a slot of its own (`FREE_RING` in `slot-
 
 With no pinned piece nothing changes: same lists, same node counts (checked on 540 searches, 106,307 nodes).
 
-Tests: `core/optimizer/index.pinned.test.js` against the brute-force reference with the same pins (`fixed` in `tests/unit/helpers/exhaustive.js`, written independently), and `core/recipe.pins.test.js`.
+Tests: `core/optimizer/index.pinned.test.js` against the brute-force reference with the same pins (`fixed` in `tests/unit/helpers/exhaustive.js`, written independently), and `core/recipe.pins.test.ts`.
 
 ### Target GCD: from a GCD to a speed range
 
@@ -624,7 +624,7 @@ Several gear sets can have exactly the same ranked totals: weapon damage, the ta
 - **Stable:** the ranked totals (and the GCD when one is asked). They are the same in every order of the pool and of the slots, because the score packs them exactly (section 3).
 - **Not stable:** the pieces, and with melds the stones, wherever two pieces tie. Among gear sets with exactly the same score the first one found wins: higher-ranked pieces first, then the order of the pool. The slot order depends on the lists left after the filters (section 5), so it can change with the settings too. Tied pieces can differ in every stat nobody ranked, in item level and in stones. There is no tie-break rule (owner's decision: one was considered and not made), so an Auto-fill's pieces are only comparable by their totals.
 - **Where the equal alternatives are listed:** each row's menu of pieces with the same result ([ui.md, "Which piece an Auto-fill suggests"](ui.md#which-piece-an-auto-fill-suggests), `same-result.ts`). The row shows the piece with the lowest equip level, then the lowest item level; when two pieces are equal in both, the search's own pick stays, so it follows the order of the pool.
-- **Cases found** (`tests/unit/core/recipe.ties.test.js`, the pool in the database's order and reversed):
+- **Cases found** (`tests/unit/core/recipe.ties.test.ts`, the pool in the database's order and reversed):
   - Sage, cap 123, level 50, goal Mind, no tiebreak, plain search: hands, legs, earrings and both rings differ (Mind 356 either way; the pieces differ in Critical Hit, Determination, Spell Speed and Piety, which nobody ranked).
   - Paladin, no sync, level 100, goal Strength, no tiebreak: the second ring is 51182 or 49576, with the same stats and item level 780 (Strength 5,980 either way).
   - Bard, no sync, level 100, Critical Hit then Determination, melds: the hands are 51873 (Critical Hit stones) or 50870 (Determination stones), the second ring 51184 (Determination stones) or 49578 (Critical Hit stones), with the same totals (Critical Hit 3,139, Determination 1,850).
@@ -654,7 +654,7 @@ Several gear sets can have exactly the same ranked totals: weapon damage, the ta
 | Page timing marks (`fill`, `save`) | `src/ui/elements/set-page/fill-run.ts`, `fill-settings-edit.ts`, `src/main.js` |
 | Dated benchmark runs | `docs/engineering/perf-log.md` |
 | Stress-test scripts | `scripts/perf/` (`bench.mjs`, `split.mjs`, `adversarial.mjs`, `browser.mjs`, `db-parse.mjs`, `compare.mjs`, `memory.mjs`, `workloads.mjs`, `target-gcd-sweep.mjs`) |
-| Tests | `tests/unit/core/optimizer/index.test.js`, `tests/unit/core/optimizer/index.exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/core/optimizer/index.speed-limits.test.js`, `tests/unit/core/target-gcd.test.js`, `tests/unit/core/target-gcd.exhaustive.test.js`, `tests/unit/core/optimizer/index.stat-minimums.test.js`, `tests/unit/core/optimizer/regain.test.js`, `tests/unit/core/recipe.ties.test.js` (ties, see Ties above) |
+| Tests | `tests/unit/core/optimizer/index.test.js`, `tests/unit/core/optimizer/index.exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/core/optimizer/index.speed-limits.test.js`, `tests/unit/core/target-gcd.test.ts`, `tests/unit/core/target-gcd.exhaustive.test.ts`, `tests/unit/core/optimizer/index.stat-minimums.test.js`, `tests/unit/core/optimizer/regain.test.js`, `tests/unit/core/recipe.ties.test.ts` (ties, see Ties above) |
 
 Notes on the table:
 

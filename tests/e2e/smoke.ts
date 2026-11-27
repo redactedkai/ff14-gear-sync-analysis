@@ -13,7 +13,7 @@ Expected values come from outside the code under test where possible:
     (Mind 33, Vitality 32, substats 31/22; its fixed Direct Hit 6 is not a rank; tests/unit/ui/views/piece.test.js finds it in
     the item database);
   - level sync (synced level 90, item level sync off): level 100 healer head pieces capped at the item level 660
-    head values (Mind 248; tests/unit/core/sync-target.test.js derives them from the ItemLevel row), in the gear browser and
+    head values (Mind 248; tests/unit/core/sync-target.test.ts derives them from the ItemLevel row), in the gear browser and
     in Piece stats (item level 660: ParamGrow.ItemLevelSync for level 90).
 
 Layout: this file is the runner. lib/ holds the helpers (expect, navigation, the shared setup, saved sheets, the worker

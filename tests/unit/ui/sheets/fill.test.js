@@ -1,6 +1,6 @@
 /* Partial fill for a saved gear set (src/ui/sheets/fill.ts): the pins, the button's label and count, putting a solve's
    result back on the rows, the bad-pin messages, and the pins reaching solveView through the solver's request.
-   Real Sage items at the page's default recipe; the pinned solve itself is tested in core/recipe.pins.test.js. */
+   Real Sage items at the page's default recipe; the pinned solve itself is tested in core/recipe.pins.test.ts. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals } from '../../../../src/core/food.ts';

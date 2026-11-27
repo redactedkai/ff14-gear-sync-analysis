@@ -1,5 +1,5 @@
 /* A piece built from the formula (src/core/formulas.ts), and the jobs' level caps. The caps at item level 123 are
-   checked from the raw ItemLevel rows in core/formulas.caps-at-123.test.js. */
+   checked from the raw ItemLevel rows in core/formulas.caps-at-123.test.ts. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.ts';

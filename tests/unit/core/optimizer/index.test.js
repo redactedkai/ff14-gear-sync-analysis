@@ -1,5 +1,5 @@
 /* The optimizer (src/core/optimizer/) on real gear against the brute-force reference, one job per role, and the
-   ring-pair bound and dominance pruning that keep its search small. Unique rings on real gear are in core/same-result.test.js,
+   ring-pair bound and dominance pruning that keep its search small. Unique rings on real gear are in core/same-result.test.ts,
    hand-made ring cases in core/optimizer/index.exhaustive.test.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

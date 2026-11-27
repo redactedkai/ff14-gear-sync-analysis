@@ -126,7 +126,7 @@ export function meldVectors(job, item, sync, keys, { exactSpd = false } = {}) {
 }
 
 /* A piece's effective stats (effStats) plus its weapon damage after sync under 'wd' when the job ranks it
-   (weaponDamage, checked against real weapons in core/damage-defense.test.js). */
+   (weaponDamage, checked against real weapons in core/damage-defense.test.ts). */
 function effWithWd(job, item, sync) {
   const v = { ...effStats(job, item, sync) };
   if (job.damageKey) {
@@ -312,7 +312,7 @@ export function forEachLoadout(job, pool, sync, { melds = false, meldKeys = [], 
 }
 
 /* Food, written out: min(max, floor(pct x (base + gear) / 100)) (math.md section 6); base = BaseSpeed for speed, the
-   level's main stat base for Determination and Piety (statBase, checked in core/food.test.js). */
+   level's main stat base for Determination and Piety (statBase, checked in core/food.test.ts). */
 export function foodAdd(job, meal, stat, gear, level) {
   const s = stat === 'vit' ? meal?.vit : meal?.stats.find(x => x.stat === stat);
   if (!s) {
