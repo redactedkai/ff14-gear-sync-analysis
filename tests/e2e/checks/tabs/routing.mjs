@@ -623,6 +623,9 @@ export async function checkScrollOnBackToLeftPosition(pg) {
 export async function checkScrollOnReload(pg) {
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);
+  // the router does not remember a scroll made while it is still placing the screen it opened (until that screen's first frame): a
+  // player cannot scroll in that frame, a script can, and on a runner whose frames come late it did, and a reload then opened at the top
+  await afterFrames(pg);
   const leftAt = await pg.evaluate(y => {
     window.scrollTo(0, y);
     return window.scrollY;
