@@ -2,14 +2,15 @@
 
 import { check, expect } from '../../lib/expect.ts';
 import { showTab } from '../../lib/nav.ts';
+import type { Page } from 'playwright';
 
 /** A console command that defines, deletes or adds a member of a store is refused and leaves the page working: the open tab's
  * screens still draw, and a tab opens as before. (The page's own use of the stores, in every other step, shows the screens accept them.) */
-export async function checkStoresSealed(pg) {
+export async function checkStoresSealed(pg: Page) {
   const results = await pg.evaluate(() => {
     // Reflect says true when the change was made, whatever the strictness of the code that asks
-    const tries = {};
-    for (const name of ['app', 'sheets']) {
+    const tries: Record<string, boolean[]> = {};
+    for (const name of ['app', 'sheets'] as const) {
       const store = window.gsaDebug[name];
       const member = Object.keys(store)[0];
       tries[name] = [

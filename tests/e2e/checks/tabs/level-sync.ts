@@ -4,6 +4,7 @@ import { NARROW, shot } from '../../lib/constants.ts';
 import { check, checkNoBadText, expect } from '../../lib/expect.ts';
 import { browserRows, fillBrowser, hasHScroll, setCap, setJob, setNumber, showMath, showTab } from '../../lib/nav.ts';
 import { pickOption } from '../../lib/select.ts';
+import type { Page } from 'playwright';
 
 // Level sync: level 100 healer head pieces at item level 780 or more, at synced level 90 (item level sync off), are
 // capped at the item level 660 head values; Mind 248 and the head substat cap 184 come from ItemLevel row 660 x 85 per
@@ -14,7 +15,7 @@ const HEAD_SUB_CAP_660 = '184';
 
 /** Synced level 90 with item level sync off, at NARROW width: the gear browser shows the level-synced value, Piece stats
  * cuts a head to the item level 660 caps; no bad text, no horizontal scroll. */
-export async function checkLevelSync(pg) {
+export async function checkLevelSync(pg: Page) {
   await pg.setViewportSize(NARROW);
   await setJob(pg, 'SGE');
   await pg.locator('#sync').uncheck();

@@ -8,14 +8,16 @@ import { FILL_SHEET } from '../../lib/fixtures.ts';
 import { hasHScroll, runFill, setJob, showMath, showTab } from '../../lib/nav.ts';
 import { checkSyncCaps, checkTotals } from '../../lib/shared-checks.ts';
 import { expectMealEmpty, openSet, seedSheet } from '../../lib/sheets.ts';
+import type { SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
+import type { Page } from 'playwright';
 
 /* The level caps of the jobs that stop below 100 (CLAUDE.md: BLU 80, BST 50); every other walked job has 100. */
-const JOB_LEVEL_CAP = { BST: 50, BLU: 80 };
+const JOB_LEVEL_CAP: Record<string, number> = { BST: 50, BLU: 80 };
 
 /** A saved sheet for `job` at the shared setup (level 50, synced to 123) with one empty set whose Auto-fill settings ask for
  * food: Maximize the main stat, spare points to tiebreaks off (the gear first, then the meal: the cheap search), every box
  * at its default, the equip level at the job's cap. */
-const walkSheet = (job, mainKey) => ({
+const walkSheet = (job: string, mainKey: string): SavedSheet => ({
   ...FILL_SHEET,
   id: `s_walk_${job}`,
   name: `Walk ${job}`,
@@ -35,7 +37,7 @@ const walkSheet = (job, mainKey) => ({
  * an off-hand row), the special substat's column only for a job that has one, the Gear to search line counting the
  * pieces the core searches, an Auto-fill with food whose main stat is the core's (a meal has no main stat), a meal on the Food
  * row, the Defense row, no bad text and no sideways scroll at 960 px. The last job takes the screenshot. */
-async function checkWalkSet(pg, job) {
+async function checkWalkSet(pg: Page, job: string) {
   const sync = { cap: 123, sync: true, level: 50 };
   const keys = await coreKeys(job);
   const { on } = await coreGear(job, sync, keys.main);
@@ -61,7 +63,7 @@ async function checkWalkSet(pg, job) {
 
 /** Every tab for one job: no undefined/NaN/null text, correct sync caps, page fits NARROW width, and a set page of the job
  * (checkWalkSet). One step per job; the last job takes the screenshots. */
-export const walkJob = job => async pg => {
+export const walkJob = (job: string) => async (pg: Page) => {
   await pg.setViewportSize(NARROW);
   await setJob(pg, job);
   await showTab(pg, 'browse');

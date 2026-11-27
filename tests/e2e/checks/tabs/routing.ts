@@ -3,15 +3,23 @@
 import { ANY_SLOT_LABEL, slotButtonName } from '../../../../src/ui/elements/gear-browser/slot-menu-names.ts';
 import { SCROLL_KEY } from '../../../../src/ui/router/scroll-storage.ts';
 import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.ts';
+import { messageOf } from '../../../../src/core/guards.ts';
 import { STORE_KEY } from '../../lib/constants.ts';
 import { check, expect, poll } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
-import { afterFrames, waitSaved } from '../../lib/nav.ts';
+import { afterFrames, clickTabFromPage, framesPass, waitSaved } from '../../lib/nav.ts';
 import { expectSelectValue } from '../../lib/select.ts';
 import { expectApplyCount, openSageSet, seedSheet, seedSheets } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
+
+/** One frame the recorder noted: where the page was scrolled (px) and whether the marker element was drawn. */
+interface ScrollFrame {
+  y: number;
+  shown: boolean;
+}
 
 /** The address (its hash) of the page now. */
-const hashOf = pg => pg.evaluate(() => location.hash);
+const hashOf = (pg: Page) => pg.evaluate(() => location.hash);
 
 /** How many frames a scroll position is watched after the page has landed on it: more than the router tries the scroll for
  * (MAX_SCROLL_FRAMES in focus.ts, 30), counted in frames and not in ms, so a busy machine, which draws fewer frames a second, is
@@ -21,31 +29,19 @@ const STAY_FRAMES = 35;
 /** How much taller the window is made in the scroll check that shortens a screen below its saved position (px). */
 const TALLER_WINDOW_PX = 200;
 
-/** Resolves after `count` frames of the page have been drawn. */
-const framesPass = (pg, count) =>
-  pg.evaluate(
-    total =>
-      new Promise(done => {
-        let left = total;
-        const frame = () => (--left > 0 ? requestAnimationFrame(frame) : done());
-        requestAnimationFrame(frame);
-      }),
-    count,
-  );
-
 /** Wait for the page's hash to be `expected` (a string, or a RegExp), and check it. */
-async function expectHash(pg, expected, what) {
+async function expectHash(pg: Page, expected: string | RegExp, what: string) {
   const isPattern = expected instanceof RegExp;
-  await pg.waitForFunction(
-    ([want, pattern]) => (pattern ? new RegExp(want).test(location.hash) : location.hash === want),
-    [isPattern ? expected.source : expected, isPattern],
-  );
+  await pg.waitForFunction(([want, pattern]) => (pattern ? new RegExp(want).test(location.hash) : location.hash === want), [
+    isPattern ? expected.source : expected,
+    isPattern,
+  ] as const);
   const hash = await hashOf(pg);
   check(isPattern ? expected.test(hash) : hash === expected, `${what}: the address is '${hash}'`);
 }
 
 /** Go to the address `hash` the way a typed address does (the page opens its screen without a reload). */
-const typeAddress = (pg, hash) =>
+const typeAddress = (pg: Page, hash: string) =>
   pg.evaluate(address => {
     location.hash = address;
   }, hash);
@@ -53,7 +49,7 @@ const typeAddress = (pg, hash) =>
 /** The sheet page (its list of gear sets) is shown. When it is not, the failure names what the page held: the address, the saved
  * sheets' keys, the screen state and the page's last actions, since the "not found" screen that took its place on a CI runner left
  * nothing else to go on. `where` says which move it follows. */
-async function expectSheetPageShown(pg, where) {
+async function expectSheetPageShown(pg: Page, where: string) {
   try {
     await expect(pg.locator('#sh-sets')).toBeVisible();
   } catch (e) {
@@ -69,14 +65,14 @@ async function expectSheetPageShown(pg, where) {
         };
       }, STORE_KEY)
       .catch(error => String(error.message ?? error));
-    throw new Error(`${e.message} (${where}; the page held ${JSON.stringify(held)})`);
+    throw new Error(`${messageOf(e)} (${where}; the page held ${JSON.stringify(held)})`);
   }
 }
 
 /** Each screen has an address (the Gear browser and the math views may carry a query: the settings the page holds); Back and Forward move between them; a reload stays on the screen; the math views and the Gear
  * browser are addresses too; an address that names a sheet or gear set that is not saved shows "not found" and keeps its
  * address; an address that names nothing is the Sheets list; the page title names the screen. */
-export async function checkRouting(pg) {
+export async function checkRouting(pg: Page) {
   await seedSheet(pg, SET_SHEET);
   await expectHash(pg, '#/sheets', 'the Sheets list');
   const listTitle = await pg.title();
@@ -100,7 +96,7 @@ export async function checkRouting(pg) {
     return window.scrollY;
   });
   check(leftAt > 100, `the set page cannot be scrolled (${leftAt}), so the scroll check below proves nothing`);
-  await pg.evaluate(() => document.querySelector('[data-tab=browse]').click());
+  await clickTabFromPage(pg, 'browse');
   await expectHash(pg, /^#\/gear(\?|$)/, 'the Gear browser');
   await pg.goBack();
   await expectHash(pg, setHash, 'Back from the Gear browser');
@@ -163,7 +159,7 @@ export async function checkRouting(pg) {
 
 /** The browser's Back asks before it leaves a set page that holds a draft (the question the tab links ask): Keep editing
  * leaves the page and its address as they were, Discard and leave goes where Back was going. */
-export async function checkRoutingGuard(pg) {
+export async function checkRoutingGuard(pg: Page) {
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);
   const setHash = await hashOf(pg);
@@ -193,7 +189,7 @@ export async function checkRoutingGuard(pg) {
 /** The leave guard after the page was loaded again (the entries before the reload keep their place in history) and after a
  * typed address: Back and Keep editing leave the page and its address as they were, a typed address that is refused leaves no
  * duplicate entry, so the next Back is a Back. */
-export async function checkRoutingAfterReload(pg) {
+export async function checkRoutingAfterReload(pg: Page) {
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);
   const setHash = await hashOf(pg);
@@ -225,12 +221,12 @@ export async function checkRoutingAfterReload(pg) {
 /** The reload and close guard, with the dev flag at 0 (the guard is on): a reload with no draft goes through, a reload with a
  * draft raises the browser's beforeunload question (Cancel keeps the page and the draft, Reload drops them); with the flag at 1
  * (the guard is off, the smoke default) no question comes. */
-export async function checkUnloadGuard(pg) {
+export async function checkUnloadGuard(pg: Page) {
   // TODO: this step fails in Firefox at "Reload: the draft is gone": after Cancel, an accepted second question does not reload the
   // page there, as on a plain page with its own beforeunload listener (WebKit reloads). It goes when Playwright's Firefox does.
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);
-  const questions = [];
+  const questions: string[] = [];
   pg.on('dialog', dialog => {
     questions.push(dialog.type());
     // Cancel the first question (the page stays); Reload at the second
@@ -240,7 +236,7 @@ export async function checkUnloadGuard(pg) {
   const settle = () => pg.waitForTimeout(300); // a question, if any, comes within a frame or two of the reload
 
   // the guard on (the flag at '0': the init script keeps a flag that is set)
-  await pg.evaluate(key => localStorage.setItem(key, '0'), UNLOAD_GUARD_OFF_KEY);
+  await pg.evaluate((key: string) => localStorage.setItem(key, '0'), UNLOAD_GUARD_OFF_KEY);
   await reload(); // nothing held: no question
   await expect(pg.locator('#sh-gear')).toBeVisible();
   check(questions.length === 0, `no question with nothing held: ${questions}`);
@@ -261,7 +257,7 @@ export async function checkUnloadGuard(pg) {
   await expect(pg.locator('#sh-apply')).toHaveCount(0); // Reload: the draft is gone
 
   // the flag off: a draft is reloaded with no question
-  await pg.evaluate(key => localStorage.setItem(key, '1'), UNLOAD_GUARD_OFF_KEY);
+  await pg.evaluate((key: string) => localStorage.setItem(key, '1'), UNLOAD_GUARD_OFF_KEY);
   await hands.locator('[data-pick]').click();
   await pg.locator('.pick-menu .same-item[data-game-id]').first().click();
   await expectApplyCount(pg, 1);
@@ -276,7 +272,7 @@ export async function checkUnloadGuard(pg) {
  * saves them at once; a bare address keeps what is saved; the address follows a change of a setting without adding a history
  * entry, and takes the search text once typing pauses; a link with a query leaves what it does not name at the default. The
  * tab's job and item level sync are in the address too. */
-export async function checkAddressSettings(pg) {
+export async function checkAddressSettings(pg: Page) {
   // a link applies its settings; a name the page does not have is dropped from the address
   await typeAddress(pg, '#/gear?job=SGE&il=123&slot=ring&min=700&sort=det&colour=red');
   await expectHash(pg, '#/gear?job=SGE&il=123&slot=ring&min=700&sort=det', 'a link with settings');
@@ -322,7 +318,7 @@ export async function checkAddressSettings(pg) {
   // text typed just before the player leaves the screen is still there when Back returns
   await typeAddress(pg, '#/gear?max=790');
   await pg.locator('#b-q').fill('Moon');
-  await pg.evaluate(() => document.querySelector('[data-tab=math]').click());
+  await clickTabFromPage(pg, 'math');
   await expectHash(pg, /^#\/math\/piece(\?|$)/, 'to How the math works right after typing');
   await pg.goBack();
   await expect(pg.locator('#b-q')).toHaveValue('Moon');
@@ -349,7 +345,7 @@ const SCROLLED_PX = 400;
 /** Back to a scrolled screen shows no position in between: from the frame the browser moves until the router has placed the
  * screen, the page is at the position it left or the one it returns to, never a third (the browser's own restore, clamped to
  * the shorter screen still on show, used to flash there). */
-export async function checkScrollOnBack(pg) {
+export async function checkScrollOnBack(pg: Page) {
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);
   const setHash = await hashOf(pg);
@@ -358,19 +354,20 @@ export async function checkScrollOnBack(pg) {
     return window.scrollY;
   }, SCROLLED_PX);
   check(leftAt > 100, `the set page cannot be scrolled (${leftAt}), so the check below proves nothing`);
-  await pg.evaluate(() => document.querySelector('[data-tab=browse]').click());
+  await clickTabFromPage(pg, 'browse');
   await expectHash(pg, /^#\/gear(\?|$)/, 'the Gear browser');
   await expect(pg.locator('#b-q')).toBeVisible();
   const startAt = await pg.evaluate(() => window.scrollY);
 
   // record the scroll position on every frame, then go Back and wait for the router to place the set page
   await pg.evaluate(() => {
-    const frames = [];
+    const frames: number[] = [];
+    const recorder = { frames, timer: 0 };
     const record = () => {
       frames.push(Math.round(window.scrollY));
-      window.gsaScrollFrames.timer = requestAnimationFrame(record);
+      recorder.timer = requestAnimationFrame(record);
     };
-    window.gsaScrollFrames = { frames, timer: 0 };
+    window.gsaScrollFrames = recorder;
     record();
   });
   await pg.goBack();
@@ -378,6 +375,9 @@ export async function checkScrollOnBack(pg) {
   await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 1, leftAt);
   await framesPass(pg, STAY_FRAMES); // it stays there
   const frames = await pg.evaluate(() => {
+    if (!window.gsaScrollFrames) {
+      throw new Error('the scroll recorder was never started');
+    }
     cancelAnimationFrame(window.gsaScrollFrames.timer);
     return window.gsaScrollFrames.frames;
   });
@@ -394,10 +394,10 @@ const FIVE_SETS_SHEET = {
 };
 
 /** Starts a recorder that notes, after each frame is drawn (a message posted from the frame's callback runs after its layout),
- * where the page is scrolled and whether the element `marker` is drawn (it takes room on the page); kept in window.gsaScrollFrames. */
-const startFrameRecorder = (pg, marker) =>
-  pg.evaluate(selector => {
-    const frames = [];
+ * where the page is scrolled and whether the element `marker` is drawn (it takes room on the page); kept in window.gsaFrameRecorder. */
+const startFrameRecorder = (pg: Page, marker: string) =>
+  pg.evaluate((selector: string) => {
+    const frames: ScrollFrame[] = [];
     const channel = new MessageChannel();
     channel.port1.onmessage = () =>
       frames.push({ y: Math.round(window.scrollY), shown: (document.querySelector(selector)?.getClientRects().length ?? 0) > 0 });
@@ -409,20 +409,23 @@ const startFrameRecorder = (pg, marker) =>
       channel.port2.postMessage(0);
       requestAnimationFrame(tick);
     };
-    window.gsaScrollFrames = state;
+    window.gsaFrameRecorder = state;
     tick();
   }, marker);
 
 /** Stops the recorder and returns what it saw, one {y, shown} per frame. */
-const stopFrameRecorder = pg =>
+const stopFrameRecorder = (pg: Page) =>
   pg.evaluate(() => {
-    window.gsaScrollFrames.stopped = true;
-    return window.gsaScrollFrames.frames;
+    if (!window.gsaFrameRecorder) {
+      throw new Error('the frame recorder was never started');
+    }
+    window.gsaFrameRecorder.stopped = true;
+    return window.gsaFrameRecorder.frames;
   });
 
 /** Forward to a screen that was left scrolled shows it at that position from its first frame: no frame of the new screen is
  * drawn at the top first (a screen still being built is shorter than the position, which the browser clamps to the top). */
-export async function checkScrollOnForward(pg) {
+export async function checkScrollOnForward(pg: Page) {
   await seedSheet(pg, FIVE_SETS_SHEET);
   await pg.click('[data-tab=sheets]');
   await pg.locator('#sh-list a.sname', { hasText: FIVE_SETS_SHEET.name }).click();
@@ -444,8 +447,8 @@ export async function checkScrollOnForward(pg) {
   await expect(pg.locator('#sh-gear')).toBeVisible();
   await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 1, leftAt);
   await framesPass(pg, STAY_FRAMES); // it stays there
-  const frames = (await stopFrameRecorder(pg)).filter(frame => frame.shown);
-  const strays = [...new Set(frames.map(frame => frame.y))].filter(y => Math.abs(y - leftAt) > 1);
+  const frames = (await stopFrameRecorder(pg)).filter((frame: ScrollFrame) => frame.shown);
+  const strays = [...new Set(frames.map((frame: ScrollFrame) => frame.y))].filter(y => Math.abs(y - leftAt) > 1);
   check(
     frames.length > 0 && strays.length === 0,
     `Forward drew the set page at ${strays.join(', ')} before ${leftAt} (${frames.length} frames)`,
@@ -455,7 +458,7 @@ export async function checkScrollOnForward(pg) {
 /** Back from the Gear browser to a scrolled math view shows no third position: from the frame the browser moves until the router has
  * placed the view, the page is at the position it left or the one it returns to (the browser's own scroll anchoring, which moves the
  * page while the screens are swapped, is off). */
-export async function checkScrollOnBackToMath(pg) {
+export async function checkScrollOnBackToMath(pg: Page) {
   await pg.setViewportSize({ width: 1280, height: 720 });
   await pg.click('[data-tab=math]');
   await pg.click('[data-sub=gcd]');
@@ -466,7 +469,7 @@ export async function checkScrollOnBackToMath(pg) {
   }, SCROLLED_PX / 2);
   check(leftAt > 50, `the GCD Scaling view cannot be scrolled (${leftAt}), so the check below proves nothing`);
   await afterFrames(pg); // the scroll event is noted
-  await pg.evaluate(() => document.querySelector('[data-tab=browse]').click());
+  await clickTabFromPage(pg, 'browse');
   await expectHash(pg, /^#\/gear(\?|$)/, 'the Gear browser');
   await expect(pg.locator('#b-q')).toBeVisible();
   const startAt = await pg.evaluate(() => window.scrollY);
@@ -475,8 +478,10 @@ export async function checkScrollOnBackToMath(pg) {
   await expect(pg.locator('#tab-gcd')).toBeVisible();
   await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 1, leftAt);
   await framesPass(pg, STAY_FRAMES); // it stays there
-  const frames = (await stopFrameRecorder(pg)).filter(frame => frame.shown);
-  const strays = [...new Set(frames.map(frame => frame.y))].filter(y => Math.abs(y - startAt) > 1 && Math.abs(y - leftAt) > 1);
+  const frames = (await stopFrameRecorder(pg)).filter((frame: ScrollFrame) => frame.shown);
+  const strays = [...new Set(frames.map((frame: ScrollFrame) => frame.y))].filter(
+    y => Math.abs(y - startAt) > 1 && Math.abs(y - leftAt) > 1,
+  );
   check(
     frames.length > 0 && strays.length === 0,
     `Back drew GCD Scaling at ${strays.join(', ')} (left from ${startAt}, back to ${leftAt})`,
@@ -487,7 +492,7 @@ export async function checkScrollOnBackToMath(pg) {
  * the click (the Gear browser's own, a frame late, and the browser holding the position to the shorter page) are not where the new
  * screen was left. Read from what the page keeps of the positions over a reload (written when the page is hidden), as an entry's
  * position is not shown anywhere else; and Forward to the screen draws it at the top from its first frame. */
-export async function checkScrollOnForwardToUnscrolled(pg) {
+export async function checkScrollOnForwardToUnscrolled(pg: Page) {
   await pg.setViewportSize({ width: 960, height: 700 });
   await pg.click('[data-tab=browse]');
   await expect(pg.locator('#b-q')).toBeVisible();
@@ -504,9 +509,9 @@ export async function checkScrollOnForwardToUnscrolled(pg) {
   await framesPass(pg, STAY_FRAMES);
   const mathReach = await pg.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
   check(mathReach <= 0, `Stat Allocation can be scrolled (${mathReach}), so the check below proves nothing`);
-  const notedAt = await pg.evaluate(key => {
+  const notedAt = await pg.evaluate((key: string) => {
     dispatchEvent(new Event('pagehide')); // the page writes the positions it has noted
-    return JSON.parse(sessionStorage.getItem(key))[history.state.id] ?? 0;
+    return JSON.parse(sessionStorage.getItem(key) ?? '{}')[history.state.id] ?? 0;
   }, SCROLL_KEY);
   check(notedAt === 0, `Stat Allocation, which cannot scroll, is noted as left at ${notedAt}`);
 
@@ -520,33 +525,39 @@ export async function checkScrollOnForwardToUnscrolled(pg) {
   const frames = await stopFrameRecorder(pg);
   const strays = drawnPositions(frames).filter(y => Math.abs(y) > 1);
   check(
-    frames.some(frame => frame.shown) && strays.length === 0,
+    frames.some((frame: ScrollFrame) => frame.shown) && strays.length === 0,
     `Forward drew Stat Allocation at ${strays.join(', ')} before 0, a position it was never scrolled to`,
   );
 }
 
 /** The positions the recorder saw the screen at, in the frames that drew it (see startFrameRecorder). */
-const drawnPositions = frames => [...new Set(frames.filter(frame => frame.shown).map(frame => frame.y))];
+const drawnPositions = (frames: ScrollFrame[]) => [...new Set(frames.filter(frame => frame.shown).map(frame => frame.y))];
 
 /** Scrolls the page to `y` as far as it goes, from the page itself (a Playwright wheel or click would scroll on its own); returns
  * where it is. */
-const scrollPageTo = (pg, y) =>
+const scrollPageTo = (pg: Page, y: number) =>
   pg.evaluate(target => {
     window.scrollTo(0, target);
     return window.scrollY;
   }, y);
 
 /** Clicks the link `selector` (the one with `text`) from the page itself: a Playwright click scrolls the page to the link first. */
-const clickFromPage = (pg, selector, text) =>
+const clickFromPage = (pg: Page, selector: string, text: string) =>
   pg.evaluate(
-    ([css, wanted]) => [...document.querySelectorAll(css)].find(link => link.textContent.includes(wanted)).click(),
-    [selector, text],
+    ([css, wanted]) => {
+      const link = [...document.querySelectorAll<HTMLElement>(css)].find(candidate => candidate.textContent?.includes(wanted));
+      if (!link) {
+        throw new Error(`no ${css} with the text ${wanted}`);
+      }
+      link.click();
+    },
+    [selector, text] as const,
   );
 
 /** Back to a screen left at the top, or left scrolled, draws it at that position from its first frame, whichever screen it came
  * from (a set page, the Gear browser); a quick Back, Forward, Back leaves the sheet page at the top. The browser clamps the old
  * position to a screen shorter than it (the page end), and used to draw that for a frame before the router placed the screen. */
-export async function checkScrollOnBackToLeftPosition(pg) {
+export async function checkScrollOnBackToLeftPosition(pg: Page) {
   await pg.setViewportSize({ width: 1000, height: 600 });
   await seedSheet(pg, FIVE_SETS_SHEET);
   await pg.click('[data-tab=sheets]');
@@ -571,7 +582,7 @@ export async function checkScrollOnBackToLeftPosition(pg) {
   let frames = await stopFrameRecorder(pg);
   let strays = drawnPositions(frames).filter(y => Math.abs(y) > 1);
   check(
-    frames.some(frame => frame.shown) && strays.length === 0,
+    frames.some((frame: ScrollFrame) => frame.shown) && strays.length === 0,
     `Back drew the sheet page at ${strays.join(', ')} before 0 (its end is ${sheetEnd})`,
   );
 
@@ -583,11 +594,12 @@ export async function checkScrollOnBackToLeftPosition(pg) {
   // way is counted from where the page still is, so on a busy machine the three would end somewhere else), with no frame between
   await pg.evaluate(
     () =>
-      new Promise(done => {
+      new Promise<void>(done => {
         const later = [() => history.forward(), () => history.back()];
         const onMove = () => {
-          if (later.length) {
-            return setTimeout(later.shift());
+          const next = later.shift();
+          if (next) {
+            return setTimeout(next);
           }
           removeEventListener('popstate', onMove);
           done(); // the third move has arrived
@@ -605,7 +617,7 @@ export async function checkScrollOnBackToLeftPosition(pg) {
   const sheetAt = await scrollPageTo(pg, sheetEnd);
   check(sheetAt > 100, `the sheet page cannot be scrolled (${sheetAt})`);
   await afterFrames(pg); // the scroll event is noted
-  await pg.evaluate(() => document.querySelector('[data-tab=browse]').click());
+  await clickTabFromPage(pg, 'browse');
   await expect(pg.locator('#b-q')).toBeVisible();
   await scrollPageTo(pg, 100);
   await afterFrames(pg); // the scroll event is noted
@@ -617,14 +629,14 @@ export async function checkScrollOnBackToLeftPosition(pg) {
   frames = await stopFrameRecorder(pg);
   strays = drawnPositions(frames).filter(y => Math.abs(y - sheetAt) > 1);
   check(
-    frames.some(frame => frame.shown) && strays.length === 0,
+    frames.some((frame: ScrollFrame) => frame.shown) && strays.length === 0,
     `Back from the Gear browser drew the sheet page at ${strays.join(', ')} before ${sheetAt}`,
   );
 
   // the window got taller meanwhile, so the sheet page no longer reaches the position it was left at: it is drawn at its own end
   // from its first frame, not at the old position over blank space (the page is held tall for that position only until the screen
   // shows it does not reach it)
-  await pg.evaluate(() => document.querySelector('[data-tab=browse]').click());
+  await clickTabFromPage(pg, 'browse');
   await expect(pg.locator('#b-q')).toBeVisible();
   await pg.setViewportSize({ width: 1000, height: 600 + TALLER_WINDOW_PX });
   await startFrameRecorder(pg, '#sh-sets');
@@ -637,14 +649,14 @@ export async function checkScrollOnBackToLeftPosition(pg) {
   check(newEnd < sheetAt - TALLER_WINDOW_PX / 2, `the taller window did not shorten the sheet page's reach (${sheetAt} to ${newEnd})`);
   strays = drawnPositions(frames).filter(y => Math.abs(y - newEnd) > 1);
   check(
-    frames.some(frame => frame.shown) && strays.length === 0 && heldAt === '',
+    frames.some((frame: ScrollFrame) => frame.shown) && strays.length === 0 && heldAt === '',
     `Back to a screen shorter than its saved position drew the sheet page at ${strays.join(', ')} before its end ${newEnd} (height held: '${heldAt}')`,
   );
   await pg.setViewportSize({ width: 1000, height: 900 });
 }
 
 /** A reload on a scrolled screen keeps its place, whether the browser or the router restores it. */
-export async function checkScrollOnReload(pg) {
+export async function checkScrollOnReload(pg: Page) {
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);
   // the router does not remember a scroll made while it is still placing the screen it opened (until that screen's first frame): a
@@ -675,7 +687,7 @@ const LIST_FILLER_COUNT = 24;
 /** A screen opened by a click or by the page's own navigation (a math sub-tab included) starts at the top, whatever depth the screen before it was
  * scrolled to, and no frame draws it at that depth (the browser kept the position when the screens were swapped). The screen left
  * keeps its own position: Back draws it at the depth it was left at, from its first frame. Frames are counted, never timed. */
-export async function checkScrollOnOpenedScreen(pg) {
+export async function checkScrollOnOpenedScreen(pg: Page) {
   await pg.setViewportSize({ width: 1000, height: 600 });
   const fillers = Array.from({ length: LIST_FILLER_COUNT }, (_, number) => ({
     ...TALL_SHEET,
@@ -686,7 +698,21 @@ export async function checkScrollOnOpenedScreen(pg) {
   const setSelector = '#sh-gear';
 
   /** Opens `to` from `from` (the screen `fromAddress` names, scrolled to `depth`), and goes Back; `open` clicks from the page. */
-  const openFromScrolled = async ({ what, fromAddress, fromMarker, depth, open, toMarker }) => {
+  const openFromScrolled = async ({
+    what,
+    fromAddress,
+    fromMarker,
+    depth,
+    open,
+    toMarker,
+  }: {
+    what: string;
+    fromAddress: string;
+    fromMarker: string;
+    depth: number;
+    open: () => Promise<unknown>;
+    toMarker: string;
+  }) => {
     await typeAddress(pg, fromAddress);
     await expect(pg.locator(fromMarker)).toBeVisible();
     await framesPass(pg, STAY_FRAMES);
@@ -702,7 +728,7 @@ export async function checkScrollOnOpenedScreen(pg) {
     let frames = await stopFrameRecorder(pg);
     let strays = drawnPositions(frames).filter(y => Math.abs(y) > 1);
     check(
-      frames.some(frame => frame.shown) && strays.length === 0,
+      frames.some((frame: ScrollFrame) => frame.shown) && strays.length === 0,
       `${what}: the new screen was drawn at ${strays.join(', ')} before the top (the screen left was at ${leftAt})`,
     );
 

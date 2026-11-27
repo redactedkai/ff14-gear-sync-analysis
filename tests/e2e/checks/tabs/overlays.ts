@@ -5,9 +5,10 @@ import { check, expect, poll } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { focusedId, showMath, showTab } from '../../lib/nav.ts';
 import { rowAction, seedSheet } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 /** Waits until the focus is on the element with id `id` (the manager puts it back on the opener at once; a frame can pass first). */
-const focusIsOn = (pg, id, what) =>
+const focusIsOn = (pg: Page, id: string, what: string) =>
   poll(what, async () => {
     const got = await focusedId(pg);
     return { ok: got === id, got: `the focus is on '${got}'` };
@@ -17,7 +18,7 @@ const focusIsOn = (pg, id, what) =>
  * with the focus back on the button, a press outside closes it with the focus where the press went, and the focus moved to another
  * control by a script closes it (Tab out; the Job menu story has no such test). The three overlays of the bar and their keys are
  * `job-menu.spec.ts`'s and `bar-popover.spec.ts`'s. */
-export async function checkOverlayKeys(pg) {
+export async function checkOverlayKeys(pg: Page) {
   await showMath(pg, 'piece');
   await pg.focus('#m-job-btn');
   await pg.keyboard.press('ArrowDown');
@@ -37,7 +38,7 @@ export async function checkOverlayKeys(pg) {
 }
 
 /** One overlay is open at a time, and every one closes with a change of sub-tab or tab. */
-export async function checkOverlaysOneAtATimeAndScreenChange(pg) {
+export async function checkOverlaysOneAtATimeAndScreenChange(pg: Page) {
   await showMath(pg, 'piece');
   await pg.click('#m-job-btn');
   await expect(pg.locator('#m-job-menu')).toBeVisible();
@@ -61,7 +62,7 @@ export async function checkOverlaysOneAtATimeAndScreenChange(pg) {
   await pg.keyboard.press('Escape');
   await expect(pg.locator('#t-pop')).toBeHidden();
   check(
-    await pg.evaluate(() => document.activeElement?.dataset.help === 'crit'),
+    await pg.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.dataset.help === 'crit'),
     'the Substat tiers note: the focus is not back on its "?" after Escape',
   );
   await pg.keyboard.press('Tab'); // the note is closed: nothing to close, the focus just moves on
@@ -74,7 +75,7 @@ export async function checkOverlaysOneAtATimeAndScreenChange(pg) {
 
 /** A note set while the Sheets tab is left is still seen: the toast is outside the tabs (deleting a sheet says so). A failed save's
  * message shows until a save works. */
-export async function checkNoteSurvivesTabChange(pg) {
+export async function checkNoteSurvivesTabChange(pg: Page) {
   await seedSheet(pg, SET_SHEET);
   await showTab(pg, 'sheets');
   await rowAction(pg, '#sh-list', 1, 'delete').click();
@@ -86,7 +87,7 @@ export async function checkNoteSurvivesTabChange(pg) {
 
   // the message of a failed save is pinned (not timed) until a save works
   await seedSheet(pg, SET_SHEET);
-  await pg.evaluate(id => {
+  await pg.evaluate((id: string) => {
     location.hash = `#/sheets/${id}`;
   }, SET_SHEET.id);
   await expect(pg.locator('#sh-level')).toBeVisible();
@@ -100,6 +101,9 @@ export async function checkNoteSurvivesTabChange(pg) {
   await pg.locator('#sh-level').blur();
   await expect(pg.locator('#sh-save-error')).toBeVisible();
   await pg.evaluate(() => {
+    if (!window.realSetItem) {
+      throw new Error('the real setItem was not kept');
+    }
     Storage.prototype.setItem = window.realSetItem;
   });
   await pg.fill('#sh-level', '52');

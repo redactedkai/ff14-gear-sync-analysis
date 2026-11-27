@@ -610,11 +610,33 @@ export async function checkFromMenu(pg: Page, pre: string, outside: string) {
   await expect(pg.locator(menu)).toBeHidden();
 }
 
+/** Resolves after `count` frames of the page have been drawn. */
+export const framesPass = (pg: Page, count: number) =>
+  pg.evaluate(
+    total =>
+      new Promise<void>(done => {
+        let left = total;
+        const frame = () => (--left > 0 ? requestAnimationFrame(frame) : done());
+        requestAnimationFrame(frame);
+      }),
+    count,
+  );
+
+/** Clicks the tab link `[data-tab=<tab>]` from the page itself, with no scroll or actionability wait of a Playwright click. */
+export const clickTabFromPage = (pg: Page, tab: string) =>
+  pg.evaluate((name: string) => {
+    const link = document.querySelector<HTMLElement>(`[data-tab=${name}]`);
+    if (!link) {
+      throw new Error(`no tab link ${name}`);
+    }
+    link.click();
+  }, tab);
+
 /** The id of the element that has focus. */
 export const focusedId = (pg: Page) => pg.evaluate(() => document.activeElement?.id ?? '');
 
 /** Set the gear browser's filters to an item level window (name filter cleared). */
-export async function fillBrowser(pg: Page, lo: number, hi: number | string, lvl: number, slot = 'any') {
+export async function fillBrowser(pg: Page, lo: number | string, hi: number | string, lvl: number, slot = 'any') {
   await showTab(pg, 'browse');
   await pg.fill('#b-q', '');
   await allExpansions(pg);

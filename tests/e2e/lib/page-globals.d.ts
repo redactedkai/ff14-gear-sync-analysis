@@ -38,6 +38,8 @@ declare global {
        rows (an empty string when none), and starts or stops a per-frame watch that returns what it saw. */
     __rowsMismatch?: () => string;
     __rowsWatch?: (on: boolean) => string;
+    /* The saved-data failure check keeps the real Storage setItem here while a failing one is installed (checks/tabs/overlays.ts). */
+    realSetItem?: Storage['setItem'];
     /* The startup checks (checks/startup/failure.ts). */
     __brokenFrame?: boolean;
     __markerAt?: boolean[];

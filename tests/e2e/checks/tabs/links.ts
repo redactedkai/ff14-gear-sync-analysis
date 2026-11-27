@@ -5,26 +5,27 @@ import { SET_SHEET } from '../../lib/fixtures.ts';
 import { showMath } from '../../lib/nav.ts';
 import { seedSheet } from '../../lib/sheets.ts';
 import { SHARED_SETUP } from '../../lib/setup.ts';
+import type { Page } from 'playwright';
 
 /* How long to wait for a page the browser may open for a modified click (it opens none in some builds). */
 const NEW_PAGE_WAIT_MS = 400;
 
 /* The page's address and its open tab and sub-tab, as one text, to compare before and after a click. */
-const placeOf = pg =>
+const placeOf = (pg: Page) =>
   pg.evaluate(() => {
-    const open = document.querySelector('[data-tab][aria-current="page"]')?.dataset.tab;
-    const sub = document.querySelector('[data-sub][aria-current="page"]')?.dataset.sub;
+    const open = document.querySelector<HTMLElement>('[data-tab][aria-current="page"]')?.dataset.tab;
+    const sub = document.querySelector<HTMLElement>('[data-sub][aria-current="page"]')?.dataset.sub;
     return `${location.hash} | tab ${open} | sub ${sub}`;
   });
 
 /* Clicks `selector` with `modifier` held (Control or Shift) and checks that this page stays as it was. A page or window the
    browser opens for it (the new page is the browser's) is closed. */
-async function checkModifiedClickStays(pg, selector, what, modifier) {
+async function checkModifiedClickStays(pg: Page, selector: string, what: string, modifier: 'Control' | 'Shift') {
   const before = await placeOf(pg);
   const opened = pg
     .context()
     .waitForEvent('page', { timeout: NEW_PAGE_WAIT_MS })
-    .then(page => page.close())
+    .then((page: Page) => page.close())
     .catch(() => {});
   await pg.locator(selector).click({ modifiers: [modifier] });
   await opened;
@@ -32,14 +33,14 @@ async function checkModifiedClickStays(pg, selector, what, modifier) {
 }
 
 /* Checks that the link `selector` points at the address `href` (a hash), the thing Open in new tab and Copy link use. */
-async function checkHref(pg, selector, href, what) {
+async function checkHref(pg: Page, selector: string, href: string, what: string) {
   const got = await pg.locator(selector).first().getAttribute('href');
   check(got === href, `${what} points at ${got}, not ${href}`);
 }
 
 /** Each link of the page points at its screen; a Ctrl+click or Shift+click on a tab, a sub-tab, a sheet's name, a set's name and a
  * breadcrumb leaves this page as it was; a plain click on each moves to its screen. */
-export async function checkLinkClicks(pg) {
+export async function checkLinkClicks(pg: Page) {
   await seedSheet(pg, SET_SHEET);
   const sheetHref = `#/sheets/${SET_SHEET.id}`;
   const setHref = `${sheetHref}/sets/${SET_SHEET.sets[0].id}`;
@@ -72,7 +73,7 @@ export async function checkLinkClicks(pg) {
   // a set's page: both breadcrumb links
   await checkHref(pg, '.setpage .setcrumb a:nth-of-type(1)', '#/sheets', 'the Sheets breadcrumb of a set');
   await checkHref(pg, '.setpage .setcrumb a:nth-of-type(2)', sheetHref, "the sheet's breadcrumb of a set");
-  for (const modifier of ['Control', 'Shift']) {
+  for (const modifier of ['Control', 'Shift'] as const) {
     await checkModifiedClickStays(pg, '.setpage .setcrumb a:nth-of-type(1)', 'the Sheets breadcrumb of a set', modifier);
     await checkModifiedClickStays(pg, '.setpage .setcrumb a:nth-of-type(2)', "the sheet's breadcrumb of a set", modifier);
   }
@@ -98,10 +99,10 @@ export async function checkLinkClicks(pg) {
 }
 
 /** In forced colors (high contrast) the open tab and the open sub-tab keep an underline that differs from the other tabs'. */
-export async function checkForcedColorsCurrentTab(pg) {
+export async function checkForcedColorsCurrentTab(pg: Page) {
   await pg.emulateMedia({ forcedColors: 'active' });
   await showMath(pg, 'gcd');
-  const underline = selector => pg.locator(selector).evaluate(link => getComputedStyle(link).borderBottomColor);
+  const underline = (selector: string) => pg.locator(selector).evaluate(link => getComputedStyle(link).borderBottomColor);
   for (const [open, other, what] of [
     ['[data-tab=math]', '[data-tab=sheets]', 'tab'],
     ['[data-sub=gcd]', '[data-sub=piece]', 'sub-tab'],

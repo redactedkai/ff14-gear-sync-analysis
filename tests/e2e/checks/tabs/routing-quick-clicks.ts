@@ -9,10 +9,11 @@
 // a Playwright click would scroll an off-screen link into view first (the page would then really be somewhere else), and a
 // click on a link that is on screen is the one the player can make.
 
-import { check, expect } from '../../lib/expect.ts';
+import { check, expect, mustFind } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
-import { afterFrames } from '../../lib/nav.ts';
+import { afterFrames, clickTabFromPage, framesPass } from '../../lib/nav.ts';
 import { seedSheets } from '../../lib/sheets.ts';
+import type { Page } from 'playwright';
 
 /** How many times each path is run in each configuration: a loss that happened 1 run in 15 shows up here. */
 const ROUNDS = 20;
@@ -40,20 +41,8 @@ const SHEET_COUNT = 24;
 /** The room kept between a link and the edges of the window when one is chosen to act on (px). */
 const EDGE_PX = 60;
 
-/** Resolves after `count` frames of the page have been drawn. */
-const framesPass = (pg, count) =>
-  pg.evaluate(
-    total =>
-      new Promise(done => {
-        let left = total;
-        const frame = () => (--left > 0 ? requestAnimationFrame(frame) : done());
-        requestAnimationFrame(frame);
-      }),
-    count,
-  );
-
 /** Runs `body()` with the page's CPU slowed `rate` times (1: not slowed), and puts it back to normal after. */
-async function atCpuRate(pg, rate, body) {
+async function atCpuRate<Result>(pg: Page, rate: number, body: () => Promise<Result>) {
   const session = await pg.context().newCDPSession(pg);
   try {
     await session.send('Emulation.setCPUThrottlingRate', { rate });
@@ -65,17 +54,17 @@ async function atCpuRate(pg, rate, body) {
 }
 
 /** Opens the Sheets list from its top, as a new history entry after the Gear browser's (so a Back from it stays in the page). */
-async function listAtTop(pg) {
-  await pg.evaluate(() => document.querySelector('[data-tab=browse]').click());
+async function listAtTop(pg: Page) {
+  await clickTabFromPage(pg, 'browse');
   await expect(pg.locator('#b-q')).toBeVisible();
-  await pg.evaluate(() => document.querySelector('[data-tab=sheets]').click());
+  await clickTabFromPage(pg, 'sheets');
   await expect(pg.locator('#sh-list')).toBeVisible();
   await pg.evaluate(() => window.scrollTo(0, 0));
   await framesPass(pg, STAY_FRAMES);
 }
 
 /** The index (in the list's sheet links) of one that is on screen at the top of the page and also after a scroll of WHEEL_PX. */
-const linkOnScreenBeforeAndAfter = (pg, wheelPx) =>
+const linkOnScreenBeforeAndAfter = (pg: Page, wheelPx: number) =>
   pg.evaluate(
     ([distance, edge]) => {
       const links = [...document.querySelectorAll('#sh-list a.sname')];
@@ -84,15 +73,15 @@ const linkOnScreenBeforeAndAfter = (pg, wheelPx) =>
         return top - distance > edge && bottom < innerHeight - edge;
       });
     },
-    [wheelPx, EDGE_PX],
+    [wheelPx, EDGE_PX] as const,
   );
 
 /** Scrolls the list from its top with the wheel (real input) and returns the link to act on, as soon as the page shows a scroll
  * (`scrolledAtLeast`, px: 1 when the position is not yet known; the scroll event of that scroll has not come yet). */
-async function wheelList(pg, scrolledAtLeast = 1) {
+async function wheelList(pg: Page, scrolledAtLeast = 1) {
   const link = await linkOnScreenBeforeAndAfter(pg, WHEEL_PX);
   check(link >= 0, 'no sheet link is on screen both before and after the scroll, so the check proves nothing');
-  const { width, height } = pg.viewportSize();
+  const { width, height } = mustFind(pg.viewportSize(), 'the window size');
   await pg.mouse.move(width / 2, height / 2);
   await pg.mouse.wheel(0, WHEEL_PX);
   await pg.waitForFunction(least => window.scrollY >= least, scrolledAtLeast);
@@ -100,10 +89,17 @@ async function wheelList(pg, scrolledAtLeast = 1) {
 }
 
 /** Acts on the link `link` of the list from the page itself, with no wait after the wheel. */
-const openLink = (pg, link) => pg.evaluate(index => document.querySelectorAll('#sh-list a.sname')[index].click(), link);
+const openLink = (pg: Page, link: number) =>
+  pg.evaluate(index => {
+    const anchor = document.querySelectorAll<HTMLElement>('#sh-list a.sname')[index];
+    if (!anchor) {
+      throw new Error(`no sheet link ${index}`);
+    }
+    anchor.click();
+  }, link);
 
 /** Where the wheel puts the list in this window: scrolled, and settled. */
-async function calibrate(pg) {
+async function calibrate(pg: Page) {
   await listAtTop(pg);
   await wheelList(pg);
   await framesPass(pg, STAY_FRAMES);
@@ -114,7 +110,7 @@ async function calibrate(pg) {
 }
 
 /** Waits until the page has stayed at `want` for STAY_FRAMES frames, and returns where it is after that. */
-async function settledScroll(pg, want) {
+async function settledScroll(pg: Page, want: number) {
   await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 1, want, { timeout: 5000 }).catch(() => {});
   await framesPass(pg, STAY_FRAMES);
   return pg.evaluate(() => window.scrollY);
@@ -122,8 +118,8 @@ async function settledScroll(pg, want) {
 
 /** Runs `path(pg, want)` ROUNDS times at each CPU rate in each window; `path` returns where the page landed. Returns the runs that
  * did not land on the position the wheel gave, as text. */
-async function runsThatMissed(pg, path) {
-  const missed = [];
+async function runsThatMissed(pg: Page, path: (pg: Page, want: number) => Promise<number>) {
+  const missed: string[] = [];
   for (const size of WINDOWS) {
     await pg.setViewportSize(size);
     const want = await calibrate(pg);
@@ -143,7 +139,7 @@ async function runsThatMissed(pg, path) {
 }
 
 /** Seeds a sheet list long enough to scroll. */
-async function seedLongList(pg) {
+async function seedLongList(pg: Page) {
   const sheets = Array.from({ length: SHEET_COUNT }, (_, number) => ({ ...SET_SHEET, id: `s_long_${number}`, name: `Sheet ${number}` }));
   await seedSheets(pg, sheets);
   await afterFrames(pg);
@@ -151,9 +147,9 @@ async function seedLongList(pg) {
 
 /** The Sheets list scrolled with the wheel, a sheet opened at once, then Back: the list is where it was scrolled to, in every run.
  * Two window sizes (1280 x 800 and 960 x 700) at normal speed and at 4x slower CPU. */
-export async function checkBackAfterQuickClick(pg) {
+export async function checkBackAfterQuickClick(pg: Page) {
   await seedLongList(pg);
-  const missed = await runsThatMissed(pg, async (page, want) => {
+  const missed = await runsThatMissed(pg, async (page: Page, want: number) => {
     const link = await wheelList(page, want - 1);
     await openLink(page, link);
     await expect(page.locator('#sh-sets')).toBeVisible();
@@ -169,9 +165,9 @@ export async function checkBackAfterQuickClick(pg) {
 
 /** The path the Gear browser's loss was first seen on, on the Sheets list: the list scrolled with the wheel, Back, Forward, a sheet
  * opened, Back: the list is where it was scrolled to, in every run, at normal speed and at 4x slower CPU. */
-export async function checkBackAfterBackAndForward(pg) {
+export async function checkBackAfterBackAndForward(pg: Page) {
   await seedLongList(pg);
-  const missed = await runsThatMissed(pg, async (page, want) => {
+  const missed = await runsThatMissed(pg, async (page: Page, want: number) => {
     const link = await wheelList(page, want - 1);
     await page.goBack(); // the wheel's scroll may not have been reported to the page yet
     await page.goForward();
@@ -192,9 +188,9 @@ export async function checkBackAfterBackAndForward(pg) {
 /** The list scrolled by the page's own script and Back made in the same task, then Forward: the list is where it was scrolled to,
  * in every run. The page hears of a script's scroll a frame later (its scroll event), so only the position the page reads as the
  * browser moves can keep it. */
-export async function checkBackAfterScriptScroll(pg) {
+export async function checkBackAfterScriptScroll(pg: Page) {
   await seedLongList(pg);
-  const missed = await runsThatMissed(pg, async (page, want) => {
+  const missed = await runsThatMissed(pg, async (page: Page, want: number) => {
     await page.evaluate(y => {
       window.scrollTo(0, y);
       history.back();
