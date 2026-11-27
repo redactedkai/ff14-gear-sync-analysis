@@ -13,8 +13,6 @@ test.describe('<gsa-switch-menu>', () => {
     page,
     browserName,
   }) => {
-    // WebKit's Tab skips links (Safari's "Press Tab to highlight each item" is off by default): there it walks the buttons only
-    const tabsToLinks = browserName !== 'webkit';
     const component = await mount<typeof Default>(STORY);
     const caret = component.getByRole('button', { name: BUTTON_NAME });
     const list = page.locator('#sh-set-menu');
@@ -43,8 +41,11 @@ test.describe('<gsa-switch-menu>', () => {
     await expect(list.getByRole('link', { name: 'Dungeons' })).toBeFocused(); // Zag moves the focus in a frame after it opens
     await layerArmed(page); // and starts to watch for the focus leaving the list
     await page.keyboard.press('Tab');
+    // Tab skips links in WebKit on macOS (Safari's "Press Tab to highlight each item" is off by default) but not in WebKit on
+    // Linux, so the first Tab shows which it is: on a link of the list, or on the button after the links
+    const tabsToLinks = await list.getByRole('link', { name: 'Crafting' }).evaluate(link => link === document.activeElement);
+    expect(tabsToLinks || browserName === 'webkit', 'Chromium and Firefox tab to links').toBe(true);
     if (tabsToLinks) {
-      await expect(list.getByRole('link', { name: 'Crafting' })).toBeFocused();
       await page.keyboard.press('Tab');
     }
     await expect(list.getByRole('button', { name: '+ New set' })).toBeFocused();

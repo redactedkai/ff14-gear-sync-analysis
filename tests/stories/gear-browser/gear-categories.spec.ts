@@ -134,15 +134,30 @@ test.describe('<gsa-gear-categories>', () => {
     await page.locator('#b-from').click();
     await expect(page.locator(MENU)).toBeVisible();
     await layerPlaced(page.locator(MENU));
-    const fit = await page.locator(MENU).evaluate(menu => {
+    const { wide, ...fit } = await page.locator(MENU).evaluate(menu => {
       const box = menu.getBoundingClientRect();
+      const root = document.documentElement;
       return {
-        inside: box.left >= 0 && box.right <= document.documentElement.clientWidth && box.top >= 0 && box.bottom <= innerHeight,
-        sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+        inside: box.left >= 0 && box.right <= root.clientWidth && box.top >= 0 && box.bottom <= innerHeight,
+        sideways: root.scrollWidth > root.clientWidth,
         menuScrolls: menu.scrollHeight > menu.clientHeight + 1 || menu.scrollWidth > menu.clientWidth + 1,
+        // for the failure message: the page's width numbers and the first elements that reach past the window's right edge
+        wide: {
+          scrollWidth: root.scrollWidth,
+          clientWidth: root.clientWidth,
+          scrollHeight: root.scrollHeight,
+          clientHeight: root.clientHeight,
+          past: [...document.querySelectorAll('*')]
+            .filter(element => element.getBoundingClientRect().right > root.clientWidth)
+            .slice(0, 6)
+            .map(
+              element =>
+                `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''} right ${Math.round(element.getBoundingClientRect().right)}`,
+            ),
+        },
       };
     });
-    expect(fit).toEqual({ inside: true, sideways: false, menuScrolls: false });
+    expect(fit, JSON.stringify(wide)).toEqual({ inside: true, sideways: false, menuScrolls: false });
     expect(await axe(), 'open').toEqual([]);
   });
 
