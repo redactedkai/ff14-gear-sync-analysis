@@ -1,6 +1,6 @@
 /* What the item level field does after its inputs changed while it follows the level (src/ui/elements/app/cap-follow.ts): the rule the
    Gear browser's strip and Stat Allocation's Sync settings had as seven watchers, with the lowering itself (limitCapToLevel) checked in
-   ui/level-cap.test.js. A hidden panel never lowers or flags the open one's cap; the cap the field lowered to is no reason to lower
+   ui/level-cap.test.ts. A hidden panel never lowers or flags the open one's cap; the cap the field lowered to is no reason to lower
    again; the level waits for its typing to settle. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

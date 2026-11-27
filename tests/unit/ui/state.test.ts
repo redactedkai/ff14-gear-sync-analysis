@@ -151,7 +151,7 @@ test('top-level scalars of the wrong type or out of range fall back field by fie
   expectFieldDefault('cap', -5, 1);
   expectFieldDefault('cap', 99999, capCeiling(70)); // IL Sync is on: a cap over what level 70 allows is lowered to it
   expectFieldDefault('cap', 200.6, 201);
-  // a sync that is no boolean falls back to off (state.tiers-job.test.js: the math panel then holds level sync's item level)
+  // a sync that is no boolean falls back to off (state.tiers-job.test.ts: the math panel then holds level sync's item level)
   for (const notBoolean of ['yes', 1, null]) {
     assert.equal(corrupt('sync', notBoolean).sync, D.sync, `sync = ${JSON.stringify(notBoolean)}`);
   }

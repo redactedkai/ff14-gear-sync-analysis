@@ -159,7 +159,7 @@ test('sheetSettings: the cap is lowered to what the level allows, as on the Job 
   assert.deepEqual(at('SGE', 0, true, 0).sync.cap, 1);
 });
 
-/* The Job and sync panel's cases (ui/level-cap.test.js, limitCapToLevel) through a sheet's settings: the same rule. */
+/* The Job and sync panel's cases (ui/level-cap.test.ts, limitCapToLevel) through a sheet's settings: the same rule. */
 test("sheetSettings: the Job and sync panel's cap cases", () => {
   for (const [cap, level, want] of [
     [500, 50, 135], // level 50's weapons

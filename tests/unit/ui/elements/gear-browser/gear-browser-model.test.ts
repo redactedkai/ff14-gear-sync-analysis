@@ -1,6 +1,6 @@
 /* What the Gear browser works out with no DOM (src/ui/elements/gear-browser/gear-browser-model.ts): its list built once per change
    and only while its tab is open, the page line, the sort headings, Reset filters and the "/" key. What the list shows is
-   checked in ui/views/gear.test.js; the table's rows in the smoke step checkBrowserRowsMatchView. */
+   checked in ui/views/gear.test.ts; the table's rows in the smoke step checkBrowserRowsMatchView. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {

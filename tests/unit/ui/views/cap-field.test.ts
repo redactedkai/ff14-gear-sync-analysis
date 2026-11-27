@@ -1,5 +1,5 @@
 /* What the item level field and the level field show (src/ui/views/cap-field.ts): the one set of rules behind the Gear browser's strip, the
-   Sync settings popover, a sheet's page and the Sheets dialogs. The sentences themselves are asserted in ui/level-cap.test.js. */
+   Sync settings popover, a sheet's page and the Sheets dialogs. The sentences themselves are asserted in ui/level-cap.test.ts. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../src/core/tables.ts';

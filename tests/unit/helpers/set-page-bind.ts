@@ -1,4 +1,4 @@
-/* Shared by the tests of a set page's logic (tests/unit/ui/elements/set-page/*.test.js): its session (elements/set-page/session.ts) bound to
+/* Shared by the tests of a set page's logic (tests/unit/ui/elements/set-page/*.test.ts): its session (elements/set-page/session.ts) bound to
    a real sheet store over a stand-in storage, with a stand-in for the element it serves, and solver stand-ins (held, refused, late
    replies). */
 import { saveSheet } from '../../../src/ui/sheets/storage.ts';

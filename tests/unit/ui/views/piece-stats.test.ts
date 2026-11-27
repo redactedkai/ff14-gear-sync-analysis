@@ -1,6 +1,6 @@
 /* Stat Allocation as one view (src/ui/views/piece-stats.ts): what the <gsa-piece-stats> element shows for Sage under item level
-   sync 123 (the owner's case) and under level sync, and the empty state. What each number is lives in sync-explainer.test.js and
-   piece.test.js; this checks the parts the element adds: the chart's width, the sentences, and the flags of the template. */
+   sync 123 (the owner's case) and under level sync, and the empty state. What each number is lives in sync-explainer.test.ts and
+   piece.test.ts; this checks the parts the element adds: the chart's width, the sentences, and the flags of the template. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';

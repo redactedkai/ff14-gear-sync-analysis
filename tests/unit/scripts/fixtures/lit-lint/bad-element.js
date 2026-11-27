@@ -1,4 +1,4 @@
-/* Fixture for lint-lit.test.js: one class field next to `static properties` and one <img> without alt. Never imported. */
+/* Fixture for lint-lit.test.ts: one class field next to `static properties` and one <img> without alt. Never imported. */
 import { LitElement, html } from 'lit';
 
 export class BadElement extends LitElement {

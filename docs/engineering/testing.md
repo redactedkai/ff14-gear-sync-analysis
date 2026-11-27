@@ -52,7 +52,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `math-page` | How the math works: Piece stats, Substat tiers, GCD | 12 | 9 |
 | `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 43 | 46 |
 | `look` | shared CSS: tokens, themes, layout at the five windows, radii | 3 | 6 |
-| `tooling` | the build, the test runners, the layout stress tool and the repo's code rules | 22 | 0 |
+| `tooling` | the build, the test runners, the layout stress tool and the repo's code rules | 23 | 0 |
 
 Notes:
 
@@ -67,7 +67,7 @@ Which file tests what? One line per file; the file itself says the rest.
 
 ### Unit tests
 
-**Naming rule.** The folder of a test file under `tests/unit/` is the folder of the module it tests under `src/`, and the file is the module's name, then `.test.js` (`.test.ts` for a module written in TypeScript: Node strips the types, and a `.ts` import names its extension). A file on one concern of a module adds the concern after a dot. So the test for `src/ui/views/gcd.ts` is `tests/unit/ui/views/gcd.test.js`, and the sync clamp of `src/core/formulas.ts` is in `tests/unit/core/formulas.sync-clamp.test.ts`. A folder counts as a module (`src/core/optimizer/` is `core/optimizer/index`, so `core/optimizer/index.exhaustive.test.ts`). Tests of `scripts/` go in `tests/unit/scripts/` and tests of the smoke test's own helpers (`tests/e2e/lib/`) in `tests/unit/smoke-helpers/`; the CSS tests are in `tests/unit/styles/`, named for the concern. A test that crosses modules goes in the file of the module whose rule it checks, or in the folder that holds the modules it scans (`ui/no-alpine`, `ui/views/no-bad-values`). Sorted by path, a module's files sit together. A test's domain is its module's (section 1.1). The test lists below name a file by its path under `tests/unit/`, without `.test.js`.
+**Naming rule.** The folder of a test file under `tests/unit/` is the folder of the module it tests under `src/`, and the file is the module's name, then `.test.ts` (Node strips the types, and a `.ts` import names its extension). A file on one concern of a module adds the concern after a dot. So the test for `src/ui/views/gcd.ts` is `tests/unit/ui/views/gcd.test.ts`, and the sync clamp of `src/core/formulas.ts` is in `tests/unit/core/formulas.sync-clamp.test.ts`. A folder counts as a module (`src/core/optimizer/` is `core/optimizer/index`, so `core/optimizer/index.exhaustive.test.ts`). Tests of `scripts/` go in `tests/unit/scripts/` and tests of the smoke test's own helpers (`tests/e2e/lib/`) in `tests/unit/smoke-helpers/`; the CSS tests are in `tests/unit/styles/`, named for the concern. A test that crosses modules goes in the file of the module whose rule it checks, or in the folder that holds the modules it scans (`ui/no-alpine`, `ui/views/no-bad-values`). Sorted by path, a module's files sit together. A test's domain is its module's (section 1.1). The test lists below name a file by its path under `tests/unit/`, without `.test.ts`.
 
 | File | Covers |
 | --- | --- |
@@ -264,7 +264,7 @@ Notes on the longer rows:
 7. `core/set`: 14 real optimizer results recorded from the page before it used `evaluateSet`, number for number; the optimizer's own totals; custom pieces, removed stones, a game id no row has.
 8. `core/stat-keys`: `currentStatKey` reads old position keys as a job's own, and `remapStatKey` moves a key to another job by position. The guard is that `src/core` and `src/ui/views` hard-code no job-specific stat key outside the allow-listed tables.
 9. `core/tier-rank`: the reference tries every gear set and meal, with the stage rule written out. The cases are 20 of three keys and a Target GCD, a stage stopped at its node limit, an infeasible Target GCD, and 360 more random cases in `tests/sweep/`.
-10. `scripts/build`: the DEV marks outside `main` (data, handed to the page as a constant), the page template (the boot shell and one empty `<gsa-app>`), the licence notices (`bundledLicenseNotices` in `scripts/build/build.ts`, tested in `tests/unit/scripts/build.notices.test.ts`: the LICENSE texts of Zag, Floating UI and proxy-compare in the script, and a notice for every other bundled package), two builds of one tree giving the same page, the page's 5 MB ceiling, the data as `JSON.parse`, the startup-failure script first in `<head>` before the `<style>` with no closing script tag, ES5 only, no literal colour, and its key taken from `STORE_KEY`. The optimizer's worker bundle is run in Node: it loads from the posted data texts (the item database in the script once) and answers like the page thread (one request in `build.test.js`, a series in `build.worker.test.js`).
+10. `scripts/build`: the DEV marks outside `main` (data, handed to the page as a constant), the page template (the boot shell and one empty `<gsa-app>`), the licence notices (`bundledLicenseNotices` in `scripts/build/build.ts`, tested in `tests/unit/scripts/build.notices.test.ts`: the LICENSE texts of Zag, Floating UI and proxy-compare in the script, and a notice for every other bundled package), two builds of one tree giving the same page, the page's 5 MB ceiling, the data as `JSON.parse`, the startup-failure script first in `<head>` before the `<style>` with no closing script tag, ES5 only, no literal colour, and its key taken from `STORE_KEY`. The optimizer's worker bundle is run in Node: it loads from the posted data texts (the item database in the script once) and answers like the page thread (one request in `build.test.ts`, a series in `build.worker.test.ts`).
 11. `ui/elements/set-page/food-menu-model`: no pill at first, the pinned meals, pills kept across results while they list a meal, the sort and its fallback to ILVL, a pick.
 12. `ui/elements/sheets/sheets-screen-model`: the screens, set notes, the answers to the sheet manager's and sheet page's events (a step, a move, an edit of the level).
 13. `ui/sheets/storage`: round trip, order, new sheet on top, a save touching only its own record, unreadable records listed with a cause and left alone, delete, a full storage (the edit stays), missing or throwing storage, and a saved time outside the range of a `Date` (1e300) making the record unreadable instead of breaking the Sheets tab.
@@ -285,16 +285,16 @@ Notes:
 - **What each file checks** is in its header comment and test names, and where each expected value comes from is in a comment next to it. They are not repeated here, so they cannot drift apart.
 - **Shared helpers** are in `tests/unit/helpers/`:
   - the brute-force reference and real-gear pools (`exhaustive.ts`, section 2.1);
-  - seeded random numbers, item lookup by name, store-shaped state, and values typed in from outside sources such as the `BaseParam` slot shares and AkhMorning's level table (`common.js`);
-  - the tier ranking reference with its random cases, shared with the long sweep in `tests/sweep/` (`tier-reference.js`);
-  - the view tests' store-shaped state with sync at 123 and a set's recipe, their small real-gear pools and an Auto-fill's solve (`views.js`);
+  - seeded random numbers, item lookup by name, store-shaped state, and values typed in from outside sources such as the `BaseParam` slot shares and AkhMorning's level table (`common.ts`);
+  - the tier ranking reference with its random cases, shared with the long sweep in `tests/sweep/` (`tier-reference.ts`);
+  - the view tests' store-shaped state with sync at 123 and a set's recipe, their small real-gear pools and an Auto-fill's solve (`views.ts`);
   - the fake kit: complete typed stand-ins for browser objects, built without a cast (`fakes.ts`: `fakeStorage`, `quotaError`);
-  - saved sheets of real items for the Sheets tests (`sheet-fixtures.js`);
-  - a set page's session bound to a real store with a stand-in for its element and solver stand-ins (`set-page-bind.js`);
-  - pin lists for the pinned search tests (`pins.js`);
-  - a set and what a search ranks as text, and a seeded shuffle of a pool, for the tests that compare Auto-fill's sets (`recipe-sets.js`);
-  - the stat model's check against real items and the Wiki's item level 475 caps (`model-validation.js`: `bandAccuracy`, `wikiChecks`, `MODEL_MIN_ILVL`, for `core/formulas.model-accuracy` and `core/formulas.stat-factor`);
-  - an exact best-item-per-slot solver (`exact-solver.js`, with `lexCompare`) and a damager of saved data for the fuzz tests (`fuzz.js`);
+  - saved sheets of real items for the Sheets tests (`sheet-fixtures.ts`);
+  - a set page's session bound to a real store with a stand-in for its element and solver stand-ins (`set-page-bind.ts`);
+  - pin lists for the pinned search tests (`pins.ts`);
+  - a set and what a search ranks as text, and a seeded shuffle of a pool, for the tests that compare Auto-fill's sets (`recipe-sets.ts`);
+  - the stat model's check against real items and the Wiki's item level 475 caps (`model-validation.ts`: `bandAccuracy`, `wikiChecks`, `MODEL_MIN_ILVL`, for `core/formulas.model-accuracy` and `core/formulas.stat-factor`);
+  - an exact best-item-per-slot solver (`exact-solver.ts`, with `lexCompare`) and a damager of saved data for the fuzz tests (`fuzz.ts`);
   - 14 optimizer results as the page showed them before `evaluateSet` (`optimizer-view-sets.json`, for `core/set`).
 - **The kind of evidence** each test uses (published numbers, game data, a derivation, the brute force) is in [validation.md, section 7](../mechanics/validation.md#7-which-tests-assert-what).
 
@@ -515,7 +515,7 @@ Notes on the measurements and checks run by hand (none is part of `npm run check
 Running a subset:
 
 - one unit test file: `node --test tests/unit/core/formulas.sync-clamp.test.ts`
-- unit tests by name: `node --test --test-name-pattern="brute force" "tests/unit/**/*.test.js"`
+- unit tests by name: `node --test --test-name-pattern="brute force" "tests/unit/**/*.test.ts"`
 - generator tests by name: `python -m unittest discover -s tests/data -p "test_*.py" -k hq`
 - one domain's unit tests: `npm run test:set-page`; with its browser checks: `npm run test:set-page -- --smoke`
 - one domain's browser checks on the built page: `npm run test:smoke -- --domain sheets`
@@ -697,7 +697,7 @@ The rule behind the table: a value that depends on what gear exists may move; a 
 
 | Concept | File |
 | --- | --- |
-| Unit tests | `tests/unit/<src folder>/<module>.test.js`, named by the rule in section 2 |
+| Unit tests | `tests/unit/<src folder>/<module>.test.ts`, named by the rule in section 2 |
 | Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.ts` (`exhaustive`, `gamePool`, `loadoutCount`) |
 | Shared test helpers and typed-in outside values | `tests/unit/helpers/common.ts` (`rng`, `itemRow`, `appState`, `SLOT_PERMILLE`, `AKH_LEVEL`) |
 | Tier ranking reference and its random cases | `tests/unit/helpers/tier-reference.ts` (`tierLex`, `checkNoGcd`, `checkGcd`); the long sweep in `tests/sweep/` |
@@ -713,7 +713,7 @@ The rule behind the table: a value that depends on what gear exists may move; a 
 | Domains: the lists, the guard | `tests/domains.ts` (`DOMAINS`, `LONG`, `unitFilesOf`), `tests/unit/scripts/test.domains.test.ts` |
 | The domain runner | `scripts/test.ts` (`parseArguments`, `main`) |
 | Commands | `package.json` (`test`, `test:<domain>`, `test:changed`, `test:full`, `test:py`, `test:smoke`, `lint`, `lint:lit`, `typecheck`, `lint:py`, `format`, `check`, `check:all`, `test:stories`, `test:stories:all`, `test:visual`) |
-| Component stories | `tests/stories/` (`build.mjs`, `fixtures.ts`, `playwright.config.ts`, the gallery and the stories next to each element) |
+| Component stories | `tests/stories/` (`build.ts`, `fixtures.ts`, `playwright.config.ts`, the gallery and the stories next to each element) |
 | Screenshot baselines | `tests/visual/` (`screens.spec.ts`, `global-setup.ts`, `fonts-stub.ts`), `scripts/visual.ts`, `.github/workflows/visual.yml` |
 | TypeScript and Lit lint | `tsconfig.json`, `eslint.config.js` |
 | Lint and format configuration | `biome.jsonc`, `pyproject.toml` |

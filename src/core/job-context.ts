@@ -81,7 +81,7 @@ export function makeJobContext(jobId: string | null | undefined): JobContext {
     activeSlotTypes: SLOT_TYPES.filter(t => t !== 'offhand' || hasOffhand),
     /* the job's modifiers of its main stat and Vitality, in percent (ClassJob), by stat key: its base is the level's
        main stat base x the modifier (base-stats.ts statBase) */
-    // biome-ignore lint/plugin: PerStat is typed with every stat key, but a job holds only its own: this table has the main stat and Vitality, which are all statBase reads (tests/unit/core/job-context.keys.test.js)
+    // biome-ignore lint/plugin: PerStat is typed with every stat key, but a job holds only its own: this table has the main stat and Vitality, which are all statBase reads (tests/unit/core/job-context.keys.test.ts)
     attributeMods: Object.freeze({ [mainKey]: JOB_MODS[id][mainKey], vit: JOB_MODS[id].vit }) as PerStat<number>,
     /* Vitality for Int/Mind jobs is the Vit budget x 0.9 (rounded again) */
     vitFactor: CASTER_MAIN_KEYS.includes(mainKey) ? 0.9 : 1,

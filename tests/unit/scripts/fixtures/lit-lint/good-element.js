@@ -1,4 +1,4 @@
-/* Fixture for lint-lit.test.js: the same element with the two faults fixed. Never imported. */
+/* Fixture for lint-lit.test.ts: the same element with the two faults fixed. Never imported. */
 import { LitElement, html } from 'lit';
 
 export class GoodElement extends LitElement {

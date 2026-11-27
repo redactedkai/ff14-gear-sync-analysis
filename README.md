@@ -94,7 +94,7 @@ The full rules are in [CLAUDE.md](CLAUDE.md); start the docs at [docs/README.md]
   - Keep big data (the item database, search results) out of the store or frozen in it; elements build a `view` object and templates only display it.
   - Write a rule once and share it; two copies drift.
   - `src/data/` is generated: change `scripts/data/` and regenerate, never edit it by hand.
-- **Tests.** Unit tests go in `tests/unit/<src folder>/<module>.test.js` (Node), generator tests in `tests/data/` (Python), page regressions in `tests/e2e/checks/` (run by `tests/e2e/smoke.ts`). Some modules are tested from a file named after a concern (`level-sync`, `multi-slot`), so to find a module's tests, search for its path: `grep -rl "core/sync-target.ts" tests/unit`. Each test belongs to one domain (`tests/domains.ts`); `npm run test:<domain>` runs it. Expected values come from real items and published numbers, not from the tool's own output; see [testing.md](docs/engineering/testing.md).
+- **Tests.** Unit tests go in `tests/unit/<src folder>/<module>.test.ts` (Node), generator tests in `tests/data/` (Python), page regressions in `tests/e2e/checks/` (run by `tests/e2e/smoke.ts`). Some modules are tested from a file named after a concern (`level-sync`, `multi-slot`), so to find a module's tests, search for its path: `grep -rl "core/sync-target.ts" tests/unit`. Each test belongs to one domain (`tests/domains.ts`); `npm run test:<domain>` runs it. Expected values come from real items and published numbers, not from the tool's own output; see [testing.md](docs/engineering/testing.md).
 
 ## Data
 

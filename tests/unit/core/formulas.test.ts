@@ -6,7 +6,7 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { buildPiece } from '../../../src/core/formulas.ts';
 
 test('item level 130 healer hood from the formula (its fixed Direct Hit 6 is a real-item line, not a rank)', () => {
-  // the stats of a real item level 130 healer head piece (ui/views/piece.test.js finds it in the item database)
+  // the stats of a real item level 130 healer head piece (ui/views/piece.test.ts finds it in the item database)
   assert.deepEqual(buildPiece(makeJobContext('SGE'), 130, 'head', ['sps', 'piety']), {
     mind: 33,
     vit: 32,

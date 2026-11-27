@@ -2,7 +2,7 @@
    thread's solver (ui/solver.ts inProcessSolver) on one request after another, as a set page sends them: Auto-fill with pins,
    melds, tier ranking and a Target GCD, two jobs, a goal that ties, and the Gear to search line. The replies must be equal
    whole, which includes the chosen pieces (game ids), their stones and the meal, not only the totals. The first request of
-   build.test.js covers the loading from the posted data texts. */
+   build.test.ts covers the loading from the posted data texts. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as esbuild from 'esbuild';

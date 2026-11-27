@@ -3,7 +3,7 @@
 // domain's browser checks, and tests/unit/scripts/test.domains.test.ts fails when a file has no domain or two.
 //
 // Which domain is a test in?
-//   - A unit test follows its module: tests/unit/ui/views/gcd.test.js mirrors src/ui/views/gcd.ts, so it takes that file's
+//   - A unit test follows its module: tests/unit/ui/views/gcd.test.ts mirrors src/ui/views/gcd.ts, so it takes that file's
 //     domain (a `.concern` after the module name is dropped: core/formulas.sync-clamp.test.ts mirrors core/formulas.ts).
 //     Nothing to register. A test that mirrors no module goes in a domain's `tests` list below.
 //   - A smoke step names its domain in tests/e2e/groups.ts, by what the step checks (not by the folder of its file).
@@ -303,10 +303,10 @@ export function parseDomains(text: string): string[] {
   return names;
 }
 
-// A test file's name: `.test.js`, or `.test.ts` (Node strips the types when it loads one).
-const TEST_FILE = /\.test\.(js|ts)$/;
+// A test file's name: `.test.ts` (Node strips the types when it loads one).
+const TEST_FILE = /\.test\.ts$/;
 
-// The unit test files (tests/unit/**/*.test.{js,ts}) of the named domains, sorted. `fast` leaves out the LONG files.
+// The unit test files (tests/unit/**/*.test.ts) of the named domains, sorted. `fast` leaves out the LONG files.
 // `root` is the repo root (another only in the guard tests).
 export function unitFilesOf(domainNames: string[], { fast = false, root = ROOT } = {}): string[] {
   return listFiles('tests/unit', root)
@@ -315,7 +315,7 @@ export function unitFilesOf(domainNames: string[], { fast = false, root = ROOT }
     .filter(file => !(fast && LONG.includes(file)));
 }
 
-// The sweep test files (tests/sweep/*.test.{js,ts}) of the named domains, sorted.
+// The sweep test files (tests/sweep/*.test.ts) of the named domains, sorted.
 export function sweepFilesOf(domainNames: string[]): string[] {
   return listFiles('tests/sweep').filter(file => TEST_FILE.test(file) && domainNames.some(name => domainsOfTest(file).includes(name)));
 }

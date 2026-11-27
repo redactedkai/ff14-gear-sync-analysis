@@ -310,7 +310,7 @@ function rowFacts(item: PoolItem): ItemFacts | null {
 
 /* The facts (rowFacts) of the database rows `rows` that share a pool key, or null for none. Several rows could share a
    key (the same piece from two sources): their routes are joined (any one gets it) and every other fact comes from the
-   first row, so rows sharing a key must agree on those facts (tests/unit/core/items.identity.test.js checks it; today no two rows share a
+   first row, so rows sharing a key must agree on those facts (tests/unit/core/items.identity.test.ts checks it; today no two rows share a
    key). */
 function factsOfRows(rows: readonly ItemRow[] | undefined): ItemFacts | null {
   if (!rows) {
@@ -333,7 +333,7 @@ function factsOfRows(rows: readonly ItemRow[] | undefined): ItemFacts | null {
 let idIndex: Map<number, ItemRow> | null = null;
 /* The database row (an ITEMS entry, read through ROW) of the game's item id `gameId`, or null when no row has it (a piece
    the data no longer keeps, or not a number). The index is built once, on first use, like rowsByKey; every row has its
-   own gameId (tests/unit/core/items.identity.test.js checks it). */
+   own gameId (tests/unit/core/items.identity.test.ts checks it). */
 export function itemById(gameId: number): ItemRow | null {
   if (!idIndex) {
     idIndex = new Map();

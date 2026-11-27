@@ -4,7 +4,7 @@
    Where a type is derived: the stat keys, slot types, profile ids and weapon modes come from the tables in constants.ts
    (STAT_LABEL, SLOT_TYPES, PROFILES), so a new key is written once. The item row and the names of its fields come from
    item-format.json, which TypeScript reads only as `string`; ItemRow and RowIndex below are written to match it, and
-   tests/unit/core/item-format.test.js checks ROW against both the file and RowIndex. */
+   tests/unit/core/item-format.test.ts checks ROW against both the file and RowIndex. */
 import type {
   DamageDefenseKey,
   DamageKey,
