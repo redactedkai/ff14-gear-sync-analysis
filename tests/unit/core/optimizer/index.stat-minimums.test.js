@@ -282,7 +282,7 @@ test('improveStart: the improved seed is a legal set meeting the limits, and the
 
     // the improved seed, on the lists the search sees (after the shortfall filter)
     const lim = [
-      { stat: job.speedKey, min: limits.spdMin || null, max: limits.spdMax },
+      { stat: job.speedKey, min: limits.spdMin || 0, max: limits.spdMax },
       { stat: other, min: limits.mins[other], max: null },
     ];
     const lists = dropShortfalls(prep.slotList, prep.posList, prep.dims, lim);
@@ -385,7 +385,7 @@ test('frontSearch alone gives the plain search best: staircase, pairwise, and a 
         { stat: b, min: below(b), max: null },
       ],
       max1: [
-        { stat: job.speedKey, min: null, max: spd },
+        { stat: job.speedKey, min: 0, max: spd },
         { stat: a, min: below(a), max: null },
       ],
     }[kind];

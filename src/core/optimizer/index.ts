@@ -1,6 +1,7 @@
 /* Gear optimizer: pick one item per slot (two rings) from a pool to maximize a target stat, with up to two tiebreak
    stats, an optional speed range (Target GCD: a speed minimum, or a band for an exact GCD) and optional minimums on
    other stats (tier ranking). */
+import { makeLimit } from './limit.ts';
 import { must } from '../guards.ts';
 import { buildCandidates } from './candidates.ts';
 import { branchAndBound } from './search.ts';
@@ -82,7 +83,8 @@ function speedRule(opts: { spdMin?: number | null; spdMax?: number | null }): {
   spdMax: number | null;
   kind: SpeedRule;
 } {
-  const spdMin = (opts.spdMin as number) > 0 ? (opts.spdMin as number) : null;
+  const asked = opts.spdMin ?? 0;
+  const spdMin = asked > 0 ? asked : null;
   const spdMax = opts.spdMax != null ? opts.spdMax : null;
   let kind: SpeedRule = null;
   if (spdMax != null) {
@@ -143,7 +145,7 @@ function limitsFor(prep: Prepared, opts: SolveOptions): Limit[] {
   if (kind && !(prep.speed === 'exact' || prep.speed === kind)) {
     throw new Error(`Optimizer: candidates prepared for speed rule ${prep.speed} cannot be searched with ${kind}`);
   }
-  const limits: Limit[] = kind ? [{ stat: prep.speedKey, min: spdMin > 0 ? spdMin : null, max: spdMax }] : [];
+  const limits: Limit[] = kind ? [makeLimit(prep.speedKey, spdMin, spdMax)] : [];
   for (const [stat, min] of Object.entries(mins)) {
     if (!(min > 0)) {
       continue;
@@ -151,7 +153,7 @@ function limitsFor(prep: Prepared, opts: SolveOptions): Limit[] {
     if (!prep.minStats?.includes(stat as StatKey)) {
       throw new Error(`Optimizer: candidates prepared without a minimum on ${stat} cannot be searched with one`);
     }
-    limits.push({ stat, min, max: null });
+    limits.push(makeLimit(stat, min, null));
   }
   return limits;
 }
@@ -174,12 +176,12 @@ function limitsWithoutFixed(limits: readonly Limit[], fixedTotals: Eff): Limit[]
   const out: Limit[] = [];
   for (const limit of limits) {
     const held = fixedTotals[limit.stat] || 0;
-    const min = (limit.min as number) > 0 && (limit.min as number) - held > 0 ? (limit.min as number) - held : null;
+    const min = Math.max(0, limit.min - held);
     const max = limit.max != null ? limit.max - held : null;
     if (max != null && max < 0) {
       return null;
     }
-    if (min != null || max != null) {
+    if (min > 0 || max != null) {
       out.push({ ...limit, min, max });
     }
   }
@@ -191,7 +193,7 @@ function limitsWithoutFixed(limits: readonly Limit[], fixedTotals: Eff): Limit[]
 function meetsLimits(picks: readonly SlotPick[], limits: readonly Limit[]): boolean {
   return limits.every(l => {
     const total = picks.reduce((n, p) => n + (p.eff?.[l.stat] || 0), 0);
-    return !((l.min as number) > 0 && total < (l.min as number)) && !(l.max != null && total > l.max);
+    return !(l.min > 0 && total < l.min) && !(l.max != null && total > l.max);
   });
 }
 
@@ -270,7 +272,7 @@ export function solve(prep: Prepared, opts?: SolveOptions): SolveResult {
           proven,
           speedKey,
         })
-      : { best: limits.some(l => (l.min as number) > 0) ? null : [], nodes: 0, truncated: false, method: 'search' as const, kept: 0 };
+      : { best: limits.some(l => l.min > 0) ? null : [], nodes: 0, truncated: false, method: 'search' as const, kept: 0 };
   if (!best) {
     return { ok: false, truncated, nodes, noMeldData, method, kept, frontSizes };
   }

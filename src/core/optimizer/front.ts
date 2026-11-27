@@ -89,12 +89,12 @@ export function frontSearch(
     if (l.max != null) {
       return Infinity;
     }
-    return (l.min as number) > 0 ? (l.min as number) : 0;
+    return l.min > 0 ? l.min : 0;
   });
   // how entries compare on each limit: a band (speed's, exactK) only between equal totals; a maximum only, less is
   // better; a regain cut not at all (entries past its maximum go, and no loadout meeting the real limits breaks it:
   // regain.ts), the rest more is better. A second band is not supported: the caller then searches
-  const isBand = limits.map(l => l.max != null && (l.min as number) > 0);
+  const isBand = limits.map(l => l.max != null && l.min > 0);
   const exactK = isBand.indexOf(true);
   if (isBand.lastIndexOf(true) !== exactK) {
     return null;
@@ -203,7 +203,7 @@ export function frontSearch(
           const l = limits[k];
           if (l.max != null && total > l.max) {
             ok = false;
-          } else if ((l.min as number) > 0 && total + room.vals[k] < (l.min as number)) {
+          } else if (l.min > 0 && total + room.vals[k] < l.min) {
             ok = false;
           }
           vals[k] = Math.min(capOf[k], total);
@@ -230,7 +230,7 @@ export function frontSearch(
     if (e.empty !== (e.blocked & blockable)) {
       continue;
     }
-    if (limits.some((l, k) => (l.min as number) > 0 && e.vals[k] < Math.min(capOf[k], l.min as number))) {
+    if (limits.some((l, k) => l.min > 0 && e.vals[k] < Math.min(capOf[k], l.min))) {
       continue;
     }
     if (e.score > known && (!best || e.score > best.score)) {

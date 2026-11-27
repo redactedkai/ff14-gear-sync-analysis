@@ -44,7 +44,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | --- | --- | ---: | ---: |
 | `model` | the game's number rules: item stats, sync, speed, tiers, food, materia | 23 | 0 |
 | `data` | the game data and job facts, and the pipeline that generates them (with the Python tests) | 12 | 0 |
-| `solver` | the search for the best gear set, in the core (with the long sweep) | 25 | 0 |
+| `solver` | the search for the best gear set, in the core (with the long sweep) | 26 | 0 |
 | `auto-fill` | Auto-fill on the page: settings, run, cancel, worker, suggestion | 12 | 16 |
 | `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 20 | 14 |
 | `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 21 | 11 |

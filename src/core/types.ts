@@ -216,11 +216,11 @@ export interface Candidate {
   original?: Candidate;
 }
 
-/* A limit on a stat's total over the whole loadout (optimizer/search.js): a minimum (null or 0 for none) and a maximum
-   (null for none). `cut` marks a regain cut's synthetic stat. */
+/* A limit on a stat's total over the whole loadout (optimizer/search.js): a minimum (0 for none) and a maximum
+   (null for none). Built with `makeLimit` (optimizer/limit.ts). `cut` marks a regain cut's synthetic stat. */
 export interface Limit {
   stat: string;
-  min: number | null;
+  min: number;
   max: number | null;
   cut?: boolean;
 }

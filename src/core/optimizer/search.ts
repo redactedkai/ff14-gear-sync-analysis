@@ -271,14 +271,14 @@ export function limitTables(
   slotList: readonly SearchSlot[],
   posList: readonly (readonly Candidate[])[],
   valueFn: (cand: Candidate) => number | undefined,
-  min: number | null,
+  min: number,
   maxLimit: number | null,
   empty: Set<number> | null = null,
   scoreFn: (cand: Candidate) => number = cand => cand.score,
 ): LimitTable | null {
   let max: number | null = maxLimit; // the maximum, or null for none (dropped below when no loadout can pass it)
   const nSlots = slotList.length;
-  const floor = (min as number) > 0 ? (min as number) : 0;
+  const floor = Math.max(0, min);
   const blockable = blockableTypes(posList);
   const limitedValue = (cand: Candidate) => Math.max(0, valueFn(cand) || 0);
 
@@ -459,8 +459,8 @@ export function lagrangeBound(
 ): Lagrange | null {
   const terms: { stat: string; sign: 1 | -1; rhs: number }[] = [];
   for (const limit of limits) {
-    if ((limit.min as number) > 0) {
-      terms.push({ stat: limit.stat, sign: 1, rhs: limit.min as number });
+    if (limit.min > 0) {
+      terms.push({ stat: limit.stat, sign: 1, rhs: limit.min });
     }
     if (limit.max != null) {
       terms.push({ stat: limit.stat, sign: -1, rhs: limit.max });
@@ -549,7 +549,7 @@ export function dropShortfalls(
   limits: readonly Limit[],
 ): Candidate[][] {
   let posList = initialPosList; // narrowed each round
-  const mins = limits.filter(limit => (limit.min as number) > 0);
+  const mins = limits.filter(limit => limit.min > 0);
   const positions = slotPositions(slotList);
   for (let round = 0; round < SHORTFALL_ROUNDS; round++) {
     const { remMax, slotMax } = suffixBounds(slotList, posList, dims);
@@ -572,7 +572,7 @@ export function dropShortfalls(
         return total - slotMax[stat][pos] + lessBlockedBounds(cand, cand.eff[stat] || 0, pos, slotMax[stat], positions);
       };
 
-      const kept = list.filter(cand => mins.every(limit => mostWith(cand, limit.stat) >= (limit.min as number)));
+      const kept = list.filter(cand => mins.every(limit => mostWith(cand, limit.stat) >= limit.min));
       if (kept.length < list.length) {
         dropped = true;
       }
@@ -606,9 +606,7 @@ export function improveStart(
   let score = start.score;
   const totals = limits.map(limit => best.reduce((sum, slot) => sum + (slot?.cand?.eff[limit.stat] || 0), 0));
   const fits = (values: readonly number[]) =>
-    limits.every(
-      (limit, k) => !((limit.min as number) > 0 && values[k] < (limit.min as number)) && !(limit.max != null && values[k] > limit.max),
-    );
+    limits.every((limit, k) => !(limit.min > 0 && values[k] < limit.min) && !(limit.max != null && values[k] > limit.max));
   if (!fits(totals)) {
     return start;
   }
@@ -792,7 +790,7 @@ function childGroups(
 ): ChildGroup[][] {
   const nLimits = limits.length;
   const limitStats = limits.map(limit => limit.stat);
-  const isBand = limits.map(limit => limit.max != null && (limit.min as number) > 0);
+  const isBand = limits.map(limit => limit.max != null && limit.min > 0);
   return posList.map(list => {
     const byKey = new Map<string, Omit<ChildGroup, 'firstSeen'>>();
     list.forEach((cand, rank) => {
@@ -839,7 +837,7 @@ function bandReachTables(
   const speed = limits[0];
   const reach: { limitIndex: number; table: LimitTable }[] = [];
   for (let k = 1; k < limits.length; k++) {
-    if (!((limits[k].min as number) > 0)) {
+    if (!(limits[k].min > 0)) {
       continue;
     }
     const stat = limits[k].stat;
@@ -868,11 +866,9 @@ function bandReachTables(
 export function makeMemo(slotList: readonly SearchSlot[], limits: readonly Limit[], memoFront = MEMO_FRONT): Memo {
   const nLimits = limits.length;
   const memoValue = limits.map(limit =>
-    limit.max == null && (limit.min as number) > 0
-      ? (total: number) => (total < (limit.min as number) ? total : (limit.min as number))
-      : (total: number) => total,
+    limit.max == null && limit.min > 0 ? (total: number) => (total < limit.min ? total : limit.min) : (total: number) => total,
   );
-  const byDominance = limits.map(limit => nLimits > 1 && limit.max == null && (limit.min as number) > 0);
+  const byDominance = limits.map(limit => nLimits > 1 && limit.max == null && limit.min > 0);
   const dominanceIndexes = byDominance.flatMap((dominance, k) => (dominance ? [k] : []));
   const seen = new Map<number | string, number>(); // equal states: the best score per key
   const seenFronts = dominanceIndexes.length ? new Map<number | string, { score: number; values: number[] }[]>() : null; // dominance: the states kept per coarse key
@@ -977,8 +973,8 @@ function prepareSearch({
   proven: readonly Proven[] | null | undefined;
   speedKey: string | null;
 }): PreparedSearch {
-  limits = limits.filter(limit => dims.includes(limit.stat) && ((limit.min as number) > 0 || limit.max != null));
-  const hasMinimum = limits.some(limit => (limit.min as number) > 0);
+  limits = limits.filter(limit => dims.includes(limit.stat) && (limit.min > 0 || limit.max != null));
+  const hasMinimum = limits.some(limit => limit.min > 0);
   const fullLists = posList; // before the filters: the pieces a regain cut's swaps may bring in
 
   // 1. drop the candidates that cannot reach a minimum
@@ -1093,7 +1089,7 @@ function newSearch(
   dims.forEach(stat => {
     totals[stat] = 0;
   });
-  const bandFirst = nLimits > 1 && limits[0].max != null && (limits[0].min as number) > 0;
+  const bandFirst = nLimits > 1 && limits[0].max != null && limits[0].min > 0;
   return {
     // fixed for the search
     slotList,
@@ -1195,12 +1191,12 @@ function boundsCut(search: Search, pos: number, scoreSoFar: number): boolean {
   }
   for (let k = 0; k < search.nLimits; k++) {
     const min = limits[k].min;
-    if ((min as number) > 0 && limitTotals[k] + search.remMax[search.limitStats[k]][pos] - search.blockedLimit[k] < (min as number)) {
+    if (min > 0 && limitTotals[k] + search.remMax[search.limitStats[k]][pos] - search.blockedLimit[k] < min) {
       return true;
     }
   }
   for (const { limitIndex, table } of search.bandReach) {
-    if (limitTotals[limitIndex] + table(pos, limitTotals[0]) < (limits[limitIndex].min as number)) {
+    if (limitTotals[limitIndex] + table(pos, limitTotals[0]) < limits[limitIndex].min) {
       return true;
     }
   }
@@ -1249,7 +1245,8 @@ function tryChild(search: Search, pos: number, rank: number, cand: Candidate, is
     }
   }
   for (let k = 0; k < nLimits; k++) {
-    if (limits[k].max != null && limitTotals[k] + cand.eff[limitStats[k]] > (limits[k].max as number)) {
+    const limitMax = limits[k].max;
+    if (limitMax != null && limitTotals[k] + cand.eff[limitStats[k]] > limitMax) {
       return;
     }
   }
@@ -1377,7 +1374,7 @@ function dfs(search: Search, pos: number, scoreSoFar: number): void {
   if (pos === search.nSlots) {
     const { limits, limitTotals } = search;
     for (let k = 0; k < search.nLimits; k++) {
-      if ((limits[k].min as number) > 0 && limitTotals[k] < (limits[k].min as number)) {
+      if (limits[k].min > 0 && limitTotals[k] < limits[k].min) {
         return;
       }
     }
@@ -1430,7 +1427,7 @@ function dfs(search: Search, pos: number, scoreSoFar: number): void {
 /* The best loadout for a score under limits on stat totals.
    - slotList, posList, dims: the slot sequence, each position's candidate list (by score, highest first) and the stats
      the candidates carry, from buildCandidates (candidates.ts).
-   - limits: [{stat, min, max}], each a minimum (null or 0 for none) and a maximum (null for none) on a stat's total;
+   - limits: [{stat, min, max}], each a minimum (0 for none) and a maximum (null for none) on a stat's total;
      the stat must be in dims. Target GCD sets one on speed, tier ranking minimums on other stats. The regain cuts add
      their own inside (a maximum on a synthetic stat, marked `cut: true`; regain.ts).
    - nodeLimit: the most search nodes before the search stops and reports `truncated`.

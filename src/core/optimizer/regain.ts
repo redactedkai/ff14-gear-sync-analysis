@@ -20,6 +20,7 @@
 
 import { must } from '../guards.ts';
 import type { Candidate, Limit, Proven } from '../types.ts';
+import { makeLimit } from './limit.ts';
 import type { SearchSlot } from './slot-index.ts';
 
 /* The most `proof.stat` piece `piece` gains by a swap for one of `swaps` that keeps every stat in proof.minStats and,
@@ -89,7 +90,7 @@ function swapsFor(
  * @param proven    [{stat, most, minStats, speed: 'band' | 'min' | null}], as described above
  * @returns {posList, dims, limits}: every candidate copied with its regain per cut as a synthetic stat (`regain0`, ...)
  *          and `original` (the candidate it copies, which the search returns in its place); candidates whose own regain
- *          is past a cut's room dropped; dims and limits with the synthetic stats and their maxima ({stat, min: null,
+ *          is past a cut's room dropped; dims and limits with the synthetic stats and their maxima ({stat, min: 0,
  *          max: most - held, cut: true}) added. The inputs unchanged when no proof applies.
  */
 export function addRegainCuts({
@@ -153,6 +154,6 @@ export function addRegainCuts({
   return {
     posList: cutLists,
     dims: [...dims, ...cuts.map(c => c.key)],
-    limits: [...limits, ...cuts.map(c => ({ stat: c.key, min: null, max: c.room, cut: true }))],
+    limits: [...limits, ...cuts.map(c => makeLimit(c.key, 0, c.room, true))],
   };
 }
