@@ -60,8 +60,11 @@ function caseSet(job: JobContext, c: (typeof CASES)[number]) {
     c.pieces.map(([slotName, gameId, , meld]): SetPiece => {
       const slot = SLOT_TYPES.find(type => type === slotName);
       assert.ok(slot, `a slot type: ${slotName}`);
-      assert.ok(typeof meld === 'string' && (gameId === null || typeof gameId === 'number'), `a recorded piece: ${slotName}`);
-      return gameId == null ? { slot } : { slot, gameId, stones: stonesOf(job, meld) };
+      if (gameId == null) {
+        return { slot };
+      }
+      assert.ok(typeof gameId === 'number' && typeof meld === 'string', `a recorded piece: ${slotName}`);
+      return { slot, gameId, stones: stonesOf(job, meld) };
     }),
     c.meal,
   );
