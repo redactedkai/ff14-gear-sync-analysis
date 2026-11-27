@@ -2,6 +2,7 @@
    items; copies, HQ, "Gear categories" routes, expansions and meld slots of real pieces; the materia table. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { ItemRow, JobContext, PoolItem, RawStatKey, StatMap } from '../../../src/core/types.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import {
   browseItems,
@@ -16,6 +17,7 @@ import {
   rowStats,
   poolKey,
 } from '../../../src/core/items.ts';
+import type { BrowseFilter, ParsedRow } from '../../../src/core/items.ts';
 import { ACTIVITIES, ACTIVITY_MARKET_BIT, DB_SLOT_TYPE, EXPANSIONS, ROW } from '../../../src/core/constants.ts';
 import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.ts';
 import { ITEMS, MATERIA } from '../../../src/core/tables.ts';
@@ -24,11 +26,11 @@ import { itemRow } from '../helpers/common.ts';
 const pld = makeJobContext('PLD');
 const war = makeJobContext('WAR');
 const sge = makeJobContext('SGE');
-const names = rows => rows.map(r => r.name);
+const names = (rows: readonly { name: string }[]) => rows.map(r => r.name);
 
 /* Raw database stat order (CLAUDE.md, src/data/items.json):
    str,dex,int,mind,vit,piety,ten,dh,crit,det,sks,sps,mainAttr,secAttr */
-const RAW = {
+const RAW: Record<RawStatKey, number> = {
   str: 0,
   dex: 1,
   int: 2,
@@ -44,8 +46,8 @@ const RAW = {
   mainAttr: 12,
   secAttr: 13,
 };
-const rowKey = r => `${r.name}|${r.slotCode}|${r.ilvl}|${r.mask}`;
-const rawKey = r => `${r[ROW.name]}|${r[ROW.slotCode]}|${r[ROW.ilvl]}|${r[ROW.jobMask]}`;
+const rowKey = (r: ParsedRow) => `${r.name}|${r.slotCode}|${r.ilvl}|${r.mask}`;
+const rawKey = (r: ItemRow) => `${r[ROW.name]}|${r[ROW.slotCode]}|${r[ROW.ilvl]}|${r[ROW.jobMask]}`;
 const lvl50 = { ilvlMin: 130, ilvlMax: 135, lvlMax: 50 };
 
 test('weapon mode: Paladin sees one-handed weapons and shields, never two-handed weapons', () => {
@@ -91,7 +93,7 @@ test('job mask: a Warrior does not see healer (Mind) gear, a Sage does', () => {
    Determination 111 (Item.csv). */
 test("main and secondary attribute: Azeyma's Earrings give each job its own main stat and secondary stat", () => {
   const nin = makeJobContext('NIN');
-  const expect = [
+  const expect: [id: string, job: JobContext, want: StatMap][] = [
     ['SGE', sge, { mind: 115, vit: 115, det: 111, piety: 111, dh: 0 }],
     ['WAR', war, { str: 115, vit: 115, det: 111, ten: 111, dh: 0 }],
     ['NIN', nin, { dex: 115, vit: 115, det: 111, dh: 111 }],
@@ -99,7 +101,9 @@ test("main and secondary attribute: Azeyma's Earrings give each job its own main
   for (const [id, job, want] of expect) {
     const rows = browseItems(job, { q: "azeyma's earrings" });
     assert.equal(rows.length, 1, `${id} sees the earrings`);
-    const st = poolItemFromRow(job, rows[0]).stats;
+    const row = rows[0];
+    assert.ok(row);
+    const st: Record<string, number | undefined> = poolItemFromRow(job, row).stats;
     for (const [k, v] of Object.entries(want)) {
       assert.equal(st[k], v, `${id} ${k}`);
     }
@@ -119,7 +123,8 @@ test('main-stat filter: gear the job can equip but without its main stat is hidd
 
 test('item level and equip level bounds', () => {
   const all = browseItems(war, {});
-  const same = (f, pred) => assert.deepEqual(browseItems(war, f).map(rowKey), all.filter(pred).map(rowKey), JSON.stringify(f));
+  const same = (f: BrowseFilter, pred: (r: ParsedRow) => boolean) =>
+    assert.deepEqual(browseItems(war, f).map(rowKey), all.filter(pred).map(rowKey), JSON.stringify(f));
   same({ ilvlMin: 131 }, r => r.ilvl >= 131);
   same({ ilvlMax: 130 }, r => r.ilvl <= 130);
   same({ ilvlMin: 135, ilvlMax: 135 }, r => r.ilvl === 135);
@@ -133,10 +138,11 @@ test('item level and equip level bounds', () => {
 });
 
 test('level cap: Beastmaster and Blue Mage never see gear above their cap, whatever the equip level filter says', () => {
-  for (const [id, cap] of [
+  const caps: [id: string, cap: number][] = [
     ['BST', 50],
     ['BLU', 80],
-  ]) {
+  ];
+  for (const [id, cap] of caps) {
     const job = makeJobContext(id);
     const bit = 1 << job.jobIndex;
     const above = ITEMS.filter(r => r[ROW.jobMask] & bit && r[ROW.equipLevel] > cap);
@@ -172,7 +178,9 @@ test("Beastmaster's own gear (job mask 1 << 22): Guttler and Kornago Hoplon, its
 });
 
 test('name query is case-insensitive and trimmed', () => {
-  const word = browseItems(war, lvl50)[0].name.split(' ').pop().toLowerCase(); // a word from a real item name
+  const first = browseItems(war, lvl50)[0];
+  assert.ok(first);
+  const word = (first.name.split(' ').pop() ?? '').toLowerCase(); // a word from a real item name
   const a = names(browseItems(war, { q: word }));
   assert.ok(a.length > 1);
   assert.deepEqual(a, names(browseItems(war, {}).filter(r => r.name.toLowerCase().includes(word))));
@@ -193,7 +201,8 @@ test("slot filter: only the chosen slot's rows; any is every slot; a slot the jo
 
 test('poolItemFromRow maps raw stats to stat keys (healer and tank)', () => {
   // a real item level 130 Sage head piece with three substats
-  const row = browseItems(sge, { type: 'head', ilvlMin: 130, ilvlMax: 130, lvlMax: 50 }).find(r => r.st[RAW.sps] > 0);
+  const row = browseItems(sge, { type: 'head', ilvlMin: 130, ilvlMax: 130, lvlMax: 50 }).find(r => (r.st[RAW.sps] ?? 0) > 0);
+  assert.ok(row);
   const it = poolItemFromRow(sge, row);
   assert.equal(it.src, 'game');
   assert.equal(it.type, 'head');
@@ -211,7 +220,8 @@ test('poolItemFromRow maps raw stats to stat keys (healer and tank)', () => {
   });
   assert.equal(Object.values(it.stats).filter(v => v > 0).length, 5); // main, vit and three substats
 
-  const tank = browseItems(war, { type: 'weapon', ...lvl50 }).find(r => r.st[RAW.ten] > 0);
+  const tank = browseItems(war, { type: 'weapon', ...lvl50 }).find(r => (r.st[RAW.ten] ?? 0) > 0);
+  assert.ok(tank);
   const t = poolItemFromRow(war, tank).stats;
   assert.deepEqual([t.str, t.sks, t.ten], [tank.st[RAW.str], tank.st[RAW.sks], tank.st[RAW.ten]]);
 });
@@ -227,7 +237,29 @@ test('poolItemFromRow copies: a Unique ring once, a non-unique ring twice', () =
   assert.equal(poolItemFromRow(war, plain).copies, 2);
 
   // non-ring, non-unique pieces are still a single copy
-  const synthetic = parseRow(['Test Earring', 8, 130, 50, 1 << war.jobIndex, '26,0,0,0,28,0,24,0,0,17,0,0', 0]);
+  const earringRow: ItemRow = [
+    'Test Earring', // name
+    8, // slotCode
+    130, // ilvl
+    50, // equipLevel
+    1 << war.jobIndex, // jobMask
+    '26,0,0,0,28,0,24,0,0,17,0,0', // stats
+    0, // unique
+    0, // hq
+    [], // routes
+    0, // kind
+    0, // meldSlots
+    0, // overmeld
+    1, // rarity
+    0, // gameId
+    0, // scales
+    0, // category
+    0, // damagePhys
+    0, // damageMag
+    0, // defensePhys
+    0, // defenseMag
+  ];
+  const synthetic = parseRow(earringRow);
   assert.equal(poolItemFromRow(war, synthetic).copies, 1);
 });
 
@@ -251,7 +283,7 @@ test('HQ flag: a pool item keeps whether its database row is HQ-capable', () => 
    operations (Bozjan, Phantom Vision) and a relic weapon (Phantom Gunblade), a dungeon drop (Mistwake), Wolf Marks
    (Lionsmane Armet). Augmented Bygone Brass is the tomestone piece plus Thundersteeped Twine, which drops in Savage or is
    sold for Sacks of Nuts (Hunts; game files). The base Radiant's set (item level 590) can no longer be obtained. */
-const routeKeys = routes =>
+const routeKeys = (routes: readonly number[]) =>
   routes
     .map(m =>
       m === ACTIVITY_MARKET_BIT
@@ -263,7 +295,7 @@ const routeKeys = routes =>
     .sort();
 
 test('"Gear categories" routes of real items, and filtering a pool by them', () => {
-  const cases = {
+  const cases: Record<string, [want: string[], jobId: string]> = {
     "Ra'Kaznar Helm of Fending": [['crafted', 'market'], 'WAR'],
     'Bygone Brass Earrings of Casting': [['tomes_current'], 'BLM'],
     'Palazzo Diamond Codex': [['ultimate'], 'SCH'],
@@ -277,18 +309,20 @@ test('"Gear categories" routes of real items, and filtering a pool by them', () 
     'Augmented Bygone Brass Earrings of Casting': [['tomes_current+hunts', 'tomes_current+savage_current'], 'BLM'],
     "Radiant's Helm of Fending": [[], 'PLD'],
   };
-  const pool = [];
+  const pool: PoolItem[] = [];
   for (const [name, [want, jobId]] of Object.entries(cases)) {
     const row = parseRow(itemRow(name));
     assert.deepEqual(routeKeys(row.routes), want, name);
     const it = poolItemFromRow(makeJobContext(jobId), row);
-    assert.deepEqual(routeKeys(itemRoutes(it)), want, name);
+    const itemRouteList = itemRoutes(it);
+    assert.ok(itemRouteList, name);
+    assert.deepEqual(routeKeys(itemRouteList), want, name);
     pool.push(it);
   }
   const hand = mkItem('Hand-made', 'head', 700, { sks: 10 });
   pool.push(hand);
   assert.equal(itemRoutes(hand), null);
-  const namesShown = (off, market) => withActivities(pool, off, market).map(i => i.name);
+  const namesShown = (off: readonly string[], market: boolean) => withActivities(pool, off, market).map(i => i.name);
 
   // every box and the market board: all but the retired piece; hand-made pieces always pass
   assert.deepEqual(namesShown([], true), [...Object.keys(cases).filter(n => n !== "Radiant's Helm of Fending"), 'Hand-made']);
@@ -313,7 +347,14 @@ test('"Gear categories" routes of real items, and filtering a pool by them', () 
     ['Hand-made'],
   );
   // boxes no piece comes from
-  const counts = activityCounts(pool.map(itemRoutes).filter(Boolean));
+  const routeLists: (readonly number[])[] = [];
+  for (const item of pool) {
+    const routes = itemRoutes(item);
+    if (routes) {
+      routeLists.push(routes);
+    }
+  }
+  const counts = activityCounts(routeLists);
   assert.ok(counts.gold_saucer === 0 && counts.relics > 0 && counts.hunts > 0, JSON.stringify(counts));
 });
 
@@ -321,6 +362,13 @@ test('"Gear categories" routes of real items, and filtering a pool by them', () 
    pieces (Sage, item level 790 to 795: the Savage set is 9 armor pieces and the weapon; the augmented tomestone set is
    9 armor pieces and a weapon, each upgraded with Savage loot or with hunt seals, which makes one route through two boxes;
    the 9 armor pieces have both routes, the weapon only the Savage one; the Ultimate weapon; the two Phantom relic weapons). */
+/* The route bit of a "Gear categories" box. */
+function activityBit(key: string): number {
+  const activity = ACTIVITIES.find(a => a.key === key);
+  assert.ok(activity, key);
+  return activity.bit;
+}
+
 test('activityCounts: pieces per box; a piece with two routes counts in both boxes', () => {
   const pieces = browseItems(sge, { ilvlMin: 790, ilvlMax: 795 }).map(r => r.routes);
   const counts = activityCounts(pieces);
@@ -337,7 +385,7 @@ test('activityCounts: pieces per box; a piece with two routes counts in both box
   // a list of no pieces: every box 0
   assert.ok(Object.values(activityCounts([])).every(n => n === 0));
   // one piece, one route through two boxes (tomestones + hunts): a piece counted once in each
-  const both = [[ACTIVITIES.find(a => a.key === 'tomes_current').bit | ACTIVITIES.find(a => a.key === 'hunts').bit]];
+  const both = [[activityBit('tomes_current') | activityBit('hunts')]];
   assert.deepEqual(
     Object.entries(activityCounts(both)).filter(([, n]) => n),
     [
@@ -346,14 +394,14 @@ test('activityCounts: pieces per box; a piece with two routes counts in both box
     ],
   );
   // two routes of one piece through the same box: counted once
-  const bit = ACTIVITIES.find(a => a.key === 'quests').bit;
-  assert.equal(activityCounts([[bit, bit | ACTIVITIES.find(a => a.key === 'crafted').bit]]).quests, 1);
+  const bit = activityBit('quests');
+  assert.equal(activityCounts([[bit, bit | activityBit('crafted')]]).quests, 1);
 });
 
 /* The expansion of a piece is its equip level band (the level caps 50, 60 ... 100). Real pieces on each side of a band
    edge, and a level-1 gift earring that falls back to its item level band. */
 test('expansion of real pieces, and the browse filter by expansion', () => {
-  const lvl = name => {
+  const lvl = (name: string) => {
     const r = itemRow(name);
     return expansionOf(r[ROW.equipLevel], r[ROW.ilvl]);
   };
@@ -365,7 +413,7 @@ test('expansion of real pieces, and the browse filter by expansion', () => {
   assert.equal(lvl("Menphina's Earring"), 'ShB'); // level 1, item level 430
   const whm = makeJobContext('WHM');
   const all = browseItems(whm, { type: 'any' });
-  const only = short => browseItems(whm, { type: 'any', expOff: EXPANSIONS.map(e => e.short).filter(k => k !== short) });
+  const only = (short: string) => browseItems(whm, { type: 'any', expOff: EXPANSIONS.map(e => e.short).filter(k => k !== short) });
   const ew = only('EW');
   // level-1 pieces (pre-order earrings) go by item level, like Halone's and Menphina's above
   assert.ok(ew.length > 0 && ew.every(r => (r.lvl > 80 && r.lvl <= 90) || (r.lvl === 1 && expansionOf(1, r.ilvl) === 'EW')));
@@ -378,10 +426,12 @@ test('expansion of real pieces, and the browse filter by expansion', () => {
 
 /* Materia slots of real pieces (Item.MateriaSlotCount, Item.IsAdvancedMeldingPermitted), read through a pool item. */
 test('meld slots and overmelding of real pieces; none for hand-made pieces', () => {
-  const meld = (name, job) => {
+  const meld = (name: string, job: string) => {
     const r = ITEMS.filter(x => x[ROW.name] === name);
     assert.equal(r.length, 1, name);
-    const p = parseRow(r[0]);
+    const row = r[0];
+    assert.ok(row, name);
+    const p = parseRow(row);
     const info = meldInfo(poolItemFromRow(makeJobContext(job), p));
     assert.deepEqual(info, { slots: p.meldSlots, overmeld: p.overmeld }, name);
     return info;
@@ -418,15 +468,16 @@ test('database rows that share a pool key agree on every fact but their routes',
     'damageMag',
     'defensePhys',
     'defenseMag',
-  ];
-  const first = new Map();
+  ] as const;
+  const first = new Map<string, ItemRow>();
   for (const row of ITEMS) {
     const key = poolKey({ name: row[ROW.name], type: DB_SLOT_TYPE[row[ROW.slotCode]], ilvl: row[ROW.ilvl] });
-    if (!first.has(key)) {
+    const known = first.get(key);
+    if (!known) {
       first.set(key, row);
     } else {
       for (const fact of FACTS) {
-        assert.equal(row[ROW[fact]], first.get(key)[ROW[fact]], `${key}: ${fact}`);
+        assert.equal(row[ROW[fact]], known[ROW[fact]], `${key}: ${fact}`);
       }
     }
   }

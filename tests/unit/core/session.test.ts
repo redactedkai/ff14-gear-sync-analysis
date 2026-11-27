@@ -15,7 +15,13 @@ test('session: gear is built once per job and kept for the last SESSION_SIZE job
     },
   });
   assert.equal(SESSION_SIZE, 4);
-  const [sge, whm, pld, war, blm] = [makeJobContext('SGE'), makeJobContext('WHM'), makeJobContext('PLD'), makeJobContext('WAR'), makeJobContext('BLM')];
+  const [sge, whm, pld, war, blm] = [
+    makeJobContext('SGE'),
+    makeJobContext('WHM'),
+    makeJobContext('PLD'),
+    makeJobContext('WAR'),
+    makeJobContext('BLM'),
+  ];
   for (const job of [sge, whm, pld, war]) {
     session.gear(job);
   }

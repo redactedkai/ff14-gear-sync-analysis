@@ -18,8 +18,7 @@ import { roundHalfUp } from '../helpers/common.ts';
    `jobFactor`, in percent). */
 function capOf(stat: RawStatKey, kind: number | null, slotCode: number, cap: number, jobFactor: number): number {
   const factor = (kind != null && MP.vit[kind] != null ? MP[stat][kind] : undefined) ?? jobFactor;
-  const share = (percent: number) =>
-    roundHalfUp(Math.floor((Math.floor(((IL[stat][cap] ?? 0) * factor) / 100) * percent) / 100) / 10);
+  const share = (percent: number) => roundHalfUp(Math.floor((Math.floor(((IL[stat][cap] ?? 0) * factor) / 100) * percent) / 100) / 10);
   const slotPercent = DB_SLOT_PCT[slotCode];
   assert.ok(slotPercent !== undefined, `slot code ${slotCode}`);
   if (DB_SLOT_TYPE[slotCode] === 'offhand' && slotPercent === 40) {
