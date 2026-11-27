@@ -41,20 +41,23 @@ SMOKE_TIMEOUT (ms for any single wait, default 10000; page loads wait 30000 or t
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
+import type { Browser } from 'playwright';
 import { UNLOAD_GUARD_OFF_KEY } from '../../src/ui/router/unload-guard.ts';
 import { parseDomains } from '../domains.mjs';
 import { GROUPS } from './groups.ts';
+import type { Group } from './groups.ts';
 import { OUT, PAGE, PAGE_PATH, WORKERS, shot } from './lib/constants.ts';
 import { coreWorker, startCore } from './lib/core.ts';
 import { stepRecord } from './lib/expect.ts';
+import type { StepRecord } from './lib/expect.ts';
 import { NO_UNLOAD_GUARD } from './lib/init-scripts.ts';
 import { frameDelayFromEnv, lateFramesScript } from './lib/late-frames.ts';
 import { newPage, waitReady } from './lib/nav.ts';
 import { setUpShared, sharedSetupChanges } from './lib/setup.ts';
 
 /** One group on a new page. Returns what it found: the page and console errors and the failed checks, in order. */
-async function runGroup(browser, group) {
-  const rec = { name: group.steps.map(s => s.name).join(', '), errors: [], failures: [], known: new Map(), steps: [] };
+async function runGroup(browser: Browser, group: Group): Promise<StepRecord> {
+  const rec: StepRecord = { name: group.steps.map(s => s.name).join(', '), errors: [], failures: [], known: new Map(), steps: [] };
   const ctx = await browser.newContext({ viewport: { width: 1000, height: 900 } });
   // every group starts with the reload and close guard off, so its reloads are not held (checkUnloadGuard turns it on)
   await ctx.addInitScript(NO_UNLOAD_GUARD, UNLOAD_GUARD_OFF_KEY);
@@ -69,24 +72,24 @@ async function runGroup(browser, group) {
   try {
     await stepRecord.run(rec, async () => {
       const pg = await newPage(ctx);
-      pg.on('pageerror', e => rec.errors.push(`page error: ${e.message ?? e}`));
+      pg.on('pageerror', e => rec.errors.push(`page error: ${e.message}`));
       // ERR_* console errors are network failures (Google Fonts offline), not page bugs
       pg.on('console', m => {
         if (m.type() === 'error' && !m.text().includes('ERR_')) {
           rec.errors.push(`console error: ${m.text()}`);
         }
       });
-      const fail = async (name, e) => {
-        rec.failures.push(`${name}: ${String(e.message ?? e).split('\n')[0]}`);
+      const fail = async (name: string, e: unknown) => {
+        rec.failures.push(`${name}: ${String(e instanceof Error ? e.message : e).split('\n')[0]}`);
         const file = `fail-${name.replaceAll(' ', '-')}`;
         await pg.screenshot({ path: shot(`${file}.png`), fullPage: true }).catch(() => {});
         // what the page held (address, saved keys with their sizes), for a failure that only shows on a loaded runner
         const held = await pg
           .evaluate(() => ({
             address: location.href,
-            saved: Object.keys(localStorage).map(key => `${key} (${localStorage.getItem(key).length} characters)`),
+            saved: Object.keys(localStorage).map(key => `${key} (${localStorage.getItem(key)?.length} characters)`),
           }))
-          .catch(error => ({ unreadable: String(error.message ?? error) }));
+          .catch((error: unknown) => ({ unreadable: String(error instanceof Error ? error.message : error) }));
         writeFileSync(shot(`${file}.json`), JSON.stringify(held, null, 2), 'utf-8');
       };
       try {
@@ -156,7 +159,7 @@ export async function main() {
       domains = parseDomains(process.env.SMOKE_DOMAIN);
     }
   } catch (e) {
-    console.log(e.message);
+    console.log(e instanceof Error ? e.message : String(e));
     return 2;
   }
   const groups = GROUPS.filter(
@@ -165,7 +168,7 @@ export async function main() {
   const t0 = Date.now();
   startCore();
   const browser = await chromium.launch();
-  const records = [];
+  const records: StepRecord[] = [];
   try {
     // a pool of workers takes the steps in order; the output below is in step order whichever finishes first
     const queue = groups.map((_, i) => i).sort((a, b) => Number(Boolean(groups[b].slow)) - Number(Boolean(groups[a].slow))); // slow ones first

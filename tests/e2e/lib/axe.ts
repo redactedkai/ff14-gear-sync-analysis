@@ -3,20 +3,40 @@
 
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import type { Page } from 'playwright';
 
 /** The axe-core script (a global `axe`), read once. */
 const AXE_SOURCE = readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf-8');
+
+/** One rule axe-core found broken: its id, impact, a short sentence and the CSS selectors of the elements that break it. */
+export interface AxeViolation {
+  rule: string;
+  impact: string | null | undefined;
+  help: string;
+  targets: string[];
+}
+
+/** An entry of the known findings (see splitKnown). */
+export interface KnownViolation {
+  rule: string;
+  target?: string;
+  targetContains?: string;
+  note: string;
+}
 
 /** Runs axe-core's default rules on the open page, in its current state (open menus and dialogs included). Returns the
  * violations, `{ rule, impact, help, targets }`: `rule` is axe's rule id, `impact` its level (minor, moderate, serious or
  * critical), `help` a short sentence naming the rule, `targets` the CSS selectors of the elements that break it.
  * Rules that cannot decide ("incomplete") are not returned. */
-export async function axeViolations(pg) {
-  if (!(await pg.evaluate(() => typeof globalThis.axe !== 'undefined'))) {
+export async function axeViolations(pg: Page): Promise<AxeViolation[]> {
+  if (!(await pg.evaluate(() => typeof window.axe !== 'undefined'))) {
     await pg.addScriptTag({ content: AXE_SOURCE });
   }
   return pg.evaluate(async () => {
-    const result = await globalThis.axe.run(document, { resultTypes: ['violations'] });
+    if (!window.axe) {
+      throw new Error('axe-core is not in the page');
+    }
+    const result = await window.axe.run(document, { resultTypes: ['violations'] });
     return result.violations.map(v => ({
       rule: v.id,
       impact: v.impact,
@@ -31,9 +51,9 @@ export async function axeViolations(pg) {
  * the element's selector is exactly that, and, if it has `targetContains`, the selector holds that text (for elements whose
  * selector differs per row). Returns `{ fresh, matched }`: `fresh` are the violations with only their unknown elements (a
  * violation with none left is dropped), `matched` the entries of `known` that matched at least one element. */
-export function splitKnown(violations, known) {
-  const matched = new Set();
-  const fresh = [];
+export function splitKnown(violations: AxeViolation[], known: KnownViolation[]) {
+  const matched = new Set<KnownViolation>();
+  const fresh: AxeViolation[] = [];
   for (const violation of violations) {
     const unknownTargets = violation.targets.filter(target => {
       const entry = known.find(

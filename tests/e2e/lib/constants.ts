@@ -13,7 +13,7 @@ export const PAGE = pathToFileURL(PAGE_PATH).href;
 
 export const OUT = process.env.SMOKE_OUT ? resolve(process.env.SMOKE_OUT) : resolve(ROOT, 'tests', 'e2e', 'out'); // screenshots (gitignored)
 
-export const shot = name => resolve(OUT, name);
+export const shot = (name: string) => resolve(OUT, name);
 
 export const JOBS = ['SGE', 'WAR', 'PLD', 'BLM', 'NIN', 'DRG', 'BST', 'BLU'];
 
@@ -43,18 +43,22 @@ export const [DEFAULT_JOB, DEFAULT_CAP, DEFAULT_LEVEL] = ['PLD', '', '100'];
 
 // The "Gear categories" boxes in ACTIVITIES order (src/core/item-format.json); DEFAULT_EXCLUDE (lib/core-worker.ts) are left out by
 // default.
-const ACTIVITIES = JSON.parse(readFileSync(new URL('../../../src/core/item-format.json', import.meta.url), 'utf8')).activities;
+type Activity = { key: string; label: string; section: string; on: boolean; hint: string };
+const ACTIVITIES: Activity[] = JSON.parse(readFileSync(new URL('../../../src/core/item-format.json', import.meta.url), 'utf8')).activities;
 export const ACTIVITY_KEYS = ACTIVITIES.map(a => a.key);
 
 // The name each "Gear categories" box shows: key -> label.
-export const ACTIVITY_LABEL = Object.fromEntries(ACTIVITIES.map(a => [a.key, a.label]));
+export const ACTIVITY_LABEL: Record<string, string> = Object.fromEntries(ACTIVITIES.map((a): [string, string] => [a.key, a.label]));
 
 // The section (tab) each "Gear categories" box is in: key -> title.
-export const ACTIVITY_SECTION = Object.fromEntries(ACTIVITIES.map(a => [a.key, a.section]));
+export const ACTIVITY_SECTION: Record<string, string> = Object.fromEntries(ACTIVITIES.map((a): [string, string] => [a.key, a.section]));
 
 // The "Gear categories" boxes of each menu section, section title -> keys in ACTIVITIES order: what a tab of the menu shows.
-export const ACTIVITY_KEYS_BY_SECTION = Object.fromEntries(
-  [...new Set(ACTIVITIES.map(a => a.section))].map(section => [section, ACTIVITIES.filter(a => a.section === section).map(a => a.key)]),
+export const ACTIVITY_KEYS_BY_SECTION: Record<string, string[]> = Object.fromEntries(
+  [...new Set(ACTIVITIES.map(a => a.section))].map((section): [string, string[]] => [
+    section,
+    ACTIVITIES.filter(a => a.section === section).map(a => a.key),
+  ]),
 );
 
 // Sync caps at item level 123: slot -> [substat cap, main stat cap]. Same for every job (slot shares are job-neutral).

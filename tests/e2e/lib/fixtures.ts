@@ -1,9 +1,13 @@
 // Saved sheets the checks seed into localStorage.
 
+import type { SavedSheet } from '../../../src/ui/sheets/saved-types.ts';
+import type { SlotType, Stone } from '../../../src/core/types.ts';
 import { edgeSheet } from '../checks/sheets/edges.mjs';
 import { DEFAULT_EXCLUDE } from './core-worker.ts';
 
-export const FILL_SHEET = {
+const SLOTS: SlotType[] = ['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring', 'ring'];
+
+export const FILL_SHEET: SavedSheet = {
   v: 1,
   id: 's_fill',
   name: 'Auto-fill check',
@@ -16,9 +20,7 @@ export const FILL_SHEET = {
       id: 'g_empty',
       name: 'Empty',
       description: '',
-      pieces: ['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring', 'ring'].map(slot => ({
-        slot,
-      })),
+      pieces: SLOTS.map(slot => ({ slot })),
       meal: null,
       pinned: { pieces: [], meal: false },
       fillSettings: null,
@@ -34,7 +36,7 @@ export const FILL_SHEET = {
 /* A Warrior sheet (level 100, no sync) whose set's Auto-fill takes long: Determination > Critical Hit > Direct Hit with a
    Target GCD of 2.30, food and tier ranking (about 1.3 s on the owner's PC), so Cancel can stop it mid-search. */
 
-export const SLOW_FILL_SHEET = {
+export const SLOW_FILL_SHEET: SavedSheet = {
   ...FILL_SHEET,
   id: 's_slow',
   name: 'Slow fill',
@@ -53,7 +55,7 @@ export const SLOW_FILL_SHEET = {
 };
 
 /* A saved sheet of one set whose row `row` holds the piece `gameId` with `stones`, for `job` (level 100, no sync). */
-export const pieceSheet = (id, name, job, row, gameId, stones) => ({
+export const pieceSheet = (id: string, name: string, job: string, row: number, gameId: number, stones: (Stone | null)[]): SavedSheet => ({
   ...edgeSheet(id, name, job, 100, { on: false, cap: 795 }),
   sets: [
     {
@@ -65,7 +67,7 @@ export const pieceSheet = (id, name, job, row, gameId, stones) => ({
   ],
 });
 
-const SAGE_ROWS = [
+const SAGE_ROWS: [SlotType, number?][] = [
   ['weapon'],
   ['offhand'],
   ['head', 10880],
@@ -80,7 +82,7 @@ const SAGE_ROWS = [
   ['ring', 11054],
 ];
 
-export const SET_SHEET = {
+export const SET_SHEET: SavedSheet = {
   v: 1,
   id: 's_sage',
   name: 'Bahamut T13 Healer',

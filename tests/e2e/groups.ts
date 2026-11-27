@@ -79,17 +79,33 @@ import {
 import { checkStoresSealed } from './checks/tabs/facades.mjs';
 import { checkBackAfterBackAndForward, checkBackAfterQuickClick, checkBackAfterScriptScroll } from './checks/tabs/routing-quick-clicks.mjs';
 import { walkJob } from './checks/tabs/walk.mjs';
+import type { Page } from 'playwright';
 import { FAILING_WORKER, HOLD_SOLVE, NO_WORKER, SLOW_COUNT } from './lib/init-scripts.ts';
 
 // A step: its name, the function that runs it, and its domain (a key of DOMAINS in tests/domains.mjs: the part of the
 // product the step checks, named by what its comment says; the folder of its file does not decide). A step that
 // starts from the shared setup has `shared: true`.
-export const step = (fn, domain) => ({ name: fn.name, run: fn, domain, shared: true });
+export interface Step {
+  name: string;
+  run: (pg: Page) => Promise<unknown>;
+  domain: string;
+  shared: boolean;
+}
+export const step = (fn: Step['run'], domain: string): Step => ({ name: fn.name, run: fn, domain, shared: true });
+
+/** A group of steps run in order on one page. `fresh`: no shared setup; `slow`: started first; `initScript`: a script every page of
+ * the group runs before its own (addInitScript). */
+export interface Group {
+  fresh?: boolean;
+  slow?: boolean;
+  initScript?: () => void;
+  steps: Step[];
+}
 
 // walkJobs: every tab for one job, from a fresh page of its own setup; the frame that holds the tabs, so `app`.
-const walk = job => ({ name: `walkJobs ${job}`, run: walkJob(job), domain: 'app', shared: false });
+const walk = (job: string): Step => ({ name: `walkJobs ${job}`, run: walkJob(job), domain: 'app', shared: false });
 
-export const GROUPS = [
+export const GROUPS: Group[] = [
   { fresh: true, steps: [step(checkDefaults, 'app')] },
   { fresh: true, slow: true, steps: [step(checkFirstPaint, 'app')] },
   { fresh: true, steps: [step(checkNoteSurvivesTabChange, 'app')] },

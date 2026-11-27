@@ -1,25 +1,27 @@
 // Helpers that seed saved sheets into localStorage, open a set, and read the sheet list.
 
+import type { Page } from 'playwright';
+import type { SavedSheet } from '../../../src/ui/sheets/saved-types.ts';
 import { STORE_KEY } from './constants.ts';
 import { expect } from './expect.ts';
 import { SET_SHEET } from './fixtures.ts';
 import { waitReady, waitStateSaved } from './nav.ts';
 
 /** Store `sheet` (a saved sheet, the shape src/ui/sheets/storage.ts reads) as the only one, and reload on it. */
-export async function seedSheet(pg, sheet) {
+export async function seedSheet(pg: Page, sheet: SavedSheet) {
   await seedSheets(pg, [sheet]);
 }
 
 /** Store `sheets` (saved sheets) in that order, and reload on them; `broken` (record text by sheet id) are stored in the
  * order too, for records that cannot be read. */
-export async function seedSheets(pg, sheets, broken = {}) {
+export async function seedSheets(pg: Page, sheets: SavedSheet[], broken: Record<string, string> = {}) {
   await waitStateSaved(pg);
   // written by the reloaded document itself, before the page's own scripts run, and only once (marked in sessionStorage, which
   // a reload keeps): records written by the page that was about to reload, or by a page closed before it, were lost on the CI
   // runner (the new page read storage without them)
   const seedId = `seed-${Math.random().toString(36).slice(2)}`;
   await pg.addInitScript(
-    ([marker, key, list, bad]) => {
+    ({ marker, key, list, bad }: { marker: string; key: string; list: SavedSheet[]; bad: Record<string, string> }) => {
       if (sessionStorage.getItem(marker)) {
         return;
       }
@@ -32,15 +34,15 @@ export async function seedSheets(pg, sheets, broken = {}) {
       }
       localStorage.setItem(`${key}:sheets`, JSON.stringify({ v: 1, order: [...list.map(s => s.id), ...Object.keys(bad)] }));
     },
-    [seedId, STORE_KEY, sheets, broken],
+    { marker: seedId, key: STORE_KEY, list: sheets, bad: broken },
   );
   await reloadAtSheets(pg);
   await waitReady(pg);
 
   // the records must still be stored after the reload: if the browser dropped them, say so here, not as a missing list row
   const lost = await pg.evaluate(
-    ([key, ids]) => ids.filter(id => localStorage.getItem(`${key}:sheet:${id}`) === null),
-    [STORE_KEY, [...sheets.map(s => s.id), ...Object.keys(broken)]],
+    ({ key, ids }: { key: string; ids: string[] }) => ids.filter((id: string) => localStorage.getItem(`${key}:sheet:${id}`) === null),
+    { key: STORE_KEY, ids: [...sheets.map(s => s.id), ...Object.keys(broken)] },
   );
   if (lost.length > 0) {
     throw new Error(`seedSheets: the browser lost the saved sheet records ${lost.join(', ')} across the reload`);
@@ -49,13 +51,13 @@ export async function seedSheets(pg, sheets, broken = {}) {
 
 /** Reload the page on the Sheets list. The page reopens on the address it was left on (a sheet or set page stays open), so a check
  * that wants the list first starts from `#/sheets`, as a fresh visit does. */
-export async function reloadAtSheets(pg) {
+export async function reloadAtSheets(pg: Page) {
   await pg.evaluate(() => history.replaceState(null, '', '#/sheets'));
   await pg.reload();
 }
 
 /** Open the set named `setName` of the sheet named `sheetName` from the Sheets tab. */
-export async function openSet(pg, sheetName, setName) {
+export async function openSet(pg: Page, sheetName: string, setName: string) {
   await pg.click('[data-tab=sheets]');
   await pg.locator('#sh-list a.sname', { hasText: sheetName }).click();
   await pg.locator('#sh-sets a.sname', { hasText: setName }).click();
@@ -63,25 +65,26 @@ export async function openSet(pg, sheetName, setName) {
 }
 
 /** A list's rows on the Sheets tab: the names in its first column, in order. */
-export const sheetNames = (pg, table) => pg.locator(`${table} tbody tr a.sname`).allInnerTexts();
+export const sheetNames = (pg: Page, table: string) => pg.locator(`${table} tbody tr a.sname`).allInnerTexts();
 
 /** A button of a list row's actions (`action`: open, edit, copy or delete, its data-action), by the row's place (1 is the first). */
-export const rowAction = (pg, table, row, action) => pg.locator(`${table} tbody tr:nth-of-type(${row}) .rowacts [data-action="${action}"]`);
+export const rowAction = (pg: Page, table: string, row: number, action: string) =>
+  pg.locator(`${table} tbody tr:nth-of-type(${row}) .rowacts [data-action="${action}"]`);
 
 /** Open the seeded Sage set's page from the Sheets tab. */
-export async function openSageSet(pg) {
+export async function openSageSet(pg: Page) {
   await openSet(pg, SET_SHEET.name, 'Mine');
 }
 
 /** The set page's Apply button names `count` changes (the number only, not its wording). */
-export const expectApplyCount = (pg, count) => expect(pg.locator('#sh-apply')).toHaveNumber(count);
+export const expectApplyCount = (pg: Page, count: number) => expect(pg.locator('#sh-apply')).toHaveNumber(count);
 
 /** Table row `row` of a set page holds no piece (`empty`) or holds one: read from the button's data-empty, not its words. */
-export const expectPieceEmpty = (pg, row, empty = true) =>
+export const expectPieceEmpty = (pg: Page, row: number, empty = true) =>
   expect(pg.locator(`#sh-gear tr[data-row="${row}"] [data-pick]`)).toHaveAttribute('data-empty', String(empty));
 
 /** The Food button of a set page shows no meal (`empty`) or a meal, by its data-empty. */
-export const expectMealEmpty = (pg, empty = true) => expect(pg.locator('#sh-meal-btn')).toHaveAttribute('data-empty', String(empty));
+export const expectMealEmpty = (pg: Page, empty = true) => expect(pg.locator('#sh-meal-btn')).toHaveAttribute('data-empty', String(empty));
 
 /** The label of the figures switch's radio with this value ("effects" or "points"), to click: the value, not the words. */
-export const figuresRadio = value => `#sh-figures label:has(input[value="${value}"])`;
+export const figuresRadio = (value: string) => `#sh-figures label:has(input[value="${value}"])`;

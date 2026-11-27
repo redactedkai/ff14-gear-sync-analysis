@@ -1,12 +1,13 @@
 // Checks several screens run: the totals of a set, the sync caps of a job.
 
+import type { Page } from 'playwright';
 import { CAPS_123, CAPS_123_2H_WEAPON, HAS_OFFHAND } from './constants.ts';
 import { check, expect } from './expect.ts';
 import { hasHScroll, setNumber, showMath } from './nav.ts';
 import { pickOption, selectOptions } from './select.ts';
 
 /** The Total row's cells of the open set page against `totals` (coreRecipe's: the character panel's numbers). */
-export async function checkTotals(pg, what, totals, stats = Object.keys(totals)) {
+export async function checkTotals(pg: Page, what: string, totals: Record<string, number>, stats: string[] = Object.keys(totals)) {
   for (const stat of stats) {
     const got = await pg.locator(`#sh-total td[data-col="${stat}"]`).innerText();
     check(got === String(totals[stat]), `${what}: Total ${stat} is ${got}, the core finds ${totals[stat]}`);
@@ -15,7 +16,7 @@ export async function checkTotals(pg, what, totals, stats = Object.keys(totals))
 
 /** Piece stats at cap 123: for every slot, a piece above the cap is cut to the slot's caps, so its main stat and 1st
  * substat bars end at the known values. A shield job has an Off-hand slot, a two-handed job does not. */
-export async function checkSyncCaps(pg, job) {
+export async function checkSyncCaps(pg: Page, job: string) {
   await showMath(pg, 'piece');
   const slots = (await selectOptions(pg, '#p-slot')).map(option => option.label);
   check(HAS_OFFHAND.has(job) === slots.includes('Off-hand'), `${job}: Piece stats slots ${JSON.stringify(slots)}`);
@@ -32,16 +33,26 @@ export async function checkSyncCaps(pg, job) {
   await pg.click('#p-ilvl-reset');
 }
 
+/** What capLineShape measures: see there. */
+export type CapLineShape = { em: number; capTop: number; capHeight: number; capWidth: number; dy: number; others: [number, number][] };
+
 /** Where a cap field's label line, input and neighbours are now: `line` the label line (a selector), `cap` and `level` the two
  * inputs (the level input sits beside the cap input), `others` the boxes next to the field that must not move (selectors).
  * Returns {em (the line's height in its font size), capTop, capHeight, capWidth, dy (cap input's top less level input's), others
  * ([left, top] of each)}. Take one in a state with no flag, then one in each state with a flag, and compare them with
  * checkCapLineStable. */
-export function capLineShape(pg, { line, cap, level, others }) {
+export function capLineShape(pg: Page, { line, cap, level, others }: { line: string; cap: string; level: string; others: string[] }) {
   return pg.evaluate(
     ({ line: lineSelector, cap: capSelector, level: levelSelector, others: otherSelectors }) => {
-      const box = selector => document.querySelector(selector).getBoundingClientRect();
-      const label = document.querySelector(lineSelector);
+      const find = (selector: string) => {
+        const found = document.querySelector(selector);
+        if (!found) {
+          throw new Error(`capLineShape: nothing matches ${selector}`);
+        }
+        return found;
+      };
+      const box = (selector: string) => find(selector).getBoundingClientRect();
+      const label = find(lineSelector);
       const capBox = box(capSelector);
       return {
         em: label.getBoundingClientRect().height / Number.parseFloat(getComputedStyle(label).fontSize),
@@ -59,7 +70,7 @@ export function capLineShape(pg, { line, cap, level, others }) {
 /** A cap field in the state `what` against its shape with no flag (both from capLineShape): the label line is one line (under
  * 2 em), the input is where it was and as big, it sits level with the level input, no neighbour moved, and the page has no
  * sideways scroll. */
-export async function checkCapLineStable(pg, what, plain, shape) {
+export async function checkCapLineStable(pg: Page, what: string, plain: CapLineShape, shape: CapLineShape) {
   check(shape.em < 2, `${what}: the cap label wraps (${shape.em.toFixed(1)} em high)`);
   check(Math.abs(shape.capTop - plain.capTop) < 1, `${what}: the cap input moved ${(shape.capTop - plain.capTop).toFixed(1)} px down`);
   check(
@@ -72,7 +83,8 @@ export async function checkCapLineStable(pg, what, plain, shape) {
   );
   check(Math.abs(shape.dy) < 1, `${what}: the cap input is ${shape.dy.toFixed(1)} px off the level input`);
   shape.others.forEach(([left, top], at) => {
-    const moved = Math.abs(left - plain.others[at][0]) + Math.abs(top - plain.others[at][1]);
+    const [plainLeft, plainTop] = plain.others[at] ?? [left, top];
+    const moved = Math.abs(left - plainLeft) + Math.abs(top - plainTop);
     check(moved < 1, `${what}: the neighbour box ${at + 1} moved ${moved.toFixed(1)} px`);
   });
   check(!(await hasHScroll(pg)), `${what}: the page scrolls sideways`);

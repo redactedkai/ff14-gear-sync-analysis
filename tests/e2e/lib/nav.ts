@@ -1,6 +1,7 @@
 // Navigation helpers (each waits for a concrete condition, never a fixed sleep): the settings panel, tabs, Auto-fill,
 // the saved state.
 
+import type { BrowserContext, Locator, Page } from 'playwright';
 import { allExpansions } from '../checks/gear-browser/filters.mjs';
 import { ACTIVITY_KEYS_BY_SECTION, ACTIVITY_LABEL, ACTIVITY_SECTION, NAV_TIMEOUT, STORE_KEY, TIMEOUT } from './constants.ts';
 import { check, expect, placedByZag, poll, same } from './expect.ts';
@@ -8,7 +9,7 @@ import { afterTwoFramesAndATask } from './layer-wait.ts';
 import { selectValue } from './select.ts';
 
 /** A new page of `context` with the smoke test's timeouts: TIMEOUT for any wait, NAV_TIMEOUT for loads and reloads. */
-export async function newPage(context) {
+export async function newPage(context: BrowserContext) {
   const page = await context.newPage();
   page.setDefaultTimeout(TIMEOUT);
   page.setDefaultNavigationTimeout(NAV_TIMEOUT);
@@ -17,17 +18,25 @@ export async function newPage(context) {
 
 /** The selectors of the Job and sync fields on the Gear browser (the strip) and on Stat Allocation (the bar's Job menu and the
  * Sync settings popover). The Sheets tab has none. */
-const STRIP_FIELDS = { level: '#level', cap: '#cap', sync: '#sync', jobButton: '#job-menu-btn', jobMenu: '#job-menu' };
-const MATH_FIELDS = { level: '#p-level', cap: '#p-cap', sync: '#p-sync', jobButton: '#m-job-btn', jobMenu: '#m-job-menu' };
+/** The selectors of the fields of a tab's Job and sync panel. */
+interface PanelFields {
+  level: string;
+  cap: string;
+  sync: string;
+  jobButton: string;
+  jobMenu: string;
+}
+const STRIP_FIELDS: PanelFields = { level: '#level', cap: '#cap', sync: '#sync', jobButton: '#job-menu-btn', jobMenu: '#job-menu' };
+const MATH_FIELDS: PanelFields = { level: '#p-level', cap: '#p-cap', sync: '#p-sync', jobButton: '#m-job-btn', jobMenu: '#m-job-menu' };
 
 /** The fields of the open tab. */
-async function panelFields(pg) {
+async function panelFields(pg: Page): Promise<PanelFields> {
   const tab = await pg.locator('[data-tab][aria-current="page"]').getAttribute('data-tab');
   return tab === 'math' ? MATH_FIELDS : STRIP_FIELDS;
 }
 
 /** Open math sub-tab `sub` ('piece', 'gcd' or 'tiers') if another one is open. */
-async function openSub(pg, sub) {
+async function openSub(pg: Page, sub: string) {
   if ((await pg.locator(`[data-sub=${sub}]`).getAttribute('aria-current')) === 'page') {
     return;
   }
@@ -38,7 +47,7 @@ async function openSub(pg, sub) {
 /** Make the open tab's Job box reachable: the Gear browser's strip, or the Job box of the open math sub-tab (Stat Allocation's, or
  * Substat tiers' own: GCD Scaling has none, so Stat Allocation is opened then). With `piece`, Stat Allocation's own panel is wanted
  * (its Job box and Sync settings), so that sub-tab is opened. Returns the tab's fields. The Sheets tab has none. */
-async function openSettings(pg, { piece = false } = {}) {
+async function openSettings(pg: Page, { piece = false } = {}): Promise<PanelFields> {
   if (await pg.locator('[data-tab=sheets][aria-current="page"]').count()) {
     return STRIP_FIELDS;
   }
@@ -54,7 +63,7 @@ async function openSettings(pg, { piece = false } = {}) {
 
 /** The Level, Synced IL and IL Sync fields of the open tab, reachable: on Stat Allocation they sit in the Sync settings popover,
  * which is opened if it is shut. Returns the tab's fields. */
-export async function openSync(pg) {
+export async function openSync(pg: Page) {
   const fields = await openSettings(pg, { piece: true });
   if (fields === MATH_FIELDS && !(await pg.locator('#p-sync-pop').isVisible())) {
     await pg.click('#p-sync-chip');
@@ -64,7 +73,7 @@ export async function openSync(pg) {
 }
 
 /** Open Stat Allocation's Substats & materia popover (the 1st and 2nd substat and Materia slots menus are in it), if it is shut. */
-export async function openPieceMenus(pg) {
+export async function openPieceMenus(pg: Page) {
   if (!(await pg.locator('#p-piece-pop').isVisible())) {
     await pg.click('#p-piece-chip');
     await expect(pg.locator('#p-piece-pop')).toBeVisible();
@@ -72,7 +81,7 @@ export async function openPieceMenus(pg) {
 }
 
 /** Open the open tab's job menu (if it is shut) and click a job tile. */
-export async function pickJob(pg, job) {
+export async function pickJob(pg: Page, job: string) {
   const fields = await openSettings(pg);
   if (!(await pg.locator(fields.jobMenu).isVisible())) {
     await pg.click(fields.jobButton);
@@ -81,26 +90,27 @@ export async function pickJob(pg, job) {
 }
 
 /** The page has rendered: the job picker has its buttons and the strip names the job. */
-export async function waitReady(pg) {
+export async function waitReady(pg: Page) {
   await expect(pg.locator('[data-job-id]').first()).toBeAttached();
   await expect(pg.locator('#job-name')).not.toHaveText('');
   await openSettings(pg);
 }
 
 /** The job the picker shows as selected, '' when none is. */
-export async function currentJob(pg) {
+export async function currentJob(pg: Page): Promise<string> {
   const sel = pg.locator(`${(await panelFields(pg)).jobMenu} [data-job-id][aria-checked="true"]`);
-  return (await sel.count()) ? await sel.getAttribute('data-job-id') : '';
+  return (await sel.count()) ? ((await sel.getAttribute('data-job-id')) ?? '') : '';
 }
 
 /** An input's value; '#job' means the job picker's selection, '#level' and '#cap' the open tab's own boxes (the Gear browser's strip,
  * or Stat Allocation's Sync settings popover: read where they are, shut or not). */
-export async function fieldValue(pg, sel) {
+export async function fieldValue(pg: Page, sel: string) {
   if (sel === '#job') {
     return await currentJob(pg);
   }
   if (sel === '#level' || sel === '#cap') {
-    return await pg.inputValue((await panelFields(pg))[sel.slice(1)]);
+    const fields = await panelFields(pg);
+    return await pg.inputValue(sel === '#level' ? fields.level : fields.cap);
   }
   if (sel === '#p-slot') {
     return await selectValue(pg, sel);
@@ -110,7 +120,7 @@ export async function fieldValue(pg, sel) {
 
 /** Switch the open tab's job (the page does not ask: nothing is lost but the job-specific choices). On How the math works it is the open
  * sub-tab's own job: Stat Allocation's, or Substat tiers'. */
-export async function setJob(pg, job) {
+export async function setJob(pg: Page, job: string) {
   await pickJob(pg, job);
   await poll(`the job to be ${job}`, async () => {
     const now = await currentJob(pg);
@@ -118,8 +128,17 @@ export async function setJob(pg, job) {
   });
 }
 
+/** The open tab's Job and sync panel as the fields show it. */
+export interface Panel {
+  /* The job's id, '' for none. */
+  job: string;
+  sync: boolean;
+  cap: string;
+  level: string;
+}
+
 /** The open tab's Job and sync panel as the fields show it: {job ('' for none), sync, cap, level}. */
-export async function readPanel(pg) {
+export async function readPanel(pg: Page): Promise<Panel> {
   const fields = await openSettings(pg, { piece: true });
   return {
     job: await currentJob(pg),
@@ -132,7 +151,7 @@ export async function readPanel(pg) {
 /** Make the open tab's panel show `want` (readPanel's shape), through the fields. Each tab has its own panel; most
  * checks work with one setup on every tab, so showTab carries the panel over. A tab with no job is not left
  * (the picker cannot clear a job). */
-async function applyPanel(pg, want) {
+async function applyPanel(pg: Page, want: Panel) {
   const now = await readPanel(pg);
   // a panel that starts as its strip (also with no job) is opened to change it
   if ((want.job && now.job !== want.job) || now.level !== want.level || now.sync !== want.sync || now.cap !== want.cap) {
@@ -155,7 +174,7 @@ async function applyPanel(pg, want) {
 }
 
 /** Open a tab. Its panel takes the settings of the tab left (applyPanel); `own` leaves the tab's own panel alone. */
-export async function showTab(pg, tab, own = false) {
+export async function showTab(pg: Page, tab: string, own = false) {
   const left = await readPanel(pg);
   await pg.click(`[data-tab=${tab}]`);
   // the tab opens a few frames after the click (the loading layer's wait), and the panel to fill is the one on screen
@@ -165,7 +184,7 @@ export async function showTab(pg, tab, own = false) {
   }
 }
 
-export async function showMath(pg, sub) {
+export async function showMath(pg: Page, sub: string) {
   await showTab(pg, 'math');
   await pg.click(`[data-sub=${sub}]`);
   await expect(pg.locator(`#tab-${sub}`)).toBeVisible();
@@ -173,25 +192,25 @@ export async function showMath(pg, sub) {
 
 /** Press a set page's Auto-fill (`button`: the page's '#sh-fill') and wait until that
  * search has answered, whatever it answered (the 'fill' measure the set page records per answer). */
-export async function startFill(pg, button = '#sh-fill') {
-  const runs = await pg.evaluate("performance.getEntriesByName('fill').length");
+export async function startFill(pg: Page, button = '#sh-fill') {
+  const runs = await pg.evaluate(() => performance.getEntriesByName('fill').length);
   await pg.click(button);
-  await pg.waitForFunction(n => performance.getEntriesByName('fill').length > n, runs, { timeout: TIMEOUT });
+  await pg.waitForFunction((n: number) => performance.getEntriesByName('fill').length > n, runs, { timeout: TIMEOUT });
 }
 
 /** A set page's Auto-fill: press it and wait until that search has finished and its result waits for Apply. */
-export async function runFill(pg, button = '#sh-fill') {
+export async function runFill(pg: Page, button = '#sh-fill') {
   await startFill(pg, button);
   await expect(pg.locator('#sh-apply')).toBeVisible();
 }
 
 /** Resolve after the frames an Auto-fill on the page's thread waits for before it starts (two frames and a task), so a search
  * that was cancelled before them and still ran would have run by now. No fixed delay: the same events the Auto-fill waits for. */
-export const afterFrames = pg => pg.evaluate(afterTwoFramesAndATask);
+export const afterFrames = (pg: Page) => pg.evaluate(afterTwoFramesAndATask);
 
 /** Wait until the page's own state (the open tab and its Job and sync panel) is saved: a change is saved a moment later,
  * and a reload before that opens the page as it was. */
-export async function waitStateSaved(pg) {
+export async function waitStateSaved(pg: Page) {
   const tab = await pg.locator('[data-tab][aria-current="page"]').getAttribute('data-tab');
   if (tab === 'sheets') {
     return waitSaved(pg, "s => s.tab === 'sheets'");
@@ -206,9 +225,9 @@ export async function waitStateSaved(pg) {
 
 /** Body rows of a table (CSS selector or Locator) as lists of the texts of its visible cells. Hidden cells are
  * skipped, so positions match what a user sees. */
-export async function tableRows(pg, selector) {
+export async function tableRows(pg: Page, selector: string | Locator) {
   const table = typeof selector === 'string' ? pg.locator(selector) : selector;
-  return await table.locator('tbody tr').evaluateAll(rows =>
+  return await table.locator('tbody tr').evaluateAll((rows: HTMLTableRowElement[]) =>
     rows.map(r =>
       Array.from(r.cells)
         .filter(c => getComputedStyle(c).display !== 'none')
@@ -219,14 +238,18 @@ export async function tableRows(pg, selector) {
 
 /** Type `value` into the number box `sel` and commit it. '#level' and '#cap' mean the open tab's own boxes (the Gear browser's strip,
  * or Stat Allocation's Sync settings popover, opened first). */
-export async function setNumber(pg, sel, value) {
-  const selector = ['#level', '#cap'].includes(sel) ? (await openSync(pg))[sel.slice(1)] : sel;
+export async function setNumber(pg: Page, sel: string, value: string) {
+  let selector = sel;
+  if (sel === '#level' || sel === '#cap') {
+    const fields = await openSync(pg);
+    selector = sel === '#level' ? fields.level : fields.cap;
+  }
   await pg.fill(selector, value);
   await pg.locator(selector).dispatchEvent('change');
 }
 
 /** Turn item level sync on (the cap field is disabled while it is off) and set the cap. */
-export async function setCap(pg, value) {
+export async function setCap(pg: Page, value: string) {
   const fields = await openSync(pg);
   if (!(await pg.locator(fields.sync).isChecked())) {
     await pg.locator(fields.sync).check();
@@ -237,7 +260,7 @@ export async function setCap(pg, value) {
 /** Wait until the (debounced) saved state satisfies a JS predicate over it, s => ... The predicate sees the open tab's
  * Job and sync panel (job, cap, sync, level) at the top, as before each tab had its own, and `tab`, the open tab as the page
  * shows it (the page does not save the open tab: the address names it). */
-export async function waitSaved(pg, jsCondition) {
+export async function waitSaved(pg: Page, jsCondition: string) {
   await pg.waitForFunction(
     `(k => { const GROUP = { sheets: 'browse', browse: 'browse', math: 'piece' };
       const tab = document.querySelector('[data-tab][aria-current="page"]')?.dataset.tab;
@@ -252,12 +275,14 @@ export async function waitSaved(pg, jsCondition) {
 
 /** The ticked "Gear categories" boxes of the browser (pre 'b') or a set's Auto-fill settings ('s'), in ACTIVITIES order, read from the DOM
  * (the menu may be closed). */
-export async function ticked(pg, pre) {
-  return pg.locator(`#${pre}-from-menu input[data-activity]`).evaluateAll(bs => bs.filter(b => b.checked).map(b => b.dataset.activity));
+export async function ticked(pg: Page, pre: string) {
+  return pg
+    .locator(`#${pre}-from-menu input[data-activity]`)
+    .evaluateAll((boxes: HTMLInputElement[]) => boxes.filter(box => box.checked).map(box => box.dataset.activity ?? ''));
 }
 
 /** Open the "Gear categories" menu of `pre` if it is closed. */
-export async function openFrom(pg, pre) {
+export async function openFrom(pg: Page, pre: string) {
   if ((await pg.getAttribute(`#${pre}-from`, 'aria-expanded')) !== 'true') {
     await pg.click(`#${pre}-from`);
   }
@@ -267,21 +292,21 @@ export async function openFrom(pg, pre) {
 
 /** Close the "Gear categories" menu of `pre` with Escape: the open menu takes the key, so in the Auto-fill settings popover only the
  * menu closes. */
-export async function closeFrom(pg, pre) {
+export async function closeFrom(pg: Page, pre: string) {
   await pg.keyboard.press('Escape');
   await expect(pg.locator(`#${pre}-from-menu`)).toBeHidden();
 }
 
 /** The id of the "Gear categories" tab of `pre` for a section title ("Side content" -> "s-from-tab-side-content"). */
-export const fromTabId = (pre, title) => `${pre}-from-tab-${title.toLowerCase().replace(/\s+/g, '-')}`;
+export const fromTabId = (pre: string, title: string) => `${pre}-from-tab-${title.toLowerCase().replace(/\s+/g, '-')}`;
 
 /** Show the "Gear categories" tab (of the open menu of `pre`) that holds the box `key`: the other tabs' boxes are hidden and cannot be clicked. */
-export async function showFromTabOf(pg, pre, key) {
+export async function showFromTabOf(pg: Page, pre: string, key: string) {
   await pg.click(`#${fromTabId(pre, ACTIVITY_SECTION[key])}`);
 }
 
 /** Tick or untick one "Gear categories" box (or the market board switch, key 'market'), then close the menu. */
-export async function setFrom(pg, pre, key, on) {
+export async function setFrom(pg: Page, pre: string, key: string, on: boolean) {
   await openFrom(pg, pre);
   if (key !== 'market') {
     await showFromTabOf(pg, pre, key);
@@ -303,12 +328,12 @@ const ROW_BY_ROW = SECTIONS.at(-1);
 
 /** The keys of a tab's boxes in the order the menu shows them: ACTIVITIES order down the columns; row by row, each Current box
  * before its Legacy one (the pairs Extreme and Savage, then Ultimate). */
-function readingOrder(title) {
+function readingOrder(title: string) {
   const keys = ACTIVITY_KEYS_BY_SECTION[title];
   if (title !== ROW_BY_ROW) {
     return keys;
   }
-  const kind = key => key.replace(/_(current|legacy)$/, '');
+  const kind = (key: string) => key.replace(/_(current|legacy)$/, '');
   const kinds = [...new Set(keys.map(kind))];
   return [...keys].sort(
     (a, b) => kinds.indexOf(kind(a)) - kinds.indexOf(kind(b)) || Number(b.endsWith('_current')) - Number(a.endsWith('_current')),
@@ -316,12 +341,15 @@ function readingOrder(title) {
 }
 
 /** The tabs of the "Gear categories" menu and the boxes each shows, in the order they read: [title, names] from ACTIVITIES. */
-const FROM_TABS = SECTIONS.map(title => [title, readingOrder(title).map(key => ACTIVITY_LABEL[key])]);
+const FROM_TABS = SECTIONS.map((title): [string, string[]] => [title, readingOrder(title).map(key => ACTIVITY_LABEL[key])]);
 
 /** The open "Gear categories" menu of `pre`: its size and the window's, in px, and whether the menu or the page scrolls. */
-export function fromMenuFit(pg, pre) {
-  return pg.evaluate(menuSel => {
+export function fromMenuFit(pg: Page, pre: string) {
+  return pg.evaluate((menuSel: string) => {
     const menu = document.querySelector(menuSel);
+    if (!menu) {
+      throw new Error(`fromMenuFit: nothing matches ${menuSel}`);
+    }
     const box = menu.getBoundingClientRect();
     return {
       width: box.width,
@@ -342,12 +370,12 @@ export function fromMenuFit(pg, pre) {
  * tabs' keys (Left and Right wrap, Home, End, only the selected tab in the Tab order; the Tab order is the switch, the tabs,
  * the boxes, then All / None / Default); Escape closes it with the focus on the field's button and the last tab is kept; a
  * click outside closes it; All, None and Default. `outside`: a selector of something outside the control that a click may hit. */
-export async function checkFromMenu(pg, pre, outside) {
+export async function checkFromMenu(pg: Page, pre: string, outside: string) {
   const menu = `#${pre}-from-menu`;
-  const tab = title => `#${fromTabId(pre, title)}`;
-  const panel = title => `#${pre}-from-panel-${title.toLowerCase().replace(/\s+/g, '-')}`;
+  const tab = (title: string) => `#${fromTabId(pre, title)}`;
+  const panel = (title: string) => `#${pre}-from-panel-${title.toLowerCase().replace(/\s+/g, '-')}`;
   const startTicked = await ticked(pg, pre);
-  const startSummary = (await pg.textContent(`#${pre}-from`)).trim();
+  const startSummary = ((await pg.textContent(`#${pre}-from`)) ?? '').trim();
 
   // one surface: the (i) button and its panel are gone
   await expect(pg.locator(`#${pre}-from-info-btn`)).toHaveCount(0);
@@ -370,14 +398,25 @@ export async function checkFromMenu(pg, pre, outside) {
   // the head: the switch (its label and nothing else) at the left, All / None / Default at the right on its line, over the tabs
   await expect(pg.locator(`${menu} .from-switch`)).toBeVisible();
   const head = await pg.evaluate(
-    ([menuSel, marketSel, tabsSel]) => {
-      const rect = el => el.getBoundingClientRect();
-      const menuEl = document.querySelector(menuSel);
-      const sw = rect(document.querySelector(marketSel).closest('label'));
-      const links = [...menuEl.querySelectorAll('.from-acts button')];
-      const [first] = links.map(rect);
-      const last = rect(links[links.length - 1]);
-      const tabs = rect(document.querySelector(tabsSel));
+    ({ menuSel, marketSel, tabsSel }: { menuSel: string; marketSel: string; tabsSel: string }) => {
+      const find = (selector: string) => {
+        const found = document.querySelector(selector);
+        if (!found) {
+          throw new Error(`checkFromMenu: nothing matches ${selector}`);
+        }
+        return found;
+      };
+      const rect = (el: Element) => el.getBoundingClientRect();
+      const menuEl = find(menuSel);
+      const switchLabel = find(marketSel).closest('label');
+      if (!switchLabel) {
+        throw new Error('checkFromMenu: the market switch has no label');
+      }
+      const sw = rect(switchLabel);
+      const links = [...menuEl.querySelectorAll<HTMLElement>('.from-acts button')];
+      const first = rect(links[0] ?? menuEl);
+      const last = rect(links[links.length - 1] ?? menuEl);
+      const tabs = rect(find(tabsSel));
       return {
         links: links.map(menuLink => menuLink.dataset.action),
         switchLeft: sw.left - rect(menuEl).left,
@@ -388,7 +427,7 @@ export async function checkFromMenu(pg, pre, outside) {
         switchHeight: sw.height,
       };
     },
-    [menu, `#${pre}-market`, `${menu} [role="tablist"]`],
+    { menuSel: menu, marketSel: `#${pre}-market`, tabsSel: `${menu} [role="tablist"]` },
   );
   check(same(head.links, ['all', 'none', 'default']), `the ${pre} menu head has the actions ${head.links}, expected all, none, default`);
   check(
@@ -397,7 +436,7 @@ export async function checkFromMenu(pg, pre, outside) {
   );
 
   // each tab: exactly its boxes in reading order, each with a text of at most two lines under its name; one size for every tab
-  const sizes = [];
+  const sizes: Awaited<ReturnType<typeof fromMenuFit>>[] = [];
   for (const [title, names] of FROM_TABS) {
     await pg.click(tab(title));
     for (const [other] of FROM_TABS) {
@@ -408,8 +447,11 @@ export async function checkFromMenu(pg, pre, outside) {
     await expect(pg.locator(tab(title))).toHaveAttribute('aria-controls', panel(title).slice(1));
     const shown = await pg.locator(`${panel(title)} .from-name`).allTextContents();
     check(same(shown, names), `the ${pre} "${title}" tab shows ${shown.join(' | ')}, expected ${names.join(' | ')}`);
-    const boxes = await pg.evaluate(panelSel => {
+    const boxes = await pg.evaluate((panelSel: string) => {
       const panelEl = document.querySelector(panelSel);
+      if (!panelEl?.parentElement) {
+        throw new Error(`checkFromMenu: nothing matches ${panelSel}`);
+      }
       const visible = getComputedStyle(panelEl).visibility === 'visible';
       return {
         visible,
@@ -417,14 +459,18 @@ export async function checkFromMenu(pg, pre, outside) {
           el => el !== panelEl && getComputedStyle(el).visibility === 'visible',
         ).length,
         boxes: [...panelEl.querySelectorAll('.from-opt')].map(label => {
-          const name = label.querySelector('.from-name').getBoundingClientRect();
+          const nameElement = label.querySelector('.from-name');
           const hint = label.querySelector('.from-hint');
+          if (!nameElement || !hint) {
+            throw new Error('checkFromMenu: a box has no name or no text');
+          }
+          const name = nameElement.getBoundingClientRect();
           const hintBox = hint.getBoundingClientRect();
           const box = label.getBoundingClientRect();
           return {
             left: Math.round(box.left),
             top: Math.round(box.top),
-            hintText: hint.textContent.trim().length,
+            hintText: (hint.textContent ?? '').trim().length,
             hintLines: hintBox.height / Number.parseFloat(getComputedStyle(hint).lineHeight),
             hintUnderName: hintBox.top >= name.bottom - 1,
           };
@@ -491,7 +537,7 @@ export async function checkFromMenu(pg, pre, outside) {
   await pg.focus(`#${pre}-market`);
   await pg.keyboard.press('Tab');
   check((await focusedId(pg)) === fromTabId(pre, SECTIONS[0]), `${pre} menu: Tab from the switch did not reach the selected tab`);
-  for (const [title, key] of [
+  const tabKeys: [string, string][] = [
     [SECTIONS[1], 'ArrowRight'],
     [SECTIONS[2], 'ArrowRight'],
     [SECTIONS[0], 'ArrowRight'],
@@ -499,14 +545,19 @@ export async function checkFromMenu(pg, pre, outside) {
     [SECTIONS[0], 'Home'],
     [SECTIONS[2], 'End'],
     [SECTIONS[0], 'Home'],
-  ]) {
+  ];
+  for (const [title, key] of tabKeys) {
     await pg.keyboard.press(key);
     await expect(pg.locator(tab(title))).toHaveAttribute('aria-selected', 'true');
     check((await focusedId(pg)) === fromTabId(pre, title), `${pre} menu: the focus did not follow ${key} to the ${title} tab`);
   }
-  const activeLabel = () => pg.evaluate(() => document.activeElement.dataset.activity ?? document.activeElement.dataset.action);
+  const activeLabel = () =>
+    pg.evaluate(() => {
+      const active = document.activeElement;
+      return active instanceof HTMLElement ? (active.dataset.activity ?? active.dataset.action) : undefined;
+    });
   const everyday = ACTIVITY_KEYS_BY_SECTION[SECTIONS[0]];
-  const order = [];
+  const order: (string | undefined)[] = [];
   for (let step = 0; step < everyday.length + 3; step++) {
     await pg.keyboard.press('Tab');
     order.push(await activeLabel());
@@ -526,7 +577,7 @@ export async function checkFromMenu(pg, pre, outside) {
   await expect(pg.locator(tab(SECTIONS[0]))).toHaveText(counts()[0]);
 
   // All, None, Default: the tabs' counts and the field's text follow, and Default gives back the starting boxes
-  const link = action => pg.locator(`${menu} .from-acts [data-action="${action}"]`);
+  const link = (action: string) => pg.locator(`${menu} .from-acts [data-action="${action}"]`);
   await link('none').click();
   for (const [title, names] of FROM_TABS) {
     await expect(pg.locator(tab(title))).toHaveText(`${title}0/${names.length}`);
@@ -560,10 +611,10 @@ export async function checkFromMenu(pg, pre, outside) {
 }
 
 /** The id of the element that has focus. */
-export const focusedId = pg => pg.evaluate(() => document.activeElement?.id ?? '');
+export const focusedId = (pg: Page) => pg.evaluate(() => document.activeElement?.id ?? '');
 
 /** Set the gear browser's filters to an item level window (name filter cleared). */
-export async function fillBrowser(pg, lo, hi, lvl, slot = 'any') {
+export async function fillBrowser(pg: Page, lo: number, hi: number, lvl: number, slot = 'any') {
   await showTab(pg, 'browse');
   await pg.fill('#b-q', '');
   await allExpansions(pg);
@@ -574,11 +625,11 @@ export async function fillBrowser(pg, lo, hi, lvl, slot = 'any') {
 }
 
 /** Pick `slot` (a data-slot key: 'any', 'ring', ...) in the Gear browser's Slot menu: opens the menu and clicks the choice, which closes it. */
-export async function chooseSlot(pg, slot) {
+export async function chooseSlot(pg: Page, slot: string) {
   await pg.click('#b-slot');
   await pg.click(`#b-slots [data-slot="${slot}"]`);
 }
 
-export const browserRows = pg => pg.locator('#gear-table tbody tr[data-key]');
+export const browserRows = (pg: Page) => pg.locator('#gear-table tbody tr[data-key]');
 
-export const hasHScroll = pg => pg.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+export const hasHScroll = (pg: Page) => pg.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
