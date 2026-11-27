@@ -36,8 +36,8 @@ class SchemaDriftTest(unittest.TestCase):
     """A game patch that renames or drops a column, or changes a slot share, must stop the generators."""
 
     def setUp(self) -> None:
-        self.tmp = tempfile.TemporaryDirectory()
-        self.dir = Path(self.tmp.name)
+        self.tmp: tempfile.TemporaryDirectory[str] = tempfile.TemporaryDirectory()
+        self.dir: Path = Path(self.tmp.name)
         for f in FIXTURES.glob('*.csv'):
             shutil.copy(f, self.dir / f.name)
         write_param_grow(self.dir / 'ParamGrow.csv', range(101))

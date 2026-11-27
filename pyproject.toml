@@ -35,6 +35,21 @@ python-version = "3.11"
 # Every parameter, return and empty container is typed (scripts/data and tests/data are annotated).
 preset = "strict"
 
+[tool.pyrefly.errors]
+# The strict preset leaves these implicit-Any checks off: a variable, argument, attribute or return the checker cannot type.
+unknown-variable-type = true
+unknown-argument-type = true
+unknown-attribute-access = true
+unannotated-return = true
+
+[[tool.pyrefly.sub-config]]
+matches = "scripts/validate/**"
+[tool.pyrefly.sub-config.errors]
+# Run by hand against other tools' JSON (the report is read by key, untyped); the checks above are for the pipeline.
+unknown-variable-type = false
+unknown-argument-type = false
+unknown-attribute-access = false
+
 [[tool.pyrefly.sub-config]]
 matches = "tests/**"
 [tool.pyrefly.sub-config.errors]

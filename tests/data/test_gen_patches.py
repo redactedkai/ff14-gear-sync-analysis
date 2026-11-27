@@ -73,11 +73,11 @@ class PatchTableTest(unittest.TestCase):
 
 class GenPatchesTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.tmp = tempfile.TemporaryDirectory()
-        self.dir = Path(self.tmp.name)
-        self.patchlist = self.dir / 'patchlist.json'
+        self.tmp: tempfile.TemporaryDirectory[str] = tempfile.TemporaryDirectory()
+        self.dir: Path = Path(self.tmp.name)
+        self.patchlist: Path = self.dir / 'patchlist.json'
         self.patchlist.write_text(json.dumps(REAL_START), encoding='utf-8')
-        self.out = self.dir / 'patches.json'
+        self.out: Path = self.dir / 'patches.json'
 
     def tearDown(self) -> None:
         self.tmp.cleanup()

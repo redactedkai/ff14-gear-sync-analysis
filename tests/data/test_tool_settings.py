@@ -102,10 +102,25 @@ class ToolSettingsTest(unittest.TestCase):
         for folder in ('./data', './dist', './node_modules', './docs/scratchpad'):
             self.assertIn(folder, self.config['tool']['ruff']['extend-exclude'])
 
-    def test_pyrefly_uses_the_strict_preset_except_for_the_override_decorator_in_tests(self) -> None:
+    def test_pyrefly_uses_the_strict_preset_with_the_implicit_any_checks_on(self) -> None:
         pyrefly = self.config['tool']['pyrefly']
         self.assertEqual(pyrefly['preset'], 'strict')
-        self.assertEqual(pyrefly['sub-config'], [{'matches': 'tests/**', 'errors': {'missing-override-decorator': False}}])
+        implicit_any = ['unknown-variable-type', 'unknown-argument-type', 'unknown-attribute-access', 'unannotated-return']
+        self.assertEqual(pyrefly['errors'], dict.fromkeys(implicit_any, True))
+
+    def test_pyrefly_exceptions_are_the_override_decorator_in_tests_and_untyped_json_in_the_validation_scripts(self) -> None:
+        sub_configs = {sub['matches']: sub['errors'] for sub in self.config['tool']['pyrefly']['sub-config']}
+        self.assertEqual(
+            sub_configs,
+            {
+                'scripts/validate/**': {
+                    'unknown-variable-type': False,
+                    'unknown-argument-type': False,
+                    'unknown-attribute-access': False,
+                },
+                'tests/**': {'missing-override-decorator': False},
+            },
+        )
 
     def test_pyrefly_searches_the_script_and_test_folders(self) -> None:
         self.assertEqual(self.config['tool']['pyrefly']['search-path'], ['scripts/data', 'tests/data'])

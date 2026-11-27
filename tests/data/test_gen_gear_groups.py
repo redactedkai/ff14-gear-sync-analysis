@@ -15,7 +15,7 @@ from common import (
     ROOT,
     run_quiet,
 )
-from item_format import ItemCell, SchemaError, load_format, row_fields
+from item_format import ItemCell, ItemFormat, SchemaError, load_format, row_fields
 
 
 class GenGearGroupsTest(unittest.TestCase):
@@ -23,8 +23,8 @@ class GenGearGroupsTest(unittest.TestCase):
     the same level cap) from item rows, and from the shipped item database."""
 
     def setUp(self) -> None:
-        self.fmt = load_format()
-        self.fields = row_fields(self.fmt)
+        self.fmt: ItemFormat = load_format()
+        self.fields: dict[str, int] = row_fields(self.fmt)
 
     def row(self, slot_code: int, jobs: list[str]) -> list[ItemCell]:
         """An item row (name, slot code and job mask only; the generator reads nothing else) wearable by `jobs`."""
@@ -34,7 +34,7 @@ class GenGearGroupsTest(unittest.TestCase):
         row[self.fields['jobMask']] = sum(1 << self.fmt['jobs'].index(j) for j in jobs)
         return row
 
-    def rows(self, shares: list[tuple[list[str], int]]):
+    def rows(self, shares: list[tuple[list[str], int]]) -> list[list[ItemCell]]:
         """Rows for `shares`, [(jobs, how many body pieces only those jobs wear)]: a body piece (slot code 4) per entry
         copy, plus one weapon (code 0) for every job, which is left out of the count."""
         every_job = self.fmt['jobs']

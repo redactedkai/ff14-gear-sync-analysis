@@ -14,6 +14,7 @@ import tempfile
 import unittest
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any  # any-ok: parsed JSON rows
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import gen_items
@@ -45,7 +46,7 @@ class GenItemsTest(unittest.TestCase):
     def tearDownClass(cls) -> None:
         cls.tmp.cleanup()
 
-    def row(self, name: str):
+    def row(self, name: str) -> list[Any]:  # any-ok: a parsed row: its cells are str, int or list by field, read by the test
         self.assertIn(name, self.by_name)
         return self.by_name[name]
 
@@ -59,7 +60,9 @@ class GenItemsTest(unittest.TestCase):
             self.assertIn(unique, (0, 1))
             self.assertIn(hq, (0, 1))
             n_boxes = len(load_format()['activities'])
-            self.assertTrue(isinstance(routes, list) and all(0 < m < 1 << (n_boxes + 1) for m in routes), r)
+            self.assertIsInstance(routes, list, r)
+            masks: list[int] = routes
+            self.assertTrue(all(0 < mask < 1 << (n_boxes + 1) for mask in masks), r)
             self.assertIn(kind, range(13))
             self.assertIn(meld_slots, range(6))
             self.assertIn(overmeld, (0, 1))
@@ -322,7 +325,8 @@ class GenItemsTest(unittest.TestCase):
         expect = {'Test Robe': 'raid', 'Test Greataxe': 'relic', 'Test Gloves': 'field_op', 'Test Tank Helm': 'dungeon'}
         for name, cat in expect.items():
             with self.subTest(name=name):
-                self.assertEqual(keys[self.row(name)[15]], cat)
+                category_index: int = self.row(name)[15]
+                self.assertEqual(keys[category_index], cat)
 
     def test_category_list_must_match(self) -> None:
         # a category with no label, a key gear_categories.py doesn't know, or a key listed twice stops the generator
@@ -380,7 +384,7 @@ class GenItemsTest(unittest.TestCase):
 class ItemSortTiesTest(unittest.TestCase):
     """Two pieces that tie on item level, slot code and name come out in game id order, whatever order Item.csv lists them."""
 
-    def pieces_after_copying_the_first_piece(self, copy_id: int, put_copy_first: bool):
+    def pieces_after_copying_the_first_piece(self, copy_id: int, put_copy_first: bool) -> list[int]:
         """The rows of the items.json made from a copy of the fixtures where Test Greataxe (id 1001) also appears as `copy_id`
         with one more point of Strength, listed before the original or after it."""
         with tempfile.TemporaryDirectory() as tmp:

@@ -142,7 +142,7 @@ def item_row(slot_code: int, job_mask: int) -> list[int]:
     return row
 
 
-def outcome(rows: list[list[int]]):
+def outcome(rows: list[list[int]]) -> list[list[str]] | str:
     """The groups of `rows`, or the SchemaError message when the data is not clean (both must not depend on order)."""
     try:
         return gen_gear_groups.gear_groups(rows, FMT)

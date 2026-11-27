@@ -51,8 +51,8 @@ ITEM_LEVEL_COLUMNS = {
 
 class GenItemLevelTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.tmp = tempfile.TemporaryDirectory()
-        self.dir = Path(self.tmp.name)
+        self.tmp: tempfile.TemporaryDirectory[str] = tempfile.TemporaryDirectory()
+        self.dir: Path = Path(self.tmp.name)
         shutil.copy(FIXTURES / 'ItemLevel.csv', self.dir / 'ItemLevel.csv')
         shutil.copy(FIXTURES / 'BaseParam.csv', self.dir / 'BaseParam.csv')
         shutil.copy(FIXTURES / 'ClassJob.csv', self.dir / 'ClassJob.csv')
@@ -60,12 +60,12 @@ class GenItemLevelTest(unittest.TestCase):
         shutil.copy(FIXTURES / 'Race.csv', self.dir / 'Race.csv')
         write_param_grow(self.dir / 'ParamGrow.csv', range(101))
         with (FIXTURES / 'ItemLevel.csv').open(encoding='utf-8', newline='') as f:
-            self.header = next(csv.reader(f))
+            self.header: list[str] = next(csv.reader(f))
 
     def tearDown(self) -> None:
         self.tmp.cleanup()
 
-    def generate(self):
+    def generate(self) -> tuple[dict[str, list[int]], list[list[int]]]:
         out = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
         doc = json.loads(out.read_text(encoding='utf-8'))

@@ -104,10 +104,12 @@ def json_lines(doc: Mapping[str, object], expand: Collection[str] = (), ensure_a
     for key, value in doc.items():
         head = compact(key) + ':'
         if key in expand and isinstance(value, dict) and value:
-            entries = [compact(k) + ':' + compact(v) for k, v in value.items()]
+            members: dict[str, object] = value
+            entries = [compact(k) + ':' + compact(v) for k, v in members.items()]
             lines.append(head + '{\n' + ',\n'.join(entries) + '\n}')
         elif key in expand and isinstance(value, list) and value:
-            lines.append(head + '[\n' + ',\n'.join(compact(v) for v in value) + '\n]')
+            elements: list[object] = value
+            lines.append(head + '[\n' + ',\n'.join(compact(v) for v in elements) + '\n]')
         else:
             lines.append(head + compact(value))
     return '{\n' + ',\n'.join(lines) + '\n}\n'

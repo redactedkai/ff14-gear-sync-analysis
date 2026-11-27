@@ -42,11 +42,13 @@ def patch_table(entries: object) -> list[list[str]]:
     if not isinstance(entries, list) or not entries:
         raise SchemaError('patchlist.json is not a list with entries')
     table: list[list[str]] = []
-    last_id = None
-    for entry in entries:
-        where = f'patchlist.json entry {entry.get("ID")!r}' if isinstance(entry, dict) else 'patchlist.json entry'
-        if not isinstance(entry, dict) or not all(k in entry for k in ('ID', 'Version', 'Name_en', 'ReleaseDate')):
+    last_id: int | None = None
+    listed: list[object] = entries
+    for item in listed:
+        where = f'patchlist.json entry {item.get("ID")!r}' if isinstance(item, dict) else 'patchlist.json entry'
+        if not isinstance(item, dict) or not all(k in item for k in ('ID', 'Version', 'Name_en', 'ReleaseDate')):
             raise SchemaError(f'{where} lacks ID, Version, Name_en or ReleaseDate. Did the list change shape?')
+        entry: dict[str, object] = item
         version, name, stamp = entry['Version'], entry['Name_en'], entry['ReleaseDate']
         if not isinstance(version, str) or not VERSION.fullmatch(version):
             raise SchemaError(f'{where}: version {version!r}, expected like "7.56" or "2.1b"')
@@ -54,9 +56,12 @@ def patch_table(entries: object) -> list[list[str]]:
             raise SchemaError(f'{where}: the name {name!r} does not begin "Patch {version}"')
         if isinstance(stamp, bool) or not isinstance(stamp, int) or stamp <= 0:
             raise SchemaError(f'{where} ({version}): ReleaseDate {stamp!r}, expected a Unix timestamp in seconds')
-        if last_id is not None and not entry['ID'] > last_id:
+        entry_id = entry['ID']
+        if isinstance(entry_id, bool) or not isinstance(entry_id, int):
+            raise SchemaError(f'{where} ({version}): ID {entry_id!r}, expected an integer')
+        if last_id is not None and not entry_id > last_id:
             raise SchemaError(f'{where} ({version}): ids do not rise (after {last_id})')
-        last_id = entry['ID']
+        last_id = entry_id
         day = release_day(stamp)
         if table and day < table[-1][1]:
             raise SchemaError(f'{where} ({version}) is released {day}, before {table[-1][0]} ({table[-1][1]}) listed above it')

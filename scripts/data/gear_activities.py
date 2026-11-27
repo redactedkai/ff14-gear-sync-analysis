@@ -384,9 +384,16 @@ class RouteFinder:
         tome_slot: dict[int, int],
         accessory_slots: set[int],
     ) -> None:
-        self.ways, self.rebuys, self.category, self.slot_of = ways, rebuys, category, slot_of
-        self.untradable, self.tome_slot, self.accessory_slots = untradable, tome_slot, accessory_slots
-        self.currency_routes = {i: frozenset(frozenset(r) for r in rs) for i, (_, rs) in CURRENCIES.items()}
+        self.ways: Ways = ways
+        self.rebuys: set[int] = rebuys
+        self.category: dict[int, str] = category
+        self.slot_of: dict[int, int] = slot_of
+        self.untradable: set[int] = untradable
+        self.tome_slot: dict[int, int] = tome_slot
+        self.accessory_slots: set[int] = accessory_slots
+        self.currency_routes: dict[int, frozenset[frozenset[str]]] = {
+            i: frozenset(frozenset(r) for r in rs) for i, (_, rs) in CURRENCIES.items()
+        }
         self.memo: dict[tuple[int, int], Routes] = {}
         self.inferred_pieces: dict[int, str] = {}
         self.inferred_currencies: dict[int, str] = {}
@@ -488,9 +495,13 @@ class Boxes:
     False; names: {item id: name}, for the error message."""
 
     def __init__(self, level_of: dict[int, int], tradeable: set[int], names: dict[int, str]) -> None:
+        self.bits: dict[str, int]
+        self.market: int
         self.bits, self.market = box_bits()
-        self.level_of, self.tradeable, self.names = level_of, tradeable, names
-        self.cap = max(level_of.values()) if level_of else 0
+        self.level_of: dict[int, int] = level_of
+        self.tradeable: set[int] = tradeable
+        self.names: dict[int, str] = names
+        self.cap: int = max(level_of.values()) if level_of else 0
 
     def bit(self, activity: str, item: int) -> int:
         """The box bit of one activity of a kept piece. Raises SchemaError on an activity with no box."""

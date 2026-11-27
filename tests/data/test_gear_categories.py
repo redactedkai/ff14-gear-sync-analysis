@@ -22,7 +22,7 @@ from common import (
     add_shop,
     edit_csv,
 )
-from item_format import SchemaError, load_format
+from item_format import Piece, Row, SchemaError, load_format
 
 
 class GearCategoriesTest(unittest.TestCase):
@@ -37,8 +37,8 @@ class GearCategoriesTest(unittest.TestCase):
     WEAPON_SLOTS: ClassVar[set[int]] = {0, 1, 2}
 
     def setUp(self) -> None:
-        self.tmp = tempfile.TemporaryDirectory()
-        self.dir = Path(self.tmp.name)
+        self.tmp: tempfile.TemporaryDirectory[str] = tempfile.TemporaryDirectory()
+        self.dir: Path = Path(self.tmp.name)
         for f in FIXTURES.glob('*.csv'):
             shutil.copy(f, self.dir / f.name)
 
@@ -58,7 +58,7 @@ class GearCategoriesTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.tmp.cleanup()
 
-    def categories(self):
+    def categories(self) -> tuple[dict[str, str], list[tuple[Row, Piece]], dict[str, str]]:
         kept = gen_items.select(self.dir).kept
         cats = gear_categories.categorize(self.dir, kept, self.WEAPON_SLOTS)
         names = {r['#']: r['Name'] for r, _ in kept}
@@ -82,7 +82,7 @@ class GearCategoriesTest(unittest.TestCase):
                 self.assertEqual(cats[name], cat)
         self.assertEqual(gear_categories.check(kept, ids), [])
 
-    def routes(self):
+    def routes(self) -> dict[str, list[str]]:
         """{name: routes as box keys} from gear_activities.py on this test's copy of the fixtures."""
         _cats, kept, ids = self.categories()
         kept = [(r, row) for r, row in kept if ids[r['#']] not in gear_categories.LEFT_OUT]

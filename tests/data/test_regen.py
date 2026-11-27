@@ -10,13 +10,14 @@ import unittest
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import regen
+from provenance import Source
 
-SOURCE = {'repo': 'xivapi/ffxiv-datamining', 'commit': 'a' * 40, 'date': '2026-01-01T00:00:00Z'}
-PATCH_SOURCE = {'repo': 'xivapi/ffxiv-datamining-patches', 'commit': 'b' * 40, 'date': '2026-02-02T00:00:00Z'}
+SOURCE: Source = {'repo': 'xivapi/ffxiv-datamining', 'commit': 'a' * 40, 'date': '2026-01-01T00:00:00Z'}
+PATCH_SOURCE: Source = {'repo': 'xivapi/ffxiv-datamining-patches', 'commit': 'b' * 40, 'date': '2026-02-02T00:00:00Z'}
 
 
 class RegenTest(unittest.TestCase):
-    def steps(self, edited: bool = False):
+    def steps(self, edited: bool = False) -> list[tuple[str, list[str]]]:
         return regen.build_steps(SOURCE, PATCH_SOURCE, edited, 'report.json')
 
     def test_steps_run_in_the_documented_order(self) -> None:

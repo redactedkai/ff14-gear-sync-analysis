@@ -38,7 +38,7 @@ JOBS = json.loads((ROOT / 'src' / 'core' / 'item-format.json').read_text(encodin
 PASS_TAGS = {'X3', 'D1', 'D2'}
 
 
-def bundle():
+def bundle() -> None:
     script = (
         "import('esbuild').then(e => e.build({entryPoints: [process.argv[1]], bundle: true, format: 'cjs', "
         "platform: 'node', target: 'node18', outfile: process.argv[2], logLevel: 'warning'}))"
@@ -47,7 +47,7 @@ def bundle():
     subprocess.run(['node', '-e', script, str(HERE / 'ours.ts'), str(BUNDLE)], cwd=ROOT, check=True)
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument('--jobs', default=','.join(JOBS))
     args = ap.parse_args()

@@ -27,13 +27,13 @@ import item_format
 import provenance
 import summary
 from common import FIXTURES, edit_csv, run_quiet
-from item_format import ItemCell, SchemaError, load_format, row_fields
+from item_format import ItemCell, ItemFormat, Piece, Row, SchemaError, load_format, row_fields
 
 
 class BadRowTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.tmp = tempfile.TemporaryDirectory()
-        self.dir = Path(self.tmp.name)
+        self.tmp: tempfile.TemporaryDirectory[str] = tempfile.TemporaryDirectory()
+        self.dir: Path = Path(self.tmp.name)
         for f in FIXTURES.glob('*.csv'):
             shutil.copy(f, self.dir / f.name)
 
@@ -124,7 +124,7 @@ class BadRowTest(unittest.TestCase):
             item_format.run_main(failing)
 
     # gear_categories: the cross-checks
-    def kept_pieces(self):
+    def kept_pieces(self) -> list[tuple[Row, Piece]]:
         return gen_items.select(self.dir).kept
 
     def test_a_savage_piece_with_no_dye_slot_is_a_problem(self) -> None:
@@ -173,13 +173,15 @@ class SummaryMainTest(unittest.TestCase):
     SOURCE = provenance.make('d9582a624eaec69d45649366dee801c2f3a6e9b3', '2026-09-30T03:03:49-05:00')
 
     def setUp(self) -> None:
-        self.tmp = tempfile.TemporaryDirectory()
-        self.dir = Path(self.tmp.name)
-        self.fmt = load_format()
-        self.fields = row_fields(self.fmt)
-        self.items, self.food = self.dir / 'items.json', self.dir / 'food.json'
-        self.report = self.dir / 'report.json'
-        self.summary_path, self.changelog_path = self.dir / 'summary.json', self.dir / 'data-changelog.md'
+        self.tmp: tempfile.TemporaryDirectory[str] = tempfile.TemporaryDirectory()
+        self.dir: Path = Path(self.tmp.name)
+        self.fmt: ItemFormat = load_format()
+        self.fields: dict[str, int] = row_fields(self.fmt)
+        self.items: Path = self.dir / 'items.json'
+        self.food: Path = self.dir / 'food.json'
+        self.report: Path = self.dir / 'report.json'
+        self.summary_path: Path = self.dir / 'summary.json'
+        self.changelog_path: Path = self.dir / 'data-changelog.md'
         self.write_inputs(item_levels=[100, 90], meals=2)
         self.changelog_path.write_text('# Data changelog\n\n- 2026-01-01, `abcdef0`: 1 rows, 1 meals\n', encoding='utf-8', newline='\n')
 

@@ -16,6 +16,7 @@ import tempfile
 import unittest
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any  # any-ok: parsed JSON of a generated file
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import gen_food
@@ -26,7 +27,7 @@ from item_format import SchemaError
 FIXTURES = SHEET_FIXTURES / 'food'
 
 
-def generate(csv_dir: Path | str):
+def generate(csv_dir: Path | str) -> dict[str, Any]:  # any-ok: the parsed food.json, read by key in every test
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp) / 'food.json'
         gen_food.main(str(csv_dir), str(out), None)
@@ -62,7 +63,7 @@ class GenFoodTest(unittest.TestCase):
 class FoodSortTiesTest(unittest.TestCase):
     """Two meals that tie on item level and name come out in item id order, whatever order Item.csv lists them."""
 
-    def stats_of_royal_toasts(self, copy_id: int, put_copy_first: bool):
+    def stats_of_royal_toasts(self, copy_id: int, put_copy_first: bool) -> list[str]:
         """The substat lists of every Royal Toast made from a copy of the fixtures where the meal also appears as `copy_id`,
         with the action (so the stats) of Prune Ponzecake, listed before the original or after it."""
         with tempfile.TemporaryDirectory() as tmp:
@@ -93,8 +94,8 @@ class FoodSchemaTest(unittest.TestCase):
     """Edited copies of the fixtures stop the generator."""
 
     def setUp(self) -> None:
-        self.tmp = tempfile.TemporaryDirectory()
-        self.dir = Path(self.tmp.name)
+        self.tmp: tempfile.TemporaryDirectory[str] = tempfile.TemporaryDirectory()
+        self.dir: Path = Path(self.tmp.name)
         for f in FIXTURES.iterdir():
             shutil.copy(f, self.dir / f.name)
 
@@ -122,7 +123,7 @@ class FoodSchemaTest(unittest.TestCase):
 
     def test_boolean_columns_other_than_true_false(self) -> None:
         # the exporter writing 1/0 for CanBeHq or IsRelative must stop the generator, not leave out every meal
-        def to_digits(column: str):
+        def to_digits(column: str) -> Callable[[list[list[str]]], list[list[str]]]:
             def fn(rows: list[list[str]]) -> list[list[str]]:
                 cols = [i for i, c in enumerate(rows[0]) if c.startswith(column)]
                 return [rows[0], *[[{'True': '1', 'False': '0'}.get(v, v) if i in cols else v for i, v in enumerate(r)] for r in rows[1:]]]
@@ -138,7 +139,7 @@ class FoodSchemaTest(unittest.TestCase):
                     generate(self.dir)
 
     def test_bad_percent(self) -> None:
-        def zero(rows: list[list[str]]):
+        def zero(rows: list[list[str]]) -> list[list[str]]:
             i = rows[0].index('ValueHQ[0]')
             return [rows[0], *[[*r[:i], '0', *r[i + 1 :]] if r[0] == '705' else r for r in rows[1:]]]
 

@@ -11,6 +11,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Self
 from unittest import mock
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
@@ -31,15 +32,31 @@ def fake_png(width: int = 64, height: int = 64, tag: int = 0, whole: bool = True
     return gen_job_icons.PNG_SIGNATURE + ihdr + bytes([tag]) + (gen_job_icons.PNG_END if whole else b'')
 
 
+class FakeResponse:
+    """What urlopen returns in a `with`: its context manager hands back itself, and read() gives the body."""
+
+    def __init__(self, body: bytes) -> None:
+        self.body: bytes = body
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self.body
+
+
 class GenJobIconsTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.tmp = Path(tempfile.mkdtemp())
+        self.tmp: Path = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.tmp)
-        self.icons = self.tmp / 'icons'
+        self.icons: Path = self.tmp / 'icons'
         self.icons.mkdir()
         for i, job in enumerate(JOBS):
             (self.icons / f'{job}.png').write_bytes(fake_png(tag=i))  # a different file per job
-        self.out = self.tmp / 'job-icons.ts'
+        self.out: Path = self.tmp / 'job-icons.ts'
 
     def test_every_job_embedded_as_its_own_png(self) -> None:
         run_quiet(gen_job_icons.main, self.icons, self.out)
@@ -102,14 +119,13 @@ class IconDownloadTest(unittest.TestCase):
     """fetch.download_icon: a download is renamed into place only when it is a whole 64 x 64 PNG."""
 
     def setUp(self) -> None:
-        self.tmp = Path(tempfile.mkdtemp())
+        self.tmp: Path = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.tmp)
-        self.dest = self.tmp / 'SGE.png'
+        self.dest: Path = self.tmp / 'SGE.png'
 
     def download(self, body: bytes) -> None:
         """Run download_icon against a fake server that answers with `body`."""
-        response = mock.MagicMock()
-        response.__enter__.return_value.read.return_value = body
+        response = FakeResponse(body)
         with mock.patch.object(fetch.urllib.request, 'urlopen', return_value=response):
             fetch.download_icon('https://example.invalid/icon.png', self.dest)
 
