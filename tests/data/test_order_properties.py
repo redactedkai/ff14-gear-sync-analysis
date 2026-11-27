@@ -19,7 +19,7 @@ import gen_food
 import gen_gear_groups
 import gen_items
 from common import FIXTURES, run_quiet
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from item_format import SchemaError, load_format, row_fields
 
@@ -84,6 +84,7 @@ class ItemDatabaseOrderTest(unittest.TestCase):
         names = [line for line in self.expected.decode('utf-8').splitlines() if line.startswith('["Test Tank Helm"')]
         self.assertEqual(len(names), 2)
 
+    @settings(max_examples=6)  # one run of the item generator takes about a second
     @given(rng=st.randoms(use_true_random=False))
     def test_shuffled_sheets_give_the_same_file(self, rng):
         with tempfile.TemporaryDirectory() as tmp:
