@@ -23,12 +23,14 @@ its subject, and the rows and meals with their change since the previous summary
 import argparse
 import json
 import subprocess
-from collections.abc import Iterable, Mapping
+from argparse import ArgumentParser, Namespace
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
+from subprocess import CompletedProcess
 from typing import TypedDict, TypeVar
 
 import provenance
-from item_format import ROOT, ItemFormat, ItemRow, SchemaError, load_format, run_main, whole, whole_list
+from item_format import ROOT, ItemCell, ItemFormat, ItemRow, SchemaError, load_format, run_main, whole, whole_list
 from provenance import Source
 
 Counts = Mapping[str, 'int | Counts']  # the counts of summary.json: whole numbers, and maps of them (by slot, by category, ...)
@@ -66,17 +68,17 @@ class SummaryDoc(TypedDict):
 
 CountKey = TypeVar('CountKey', int, str)
 
-SUMMARY = ROOT / 'src' / 'data' / 'summary.json'
-CHANGELOG = ROOT / 'docs' / 'data-changelog.md'
+SUMMARY: Path = ROOT / 'src' / 'data' / 'summary.json'
+CHANGELOG: Path = ROOT / 'docs' / 'data-changelog.md'
 ITEMS, FOOD = ROOT / 'src' / 'data' / 'items.json', ROOT / 'src' / 'data' / 'food.json'
-DRIFT_SHARE = 0.10  # a count that moves by more than this share of its old value is reported
-DRIFT_MIN = 5  # ... and by more than this many, so small counts (4 seasonal event pieces) do not flag on noise
+DRIFT_SHARE: float = 0.10  # a count that moves by more than this share of its old value is reported
+DRIFT_MIN: int = 5  # ... and by more than this many, so small counts (4 seasonal event pieces) do not flag on noise
 
 
 def csv_blobs(csv_dir: Path | str, sheets: list[str]) -> dict[str, str] | None:
     """{sheet: git blob id} of each sheets' CSV at the clone's HEAD, or None when git cannot tell (not a clone)."""
     try:
-        run = subprocess.run(
+        run: CompletedProcess[str] = subprocess.run(
             ['git', '-C', str(csv_dir), 'ls-tree', 'HEAD', '--', *(f'{s}.csv' for s in sheets)],
             capture_output=True,
             text=True,
@@ -96,10 +98,10 @@ def csv_blobs(csv_dir: Path | str, sheets: list[str]) -> dict[str, str] | None:
 def summarize(items_doc: ItemsDoc, food_doc: FoodDoc, report: ItemReport, fmt: ItemFormat) -> Counts:
     """The counts of summary.json (see the module docstring) from the generated item and food files and the item
     generator's report."""
-    rows = items_doc['items']
-    field = {name: i for i, name in enumerate(fmt['itemRow']['fields'])}
-    boxes = [a['key'] for a in fmt['activities']] + ['market_board']
-    categories = [c['key'] for c in fmt['category']['list']]
+    rows: list[Sequence[ItemCell]] = items_doc['items']
+    field: dict[str, int] = {name: i for i, name in enumerate(fmt['itemRow']['fields'])}
+    boxes: list[str] = [a['key'] for a in fmt['activities']] + ['market_board']
+    categories: list[str] = [c['key'] for c in fmt['category']['list']]
 
     def count(keys: Iterable[CountKey]) -> dict[CountKey, int]:
         out: dict[CountKey, int] = {}
@@ -150,7 +152,7 @@ def drift(old: Counts, new: Counts) -> list[str]:
         elif now is None:
             lines.append(f'{key} gone (was {was:,})')
         elif abs(now - was) > max(DRIFT_SHARE * was, DRIFT_MIN):
-            share = f' ({(now - was) / was:+.0%})' if was else ''
+            share: str = f' ({(now - was) / was:+.0%})' if was else ''
             lines.append(f'{key} {was:,} -> {now:,}{share}')
     return lines
 
@@ -158,7 +160,9 @@ def drift(old: Counts, new: Counts) -> list[str]:
 def commit_subject(csv_dir: Path | str) -> str:
     """The subject line of the clone's HEAD commit, or ''."""
     try:
-        run = subprocess.run(['git', '-C', str(csv_dir), 'log', '-1', '--format=%s'], capture_output=True, text=True, check=False)
+        run: CompletedProcess[str] = subprocess.run(
+            ['git', '-C', str(csv_dir), 'log', '-1', '--format=%s'], capture_output=True, text=True, check=False
+        )
     except OSError:
         return ''
     return run.stdout.strip() if run.returncode == 0 else ''
@@ -166,7 +170,7 @@ def commit_subject(csv_dir: Path | str) -> str:
 
 def total(counts: Counts, key: str) -> int:
     """The whole number under `key` in `counts` (rows, meals: a count, not a map of counts); raises SchemaError otherwise."""
-    value = counts[key]
+    value: int | Counts = counts[key]
     if not isinstance(value, int):
         raise SchemaError(f'summary count {key!r} is {value!r}, expected a whole number')
     return value
@@ -177,10 +181,10 @@ def changelog_line(source: Source, subject: str, counts: Counts, old_counts: Cou
     old_counts: the previous summary's counts, or None (no change shown)."""
 
     def with_change(key: str, label: str) -> str:
-        change = f' ({total(counts, key) - total(old_counts, key):+,})' if old_counts and key in old_counts else ''
+        change: str = f' ({total(counts, key) - total(old_counts, key):+,})' if old_counts and key in old_counts else ''
         return f'{total(counts, key):,} {label}{change}'
 
-    title = f' "{subject}"' if subject else ''
+    title: str = f' "{subject}"' if subject else ''
     return f'- {source["date"][:10]}, `{source["commit"][:7]}`{title}: {with_change("rows", "rows")}, {with_change("meals", "meals")}'
 
 
@@ -189,16 +193,16 @@ def main(
 ) -> None:
     """Write the summary, print the drift since the previous one, and add the changelog line (see the module
     docstring)."""
-    fmt = load_format()
-    source = provenance.detect(csv_dir)
+    fmt: ItemFormat = load_format()
+    source: Source | None = provenance.detect(csv_dir)
     old: SummaryDoc | None = json.loads(summary_path.read_text(encoding='utf-8')) if summary_path.exists() else None
     items_doc: ItemsDoc = json.loads(ITEMS.read_text(encoding='utf-8'))
     food_doc: FoodDoc = json.loads(FOOD.read_text(encoding='utf-8'))
     report: ItemReport = json.loads(Path(report_path).read_text(encoding='utf-8'))
     import fetch  # here: fetch imports the gear modules, not needed by the helpers above
 
-    counts = summarize(items_doc, food_doc, report, fmt)
-    doc = {
+    counts: Mapping[str, int | Counts] = summarize(items_doc, food_doc, report, fmt)
+    doc: dict[str, Mapping[str, int | Counts] | Source | dict[str, str] | int | str | None] = {
         '_generated': provenance.note(source),
         'source': source,
         'formatVersion': fmt['formatVersion'],
@@ -209,8 +213,8 @@ def main(
 
     # what moved since the previous run
     if old is not None:
-        moved = drift(old['counts'], counts)
-        since = f'the last run (commit {(old.get("source") or {}).get("commit", "unknown")[:7]})'
+        moved: list[str] = drift(old['counts'], counts)
+        since: str = f'the last run (commit {(old.get("source") or {}).get("commit", "unknown")[:7]})'
         if moved:
             print(
                 f'Warning: {len(moved)} count(s) moved by more than {DRIFT_SHARE:.0%} since {since}; look into each before committing: '
@@ -221,9 +225,9 @@ def main(
 
     # one changelog line per data update
     if changelog and source and changelog_path.exists():
-        text = changelog_path.read_text(encoding='utf-8')
+        text: str = changelog_path.read_text(encoding='utf-8')
         if f'`{source["commit"][:7]}`' not in text:
-            line = changelog_line(source, commit_subject(csv_dir), counts, old and old['counts'])
+            line: str = changelog_line(source, commit_subject(csv_dir), counts, old and old['counts'])
             text = text.rstrip('\n')
             gap = '\n' if text.splitlines()[-1].startswith('- ') else '\n\n'  # a blank line before the first entry
             provenance.write_generated(changelog_path, text + gap + line + '\n')
@@ -231,9 +235,9 @@ def main(
 
 
 if __name__ == '__main__':
-    ap = argparse.ArgumentParser(description='Write src/data/summary.json and report how the counts moved.')
+    ap: ArgumentParser = argparse.ArgumentParser(description='Write src/data/summary.json and report how the counts moved.')
     ap.add_argument('csv_dir')
     ap.add_argument('report')
     ap.add_argument('--no-changelog', action='store_true', help='do not add a line to docs/data-changelog.md')
-    args = ap.parse_args()
+    args: Namespace = ap.parse_args()
     run_main(main, args.csv_dir, args.report, not args.no_changelog)

@@ -19,12 +19,14 @@ import gear_activities
 import gear_categories
 import gen_items
 from common import FIXTURES, edit_csv
+from gear_activities import Boxes
+from gen_items import Selection
 from hypothesis import given
 from hypothesis import strategies as st
-from item_format import SchemaError, check_bools, check_ids, load_format, read_csv
+from item_format import ItemFormat, Piece, SchemaError, check_bools, check_ids, load_format, read_csv
 
-WEAPON_SLOTS = {0, 1, 2}
-TANK_HELM = 'Test Tank Helm'  # a kept dungeon piece (code 270), item level 130
+WEAPON_SLOTS: set[int] = {0, 1, 2}
+TANK_HELM: str = 'Test Tank Helm'  # a kept dungeon piece (code 270), item level 130
 
 
 def fixture_copy(directory: Path | str) -> None:
@@ -59,21 +61,21 @@ class UnknownCodeStopsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             fixture_copy(tmp)
             set_item_cells(tmp, item_id_of(tmp, TANK_HELM), {'SubcategorySort': str(role * gear_categories.CODE_DIVISOR + code)})
-            kept = gen_items.select(tmp).kept
+            kept: list[tuple[dict[str, str], Piece]] = gen_items.select(tmp).kept
             with self.assertRaises(SchemaError) as stop:
                 gear_categories.categorize(tmp, kept, WEAPON_SLOTS)
             self.assertIn(f'{code} (1 pieces)', str(stop.exception))
 
     @given(activity=st.text(max_size=20).filter(lambda a: a not in gear_activities.ACTIVITY_BOX))
     def test_an_activity_with_no_box_stops_the_routes(self, activity: str) -> None:
-        boxes = gear_activities.Boxes({1: 100}, set(), {1: 'x'})
+        boxes: Boxes = gear_activities.Boxes({1: 100}, set(), {1: 'x'})
         with self.assertRaises(SchemaError):
             boxes.bit(activity, 1)
 
     @given(activity=st.sampled_from(sorted(gear_activities.ACTIVITY_BOX)))
     def test_every_activity_with_a_box_maps_to_a_bit(self, activity: str) -> None:
         # the other side of the stop above: a known activity never raises, at the level cap or below it
-        boxes = gear_activities.Boxes({1: 100, 2: 90}, set(), {})
+        boxes: Boxes = gear_activities.Boxes({1: 100, 2: 90}, set(), {})
         for item in (1, 2):
             self.assertGreater(boxes.bit(activity, item), 0)
 
@@ -90,7 +92,7 @@ class UnknownCodeStopsTest(unittest.TestCase):
 
     @given(wrong_name=st.text(max_size=12).filter(lambda n: n != 'Kept Name'), item_id=st.integers(min_value=1, max_value=10**6))
     def test_a_hand_kept_id_naming_another_item_stops(self, wrong_name: str, item_id: int) -> None:
-        expected = {item_id: 'Kept Name'}
+        expected: dict[int, str] = {item_id: 'Kept Name'}
         check_ids({item_id: 'Kept Name'}, expected, 'Item.csv', 'currency', 'T')
         with self.assertRaises(SchemaError):
             check_ids({item_id: wrong_name}, expected, 'Item.csv', 'currency', 'T')
@@ -105,9 +107,9 @@ class UnknownCodeStopsTest(unittest.TestCase):
 
     @given(missing=st.sets(st.sampled_from(['#', 'Name', 'Extra']), min_size=1))
     def test_a_missing_required_column_stops_read_csv(self, missing: set[str]) -> None:
-        columns = ['#', 'Name', 'Extra']
+        columns: list[str] = ['#', 'Name', 'Extra']
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / 'Sheet.csv'
+            path: Path = Path(tmp) / 'Sheet.csv'
             path.write_text(','.join(c for c in columns if c not in missing) + '\n', encoding='utf-8')
             with self.assertRaises(SchemaError) as stop:
                 read_csv(path, columns)
@@ -117,11 +119,11 @@ class UnknownCodeStopsTest(unittest.TestCase):
     @given(extra=st.text(min_size=1, max_size=10).filter(lambda k: k not in gear_categories.CATEGORIES), repeat=st.booleans())
     def test_the_category_list_of_the_format_must_match_the_categories(self, extra: str, repeat: bool) -> None:
         gen_items.category_index(load_format())  # the shipped list is accepted
-        with_unknown = load_format()
+        with_unknown: ItemFormat = load_format()
         with_unknown['category']['list'].append({'key': extra, 'label': extra})
         with self.assertRaises(SchemaError):
             gen_items.category_index(with_unknown)
-        changed = load_format()
+        changed: ItemFormat = load_format()
         if repeat:
             changed['category']['list'].append(changed['category']['list'][0])
         else:
@@ -139,11 +141,11 @@ class DropRulesTest(unittest.TestCase):
         cls.tmp = tempfile.TemporaryDirectory()
         cls.base = Path(cls.tmp.name)
         fixture_copy(cls.base)
-        rows = read_csv(cls.base / 'Item.csv')
+        rows: list[dict[str, str]] = read_csv(cls.base / 'Item.csv')
         cls.stat_columns = [c for c in rows[0] if c.startswith(('BaseParamValue[', 'BaseParamValueSpecial['))]
         cls.total_rows = len(rows)
         cls.tank_id = item_id_of(cls.base, TANK_HELM)
-        tank = next(r for r in rows if r['#'] == cls.tank_id)
+        tank: dict[str, str] = next(r for r in rows if r['#'] == cls.tank_id)
         cls.tank_slot, cls.tank_job_category = tank['EquipSlotCategory'], tank['ClassJobCategory']
         cls.baseline = gen_items.select(cls.base)
 
@@ -165,7 +167,7 @@ class DropRulesTest(unittest.TestCase):
     def test_a_row_is_kept_exactly_when_it_passes_every_rule(
         self, has_name: bool, item_level: int, has_job: bool, has_slot: bool, has_stats: bool
     ) -> None:
-        cells = {
+        cells: dict[str, str] = {
             'Name': TANK_HELM if has_name else '',
             'LevelItem': str(item_level),
             'ClassJobCategory': self.tank_job_category if has_job else '0',
@@ -176,8 +178,8 @@ class DropRulesTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             fixture_copy(tmp)
             set_item_cells(tmp, self.tank_id, cells)
-            selection = gen_items.select(tmp)
-        kept_ids = {row['#'] for row, _ in selection.kept}
+            selection: Selection = gen_items.select(tmp)
+        kept_ids: set[str] = {row['#'] for row, _ in selection.kept}
         self.assertEqual(self.tank_id in kept_ids, has_name and has_slot and item_level >= 1 and has_job and has_stats)
         # every other row is kept or dropped as before, and the funnel still adds up to the whole sheet
         self.assertEqual(kept_ids - {self.tank_id}, {row['#'] for row, _ in self.baseline.kept} - {self.tank_id})

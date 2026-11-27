@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import unittest
+from subprocess import CompletedProcess
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import regen
@@ -21,7 +22,7 @@ class RegenTest(unittest.TestCase):
         return regen.build_steps(SOURCE, PATCH_SOURCE, edited, 'report.json')
 
     def test_steps_run_in_the_documented_order(self) -> None:
-        labels = [label for label, _ in self.steps()]
+        labels: list[str] = [label for label, _ in self.steps()]
         self.assertEqual(
             labels,
             [
@@ -46,13 +47,13 @@ class RegenTest(unittest.TestCase):
                 self.assertEqual(command[0], 'node', label)
 
     def test_each_source_is_stamped_on_its_own_generators(self) -> None:
-        commands = dict(self.steps())
+        commands: dict[str, list[str]] = dict(self.steps())
         self.assertIn('a' * 40, commands['Generating the item database'])
         self.assertIn('b' * 40, commands['Generating the patch table'])
         self.assertNotIn('b' * 40, commands['Generating the item database'])
 
     def test_an_edited_clone_skips_the_changelog_line(self) -> None:
-        summary = 'Comparing the counts with the last run'
+        summary: str = 'Comparing the counts with the last run'
         self.assertNotIn('--no-changelog', dict(self.steps(edited=False))[summary])
         self.assertIn('--no-changelog', dict(self.steps(edited=True))[summary])
 
@@ -65,8 +66,8 @@ class RegenTest(unittest.TestCase):
     def test_a_python_step_prints_a_name_outside_the_console_code_page(self) -> None:
         """A child with -X utf8 can print a character cp1252 lacks (a Windows pipe's default), and the parent reads it back
         as UTF-8. On other systems the default is UTF-8 already, so this passes there as well."""
-        env = {k: v for k, v in os.environ.items() if k not in ('PYTHONUTF8', 'PYTHONIOENCODING')}
-        done = subprocess.run(
+        env: dict[str, str] = {k: v for k, v in os.environ.items() if k not in ('PYTHONUTF8', 'PYTHONIOENCODING')}
+        done: CompletedProcess[str] = subprocess.run(
             [*regen.PYTHON, '-c', 'print("\u2605 \u00dcber")'],
             stdout=subprocess.PIPE,
             text=True,

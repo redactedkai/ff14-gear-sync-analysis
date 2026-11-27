@@ -20,8 +20,10 @@ import io
 import subprocess
 import sys
 import tempfile
+from argparse import ArgumentParser, Namespace
 from collections.abc import Sequence
 from pathlib import Path
+from subprocess import CompletedProcess
 
 import gen_food
 import gen_gear_groups
@@ -33,21 +35,21 @@ import provenance
 import summary
 from item_format import ROOT
 
-CSV = ROOT / 'data' / 'ffxiv-datamining' / 'csv' / 'en'
-PATCHES_DIR = ROOT / 'data' / 'ffxiv-datamining-patches'
-ICON_DIR = ROOT / 'data' / 'icons'
-COMMITTED = ROOT / 'src' / 'data'
-MAX_SPEED_SCRIPT = ROOT / 'scripts' / 'data' / 'gen_max_speed.ts'
-MAX_DIFF_LINES = 6  # lines of a text difference shown per file
+CSV: Path = ROOT / 'data' / 'ffxiv-datamining' / 'csv' / 'en'
+PATCHES_DIR: Path = ROOT / 'data' / 'ffxiv-datamining-patches'
+ICON_DIR: Path = ROOT / 'data' / 'icons'
+COMMITTED: Path = ROOT / 'src' / 'data'
+MAX_SPEED_SCRIPT: Path = ROOT / 'scripts' / 'data' / 'gen_max_speed.ts'
+MAX_DIFF_LINES: int = 6  # lines of a text difference shown per file
 
 
 def first_difference(committed: str, made: str) -> str:
     """A few lines that show where two texts differ (unified diff, cut short), or a note on the length when only the
     ending differs."""
-    diff = list(difflib.unified_diff(committed.splitlines(), made.splitlines(), 'src/data', 'generated', n=0, lineterm=''))
+    diff: list[str] = list(difflib.unified_diff(committed.splitlines(), made.splitlines(), 'src/data', 'generated', n=0, lineterm=''))
     if not diff:
         return f'  same lines, different bytes (committed {len(committed)} characters, generated {len(made)})'
-    shown = [line[:200] for line in diff[:MAX_DIFF_LINES]]
+    shown: list[str] = [line[:200] for line in diff[:MAX_DIFF_LINES]]
     return '\n'.join('  ' + line for line in shown) + ('\n  ...' if len(diff) > MAX_DIFF_LINES else '')
 
 
@@ -64,7 +66,7 @@ def generate(work: Path, full: bool) -> list[str]:
         # summary.py reads the item and food tables from these module constants: point them at the ones made here
         summary.ITEMS, summary.FOOD = work / 'items.json', work / 'food.json'
         summary.main(CSV, work / 'items-report.json', changelog=False, summary_path=work / 'summary.json')
-    names = ['item-level.json', 'items.json', 'gear-groups.json', 'food.json', 'job-icons.ts', 'patches.json', 'summary.json']
+    names: list[str] = ['item-level.json', 'items.json', 'gear-groups.json', 'food.json', 'job-icons.ts', 'patches.json', 'summary.json']
     if full:
         subprocess.run(['node', str(MAX_SPEED_SCRIPT), str(work / 'max-speed.json')], check=True, stdout=subprocess.DEVNULL)
         names.append('max-speed.json')
@@ -74,7 +76,7 @@ def generate(work: Path, full: bool) -> list[str]:
 def max_speed_is_current() -> bool:
     """Whether src/data/max-speed.json's `inputs` hash matches the data and the src/core code now (a quick check; the
     table itself is not searched again)."""
-    result = subprocess.run(
+    result: CompletedProcess[str] = subprocess.run(
         ['node', str(MAX_SPEED_SCRIPT), '--check', str(COMMITTED / 'max-speed.json')], capture_output=True, text=True, check=False
     )
     return result.returncode == 0
@@ -82,9 +84,9 @@ def max_speed_is_current() -> bool:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Exit code 0 when every generated file equals its committed copy, 1 otherwise."""
-    ap = argparse.ArgumentParser(description='Compare src/data/ with what the generators make from the data clones.')
+    ap: ArgumentParser = argparse.ArgumentParser(description='Compare src/data/ with what the generators make from the data clones.')
     ap.add_argument('--full', action='store_true', help='also run the five-minute search for max-speed.json and compare it byte for byte')
-    args = ap.parse_args(argv)
+    args: Namespace = ap.parse_args(argv)
     if not CSV.exists() or not (PATCHES_DIR / 'patchlist.json').exists():
         sys.exit('No CSVs or no patch list yet. Run: python scripts/data/fetch.py')
     for directory in (CSV, PATCHES_DIR):
@@ -92,10 +94,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             sys.exit(f'{directory.relative_to(ROOT)} has local edits, so its data is not that of the commit it names. Undo them first.')
     different = 0
     with tempfile.TemporaryDirectory() as tmp:
-        work = Path(tmp)
+        work: Path = Path(tmp)
         for name in generate(work, args.full):
-            made = (work / name).read_bytes()
-            committed = (COMMITTED / name).read_bytes() if (COMMITTED / name).exists() else None
+            made: bytes = (work / name).read_bytes()
+            committed: bytes | None = (COMMITTED / name).read_bytes() if (COMMITTED / name).exists() else None
             if made == committed:
                 print(f'identical  {name}')
                 continue

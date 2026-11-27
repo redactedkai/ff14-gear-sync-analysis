@@ -10,10 +10,10 @@ import shutil
 import subprocess
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
-CLONE = ROOT / 'data' / 'ffxiv-gearing'
-REPO = 'https://github.com/Asvel/ffxiv-gearing.git'
-COMMIT = '8d75ef89c317401727066a28025fb4d860a92f20'  # 2026-10-13, "Update game data to 7.57."
+ROOT: Path = Path(__file__).resolve().parents[3]
+CLONE: Path = ROOT / 'data' / 'ffxiv-gearing'
+REPO: str = 'https://github.com/Asvel/ffxiv-gearing.git'
+COMMIT: str = '8d75ef89c317401727066a28025fb4d860a92f20'  # 2026-10-13, "Update game data to 7.57."
 
 
 def run(*cmd: str) -> None:
@@ -21,7 +21,7 @@ def run(*cmd: str) -> None:
 
 
 def main() -> None:
-    npm = shutil.which('npm')
+    npm: str | None = shutil.which('npm')
     if not npm:
         raise SystemExit('npm not found')
     if not (CLONE / '.git').exists():

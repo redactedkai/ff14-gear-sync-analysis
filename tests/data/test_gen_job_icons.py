@@ -19,6 +19,7 @@ import fetch
 import gen_job_icons
 from common import (
     JOBS,
+    Json,
     read_export,
     run_quiet,
 )
@@ -28,7 +29,7 @@ from item_format import SchemaError
 def fake_png(width: int = 64, height: int = 64, tag: int = 0, whole: bool = True) -> bytes:
     """The bytes of a PNG: signature, an IHDR chunk with the given size, one byte `tag` (so each icon differs) and the end
     chunk (enough for gen_job_icons' checks). whole=False cuts the end chunk off, as a download that stopped early does."""
-    ihdr = (13).to_bytes(4, 'big') + b'IHDR' + width.to_bytes(4, 'big') + height.to_bytes(4, 'big') + bytes([8, 6, 0, 0, 0])
+    ihdr: bytes = (13).to_bytes(4, 'big') + b'IHDR' + width.to_bytes(4, 'big') + height.to_bytes(4, 'big') + bytes([8, 6, 0, 0, 0])
     return gen_job_icons.PNG_SIGNATURE + ihdr + bytes([tag]) + (gen_job_icons.PNG_END if whole else b'')
 
 
@@ -60,7 +61,7 @@ class GenJobIconsTest(unittest.TestCase):
 
     def test_every_job_embedded_as_its_own_png(self) -> None:
         run_quiet(gen_job_icons.main, self.icons, self.out)
-        icons = read_export(self.out, 'JOB_ICONS')
+        icons: bool | dict[str, Json] | float | int | list[Json] | str | None = read_export(self.out, 'JOB_ICONS')
         assert isinstance(icons, dict)
         self.assertEqual(list(icons), JOBS)
         for job, url in icons.items():
@@ -73,7 +74,7 @@ class GenJobIconsTest(unittest.TestCase):
         """The header records the fetch date (fetch.py's record, else the newest file date) and each PNG's sha256."""
         (self.icons / gen_job_icons.FETCH_RECORD).write_text('2026-10-12\n', encoding='utf-8')
         run_quiet(gen_job_icons.main, self.icons, self.out)
-        text = self.out.read_text(encoding='utf-8')
+        text: str = self.out.read_text(encoding='utf-8')
         self.assertIn('Fetched 2026-10-12 (fetch.py)', text)
         sage = __import__('hashlib').sha256((self.icons / 'SGE.png').read_bytes()).hexdigest()
         self.assertIn(f'   SGE {sage}\n', text)
@@ -104,13 +105,13 @@ class GenJobIconsTest(unittest.TestCase):
 
     def test_icon_number_is_62100_plus_class_job_row(self) -> None:
         # ClassJob rows from the real sheet: Paladin is row 19, Sage 40 (icons 062119 and 062140)
-        rows = {'PLD': 19, 'WAR': 21, 'SGE': 40}
+        rows: dict[str, int] = {'PLD': 19, 'WAR': 21, 'SGE': 40}
         with (self.tmp / 'ClassJob.csv').open('w', encoding='utf-8', newline='') as f:
             w = csv.writer(f)
             w.writerow(['#', 'Name', 'Abbreviation'])
             for k, job in enumerate(JOBS):
                 w.writerow([rows.get(job, 100 + k), job.lower(), job])
-        numbers = fetch.job_icon_numbers(self.tmp)
+        numbers: dict[str, int] = fetch.job_icon_numbers(self.tmp)
         self.assertEqual([numbers['PLD'], numbers['WAR'], numbers['SGE']], [62119, 62121, 62140])
         self.assertEqual(fetch.icon_url(62119), 'https://v2.xivapi.com/api/asset?path=ui/icon/062000/062119_hr1.tex&format=png')
 
@@ -125,7 +126,7 @@ class IconDownloadTest(unittest.TestCase):
 
     def download(self, body: bytes) -> None:
         """Run download_icon against a fake server that answers with `body`."""
-        response = FakeResponse(body)
+        response: FakeResponse = FakeResponse(body)
         with mock.patch.object(fetch.urllib.request, 'urlopen', return_value=response):
             fetch.download_icon('https://example.invalid/icon.png', self.dest)
 

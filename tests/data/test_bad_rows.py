@@ -16,6 +16,7 @@ import shutil
 import tempfile
 import unittest
 from collections.abc import Callable, Iterable
+from io import StringIO
 from pathlib import Path
 from unittest import mock
 
@@ -27,7 +28,8 @@ import item_format
 import provenance
 import summary
 from common import FIXTURES, edit_csv, run_quiet
-from item_format import ItemCell, ItemFormat, Piece, Row, SchemaError, load_format, row_fields
+from item_format import BaseParamRef, ItemCell, ItemFormat, Piece, Row, SchemaError, StatEntry, load_format, row_fields
+from provenance import Source
 
 
 class BadRowTest(unittest.TestCase):
@@ -51,7 +53,7 @@ class BadRowTest(unittest.TestCase):
         or the Strength row)."""
 
         def edit(rows: list[list[str]]) -> None:
-            header = rows[0]
+            header: list[str] = rows[0]
             for row in rows[1:]:
                 if row[header.index('Value[0]')] != '0' and row[header.index('Item[0]')] != '0':
                     change(row, header)
@@ -79,23 +81,23 @@ class BadRowTest(unittest.TestCase):
         self.assert_stops(self.generate_items, 'Materia.csv', 'decrease')
 
     def test_a_missing_overmeld_grade_row_stops(self) -> None:
-        fmt = load_format()
-        grade_csv = self.dir / 'MateriaGrade.csv'
+        fmt: ItemFormat = load_format()
+        grade_csv: Path = self.dir / 'MateriaGrade.csv'
         edit_csv(grade_csv, lambda rows: rows.remove(next(r for r in rows if r[0] == '5')))
         self.assert_stops(lambda: gen_items.overmeld_rates(grade_csv, fmt), 'MateriaGrade.csv', 'grade row(s) 5')
 
     # item_format
     def test_a_stat_with_no_factor_row_stops(self) -> None:
-        fmt = load_format()
-        stat = fmt['stats'][0]
+        fmt: ItemFormat = load_format()
+        stat: StatEntry = fmt['stats'][0]
         edit_csv(self.dir / 'BaseParam.csv', lambda rows: rows.remove(next(r for r in rows if r[0] == str(stat['baseParam']))))
         self.assert_stops(
             lambda: item_format.stat_factors(self.dir / 'BaseParam.csv', fmt), 'BaseParam.csv stat factors', f'no row {stat["baseParam"]}'
         )
 
     def test_a_slot_share_entry_with_no_row_stops(self) -> None:
-        fmt = load_format()
-        entries = [{'key': 'ghost', 'baseParam': 99999}]
+        fmt: ItemFormat = load_format()
+        entries: list[BaseParamRef] = [{'key': 'ghost', 'baseParam': 99999}]
         self.assert_stops(lambda: item_format.slot_shares(self.dir / 'BaseParam.csv', fmt, entries), 'slot shares', 'no row 99999 (ghost)')
 
     def test_slot_codes_with_a_gap_stop(self) -> None:
@@ -104,7 +106,7 @@ class BadRowTest(unittest.TestCase):
         self.assert_stops(lambda: item_format.slot_shares(self.dir / 'BaseParam.csv', fmt, []), 'slot codes are not 0..')
 
     def test_a_field_name_listed_twice_stops(self) -> None:
-        fmt = load_format()
+        fmt: ItemFormat = load_format()
         fmt['itemRow']['fields'].append(fmt['itemRow']['fields'][0])
         self.assert_stops(lambda: row_fields(fmt), 'a name is listed twice')
 
@@ -128,9 +130,11 @@ class BadRowTest(unittest.TestCase):
         return gen_items.select(self.dir).kept
 
     def test_a_savage_piece_with_no_dye_slot_is_a_problem(self) -> None:
-        kept = self.kept_pieces()
-        body = next((r, p) for r, p in kept if p['slotCode'] not in (0, 1, 2) and r['DyeCount'] in ('', '0') and p['slotCode'] < 8)
-        problems = gear_categories.check([body], {body[0]['#']: 'savage'})
+        kept: list[tuple[dict[str, str], Piece]] = self.kept_pieces()
+        body: tuple[dict[str, str], Piece] = next(
+            (r, p) for r, p in kept if p['slotCode'] not in (0, 1, 2) and r['DyeCount'] in ('', '0') and p['slotCode'] < 8
+        )
+        problems: list[str] = gear_categories.check([body], {body[0]['#']: 'savage'})
         self.assertEqual(len(problems), 1)
         self.assertIn('categorized savage but has no dye slot', problems[0])
 
@@ -138,13 +142,13 @@ class BadRowTest(unittest.TestCase):
         row, piece = self.kept_pieces()[0]
         piece = copy.copy(piece)
         piece['flags'] = gear_categories.FLAGS['ultimate']
-        problems = gear_categories.check([(row, piece)], {row['#']: 'dungeon'})
+        problems: list[str] = gear_categories.check([(row, piece)], {row['#']: 'dungeon'})
         self.assertEqual(len(problems), 1)
         self.assertIn('bought with an ultimate totem but categorized dungeon', problems[0])
 
     def test_a_recipe_result_in_another_category_is_a_problem_and_stops_main(self) -> None:
-        kept = self.kept_pieces()
-        row = next(r for r, _ in kept if r['Name'] == 'Test Tank Helm')  # a dungeon piece
+        kept: list[tuple[dict[str, str], Piece]] = self.kept_pieces()
+        row: dict[str, str] = next(r for r, _ in kept if r['Name'] == 'Test Tank Helm')  # a dungeon piece
         with (self.dir / 'Recipe.csv').open(encoding='utf-8', newline='') as f:
             header = f.readline().rstrip('\n').split(',')
         recipe = ['0'] * len(header)
@@ -159,7 +163,7 @@ class BadRowTest(unittest.TestCase):
 
     # gen_gear_groups
     def test_item_data_of_another_format_version_stops_the_gear_groups(self) -> None:
-        items = self.dir / 'items.json'
+        items: Path = self.dir / 'items.json'
         items.write_text(json.dumps({'formatVersion': load_format()['formatVersion'] + 1, 'source': None, 'items': []}), encoding='utf-8')
         self.assert_stops(
             lambda: gen_gear_groups.main(str(items), str(self.dir / 'groups.json')), 'format version', 'run gen_items.py first'
@@ -170,7 +174,7 @@ class BadRowTest(unittest.TestCase):
 class SummaryMainTest(unittest.TestCase):
     """summary.main() on small files: the items, meals and report it reads, the summary and changelog it writes."""
 
-    SOURCE = provenance.make('d9582a624eaec69d45649366dee801c2f3a6e9b3', '2026-09-30T03:03:49-05:00')
+    SOURCE: Source = provenance.make('d9582a624eaec69d45649366dee801c2f3a6e9b3', '2026-09-30T03:03:49-05:00')
 
     def setUp(self) -> None:
         self.tmp: tempfile.TemporaryDirectory[str] = tempfile.TemporaryDirectory()
@@ -195,7 +199,7 @@ class SummaryMainTest(unittest.TestCase):
         return row
 
     def write_inputs(self, item_levels: Iterable[int], meals: int) -> None:
-        base = {'source': self.SOURCE, 'formatVersion': self.fmt['formatVersion']}
+        base: dict[str, Source | int] = {'source': self.SOURCE, 'formatVersion': self.fmt['formatVersion']}
         self.items.write_text(json.dumps({**base, 'items': [self.item_row(i) for i in item_levels]}), encoding='utf-8')
         self.food.write_text(json.dumps({**base, 'foods': [['m', 1, [], None]] * meals}), encoding='utf-8')
         report: summary.ItemReport = {
@@ -209,7 +213,7 @@ class SummaryMainTest(unittest.TestCase):
         self.report.write_text(json.dumps(report), encoding='utf-8')
 
     def run_main(self) -> str:
-        output = io.StringIO()
+        output: StringIO = io.StringIO()
         with (
             mock.patch.object(summary, 'ITEMS', self.items),
             mock.patch.object(summary, 'FOOD', self.food),
@@ -220,8 +224,8 @@ class SummaryMainTest(unittest.TestCase):
         return output.getvalue()
 
     def test_first_run_writes_the_summary_and_one_changelog_line(self) -> None:
-        printed = self.run_main()
-        data = self.summary_path.read_bytes()
+        printed: str = self.run_main()
+        data: bytes = self.summary_path.read_bytes()
         self.assertNotIn(b'\r', data)
         self.assertTrue(data.endswith(b'\n'))
         doc = json.loads(data)
@@ -231,14 +235,14 @@ class SummaryMainTest(unittest.TestCase):
         self.assertEqual((counts['rows'], counts['maxIlvl'], counts['meals'], counts['itemSheetRows']), (2, 100, 2, 10))
         self.assertEqual(counts['bySlot'], {'3': 2})
         self.assertIn('Added to data-changelog.md', printed)
-        lines = self.changelog_path.read_text(encoding='utf-8').splitlines()
+        lines: list[str] = self.changelog_path.read_text(encoding='utf-8').splitlines()
         self.assertEqual(lines[-1], '- 2026-09-30, `d9582a6`: 2 rows, 2 meals')
         self.assertEqual(len(lines), 4)
 
     def test_a_second_run_with_moved_counts_warns_and_adds_no_second_changelog_line(self) -> None:
         self.run_main()
         self.write_inputs(item_levels=[100] * 40, meals=2)  # rows 2 -> 40: far past the drift limit
-        printed = self.run_main()
+        printed: str = self.run_main()
         self.assertIn('Warning: ', printed)
         self.assertIn('rows 2 -> 40', printed)
         self.assertNotIn('Added to', printed)
@@ -249,7 +253,7 @@ class SummaryMainTest(unittest.TestCase):
         self.assertIn('No count moved by more than', self.run_main())
 
     def test_no_changelog_flag_leaves_the_changelog_alone(self) -> None:
-        before = self.changelog_path.read_bytes()
+        before: bytes = self.changelog_path.read_bytes()
         with (
             mock.patch.object(summary, 'ITEMS', self.items),
             mock.patch.object(summary, 'FOOD', self.food),

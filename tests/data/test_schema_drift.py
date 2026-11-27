@@ -13,6 +13,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from subprocess import CompletedProcess
 from types import ModuleType
 from unittest import mock
 
@@ -108,7 +109,20 @@ class SchemaDriftTest(unittest.TestCase):
         self.assert_fails(gen_items, 'ultimate totem', 'Oracle Totem', 'ULTIMATE_TOTEMS')
 
     def test_missing_source_columns(self) -> None:
-        cols = (
+        cols: tuple[
+            tuple[str, str],
+            tuple[str, str],
+            tuple[str, str],
+            tuple[str, str],
+            tuple[str, str],
+            tuple[str, str],
+            tuple[str, str],
+            tuple[str, str],
+            tuple[str, str],
+            tuple[str, str],
+            tuple[str, str],
+            tuple[str, str],
+        ] = (
             ('Recipe.csv', 'ItemResult'),
             ('SpecialShop.csv', 'UseCurrencyType'),
             ('TomestonesItem.csv', 'Item'),
@@ -417,8 +431,8 @@ class SchemaDriftTest(unittest.TestCase):
 
     def test_command_line_exits_nonzero(self) -> None:
         rename_column(self.dir / 'ClassJobCategory.csv', 'SGE', 'SAGE')
-        script = ROOT / 'scripts' / 'data' / 'gen_items.py'
-        p = subprocess.run(
+        script: Path = ROOT / 'scripts' / 'data' / 'gen_items.py'
+        p: CompletedProcess[str] = subprocess.run(
             [sys.executable, str(script), str(self.dir), str(self.dir / 'out.js')], capture_output=True, text=True, check=False
         )
         self.assertEqual(p.returncode, 1)

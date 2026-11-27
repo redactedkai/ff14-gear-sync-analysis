@@ -19,6 +19,7 @@ filed under a wrong category.
 """
 
 import argparse
+from argparse import ArgumentParser
 from collections import Counter
 from pathlib import Path
 
@@ -37,7 +38,7 @@ from item_format import (
 )
 
 # SubcategorySort % 1000 -> category, for gear. Verified codes only (docs/engineering/subcategory-sort-codes.md).
-CATEGORY_BY_CODE = {
+CATEGORY_BY_CODE: dict[int, str] = {
     10: 'relic',  # weapons; non-weapons are field_op (see module docstring)
     11: 'relic',
     12: 'relic',
@@ -82,26 +83,26 @@ CATEGORY_BY_CODE = {
 # The few pieces whose code says the wrong thing, checked on the Lodestone and the Console Games Wiki. Keyed by item id,
 # with the expected name so a patch that reuses an id stops the run (as for the ultimate totems).
 # Gear bought with this currency item -> category:
-CURRENCY_OVERRIDES = {
+CURRENCY_OVERRIDES: dict[int, tuple[str, str]] = {
     # code 60 (trial), but bought from Slimthix (Idyllshire) with Heat Shielding from the quest "Unidentified Flying
     # Object", part of the Shadow of Mhach alliance raid series: the 21 Proto Ultima pieces
     17521: ('Proto Ultima Heat Shielding', 'alliance_raid'),
 }
 # Single pieces -> category:
-ITEM_OVERRIDES = {
+ITEM_OVERRIDES: dict[int, tuple[str, str]] = {
     44410: ("Neophyte's Ring", 'quest'),  # code 370 (Occult Crescent), but the Hall of the Novice final reward
     2634: ('Helm of Light', 'promotional'),  # code 910, but the 2.0 Collector's Edition bonus
     2637: ('Onion Helm', 'legacy'),  # code 910, but the 1.0 Collector's Edition bonus, retired
     2752: ('Peregrine Helm', 'venture'),  # code 990 (legacy), but a Quick Exploration venture reward today
 }
-CATEGORIES = sorted(set(CATEGORY_BY_CODE.values()) | {'savage', 'ultimate', 'field_op', 'aetherial'})
+CATEGORIES: list[str] = sorted(set(CATEGORY_BY_CODE.values()) | {'savage', 'ultimate', 'field_op', 'aetherial'})
 # Gear left out of the database (checked on the Console Games Wiki, docs/engineering/subcategory-sort-codes.md):
 # - code 250, whose secondary attributes are random, so the stats in the game files are not what a piece has: the
 #   Heavensward Diadem gear (equip level 60, also retired) and A Realm Reborn's Aetherial gear (equip level 50 or below);
 # - code 990, gear that can no longer be obtained: 1.0 leftovers and retired achievement and event rewards.
-LEFT_OUT = frozenset({'diadem', 'aetherial', 'legacy'})
-AETHERIAL_MAX_EQUIP = 50  # code 250 at or below this equip level is Aetherial gear, above it Diadem gear
-CODE_DIVISOR = 1000
+LEFT_OUT: frozenset[str] = frozenset({'diadem', 'aetherial', 'legacy'})
+AETHERIAL_MAX_EQUIP: int = 50  # code 250 at or below this equip level is Aetherial gear, above it Diadem gear
+CODE_DIVISOR: int = 1000
 # a piece's SubcategorySort below 1000 has no job or role prefix; the code is still the last three digits
 
 
@@ -112,20 +113,20 @@ def code_of(item: Row) -> int:
 def savage_items(csv_dir: Path | str, items: list[Row], gear: set[str]) -> tuple[set[str], set[str]]:
     """Ids of Savage gear: dyeable code-20 gear, plus everything bought with a currency that a shop selling such a
     piece also takes. Returns (ids, currencies)."""
-    by_id = {r['#']: r for r in items}
-    seed = {i for i in gear if code_of(by_id[i]) == 20 and by_id[i]['DyeCount'] not in ('', '0')}
+    by_id: dict[str, dict[str, str]] = {r['#']: r for r in items}
+    seed: set[str] = {i for i in gear if code_of(by_id[i]) == 20 and by_id[i]['DyeCount'] not in ('', '0')}
     listings: list[tuple[list[str], list[str]]] = []  # (given, costs) as Item.csv ids (text, as in `gear`)
     costs_of_shop: dict[str, set[str]] = {}  # by shop row id
     shops_selling_seed: set[str] = set()
     for shop, _k, given, costs in shop_listings(read_csv(Path(csv_dir) / 'SpecialShop.csv', ['#', 'UseCurrencyType'])):
-        given_ids = [str(g) for g in given]
-        cost_ids = [str(c) for c in costs if c >= CODE_LIMIT]  # below CODE_LIMIT: currency codes
+        given_ids: list[str] = [str(g) for g in given]
+        cost_ids: list[str] = [str(c) for c in costs if c >= CODE_LIMIT]  # below CODE_LIMIT: currency codes
         listings.append((given_ids, cost_ids))
         costs_of_shop.setdefault(shop['#'], set()).update(c for c in cost_ids if c not in gear)
         if any(g in seed for g in given_ids):
             shops_selling_seed.add(shop['#'])
-    currencies = set().union(*(costs_of_shop[s] for s in shops_selling_seed))
-    savage = set(seed)
+    currencies: set[str] = set().union(*(costs_of_shop[s] for s in shops_selling_seed))
+    savage: set[str] = set(seed)
     for given, costs in listings:
         if any(c in currencies for c in costs):
             savage.update(g for g in given if g in gear)
@@ -135,12 +136,12 @@ def savage_items(csv_dir: Path | str, items: list[Row], gear: set[str]) -> tuple
 def override_items(csv_dir: Path | str, items: list[Row]) -> dict[str, str]:
     """{item id: category} from ITEM_OVERRIDES and CURRENCY_OVERRIDES. Raises SchemaError if an id no longer has its
     expected name."""
-    names = {int(r['#']): r['Name'] for r in items}
-    listed = {i: name for table in (ITEM_OVERRIDES, CURRENCY_OVERRIDES) for i, (name, _) in table.items()}
-    where = 'ITEM_OVERRIDES or CURRENCY_OVERRIDES (scripts/data/gear_categories.py)'
+    names: dict[int, str] = {int(r['#']): r['Name'] for r in items}
+    listed: dict[int, str] = {i: name for table in (ITEM_OVERRIDES, CURRENCY_OVERRIDES) for i, (name, _) in table.items()}
+    where: str = 'ITEM_OVERRIDES or CURRENCY_OVERRIDES (scripts/data/gear_categories.py)'
     check_ids(names, listed, 'Item.csv', 'category override', where)
-    out = {str(i): cat for i, (_, cat) in ITEM_OVERRIDES.items()}
-    currencies = {i: cat for i, (_, cat) in CURRENCY_OVERRIDES.items()}
+    out: dict[str, str] = {str(i): cat for i, (_, cat) in ITEM_OVERRIDES.items()}
+    currencies: dict[int, str] = {i: cat for i, (_, cat) in CURRENCY_OVERRIDES.items()}
     for _shop, _k, given, costs in shop_listings(read_csv(Path(csv_dir) / 'SpecialShop.csv', ['UseCurrencyType'])):
         cat = next((currencies[c] for c in costs if c in currencies), None)
         if cat:
@@ -155,14 +156,14 @@ def categorize(
     and shields. items: the Item.csv rows (read_item_sheet), read here when None. Raises SchemaError on a code with
     no known meaning."""
     items = read_item_sheet(csv_dir, items)
-    gear = {r['#'] for r in items if r['EquipSlotCategory'] not in ('', '0')}
+    gear: set[str] = {r['#'] for r in items if r['EquipSlotCategory'] not in ('', '0')}
     savage, _ = savage_items(csv_dir, items, gear)
-    overrides = override_items(csv_dir, items)
+    overrides: dict[str, str] = override_items(csv_dir, items)
     unknown = Counter()
     out = {}
     for r, piece in kept:
         code = code_of(r)
-        cat = CATEGORY_BY_CODE.get(code)
+        cat: str | None = CATEGORY_BY_CODE.get(code)
         if cat is None:
             unknown[code] += 1
             continue
@@ -176,7 +177,7 @@ def categorize(
             cat = 'aetherial'
         out[r['#']] = overrides.get(r['#'], cat)
     if unknown:
-        listed = ', '.join(f'{c} ({n} pieces)' for c, n in sorted(unknown.items()))
+        listed: str = ', '.join(f'{c} ({n} pieces)' for c, n in sorted(unknown.items()))
         raise SchemaError(
             f'Item.csv: SubcategorySort code(s) with no known category: {listed}. See docs/engineering/subcategory-sort-codes.md.'
         )
@@ -187,8 +188,8 @@ def check(kept: list[tuple[Row, Piece]], cats: dict[str, str]) -> list[str]:
     """Cross-checks between the categories and the shop/recipe flags. Returns a list of problems (empty when fine).
     A Savage armor piece or weapon without a dye slot means a shop that sells Savage gear also took a currency used for
     other gear (for example a Normal-raid token), which the shop-level currency rule would wrongly treat as Savage."""
-    problems = []
-    accessory_slots = slot_codes(load_format(), ACCESSORY_TYPES)  # no dye slots on any of them
+    problems: list[str] = []
+    accessory_slots: set[int] = slot_codes(load_format(), ACCESSORY_TYPES)  # no dye slots on any of them
     for r, piece in kept:
         cat, src = cats[r['#']], piece['flags']
         if cat == 'savage' and piece['slotCode'] not in accessory_slots and r['DyeCount'] in ('', '0'):
@@ -203,14 +204,14 @@ def check(kept: list[tuple[Row, Piece]], cats: dict[str, str]) -> list[str]:
 def main(csv_dir: Path | str) -> None:
     import gen_items  # here, so importing this module stays cheap
 
-    kept = gen_items.select(csv_dir).kept
-    cats = categorize(csv_dir, kept, slot_codes(load_format(), WEAPON_TYPES))
-    problems = check(kept, cats)
-    counts = Counter(cats.values())
+    kept: list[tuple[dict[str, str], Piece]] = gen_items.select(csv_dir).kept
+    cats: dict[str, str] = categorize(csv_dir, kept, slot_codes(load_format(), WEAPON_TYPES))
+    problems: list[str] = check(kept, cats)
+    counts: Counter[str] = Counter(cats.values())
     print(f'{len(cats)} pieces')
     for cat in CATEGORIES:
         print(f'  {cat:15s} {counts.get(cat, 0):6,d}')
-    totems = ', '.join(ULTIMATE_TOTEMS.values())
+    totems: str = ', '.join(ULTIMATE_TOTEMS.values())
     print(f'(ultimate = bought with: {totems})')
     if problems:
         raise SchemaError(f'{len(problems)} cross-check problem(s): ' + '; '.join(problems[:10]))
@@ -219,6 +220,6 @@ def main(csv_dir: Path | str) -> None:
 if __name__ == '__main__':
     from item_format import run_main
 
-    ap = argparse.ArgumentParser()
+    ap: ArgumentParser = argparse.ArgumentParser()
     ap.add_argument('csv_dir')
     run_main(main, ap.parse_args().csv_dir)

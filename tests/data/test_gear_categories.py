@@ -59,14 +59,14 @@ class GearCategoriesTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def categories(self) -> tuple[dict[str, str], list[tuple[Row, Piece]], dict[str, str]]:
-        kept = gen_items.select(self.dir).kept
-        cats = gear_categories.categorize(self.dir, kept, self.WEAPON_SLOTS)
-        names = {r['#']: r['Name'] for r, _ in kept}
+        kept: list[tuple[dict[str, str], Piece]] = gen_items.select(self.dir).kept
+        cats: dict[str, str] = gear_categories.categorize(self.dir, kept, self.WEAPON_SLOTS)
+        names: dict[str, str] = {r['#']: r['Name'] for r, _ in kept}
         return {names[i]: c for i, c in cats.items()}, kept, cats
 
     def test_rules(self) -> None:
         cats, kept, ids = self.categories()
-        expect = {
+        expect: dict[str, str] = {
             'Test Greataxe': 'relic',
             'Test Gloves': 'field_op',
             'Test Sword': 'ultimate',
@@ -86,7 +86,7 @@ class GearCategoriesTest(unittest.TestCase):
         """{name: routes as box keys} from gear_activities.py on this test's copy of the fixtures."""
         _cats, kept, ids = self.categories()
         kept = [(r, row) for r, row in kept if ids[r['#']] not in gear_categories.LEFT_OUT]
-        keys = [a['key'] for a in load_format()['activities']]
+        keys: list[str] = [a['key'] for a in load_format()['activities']]
         out, _ = gear_activities.routes(self.dir, kept, ids)
         return {r['Name']: sorted('+'.join(k for i, k in enumerate(keys) if m >> i & 1) for m in out[r['#']]) for r, _ in kept}
 
@@ -98,12 +98,12 @@ class GearCategoriesTest(unittest.TestCase):
         _, inferred = gear_activities.routes(self.dir, kept, ids)
         self.assertEqual(inferred['currencies']['Savage'], 1)
         self.assertEqual(inferred['pieces'], {'Dungeon': 2})
-        report = gear_activities.inferred_report(inferred)
+        report: str = gear_activities.inferred_report(inferred)
         self.assertTrue(report.startswith('Routes inferred: 2 pieces with no way in the game files (Dungeon 2); 4 currencies'), report)
 
     def test_savage_splits_at_the_level_cap(self) -> None:
         # Savage at the highest equip level of the kept gear (the level cap) is Savage (Current), below it Savage (Legacy)
-        routes = self.routes()
+        routes: dict[str, list[str]] = self.routes()
         self.assertIn('savage_current', routes['Test Earring'])
         self.assertIn('savage_current', routes['Test Hood of Healing'])
 
@@ -120,7 +120,7 @@ class GearCategoriesTest(unittest.TestCase):
         # code 250 is Diadem gear at equip level 60 and Aetherial gear at 50 or below (both random secondary
         # attributes); code 990 is legacy gear. All three categories are dropped from the database.
         def fn(rows: list[list[str]]) -> None:
-            h = rows[0]
+            h: list[str] = rows[0]
             sort, lv = h.index('SubcategorySort'), h.index('LevelEquip')
             for gid, code, level in (('1006', '8250', '60'), ('1007', '8250', '50'), ('1008', '8990', '50')):
                 r = next(r for r in rows if r[0] == gid)

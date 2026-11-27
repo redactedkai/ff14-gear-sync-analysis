@@ -12,7 +12,7 @@ import unittest
 from common import ROOT
 
 # What the Ruff section of pyproject.toml holds today (the lint rule families are described in its comment).
-RULE_FAMILIES = {
+RULE_FAMILIES: set[str] = {
     'F',
     'E',
     'W',
@@ -39,7 +39,7 @@ RULE_FAMILIES = {
     'PLW1514',
     'ANN',
 }
-PINNED_TOOLS = ['ruff', 'pyrefly', 'hypothesis']
+PINNED_TOOLS: list[str] = ['ruff', 'pyrefly', 'hypothesis']
 
 
 def version_tuple(text: str) -> tuple[int, ...]:
@@ -50,7 +50,7 @@ class ToolSettingsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.config = tomllib.loads((ROOT / 'pyproject.toml').read_text(encoding='utf-8'))
-        workflow = (ROOT / '.github' / 'workflows' / 'pages.yml').read_text(encoding='utf-8')
+        workflow: str = (ROOT / '.github' / 'workflows' / 'pages.yml').read_text(encoding='utf-8')
         matrix_lines = re.findall(r'^\s*python-version:\s*\[([^\]]*)\]\s*$', workflow, re.MULTILINE)
         assert len(matrix_lines) == 1, 'the workflow has one python-version matrix line'
         cls.matrix = sorted(re.findall(r'\d+\.\d+', matrix_lines[0]), key=version_tuple)
@@ -66,22 +66,22 @@ class ToolSettingsTest(unittest.TestCase):
         self.assertEqual(self.config['tool']['ruff']['target-version'], 'py' + self.matrix[0].replace('.', ''))
 
     def test_the_docs_name_the_same_floor(self) -> None:
-        floor = self.matrix[0]
-        claude = (ROOT / 'CLAUDE.md').read_text(encoding='utf-8')
-        readme = (ROOT / 'README.md').read_text(encoding='utf-8')
+        floor: str = self.matrix[0]
+        claude: str = (ROOT / 'CLAUDE.md').read_text(encoding='utf-8')
+        readme: str = (ROOT / 'README.md').read_text(encoding='utf-8')
         self.assertIn(f'Python {floor}+', claude)
         self.assertIn(f'Python {floor} or later', readme)
         self.assertIn(f'on {floor} (the oldest supported)', readme)
 
     def test_each_pinned_tool_appears_once_with_an_exact_pin(self) -> None:
-        lines = [
+        lines: list[str] = [
             line.strip()
             for line in (ROOT / 'requirements-dev.txt').read_text(encoding='utf-8').splitlines()
             if line.strip() and not line.startswith('#')
         ]
         for tool in PINNED_TOOLS:
             with self.subTest(tool=tool):
-                own = [line for line in lines if re.split(r'[=<>!~\[ ]', line, maxsplit=1)[0].lower() == tool]
+                own: list[str] = [line for line in lines if re.split(r'[=<>!~\[ ]', line, maxsplit=1)[0].lower() == tool]
                 self.assertEqual(len(own), 1, f'{tool} must be listed exactly once')
                 self.assertRegex(own[0], rf'^{tool}==\d+(\.\d+)*$')
         self.assertEqual(len(lines), len(PINNED_TOOLS), 'a new tool needs its name in PINNED_TOOLS here')
@@ -102,25 +102,16 @@ class ToolSettingsTest(unittest.TestCase):
         for folder in ('./data', './dist', './node_modules', './docs/scratchpad'):
             self.assertIn(folder, self.config['tool']['ruff']['extend-exclude'])
 
-    def test_pyrefly_uses_the_strict_preset_with_the_implicit_any_checks_on(self) -> None:
+    def test_pyrefly_uses_the_strict_preset_with_every_clean_check_on(self) -> None:
         pyrefly = self.config['tool']['pyrefly']
         self.assertEqual(pyrefly['preset'], 'strict')
-        implicit_any = ['unknown-variable-type', 'unknown-argument-type', 'unknown-attribute-access', 'unannotated-return']
-        self.assertEqual(pyrefly['errors'], dict.fromkeys(implicit_any, True))
+        self.assertTrue(all(pyrefly['errors'].values()), 'the errors table only turns checks on')
+        for kind in ('unknown-variable-type', 'unknown-argument-type', 'unknown-attribute-access', 'unannotated-return', 'implicit-any'):
+            self.assertIs(pyrefly['errors'][kind], True, kind)
 
-    def test_pyrefly_exceptions_are_the_override_decorator_in_tests_and_untyped_json_in_the_validation_scripts(self) -> None:
+    def test_pyrefly_has_one_exception_the_override_decorator_in_tests(self) -> None:
         sub_configs = {sub['matches']: sub['errors'] for sub in self.config['tool']['pyrefly']['sub-config']}
-        self.assertEqual(
-            sub_configs,
-            {
-                'scripts/validate/**': {
-                    'unknown-variable-type': False,
-                    'unknown-argument-type': False,
-                    'unknown-attribute-access': False,
-                },
-                'tests/**': {'missing-override-decorator': False},
-            },
-        )
+        self.assertEqual(sub_configs, {'tests/**': {'missing-override-decorator': False}})
 
     def test_pyrefly_searches_the_script_and_test_folders(self) -> None:
         self.assertEqual(self.config['tool']['pyrefly']['search-path'], ['scripts/data', 'tests/data'])

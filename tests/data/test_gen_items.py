@@ -28,14 +28,14 @@ from common import (
     run_quiet,
     stats,
 )
-from item_format import CategoryEntry, SchemaError, load_format, row_fields
+from item_format import CategoryEntry, ItemFormat, SchemaError, load_format, row_fields
 
 
 class GenItemsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.tmp = tempfile.TemporaryDirectory()
-        out = Path(cls.tmp.name) / 'items.json'
+        out: Path = Path(cls.tmp.name) / 'items.json'
         run_quiet(gen_items.main, str(FIXTURES), str(out))
         cls.text = out.read_text(encoding='utf-8')
         cls.doc = json.loads(cls.text)
@@ -59,7 +59,7 @@ class GenItemsTest(unittest.TestCase):
             self.assertEqual(len(st.split(',')), len(STAT_ORDER))
             self.assertIn(unique, (0, 1))
             self.assertIn(hq, (0, 1))
-            n_boxes = len(load_format()['activities'])
+            n_boxes: int = len(load_format()['activities'])
             self.assertIsInstance(routes, list, r)
             masks: list[int] = routes
             self.assertTrue(all(0 < mask < 1 << (n_boxes + 1) for mask in masks), r)
@@ -88,8 +88,8 @@ class GenItemsTest(unittest.TestCase):
     def test_one_row_per_line(self) -> None:
         """Each item row is a line of its own (so a patch's diff lists the rows that changed), and the text parses to the
         same value as compact JSON."""
-        lines = self.text.splitlines()
-        start = lines.index('"items":[')
+        lines: list[str] = self.text.splitlines()
+        start: int = lines.index('"items":[')
         self.assertEqual([json.loads(line.rstrip(',')) for line in lines[start + 1 : start + 1 + len(self.rows)]], self.rows)
         self.assertEqual(lines[start + 1 + len(self.rows) :], [']', '}'])
         self.assertTrue(self.text.endswith('\n'))
@@ -99,7 +99,7 @@ class GenItemsTest(unittest.TestCase):
         line names each rule that left something out, the LEFT_OUT categories, and the rows kept."""
         kept, _, dropped, dangling = gen_items.select(FIXTURES)
         with (FIXTURES / 'Item.csv').open(encoding='utf-8', newline='') as f:
-            n_items = sum(1 for _ in csv.DictReader(f))
+            n_items: int = sum(1 for _ in csv.DictReader(f))
         self.assertEqual(list(dropped), list(gen_items.DROP_RULES))
         self.assertEqual(len(kept) + sum(dropped.values()), n_items)
         # the fixture's empty names, belt, soul crystal and non-gear rows, item level 14 piece, base-class-only pieces,
@@ -107,7 +107,7 @@ class GenItemsTest(unittest.TestCase):
         self.assertEqual(dropped, {'name': 2, 'slot': 149, 'ilvl': 1, 'job': 4, 'stats': 3, 'crafter_gatherer': 2, 'multi_slot': 1})
         # one piece names an EquipSlotCategory id with no row, one a ClassJobCategory id with no row
         self.assertEqual(dangling, {'EquipSlotCategory': 1, 'ClassJobCategory': 1})
-        report = gen_items.drop_report(n_items, dropped, {'diadem': 2}, 22)
+        report: str = gen_items.drop_report(n_items, dropped, {'diadem': 2}, 22)
         self.assertEqual(
             report,
             f'Item.csv {n_items} rows: no name -2, no slot code (belts, soul crystals, not gear) -149, item level under 1 -1, '
@@ -128,7 +128,7 @@ class GenItemsTest(unittest.TestCase):
 
     def test_meld_fields(self) -> None:
         """meldSlots and overmeld are Item.MateriaSlotCount and IsAdvancedMeldingPermitted, after the routes and kind."""
-        expect = {
+        expect: dict[str, tuple[int, int]] = {
             'Test Sallet HQ': (2, 1),
             'Test Robe': (5, 0),
             'Test Shield': (0, 1),  # no guaranteed slot, flagged anyway
@@ -160,7 +160,7 @@ class GenItemsTest(unittest.TestCase):
 
     def test_stat_factor_kind(self) -> None:
         """The last field is the item's BaseParamModifier as written in Item.csv (the fixture sets a few)."""
-        expect = {
+        expect: dict[str, int] = {
             'Test Hood of Healing': 6,  # Mind gear: Vitality 90
             'Test Caster Hat': 5,  # Intelligence gear: Vitality 90
             'Test Tank Helm': 1,  # Strength gear
@@ -201,8 +201,8 @@ class GenItemsTest(unittest.TestCase):
             'Test Flanchard': ['quests'],  # a Calamity Salvager rebuy: the quest it asks for
             'Test Cloak': ['events'],  # a rebuy gated by a seasonal event quest
         }
-        keys = [a['key'] for a in load_format()['activities']]
-        market = 1 << len(keys)
+        keys: list[str] = [a['key'] for a in load_format()['activities']]
+        market: int = 1 << len(keys)
 
         def as_keys(masks: Iterable[int]) -> list[str]:
             return sorted('+'.join(k for i, k in enumerate(keys) if m >> i & 1) for m in masks if m != market)  # keys in box order
@@ -215,7 +215,7 @@ class GenItemsTest(unittest.TestCase):
         self.assertEqual(self.doc['currentTomes'], ['Heliometry', 'Mathematics'])  # TomestonesItem slots 2 and 3
 
     def test_slot_detection(self) -> None:
-        expect = {
+        expect: dict[str, int] = {
             'Test Greataxe': 0,  # MainHand 1, OffHand -1: two-handed
             'Test Sword': 1,  # MainHand 1, OffHand 0: one-handed
             'Test Shield': 2,
@@ -245,7 +245,7 @@ class GenItemsTest(unittest.TestCase):
         self.assertEqual(self.row('Test Flanchard')[1], 13)
         # Category 20: Body 1, Gloves -1, Legs -1 has no slot code: left out and listed
         self.assertNotIn('Test Overall', self.by_name)
-        multi_slot = gen_items.select(FIXTURES).multi_slot
+        multi_slot: list[str] = gen_items.select(FIXTURES).multi_slot
         self.assertEqual(multi_slot, ['Test Overall (item level 130)'])
 
     def test_stat_mapping(self) -> None:
@@ -279,7 +279,7 @@ class GenItemsTest(unittest.TestCase):
             self.assertNotIn(name, self.by_name)
 
     def test_job_mask_bits(self) -> None:
-        expect = {
+        expect: dict[str, int] = {
             'Test Sword': 1 << 0,  # GLA PLD
             'Test Greataxe': 1 << 1,  # MRD WAR
             'Test Tank Helm': 0b1111,  # PLD WAR DRK GNB
@@ -321,8 +321,8 @@ class GenItemsTest(unittest.TestCase):
 
     def test_category(self) -> None:
         # field 15 is the gear category (gear_categories.py) as an index into item-format.json's category.list
-        keys = [c['key'] for c in load_format()['category']['list']]
-        expect = {'Test Robe': 'raid', 'Test Greataxe': 'relic', 'Test Gloves': 'field_op', 'Test Tank Helm': 'dungeon'}
+        keys: list[str] = [c['key'] for c in load_format()['category']['list']]
+        expect: dict[str, str] = {'Test Robe': 'raid', 'Test Greataxe': 'relic', 'Test Gloves': 'field_op', 'Test Tank Helm': 'dungeon'}
         for name, cat in expect.items():
             with self.subTest(name=name):
                 category_index: int = self.row(name)[15]
@@ -330,7 +330,7 @@ class GenItemsTest(unittest.TestCase):
 
     def test_category_list_must_match(self) -> None:
         # a category with no label, a key gear_categories.py doesn't know, or a key listed twice stops the generator
-        fmt = load_format()
+        fmt: ItemFormat = load_format()
         gen_items.category_index(fmt)
         cases: dict[str, list[CategoryEntry]] = {
             'missing': [c for c in fmt['category']['list'] if c['key'] != 'dungeon'],
@@ -352,7 +352,7 @@ class GenItemsTest(unittest.TestCase):
         self.assertNotIn('', self.by_name)
 
     def test_sort_order(self) -> None:
-        expect = [
+        expect: list[str] = [
             'Test Alpha Helm',
             'Test Zeta Helm',
             'Test Alpha Mail',
@@ -392,16 +392,16 @@ class ItemSortTiesTest(unittest.TestCase):
 
             def add_copy(rows: list[list[str]]) -> None:
                 header = rows[0]
-                at = next(i for i, row in enumerate(rows) if row[0] == '1001')
+                at: int = next(i for i, row in enumerate(rows) if row[0] == '1001')
                 copy = list(rows[at])
                 copy[0] = str(copy_id)
                 copy[header.index('BaseParamValue[0]')] = str(int(copy[header.index('BaseParamValue[0]')]) + 1)
                 rows.insert(at if put_copy_first else at + 1, copy)
 
             edit_csv(Path(tmp) / 'Item.csv', add_copy)
-            out = Path(tmp) / 'items.json'
+            out: Path = Path(tmp) / 'items.json'
             run_quiet(gen_items.main, tmp, str(out))
-            fields = row_fields(load_format())
+            fields: dict[str, int] = row_fields(load_format())
             rows = [r for r in json.loads(out.read_text(encoding='utf-8'))['items'] if r[fields['name']] == 'Test Greataxe']
             return [r[fields['gameId']] for r in rows]
 

@@ -36,19 +36,33 @@ python-version = "3.11"
 preset = "strict"
 
 [tool.pyrefly.errors]
-# The strict preset leaves these implicit-Any checks off: a variable, argument, attribute or return the checker cannot type.
+# The strict preset plus every other check that is clean today: no implicit Any (a variable, argument, attribute, return or
+# type argument the checker cannot type), no unused or unreachable code, no needless comparison, conversion or cast, no
+# implicit import or re-export, no unannotated attribute. Left off: implicit-bool and unused-call-result (about 140 sites each,
+# style rather than typing).
 unknown-variable-type = true
 unknown-argument-type = true
 unknown-attribute-access = true
 unannotated-return = true
-
-[[tool.pyrefly.sub-config]]
-matches = "scripts/validate/**"
-[tool.pyrefly.sub-config.errors]
-# Run by hand against other tools' JSON (the report is read by key, untyped); the checks above are for the pipeline.
-unknown-variable-type = false
-unknown-argument-type = false
-unknown-attribute-access = false
+unannotated-attribute = true
+uninitialized-instance-variable = true
+implicit-any = true
+implicit-any-attribute = true
+implicit-any-empty-container = true
+implicit-any-lambda = true
+implicit-any-parameter = true
+implicit-any-type-argument = true
+implicit-import = true
+implicit-reexport = true
+unnecessary-comparison = true
+unnecessary-type-conversion = true
+unused-ignore = true
+unused-parameter = true
+unreachable = true
+unsafe-overlap = true
+redundant-cast = true
+untyped-namedtuple = true
+unused-coroutine = true
 
 [[tool.pyrefly.sub-config]]
 matches = "tests/**"

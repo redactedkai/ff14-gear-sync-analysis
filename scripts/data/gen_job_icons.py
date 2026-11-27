@@ -17,6 +17,7 @@ import base64
 import hashlib
 import json
 import struct
+from argparse import ArgumentParser, Namespace
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -24,26 +25,26 @@ from pathlib import Path
 import provenance
 from item_format import ROOT, SchemaError, load_format, run_main
 
-SIZE = 64
-PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
-PNG_END = b'\x00\x00\x00\x00IEND\xaeB`\x82'  # the last chunk of every PNG (length 0, type IEND, its CRC)
-FETCH_RECORD = 'fetched.txt'  # in the icon folder: the UTC date fetch.py downloaded the icons (YYYY-MM-DD)
+SIZE: int = 64
+PNG_SIGNATURE: bytes = b'\x89PNG\r\n\x1a\n'
+PNG_END: bytes = b'\x00\x00\x00\x00IEND\xaeB`\x82'  # the last chunk of every PNG (length 0, type IEND, its CRC)
+FETCH_RECORD: str = 'fetched.txt'  # in the icon folder: the UTC date fetch.py downloaded the icons (YYYY-MM-DD)
 
 
 def fetch_date(icon_dir: Path | str, paths: list[Path]) -> tuple[str, str]:
     """(date, how it is known) of the icons in icon_dir: the date in FETCH_RECORD, or, without that file, the newest
     of `paths`' file dates (UTC), which is when the last icon was written."""
-    record = Path(icon_dir) / FETCH_RECORD
+    record: Path = Path(icon_dir) / FETCH_RECORD
     if record.exists():
         return record.read_text(encoding='utf-8').strip(), 'fetch.py'
-    newest = max(path.stat().st_mtime for path in paths)
+    newest: float = max(path.stat().st_mtime for path in paths)
     return datetime.fromtimestamp(newest, UTC).date().isoformat(), 'newest file date'
 
 
 def header(date: str, how: str, hashes: Mapping[str, str]) -> str:
     """The generated file's header comment: the source, the fetch date and how it is known, and {job: sha256 of its
     PNG}, one job per line."""
-    lines = [
+    lines: list[str] = [
         "/* GENERATED from the game's framed job icons (icon 062100 + ClassJob row, via xivapi's asset endpoint; see",
         f'   scripts/data/fetch.py). Do not edit; see docs/engineering/data-pipeline.md. Fetched {date} ({how}).',
         '   sha256 of each PNG:',
@@ -72,12 +73,12 @@ def main(icon_dir: Path | str, out: Path | str) -> None:
     hashes: dict[str, str] = {}
     problems: list[str] = []
     for job in load_format()['jobs']:
-        path = icon_dir / f'{job}.png'
+        path: Path = icon_dir / f'{job}.png'
         if not path.exists():
             problems.append(f'{job}: no {path.name}')
             continue
-        data = path.read_bytes()
-        size = png_size(data)
+        data: bytes = path.read_bytes()
+        size: tuple[int, int] | None = png_size(data)
         if size != (SIZE, SIZE):
             problems.append(f'{job}: {path.name} is ' + (f'{size[0]} x {size[1]}' if size else 'not a PNG') + f', expected {SIZE} x {SIZE}')
             continue
@@ -89,14 +90,14 @@ def main(icon_dir: Path | str, out: Path | str) -> None:
     if problems:
         raise SchemaError('job icons: ' + '; '.join(problems) + '. Run: python scripts/data/fetch.py')
     date, how = fetch_date(icon_dir, [icon_dir / f'{job}.png' for job in icons])
-    declaration = 'export const JOB_ICONS: Readonly<Record<string, string>> = '
-    js = header(date, how, hashes) + declaration + json.dumps(icons, separators=(',', ':')) + ';\n'
+    declaration: str = 'export const JOB_ICONS: Readonly<Record<string, string>> = '
+    js: str = header(date, how, hashes) + declaration + json.dumps(icons, separators=(',', ':')) + ';\n'
     provenance.write_generated(out, js)
 
 
 if __name__ == '__main__':
-    ap = argparse.ArgumentParser()
+    ap: ArgumentParser = argparse.ArgumentParser()
     ap.add_argument('icon_dir', nargs='?', default=str(ROOT / 'data' / 'icons'))
     ap.add_argument('out', nargs='?', default=str(ROOT / 'src' / 'data' / 'job-icons.ts'))
-    args = ap.parse_args()
+    args: Namespace = ap.parse_args()
     run_main(main, args.icon_dir, args.out)

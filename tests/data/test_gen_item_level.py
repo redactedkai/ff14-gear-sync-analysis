@@ -25,7 +25,7 @@ from common import (
 )
 from item_format import SchemaError
 
-ITEM_LEVEL_COLUMNS = {
+ITEM_LEVEL_COLUMNS: dict[str, str] = {
     'str': 'Strength',
     'dex': 'Dexterity',
     'int': 'Intelligence',
@@ -66,19 +66,19 @@ class GenItemLevelTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def generate(self) -> tuple[dict[str, list[int]], list[list[int]]]:
-        out = self.dir / 'item-level.json'
+        out: Path = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
         doc = json.loads(out.read_text(encoding='utf-8'))
         return doc['IL'], doc['PG']
 
     def test_provenance_fields(self) -> None:
-        out = self.dir / 'item-level.json'
+        out: Path = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out), None)
         doc = json.loads(out.read_text(encoding='utf-8'))
         self.assertEqual(list(doc), ['_generated', 'source', 'formatVersion', 'IL', 'PG', 'MP', 'SHARES', 'JOBS', 'CLANS'])
         self.assertIsNone(doc['source'])
         self.assertIn('commit unknown', doc['_generated'])
-        src = {'repo': 'xivapi/ffxiv-datamining', 'commit': 'a' * 40, 'date': '2026-01-01T00:00:00Z'}
+        src: dict[str, str | str] = {'repo': 'xivapi/ffxiv-datamining', 'commit': 'a' * 40, 'date': '2026-01-01T00:00:00Z'}
         run_quiet(gen_item_level.main, str(self.dir), str(out), src)
         doc = json.loads(out.read_text(encoding='utf-8'))
         self.assertEqual(doc['source'], src)
@@ -86,13 +86,13 @@ class GenItemLevelTest(unittest.TestCase):
 
     def test_one_entry_per_line(self) -> None:
         """IL, MP, SHARES and JOBS hold one key per line, PG one level and CLANS one clan per line, so a patch's diff names them."""
-        out = self.dir / 'item-level.json'
+        out: Path = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
-        text = out.read_text(encoding='utf-8')
+        text: str = out.read_text(encoding='utf-8')
         doc = json.loads(text)
-        lines = text.splitlines()
+        lines: list[str] = text.splitlines()
         for key in ('IL', 'MP', 'SHARES', 'JOBS'):
-            start = lines.index(f'"{key}":{{')
+            start: int = lines.index(f'"{key}":{{')
             self.assertEqual(lines[start + 1].split(':', 1)[0], json.dumps(next(iter(doc[key]))), key)
         start = lines.index('"PG":[')
         self.assertEqual(json.loads(lines[start + 1].rstrip(',')), doc['PG'][0])
@@ -102,7 +102,7 @@ class GenItemLevelTest(unittest.TestCase):
 
     def test_stat_factor_table(self) -> None:
         """MP: each stat's BaseParam MeldParam[0..12] row (the fixture holds the real rows), keyed by stat."""
-        out = self.dir / 'item-level.json'
+        out: Path = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
         mp = json.loads(out.read_text(encoding='utf-8'))['MP']
         self.assertEqual(list(mp), [*STAT_ORDER, 'damagePhys', 'damageMag', 'defensePhys', 'defenseMag'])
@@ -116,16 +116,16 @@ class GenItemLevelTest(unittest.TestCase):
 
     def test_damage_defense_slot_shares(self) -> None:
         """SHARES: the real BaseParam slot shares per slot code for weapon damage (weapons only) and defense (armor only)."""
-        out = self.dir / 'item-level.json'
+        out: Path = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
         shares = json.loads(out.read_text(encoding='utf-8'))['SHARES']
-        damage = [1000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        defense = [0, 0, 0, 176, 236, 176, 236, 176, 0, 0, 0, 0, 412, 412, 824]
+        damage: list[int] = [1000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        defense: list[int] = [0, 0, 0, 176, 236, 176, 236, 176, 0, 0, 0, 0, 412, 412, 824]
         self.assertEqual(shares, {'damagePhys': damage, 'damageMag': damage, 'defensePhys': defense, 'defenseMag': defense})
 
     def test_job_modifiers(self) -> None:
         """JOBS: each combat job's attribute modifiers from the real ClassJob rows; base classes left out."""
-        out = self.dir / 'item-level.json'
+        out: Path = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
         jobs = json.loads(out.read_text(encoding='utf-8'))['JOBS']
         self.assertEqual(len(jobs), 23)
@@ -137,7 +137,7 @@ class GenItemLevelTest(unittest.TestCase):
     def test_clans(self) -> None:
         """CLANS: the 16 real Tribe rows in order, each with its race (Race row ceil(Tribe row / 2)) and the five attribute
         offsets; the values are the ones the Wiki's Starting Attributes page lists (22 Strength for a Midlander is a base 20 plus 2)."""
-        out = self.dir / 'item-level.json'
+        out: Path = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
         clans = json.loads(out.read_text(encoding='utf-8'))['CLANS']
         self.assertEqual(len(clans), 16)
@@ -145,7 +145,7 @@ class GenItemLevelTest(unittest.TestCase):
         self.assertEqual(clans[7], {'race': "Miqo'te", 'clan': 'Keeper of the Moon', 'str': -1, 'dex': 2, 'int': 1, 'mind': 3, 'vit': -2})
         self.assertEqual(clans[12], {'race': 'Hrothgar', 'clan': 'Helions', 'str': 3, 'dex': -3, 'int': -3, 'mind': 3, 'vit': 3})
         self.assertEqual(clans[15]['race'], 'Viera')
-        races = ['Hyur', 'Elezen', 'Lalafell', "Miqo'te", 'Roegadyn', 'Au Ra', 'Hrothgar', 'Viera']
+        races: list[str] = ['Hyur', 'Elezen', 'Lalafell', "Miqo'te", 'Roegadyn', 'Au Ra', 'Hrothgar', 'Viera']
         self.assertEqual([c['race'] for c in clans][::2], races)
         # a clan's attributes add to a base of 20 on the Wiki's page: every total is between 17 and 23
         for c in clans:
@@ -153,14 +153,14 @@ class GenItemLevelTest(unittest.TestCase):
                 self.assertTrue(17 <= 20 + c[key] <= 23, (c['clan'], key))
 
     def test_clan_with_a_non_integer_offset_fails(self) -> None:
-        text = (self.dir / 'Tribe.csv').read_text(encoding='utf-8')
+        text: str = (self.dir / 'Tribe.csv').read_text(encoding='utf-8')
         text = text.replace('1,Midlander,Midlander,0,0,2,', '1,Midlander,Midlander,0,0,two,', 1)
         (self.dir / 'Tribe.csv').write_text(text, encoding='utf-8')
         with self.assertRaisesRegex(SchemaError, 'Midlander'):
             self.generate()
 
     def test_missing_clan_row_fails(self) -> None:
-        lines = [row for row in (self.dir / 'Tribe.csv').read_text(encoding='utf-8').splitlines() if not row.startswith('16,')]
+        lines: list[str] = [row for row in (self.dir / 'Tribe.csv').read_text(encoding='utf-8').splitlines() if not row.startswith('16,')]
         (self.dir / 'Tribe.csv').write_text('\n'.join(lines) + '\n', encoding='utf-8')
         with self.assertRaisesRegex(SchemaError, 'Tribe 16'):
             self.generate()
@@ -169,7 +169,7 @@ class GenItemLevelTest(unittest.TestCase):
         il, _ = self.generate()
         self.assertEqual(set(il), set(ITEM_LEVEL_COLUMNS))
         for key, column in ITEM_LEVEL_COLUMNS.items():
-            pos = self.header.index(column)
+            pos: int = self.header.index(column)
             self.assertEqual(il[key], [row * 1000 + pos for row in range(4)], key)
 
     def test_param_grow_levels_1_to_100(self) -> None:
@@ -188,7 +188,7 @@ class GenItemLevelTest(unittest.TestCase):
         with (self.dir / 'ParamGrow.csv').open('a', encoding='utf-8', newline='') as f:
             w = csv.writer(f, lineterminator='\n')
             for lv, speed in ((101, 0), (102, 0), (201, 100)):
-                row = dict.fromkeys(PARAM_GROW_HEADER, '0')
+                row: dict[str, str] = dict.fromkeys(PARAM_GROW_HEADER, '0')
                 row.update({'#': str(lv), 'BaseSpeed': str(speed), 'LevelModifier': str(speed)})
                 w.writerow([row[k] for k in PARAM_GROW_HEADER])
         _, pg = self.generate()

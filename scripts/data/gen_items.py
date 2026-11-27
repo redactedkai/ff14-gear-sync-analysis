@@ -33,6 +33,7 @@ currentTomes, the short names of the two current tomestones (for the "Tomestones
 
 import argparse
 import json
+from argparse import ArgumentParser, Namespace
 from collections import Counter
 from collections.abc import Collection, Mapping, Sequence
 from itertools import chain, pairwise
@@ -47,6 +48,7 @@ from item_format import (
     N_ITEM_PARAMS,
     WEAPON_TYPES,
     ItemFormat,
+    MateriaFormat,
     Piece,
     Row,
     SchemaError,
@@ -60,8 +62,9 @@ from item_format import (
     slot_codes,
     stat_factors,
 )
+from provenance import Source
 
-MIN_ILVL = 1
+MIN_ILVL: int = 1
 
 
 class MateriaTable(TypedDict):
@@ -77,10 +80,10 @@ class MateriaTable(TypedDict):
 def crafter_gatherer_params(base_param_csv: Path, fmt: ItemFormat) -> set[int]:
     """The BaseParam row ids of the crafter and gatherer stats (`crafterGathererParams` in item-format.json). Raises
     SchemaError when a row id is missing or carries another name, so a renumbering after a patch is caught."""
-    names = {r['#']: r['Name'] for r in read_csv(base_param_csv, ['#', 'Name'])}
+    names: dict[str, str] = {r['#']: r['Name'] for r in read_csv(base_param_csv, ['#', 'Name'])}
     bad: list[str] = []
     for param in fmt['crafterGathererParams']:
-        found = names.get(str(param['baseParam']))
+        found: str | None = names.get(str(param['baseParam']))
         if found != param['name']:
             bad.append(f'{param["baseParam"]} ({param["name"]}): found {found or "no row"!r}')
     if bad:
@@ -92,9 +95,9 @@ def materia_rows(rows: list[Row], fmt: ItemFormat, sheet: str) -> tuple[dict[str
     """Step 1 of the materia table: {stat key: its Materia row} for the `statKeys` stats, taking only rows whose first
     materia item is set, and the number of decoy rows (a combat substat's values with no materia item) skipped. Raises
     SchemaError unless exactly one row per stat is left."""
-    materia = fmt['materia']
-    stat_of_param = {str(s['baseParam']): s['key'] for s in fmt['stats'] if s['key'] in materia['statKeys']}
-    first_item = f'{materia["itemColumn"]}[0]'
+    materia: MateriaFormat = fmt['materia']
+    stat_of_param: dict[str, str] = {str(s['baseParam']): s['key'] for s in fmt['stats'] if s['key'] in materia['statKeys']}
+    first_item: str = f'{materia["itemColumn"]}[0]'
     by_stat: dict[str, list[Row]] = {}
     decoys = 0
     for row in rows:
@@ -105,7 +108,7 @@ def materia_rows(rows: list[Row], fmt: ItemFormat, sheet: str) -> tuple[dict[str
             decoys += 1
             continue
         by_stat.setdefault(key, []).append(row)
-    problems = [
+    problems: list[str] = [
         f'{key}: {len(by_stat.get(key, []))} rows with items, expected 1' for key in materia['statKeys'] if len(by_stat.get(key, [])) != 1
     ]
     if problems:
@@ -119,11 +122,11 @@ def grade_values(
     """Step 2 of the materia table, for one stat's Materia row: (values, gates), one per grade. Appends to `problems`
     a value that is not positive, a materia item with no gate (gate_of_item: {Item.csv id: LevelItem}), gates that
     decrease, or anything set in the item and value columns past the last grade."""
-    materia = fmt['materia']
-    n_grades = materia['grades']
-    item_cols = [f'{materia["itemColumn"]}[{g}]' for g in range(n_grades)]
-    value_cols = [f'{materia["valueColumn"]}[{g}]' for g in range(n_grades)]
-    where = f'{key} (row {row["#"]})'
+    materia: MateriaFormat = fmt['materia']
+    n_grades: int = materia['grades']
+    item_cols: list[str] = [f'{materia["itemColumn"]}[{g}]' for g in range(n_grades)]
+    value_cols: list[str] = [f'{materia["valueColumn"]}[{g}]' for g in range(n_grades)]
+    where: str = f'{key} (row {row["#"]})'
 
     def grade_index(col: str) -> int | None:
         """k for a column named Item[k] or Value[k], else None."""
@@ -132,19 +135,19 @@ def grade_values(
             return int(rest[:-1])
         return None
 
-    extra = [col for col, v in row.items() if v not in ('', '0') and (grade_index(col) or 0) >= n_grades]
+    extra: list[str] = [col for col, v in row.items() if v not in ('', '0') and (grade_index(col) or 0) >= n_grades]
     if extra:
         problems.append(f'{where} has more than {n_grades} grades: {", ".join(extra)}')
-    values = [row[col] for col in value_cols]
+    values: list[str] = [row[col] for col in value_cols]
     if not all(v.isdigit() and int(v) > 0 for v in values):
         problems.append(f'{where} values {",".join(values)}, expected {n_grades} positive numbers')
     gates: list[int | None] = []
     for col in item_cols:
-        level = gate_of_item.get(row[col])
+        level: str | None = gate_of_item.get(row[col])
         if level is None or not level.isdigit():
             problems.append(f'{where} {col} = {row[col]}: no materia item with a {materia["gateColumn"]}')
         gates.append(int(level) if level and level.isdigit() else None)
-    known_gates = [g for g in gates if g is not None]
+    known_gates: list[int] = [g for g in gates if g is not None]
     if len(known_gates) == len(gates) and any(b < a for a, b in pairwise(known_gates)):
         problems.append(f'{where} gates {",".join(map(str, gates))} decrease')
     return [int(v) if v.isdigit() else v for v in values], gates
@@ -154,15 +157,15 @@ def high_grades(grade_csv: Path, values: Sequence[int], fmt: ItemFormat) -> list
     """Step 4 of the materia table: the grades (1-based) whose `highColumn` in MateriaGrade is 0 (they cannot go past the
     first overmeld slot). Raises SchemaError when a grade row is missing, or when they are not exactly the grades worth
     more than each grade next to them (`values`; VI: 16, against V 6 and VII 8)."""
-    materia = fmt['materia']
-    n_grades = materia['grades']
-    sheet = Path(grade_csv).name
-    rate = {r['#']: r[materia['highColumn']] for r in read_csv(grade_csv, ['#', materia['highColumn']])}
-    missing = [str(g) for g in range(n_grades) if not (rate.get(str(g)) or '').isdigit()]
+    materia: MateriaFormat = fmt['materia']
+    n_grades: int = materia['grades']
+    sheet: str = Path(grade_csv).name
+    rate: dict[str, str] = {r['#']: r[materia['highColumn']] for r in read_csv(grade_csv, ['#', materia['highColumn']])}
+    missing: list[str] = [str(g) for g in range(n_grades) if not (rate.get(str(g)) or '').isdigit()]
     if missing:
         raise SchemaError(f'{sheet}: no {materia["highColumn"]} for grade row(s) {", ".join(missing)}')
-    high = [g + 1 for g in range(n_grades) if rate[str(g)] == '0']
-    peaks = [g + 1 for g in range(n_grades) if all(values[g] > values[h] for h in (g - 1, g + 1) if 0 <= h < n_grades)]
+    high: list[int] = [g + 1 for g in range(n_grades) if rate[str(g)] == '0']
+    peaks: list[int] = [g + 1 for g in range(n_grades) if all(values[g] > values[h] for h in (g - 1, g + 1) if 0 <= h < n_grades)]
     if high != peaks:
         raise SchemaError(f'{sheet}: grades {high} cannot pass the first overmeld slot, but {peaks} are worth more than their neighbours')
     return high
@@ -173,12 +176,12 @@ def overmeld_rates(grade_csv: Path, fmt: ItemFormat) -> dict[str, list[list[int]
     of one row per grade (I first) of `overmeldSlots` percents, one per overmeld slot (first overmeld slot first). Raises
     SchemaError when a column or grade row is missing, a rate is not a whole number from 0 to 100, a grade's rate rises
     from one slot to the next, or an HQ rate is below the NQ one."""
-    materia = fmt['materia']
+    materia: MateriaFormat = fmt['materia']
     n_grades, n_slots = materia['grades'], materia['overmeldSlots']
-    sheet = Path(grade_csv).name
-    columns = {kind: [f'{name}[{i}]' for i in range(n_slots)] for kind, name in materia['overmeldColumns'].items()}
-    rows = {r['#']: r for r in read_csv(grade_csv, ['#', *chain.from_iterable(columns.values())])}
-    missing = [str(g) for g in range(n_grades) if str(g) not in rows]
+    sheet: str = Path(grade_csv).name
+    columns: dict[str, list[str]] = {kind: [f'{name}[{i}]' for i in range(n_slots)] for kind, name in materia['overmeldColumns'].items()}
+    rows: dict[str, dict[str, str]] = {r['#']: r for r in read_csv(grade_csv, ['#', *chain.from_iterable(columns.values())])}
+    missing: list[str] = [str(g) for g in range(n_grades) if str(g) not in rows]
     if missing:
         raise SchemaError(f'{sheet}: no overmeld rates for grade row(s) {", ".join(missing)}')
     table: dict[str, list[list[int]]] = {}
@@ -186,11 +189,11 @@ def overmeld_rates(grade_csv: Path, fmt: ItemFormat) -> dict[str, list[list[int]
     for kind, cols in columns.items():
         table[kind] = []
         for g in range(n_grades):
-            cells = [rows[str(g)][c] for c in cols]
+            cells: list[str] = [rows[str(g)][c] for c in cols]
             if not all(c.isdigit() and int(c) <= 100 for c in cells):
                 problems.append(f'grade row {g} {kind} rates {",".join(cells)}, expected {n_slots} whole percents')
                 continue
-            rates = [int(c) for c in cells]
+            rates: list[int] = [int(c) for c in cells]
             if rates != sorted(rates, reverse=True):
                 problems.append(f'grade row {g} {kind} rates {",".join(cells)} rise from one slot to the next')
             table[kind].append(rates)
@@ -212,33 +215,35 @@ def materia_table(csv_dir: Path | str, fmt: ItemFormat, items: list[Row] | None 
     Raises SchemaError when a stat has no row or several, the rows disagree, a grade is missing or extra, a gate is
     unknown or lower than the grade before, or the high grades are not the ones worth more than their neighbours.
     items: the Item.csv rows (read_item_sheet), read here when None. Returns (table, number of decoy rows skipped)."""
-    csv_path = Path(csv_dir)
-    materia = fmt['materia']
-    n_grades = materia['grades']
-    sheet = f'{materia["sheet"]}.csv'
-    grade_cols = [f'{materia[c]}[{g}]' for c in ('itemColumn', 'valueColumn') for g in range(n_grades)]
+    csv_path: Path = Path(csv_dir)
+    materia: MateriaFormat = fmt['materia']
+    n_grades: int = materia['grades']
+    sheet: str = f'{materia["sheet"]}.csv'
+    grade_cols: list[str] = [f'{materia[c]}[{g}]' for c in ('itemColumn', 'valueColumn') for g in range(n_grades)]
 
     # 1. one Materia row per combat substat
     row_of, decoys = materia_rows(read_csv(csv_path / sheet, ['#', materia['statColumn'], *grade_cols]), fmt, sheet)
 
     # 2. each row's values and gates, then 3. all rows must agree
-    gate_of_item = {r['#']: r[materia['gateColumn']] for r in read_item_sheet(csv_dir, items)}
+    gate_of_item: dict[str, str] = {r['#']: r[materia['gateColumn']] for r in read_item_sheet(csv_dir, items)}
     problems: list[str] = []
-    tables = {key: grade_values(row_of[key], key, fmt, gate_of_item, problems) for key in materia['statKeys']}
-    first = materia['statKeys'][0]
+    tables: dict[str, tuple[list[int | str], list[int | None]]] = {
+        key: grade_values(row_of[key], key, fmt, gate_of_item, problems) for key in materia['statKeys']
+    }
+    first: str = materia['statKeys'][0]
     problems += [f'{key} values or gates differ from {first}' for key in materia['statKeys'][1:] if tables[key] != tables[first]]
     if problems:
         raise SchemaError(f'{sheet} materia table: ' + '; '.join(problems))
     mixed_values, gates = tables[first]
-    values = [v for v in mixed_values if isinstance(v, int)]
+    values: list[int] = [v for v in mixed_values if isinstance(v, int)]
     if len(values) != len(mixed_values):  # no problem was listed above, so every value is a whole number
         raise SchemaError(f'{sheet} materia table: values {mixed_values} are not all whole numbers')
 
     # 4. the high grades, tied to the values
-    high = high_grades(csv_path / f'{materia["gradeSheet"]}.csv', values, fmt)
+    high: list[int] = high_grades(csv_path / f'{materia["gradeSheet"]}.csv', values, fmt)
 
     # 5. the overmeld success rates, shown only (the search counts every meld as a success)
-    overmeld = overmeld_rates(csv_path / f'{materia["gradeSheet"]}.csv', fmt)
+    overmeld: dict[str, list[list[int]]] = overmeld_rates(csv_path / f'{materia["gradeSheet"]}.csv', fmt)
     return {'values': values, 'gate': gates, 'high': high, 'overmeld': overmeld}, decoys
 
 
@@ -249,7 +254,7 @@ def damage_defense(row: Row, fmt: ItemFormat) -> dict[str, int]:
     a whole number (negative, malformed) raises SchemaError instead of becoming 0."""
     out: dict[str, int] = {}
     for entry in fmt['damageDefense']['entries']:
-        value = row[entry['itemColumn']]
+        value: str = row[entry['itemColumn']]
         if value and not value.isdigit():
             raise SchemaError(
                 f'Item.csv {entry["itemColumn"]} of {row["Name"]} ({row["#"]}) is {value!r}, expected a whole number or nothing'
@@ -264,7 +269,7 @@ def damage_defense(row: Row, fmt: ItemFormat) -> dict[str, int]:
 
 
 # The selection rules of select(), in the order they apply, with the words the drop report uses for each.
-DROP_RULES = {
+DROP_RULES: dict[str, str] = {
     'name': 'no name',
     'slot': 'no slot code (belts, soul crystals, not gear)',
     'ilvl': f'item level under {MIN_ILVL}',
@@ -294,12 +299,12 @@ def slot_code(slot_row: Row | None, fmt: ItemFormat) -> int | None:
     None."""
     if slot_row is None:
         return None
-    column = {s['type']: s['equipSlotColumn'] for s in fmt['slots']}
-    blocked = {col for col, v in slot_row.items() if v == '-1'}
+    column: dict[str, str] = {s['type']: s['equipSlotColumn'] for s in fmt['slots']}
+    blocked: set[str] = {col for col, v in slot_row.items() if v == '-1'}
     for slot in fmt['slots']:
         if slot_row[slot['equipSlotColumn']] != '1':
             continue
-        expect = {'OffHand'} if slot.get('twoHanded') else {column[t] for t in slot.get('blocks', [])}
+        expect: set[str] = {'OffHand'} if slot.get('twoHanded') else {column[t] for t in slot.get('blocks', [])}
         if blocked == expect:
             return slot['code']
     return None
@@ -313,11 +318,11 @@ def blocks_other_slots(slot_row: Row | None) -> bool:
 def is_statless_weapon(row: Row, slot: int | None, mask: int, fmt: ItemFormat) -> bool:
     """True for a weapon of a job in `statlessWeaponJobs` (Blue Mage) that has weapon damage and no stat: it is kept
     although the 'no stats' rule would drop it. Armor and other jobs' pieces never qualify."""
-    weapon_codes = {s['code'] for s in fmt['slots'] if s['type'] == 'weapon'}
+    weapon_codes: set[int] = {s['code'] for s in fmt['slots'] if s['type'] == 'weapon'}
     job_bits = 0
     for job in fmt['statlessWeaponJobs']:
         job_bits |= 1 << fmt['jobs'].index(job)
-    has_damage = int(row['DamagePhys']) > 0 or int(row['DamageMag']) > 0
+    has_damage: bool = int(row['DamagePhys']) > 0 or int(row['DamageMag']) > 0
     return slot in weapon_codes and has_damage and mask != 0 and mask & ~job_bits == 0
 
 
@@ -325,7 +330,9 @@ def item_stats(row: Row, stat_index: dict[int, int]) -> list[int]:
     """The item's stats in format order: each stat pair whose BaseParam is a format stat (stat_index: {BaseParam id:
     position}), plus the HQ pairs when the item can be HQ (only craftable, HQ-able items get the HQ bonus)."""
     stats = [0] * len(stat_index)
-    pairs = [('BaseParam', 'BaseParamValue')] + ([('BaseParamSpecial', 'BaseParamValueSpecial')] if row['CanBeHq'] == 'True' else [])
+    pairs: list[tuple[str, str]] = [('BaseParam', 'BaseParamValue')] + (
+        [('BaseParamSpecial', 'BaseParamValueSpecial')] if row['CanBeHq'] == 'True' else []
+    )
     for param_col, value_col in pairs:
         for i in range(N_ITEM_PARAMS):
             param = int(row[f'{param_col}[{i}]'])
@@ -359,7 +366,7 @@ def make_piece(row: Row, fields: PieceFields, fmt: ItemFormat) -> Piece:
     number, for check_pieces to report."""
     rarity_col, scaled = fmt['rarity']['itemColumn'], fmt['levelScaled']
     meld_slots, overmeld = fields['meld']
-    damage = damage_defense(row, fmt)
+    damage: dict[str, int] = damage_defense(row, fmt)
     return {
         'name': row['Name'],
         'slotCode': fields['slotCode'],
@@ -390,22 +397,22 @@ def check_pieces(kept: list[tuple[Row, Piece]], bad_kind: list[str], bad_meld: l
     stat_factor, rarity_col, scaled = fmt['statFactor'], fmt['rarity']['itemColumn'], fmt['levelScaled']
     if bad_kind:
         # an item kind BaseParam has no factor for: the page could not know the item's stat factors
-        cols = f'{stat_factor["baseParamColumn"]}[0..{n_kinds - 1}]'
+        cols: str = f'{stat_factor["baseParamColumn"]}[0..{n_kinds - 1}]'
         raise SchemaError(f'Item.csv {stat_factor["itemColumn"]} outside BaseParam.csv {cols}: ' + ', '.join(bad_kind[:10]))
-    bad_rarity = [f'{r["Name"]} ({r[rarity_col]!r})' for r, piece in kept if piece['rarity'] < 0]
+    bad_rarity: list[str] = [f'{r["Name"]} ({r[rarity_col]!r})' for r, piece in kept if piece['rarity'] < 0]
     if bad_rarity:
         raise SchemaError(f'Item.csv {rarity_col} is not a whole number: ' + ', '.join(bad_rarity[:10]))
-    ids = [piece['gameId'] for _, piece in kept]
-    bad_id = [f'{r["Name"]} ({r["#"]!r})' for r, piece in kept if piece['gameId'] < 0]
+    ids: list[int] = [piece['gameId'] for _, piece in kept]
+    bad_id: list[str] = [f'{r["Name"]} ({r["#"]!r})' for r, piece in kept if piece['gameId'] < 0]
     if bad_id or len(set(ids)) != len(ids):
         raise SchemaError('Item.csv row ids are not unique whole numbers: ' + ', '.join(bad_id[:10]))
-    known_scaled = {str(v) for v in scaled['known']}
-    bad_scaled = [f'{r["Name"]} ({r[scaled["itemColumn"]]!r})' for r, _ in kept if r[scaled['itemColumn']] not in known_scaled]
+    known_scaled: set[str] = {str(v) for v in scaled['known']}
+    bad_scaled: list[str] = [f'{r["Name"]} ({r[scaled["itemColumn"]]!r})' for r, _ in kept if r[scaled['itemColumn']] not in known_scaled]
     if bad_scaled:
         raise SchemaError(f'Item.csv {scaled["itemColumn"]} outside {scaled["known"]}: ' + ', '.join(bad_scaled[:10]))
     if bad_meld:
-        materia = fmt['materia']
-        expect = f'{materia["slotColumn"]} 0 to {materia["maxSlots"]}, {materia["overmeldColumn"]} True or False'
+        materia: MateriaFormat = fmt['materia']
+        expect: str = f'{materia["slotColumn"]} 0 to {materia["maxSlots"]}, {materia["overmeldColumn"]} True or False'
         raise SchemaError(f'Item.csv meld fields outside {expect}: ' + ', '.join(bad_meld[:10]))
 
 
@@ -429,19 +436,19 @@ class Selection(NamedTuple):
 def select(csv_dir: str | Path, items: list[Row] | None = None) -> Selection:
     """The gear the database keeps, and what each rule left out: a Selection. items: the Item.csv rows
     (read_item_sheet), read here when None."""
-    csv_path = Path(csv_dir)
-    fmt = load_format()
+    csv_path: Path = Path(csv_dir)
+    fmt: ItemFormat = load_format()
 
     # lookups: stat positions, item kinds, crafter and gatherer stats, slot and job mask by category id, gear flags
-    stat_index = {s['baseParam']: i for i, s in enumerate(fmt['stats'])}  # BaseParam row id -> stat position
-    n_kinds = len(next(iter(stat_factors(csv_path / 'BaseParam.csv', fmt).values())))
-    crafter_gatherer = crafter_gatherer_params(csv_path / 'BaseParam.csv', fmt)
-    slot_cols = ['#', 'MainHand', 'OffHand', *(s['equipSlotColumn'] for s in fmt['slots'])]
-    slot_categories = {r['#']: r for r in read_csv(csv_path / 'EquipSlotCategory.csv', slot_cols)}
-    mask_of_category = job_masks(csv_path / 'ClassJobCategory.csv', fmt)
+    stat_index: dict[int, int] = {s['baseParam']: i for i, s in enumerate(fmt['stats'])}  # BaseParam row id -> stat position
+    n_kinds: int = len(next(iter(stat_factors(csv_path / 'BaseParam.csv', fmt).values())))
+    crafter_gatherer: set[int] = crafter_gatherer_params(csv_path / 'BaseParam.csv', fmt)
+    slot_cols: list[str] = ['#', 'MainHand', 'OffHand', *(s['equipSlotColumn'] for s in fmt['slots'])]
+    slot_categories: dict[str, dict[str, str]] = {r['#']: r for r in read_csv(csv_path / 'EquipSlotCategory.csv', slot_cols)}
+    mask_of_category: dict[str, int] = job_masks(csv_path / 'ClassJobCategory.csv', fmt)
     items = read_item_sheet(csv_dir, items)
     check_bools(items, ['CanBeHq', 'IsUnique'], 'Item.csv')
-    flags = gear_flags(csv_path, items)
+    flags: dict[int, int] = gear_flags(csv_path, items)
 
     # the rules, in DROP_RULES order: the first one a row fails leaves it out
     kept: list[tuple[Row, Piece]] = []
@@ -454,25 +461,25 @@ def select(csv_dir: str | Path, items: list[Row] | None = None) -> Selection:
         if not row['Name']:
             dropped['name'] += 1
             continue
-        slot_row = slot_categories.get(row['EquipSlotCategory'])
+        slot_row: dict[str, str] | None = slot_categories.get(row['EquipSlotCategory'])
         if slot_row is None:
             dangling['EquipSlotCategory'] += 1
-        slot = slot_code(slot_row, fmt)
-        unsupported = slot is None and blocks_other_slots(slot_row)  # multi-slot gear with no slot code: listed, not kept
+        slot: int | None = slot_code(slot_row, fmt)
+        unsupported: bool = slot is None and blocks_other_slots(slot_row)  # multi-slot gear with no slot code: listed, not kept
         if slot is None and not unsupported:
             dropped['slot'] += 1
             continue
-        ilvl = int(row['LevelItem'])
+        ilvl: int = int(row['LevelItem'])
         if ilvl < MIN_ILVL:
             dropped['ilvl'] += 1
             continue
         if row['ClassJobCategory'] not in mask_of_category:
             dangling['ClassJobCategory'] += 1
-        mask = mask_of_category.get(row['ClassJobCategory'], 0)
+        mask: int = mask_of_category.get(row['ClassJobCategory'], 0)
         if not mask:
             dropped['job'] += 1
             continue
-        stats = item_stats(row, stat_index)
+        stats: list[int] = item_stats(row, stat_index)
         if not any(stats) and not is_statless_weapon(row, slot, mask, fmt):
             dropped['stats'] += 1
             continue
@@ -487,11 +494,11 @@ def select(csv_dir: str | Path, items: list[Row] | None = None) -> Selection:
             continue
 
         # kept: the fields the page needs, each checked below
-        kind = row[fmt['statFactor']['itemColumn']]
+        kind: str = row[fmt['statFactor']['itemColumn']]
         if not (kind.isdigit() and int(kind) < n_kinds):
             bad_kind.append(f'{row["Name"]} ({kind})')
             continue
-        meld = meld_fields(row, fmt)
+        meld: tuple[int, int] | None = meld_fields(row, fmt)
         if meld is None:
             bad_meld.append(f'{row["Name"]} ({row[fmt["materia"]["slotColumn"]]}, {row[fmt["materia"]["overmeldColumn"]]})')
             continue
@@ -527,11 +534,11 @@ def category_index(fmt: ItemFormat) -> dict[str, int]:
     """{category key: its index in `category.list` of item-format.json}, the value of a row's category field. Raises
     SchemaError unless the list holds every category a kept piece can have (gear_categories.CATEGORIES minus LEFT_OUT)
     exactly once and nothing else, so a category added to gear_categories.py can't reach the page without a label."""
-    keys = [c['key'] for c in fmt['category']['list']]
-    kept = set(gear_categories.CATEGORIES) - gear_categories.LEFT_OUT
-    missing = sorted(kept - set(keys))
-    unknown = sorted(set(keys) - kept)
-    twice = sorted({k for k in keys if keys.count(k) > 1})
+    keys: list[str] = [c['key'] for c in fmt['category']['list']]
+    kept: set[str] = set(gear_categories.CATEGORIES) - gear_categories.LEFT_OUT
+    missing: list[str] = sorted(kept - set(keys))
+    unknown: list[str] = sorted(set(keys) - kept)
+    twice: list[str] = sorted({k for k in keys if keys.count(k) > 1})
     if missing or unknown or twice:
         raise SchemaError(f'item-format.json category.list: missing {missing}, unknown {unknown}, listed twice {twice}')
     return {k: i for i, k in enumerate(keys)}
@@ -542,36 +549,36 @@ def main(csv_dir: Path | str, out: Path | str, source: provenance.SourceArg = 'd
     the DATA_SOURCE constant lives in item-level.json. report: a path to write this run's counts to as JSON (the
     funnel, LEFT_OUT categories, dangling ids and inferred routes), for summary.py; regen.py passes one."""
     source = provenance.resolve(source, csv_dir)
-    fmt = load_format()
-    items = read_item_sheet(csv_dir)  # the largest sheet, read once and passed on
-    selection = select(csv_dir, items)
+    fmt: ItemFormat = load_format()
+    items: list[dict[str, str]] = read_item_sheet(csv_dir)  # the largest sheet, read once and passed on
+    selection: Selection = select(csv_dir, items)
     kept, dropped = selection.kept, selection.dropped
-    n_items = len(kept) + sum(dropped.values())
-    cats = gear_categories.categorize(csv_dir, kept, slot_codes(fmt, WEAPON_TYPES), items)
-    problems = gear_categories.check(kept, cats)
+    n_items: int = len(kept) + sum(dropped.values())
+    cats: dict[str, str] = gear_categories.categorize(csv_dir, kept, slot_codes(fmt, WEAPON_TYPES), items)
+    problems: list[str] = gear_categories.check(kept, cats)
     if problems:
         raise SchemaError(f'{len(problems)} gear category cross-check problem(s): ' + '; '.join(problems[:10]))
-    left_out = Counter(cats[r['#']] for r, _ in kept if cats[r['#']] in gear_categories.LEFT_OUT)
+    left_out: Counter[str] = Counter(cats[r['#']] for r, _ in kept if cats[r['#']] in gear_categories.LEFT_OUT)
     kept = [(r, row) for r, row in kept if cats[r['#']] not in gear_categories.LEFT_OUT]
     routes, inferred = gear_activities.routes(csv_dir, kept, cats, items)
-    cat_index = category_index(fmt)
+    cat_index: dict[str, int] = category_index(fmt)
     # each kept piece's fields plus its routes and category, in the order of `itemRow.fields` (row_fields raises if the
     # format file's rowField entries disagree with that list)
-    fields = list(row_fields(fmt))
-    pieces = [with_routes(piece, routes[r['#']], cat_index[cats[r['#']]]) for r, piece in kept]
+    fields: list[str] = list(row_fields(fmt))
+    pieces: list[Piece] = [with_routes(piece, routes[r['#']], cat_index[cats[r['#']]]) for r, piece in kept]
     materia, _decoys = materia_table(csv_dir, fmt, items)
     # A job no item is left for means the job columns or their values changed shape (e.g. 'True' became '1').
     seen = 0
     for piece in pieces:
         seen |= piece['jobMask']
-    absent = [j for i, j in enumerate(fmt['jobs']) if not seen >> i & 1]
+    absent: list[str] = [j for i, j in enumerate(fmt['jobs']) if not seen >> i & 1]
     if absent:
         raise SchemaError(f'ClassJobCategory.csv: no item is wearable by {", ".join(absent)}. Did the job columns change?')
     pieces.sort(key=lambda p: (-p['ilvl'], p['slotCode'], p['name'], p['gameId']))  # the game id last, so a tie never depends on file order
-    rows = [[value_of(piece, f) for f in fields] for piece in pieces]
+    rows: list[list[object]] = [[value_of(piece, f) for f in fields] for piece in pieces]
     # {"_generated": notice, "source": provenance, "formatVersion": n, "materia": table, "currentTomes": names, "items": [rows]}, one item
     # row per line so a patch's diff lists the rows that changed
-    doc = {
+    doc: dict[str, MateriaTable | Source | int | list[list[object]] | list[str] | str | None] = {
         '_generated': provenance.note(source),
         'source': source,
         'formatVersion': fmt['formatVersion'],
@@ -584,10 +591,10 @@ def main(csv_dir: Path | str, out: Path | str, source: provenance.SourceArg = 'd
     print(gear_activities.inferred_report(inferred))
     # gear of a new kind a patch added that the format cannot place yet (none today)
     if selection.multi_slot:
-        multi_slot = selection.multi_slot
+        multi_slot: list[str] = selection.multi_slot
         print(f'Warning: left out {len(multi_slot)} multi-slot pieces with no slot code: ' + ', '.join(multi_slot))
     if report:
-        counts = {
+        counts: dict[str, dict[str, int] | int] = {
             'itemSheetRows': n_items,
             'dropped': dropped,
             'leftOut': dict(sorted(left_out.items())),
@@ -607,22 +614,22 @@ def drop_report(
     docs/engineering/data-pipeline.md, section 4. dangling (Selection.dangling): rows whose slot or job category id
     has no row, named after the rule they fall under when there are any."""
     dangling_ids: Mapping[str, int] = dangling or {}
-    under = {'slot': 'EquipSlotCategory', 'job': 'ClassJobCategory'}
+    under: dict[str, str] = {'slot': 'EquipSlotCategory', 'job': 'ClassJobCategory'}
     parts: list[str] = []
     for rule, n in dropped.items():
         if n:
-            sheet = under.get(rule)
-            note = f' ({dangling_ids[sheet]:,} with an id that has no {sheet} row)' if sheet and dangling_ids.get(sheet) else ''
+            sheet: str | None = under.get(rule)
+            note: str = f' ({dangling_ids[sheet]:,} with an id that has no {sheet} row)' if sheet and dangling_ids.get(sheet) else ''
             parts.append(f'{DROP_RULES[rule]} -{n:,}{note}')
     parts += [f'category {cat} (LEFT_OUT) -{n:,}' for cat, n in sorted(left_out.items())]
     return f'Item.csv {n_items:,} rows: ' + ', '.join(parts) + f'; kept {n_kept:,}'
 
 
 if __name__ == '__main__':
-    ap = argparse.ArgumentParser()
+    ap: ArgumentParser = argparse.ArgumentParser()
     ap.add_argument('csv_dir')
     ap.add_argument('out', nargs='?', default='src/data/items.json')
     provenance.add_cli_args(ap)
     ap.add_argument('--report', help="write this run's counts to this JSON file (for summary.py)")
-    args = ap.parse_args()
+    args: Namespace = ap.parse_args()
     run_main(main, args.csv_dir, args.out, provenance.from_args(args), args.report)

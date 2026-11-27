@@ -79,9 +79,9 @@ class ItemFormatTypesTest(unittest.TestCase):
     def test_a_wrong_type_is_reported(self) -> None:
         """The checker itself: a missing key, an extra key and a wrong kind of value each show up."""
         raw: dict[str, Json] = json.loads(FORMAT_PATH.read_text(encoding='utf-8'))
-        broken = {**raw, 'extra': 1, 'formatVersion': '1'}
+        broken: dict[str, bool | dict[str, Json] | float | int | list[Json] | str | None] = {**raw, 'extra': 1, 'formatVersion': '1'}
         del broken['jobs']
-        found = problems_of(broken, ItemFormat, 'f')
+        found: list[str] = problems_of(broken, ItemFormat, 'f')
         self.assertIn('f.extra: in the file, not in ItemFormat', found)
         self.assertIn('f.jobs: in ItemFormat, not in the file', found)
         self.assertIn('f.formatVersion: expected int, found str', found)

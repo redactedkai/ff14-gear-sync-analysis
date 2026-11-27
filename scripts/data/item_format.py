@@ -12,12 +12,13 @@ import csv
 import json
 import sys
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
+from csv import DictReader
 from pathlib import Path
 from typing import NotRequired, TypedDict
 
-ROOT = Path(__file__).resolve().parents[2]
-FORMAT_PATH = ROOT / 'src' / 'core' / 'item-format.json'
-N_ITEM_PARAMS = 6  # stat pairs per Item row (BaseParam[0..5], plus the same number of HQ pairs)
+ROOT: Path = Path(__file__).resolve().parents[2]
+FORMAT_PATH: Path = ROOT / 'src' / 'core' / 'item-format.json'
+N_ITEM_PARAMS: int = 6  # stat pairs per Item row (BaseParam[0..5], plus the same number of HQ pairs)
 
 
 # The shape of src/core/item-format.json. Keys starting with `_` are comments in the file, so they are NotRequired;
@@ -265,7 +266,7 @@ ItemRow = Sequence[ItemCell]  # one row of items.json (read only), its cells in 
 def whole(row: ItemRow, index: int) -> int:
     """The whole number in cell `index` of an items.json row; raises SchemaError when the cell holds anything else (a name or
     the stat list), which means `itemRow.fields` no longer matches the rows."""
-    cell = row[index]
+    cell: int | list[int] | str = row[index]
     if isinstance(cell, bool) or not isinstance(cell, int):
         raise SchemaError(f'items.json row {row[0]!r}: cell {index} is {cell!r}, expected a whole number')
     return cell
@@ -274,7 +275,7 @@ def whole(row: ItemRow, index: int) -> int:
 def whole_list(row: ItemRow, index: int) -> list[int]:
     """The list of whole numbers in cell `index` of an items.json row (the stats, the routes); raises SchemaError when the
     cell holds anything else."""
-    cell = row[index]
+    cell: int | list[int] | str = row[index]
     if not isinstance(cell, list):
         raise SchemaError(f'items.json row {row[0]!r}: cell {index} is {cell!r}, expected a list of whole numbers')
     return cell
@@ -285,11 +286,11 @@ def read_csv(path: str | Path, required: Iterable[str] = ()) -> list[Row]:
     column of `required` that the header lacks."""
     path = Path(path)
     with path.open(encoding='utf-8', newline='') as f:
-        reader = csv.DictReader(f)
-        header = set(reader.fieldnames or ())
-        missing = [c for c in dict.fromkeys(required) if c not in header]
+        reader: DictReader[str] = csv.DictReader(f)
+        header: set[str] = set(reader.fieldnames or ())
+        missing: list[str] = [c for c in dict.fromkeys(required) if c not in header]
         if missing:
-            hint = f'Did a game patch rename them? Update {FORMAT_PATH.name} or the generator.'
+            hint: str = f'Did a game patch rename them? Update {FORMAT_PATH.name} or the generator.'
             raise SchemaError(f'{path.name} is missing column(s): {", ".join(missing)}. {hint}')
         return list(reader)
 
@@ -301,7 +302,7 @@ def check_bools(rows: Iterable[Row], columns: Iterable[str], sheet: str) -> None
     value into false without notice (every HQ bonus gone, every piece tradeable)."""
     bad: list[str] = []
     for column in columns:
-        found = sorted({r[column] for r in rows} - {'True', 'False'})
+        found: list[str] = sorted({r[column] for r in rows} - {'True', 'False'})
         if found:
             bad.append(f'{column} has {", ".join(repr(v) for v in found[:5])}')
     if bad:
@@ -314,17 +315,17 @@ def check_bools(rows: Iterable[Row], columns: Iterable[str], sheet: str) -> None
 def item_columns() -> list[str]:
     """The Item.csv columns the item database generator reads: gen_items.py and, through it, gear_categories.py and
     gear_activities.py (read_csv raises SchemaError on any that is missing)."""
-    fmt = load_format()
-    pairs = [
+    fmt: ItemFormat = load_format()
+    pairs: list[str] = [
         f'{c}[{i}]' for c in ('BaseParam', 'BaseParamValue', 'BaseParamSpecial', 'BaseParamValueSpecial') for i in range(N_ITEM_PARAMS)
     ]
-    cols = ['Name', 'EquipSlotCategory', 'LevelItem', 'LevelEquip', 'ClassJobCategory', 'CanBeHq', 'IsUnique', *pairs]
-    materia = fmt['materia']
-    trailing = [fmt['statFactor']['itemColumn'], materia['slotColumn'], materia['overmeldColumn']]
-    extra = [e['itemColumn'] for e in fmt['damageDefense']['entries']]
-    categories = ['SubcategorySort', 'DyeCount']  # gear_categories.py
-    routes = ['IsUntradable']  # gear_activities.py
-    item_row = [fmt['rarity']['itemColumn'], fmt['levelScaled']['itemColumn'], *extra]
+    cols: list[str] = ['Name', 'EquipSlotCategory', 'LevelItem', 'LevelEquip', 'ClassJobCategory', 'CanBeHq', 'IsUnique', *pairs]
+    materia: MateriaFormat = fmt['materia']
+    trailing: list[str] = [fmt['statFactor']['itemColumn'], materia['slotColumn'], materia['overmeldColumn']]
+    extra: list[str] = [e['itemColumn'] for e in fmt['damageDefense']['entries']]
+    categories: list[str] = ['SubcategorySort', 'DyeCount']  # gear_categories.py
+    routes: list[str] = ['IsUntradable']  # gear_activities.py
+    item_row: list[str] = [fmt['rarity']['itemColumn'], fmt['levelScaled']['itemColumn'], *extra]
     return ['#', *cols, *trailing, *item_row, *categories, *routes, materia['gateColumn']]
 
 
@@ -335,8 +336,8 @@ def read_item_sheet(csv_dir: str | Path, items: list[Row] | None = None) -> list
     return items if items is not None else read_csv(Path(csv_dir) / 'Item.csv', item_columns())
 
 
-WEAPON_TYPES = ('weapon', 'offhand')  # slot types of weapons and shields
-ACCESSORY_TYPES = ('ear', 'neck', 'wrist', 'ring')  # slot types of accessories (no dye slots on any of them)
+WEAPON_TYPES: tuple[str, str] = ('weapon', 'offhand')  # slot types of weapons and shields
+ACCESSORY_TYPES: tuple[str, str, str, str] = ('ear', 'neck', 'wrist', 'ring')  # slot types of accessories (no dye slots on any of them)
 
 
 def slot_codes(fmt: ItemFormat, types: Collection[str]) -> set[int]:
@@ -350,9 +351,9 @@ def check_ids(names: Mapping[int, str], expected: Mapping[int, str], sheet: str,
     expected: {id: expected name}; what: what the ids are (for the message, e.g. 'currency'); table: the table and file
     to update, e.g. 'CURRENCIES (scripts/data/gear_activities.py)'. A patch that reuses an id thus stops the run
     instead of placing another item."""
-    wrong = [f'{i} is {names.get(i)!r}, expected {name!r}' for i, name in expected.items() if names.get(i) != name]
+    wrong: list[str] = [f'{i} is {names.get(i)!r}, expected {name!r}' for i, name in expected.items() if names.get(i) != name]
     if wrong:
-        hint = f'A patch reused the ids: find each by name in {sheet} and update its id in {table}.'
+        hint: str = f'A patch reused the ids: find each by name in {sheet} and update its id in {table}.'
         raise SchemaError(f'{sheet}: {what} ids changed: ' + '; '.join(wrong) + '. ' + hint)
 
 
@@ -361,9 +362,9 @@ def row_fields(fmt: ItemFormat) -> dict[str, int]:
     defenseMag 19). The generators build and read rows by these names, never by position. Raises SchemaError when the
     `rowField` of another entry (materia.rowFields, rarity, gameId, levelScaled, category, the damageDefense entries)
     is not the position of its name in the list, so the two places in the file cannot disagree."""
-    fields = fmt['itemRow']['fields']
-    position = {name: i for i, name in enumerate(fields)}
-    declared = {
+    fields: list[str] = fmt['itemRow']['fields']
+    position: dict[str, int] = {name: i for i, name in enumerate(fields)}
+    declared: dict[str, int | object] = {
         **fmt['materia']['rowFields'],
         'rarity': fmt['rarity']['rowField'],
         'gameId': fmt['gameId']['rowField'],
@@ -371,7 +372,7 @@ def row_fields(fmt: ItemFormat) -> dict[str, int]:
         'category': fmt['category']['rowField'],
         **{e['key']: e['rowField'] for e in fmt['damageDefense']['entries']},
     }
-    wrong = [
+    wrong: list[str] = [
         f'{name} rowField {at}, itemRow.fields has it at {position.get(name)}' for name, at in declared.items() if position.get(name) != at
     ]
     if len(position) != len(fields):
@@ -384,7 +385,7 @@ def row_fields(fmt: ItemFormat) -> dict[str, int]:
 def meld_fields(row: Row, fmt: ItemFormat) -> tuple[int, int] | None:
     """(meldSlots, overmeld) of an Item.csv row: the guaranteed materia slots (0 to `maxSlots`) and 1 when overmelding is
     allowed. None when either value is out of range or not of the expected form; the caller lists those and raises."""
-    m = fmt['materia']
+    m: MateriaFormat = fmt['materia']
     slots, over = row[m['slotColumn']], row[m['overmeldColumn']]
     if not (slots.isdigit() and int(slots) <= m['maxSlots']) or over not in ('True', 'False'):
         return None
@@ -396,9 +397,9 @@ def stat_factors(base_param_csv: str | Path, fmt: ItemFormat, entries: Sequence[
     row (`statFactor` in item-format.json). An Item row's BaseParamModifier picks the kind. `entries`: the {key,
     baseParam} rows to read, the stats by default (gen_item_level.py also reads the `damageDefense` entries). Raises
     SchemaError on a missing column or stat row, or a value that is not a percent from 1 to 100."""
-    sf = fmt['statFactor']
-    cols = [f'{sf["baseParamColumn"]}[{i}]' for i in range(sf['count'])]
-    rows = {r['#']: r for r in read_csv(base_param_csv, ['#', *cols])}
+    sf: StatFactorFormat = fmt['statFactor']
+    cols: list[str] = [f'{sf["baseParamColumn"]}[{i}]' for i in range(sf['count'])]
+    rows: dict[str, dict[str, str]] = {r['#']: r for r in read_csv(base_param_csv, ['#', *cols])}
     table: dict[str, list[int]] = {}
     problems: list[str] = []
     for st in fmt['stats'] if entries is None else entries:
@@ -406,7 +407,7 @@ def stat_factors(base_param_csv: str | Path, fmt: ItemFormat, entries: Sequence[
         if r is None:
             problems.append(f'no row {st["baseParam"]} ({st["key"]})')
             continue
-        vals = [r[c] for c in cols]
+        vals: list[str] = [r[c] for c in cols]
         if not all(v.isdigit() and 1 <= int(v) <= 100 for v in vals):
             problems.append(f'{st["key"]} {sf["baseParamColumn"]} = {",".join(vals)}, expected percents 1 to 100')
             continue
@@ -419,7 +420,7 @@ def stat_factors(base_param_csv: str | Path, fmt: ItemFormat, entries: Sequence[
 def check_slot_percents(base_param_csv: str | Path, fmt: ItemFormat) -> None:
     """Every stat's BaseParam row must give each slot the `percent` of that slot in item-format.json (the slot share the
     page uses). Raises SchemaError listing each mismatch."""
-    rows = {r['#']: r for r in read_csv(base_param_csv, ['#', *(s['baseParamColumn'] for s in fmt['slots'])])}
+    rows: dict[str, dict[str, str]] = {r['#']: r for r in read_csv(base_param_csv, ['#', *(s['baseParamColumn'] for s in fmt['slots'])])}
     problems: list[str] = []
     for st in fmt['stats']:
         r = rows.get(str(st['baseParam']))
@@ -440,10 +441,10 @@ def slot_shares(base_param_csv: str | Path, fmt: ItemFormat, entries: Sequence[B
     slot columns (each slot's `baseParamColumn`, in slot code order). For values whose shares differ from the stats'
     (`damageDefense` in item-format.json: weapon damage only on weapons, defense only on armor). Raises SchemaError on
     a missing row or a share that is not a whole number."""
-    slots = sorted(fmt['slots'], key=lambda s: s['code'])
+    slots: list[Slot] = sorted(fmt['slots'], key=lambda s: s['code'])
     if [s['code'] for s in slots] != list(range(len(slots))):
         raise SchemaError(f'{FORMAT_PATH.name} slot codes are not 0..{len(slots) - 1}')
-    rows = {r['#']: r for r in read_csv(base_param_csv, ['#', *(s['baseParamColumn'] for s in slots)])}
+    rows: dict[str, dict[str, str]] = {r['#']: r for r in read_csv(base_param_csv, ['#', *(s['baseParamColumn'] for s in slots)])}
     table: dict[str, list[int]] = {}
     problems: list[str] = []
     for e in entries:
@@ -451,7 +452,7 @@ def slot_shares(base_param_csv: str | Path, fmt: ItemFormat, entries: Sequence[B
         if r is None:
             problems.append(f'no row {e["baseParam"]} ({e["key"]})')
             continue
-        vals = [r[s['baseParamColumn']] for s in slots]
+        vals: list[str] = [r[s['baseParamColumn']] for s in slots]
         if not all(v.isdigit() for v in vals):
             problems.append(f'{e["key"]} slot shares {",".join(vals)}, expected whole numbers')
             continue

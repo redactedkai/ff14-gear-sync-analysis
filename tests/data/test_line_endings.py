@@ -9,7 +9,7 @@ import common  # noqa: F401  (puts scripts/data on sys.path, so this comes befor
 import provenance
 from common import ROOT
 
-GENERATED = sorted((ROOT / 'src' / 'data').iterdir())
+GENERATED: list[Path] = sorted((ROOT / 'src' / 'data').iterdir())
 
 
 class LineEndingsTest(unittest.TestCase):
@@ -31,13 +31,13 @@ class LineEndingsTest(unittest.TestCase):
     def test_committed_generated_files_have_lf_endings_and_a_final_newline(self) -> None:
         for path in GENERATED:
             with self.subTest(file=path.name):
-                data = path.read_bytes()
+                data: bytes = path.read_bytes()
                 self.assertNotIn(b'\r', data)
                 self.assertTrue(data.endswith(b'\n'))
 
     def test_write_generated_writes_lf_on_every_platform(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            out = Path(tmp) / 'out.txt'
+            out: Path = Path(tmp) / 'out.txt'
             provenance.write_generated(out, 'one\ntwo \u2605\n')
             self.assertEqual(out.read_bytes(), 'one\ntwo \u2605\n'.encode())
 

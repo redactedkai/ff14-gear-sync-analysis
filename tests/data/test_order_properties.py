@@ -22,10 +22,10 @@ import gen_items
 from common import FIXTURES, run_quiet
 from hypothesis import given, settings
 from hypothesis import strategies as st
-from item_format import SchemaError, load_format, row_fields
+from item_format import ItemFormat, SchemaError, load_format, row_fields
 
-FOOD_FIXTURES = FIXTURES / 'food'
-COPY_ID = '900001'  # the id of the copied row; no fixture item has it
+FOOD_FIXTURES: Path = FIXTURES / 'food'
+COPY_ID: str = '900001'  # the id of the copied row; no fixture item has it
 
 
 def read_rows(path: Path) -> list[list[str]]:
@@ -43,9 +43,9 @@ def copy_with_tie(source_dir: Path, target_dir: Path, original_name: str) -> Non
     `original_name` (a tie on every sort key but the id)."""
     for path in Path(source_dir).glob('*.csv'):
         shutil.copy(path, Path(target_dir) / path.name)
-    rows = read_rows(Path(target_dir) / 'Item.csv')
-    name_column = rows[0].index('Name')
-    original = next(r for r in rows[1:] if r[name_column] == original_name)
+    rows: list[list[str]] = read_rows(Path(target_dir) / 'Item.csv')
+    name_column: int = rows[0].index('Name')
+    original: list[str] = next(r for r in rows[1:] if r[name_column] == original_name)
     rows.append([COPY_ID, *original[1:]])
     write_rows(Path(target_dir) / 'Item.csv', rows)
 
@@ -53,7 +53,7 @@ def copy_with_tie(source_dir: Path, target_dir: Path, original_name: str) -> Non
 def shuffle_all(csv_dir: str, rng: random.Random) -> None:
     """Shuffle the data rows of every CSV in csv_dir, in place, with the Hypothesis-provided random generator."""
     for path in sorted(Path(csv_dir).glob('*.csv')):
-        rows = read_rows(path)
+        rows: list[list[str]] = read_rows(path)
         header, body = rows[0], rows[1:]
         rng.shuffle(body)
         write_rows(path, [header, *body])
@@ -76,13 +76,13 @@ class ItemDatabaseOrderTest(unittest.TestCase):
 
     @staticmethod
     def generate(csv_dir: Path | str) -> bytes:
-        out = Path(csv_dir) / 'items.json.out'
+        out: Path = Path(csv_dir) / 'items.json.out'
         run_quiet(gen_items.main, str(csv_dir), str(out), None)
         return out.read_bytes()
 
     def test_the_tie_is_in_the_output(self) -> None:
         # the property is only worth something if the copied row is kept and ties with its original
-        names = [line for line in self.expected.decode('utf-8').splitlines() if line.startswith('["Test Tank Helm"')]
+        names: list[str] = [line for line in self.expected.decode('utf-8').splitlines() if line.startswith('["Test Tank Helm"')]
         self.assertEqual(len(names), 2)
 
     @settings(max_examples=6)  # one run of the item generator takes about a second
@@ -112,7 +112,7 @@ class FoodOrderTest(unittest.TestCase):
 
     @staticmethod
     def generate(csv_dir: Path | str) -> bytes:
-        out = Path(csv_dir) / 'food.json.out'
+        out: Path = Path(csv_dir) / 'food.json.out'
         gen_food.main(str(csv_dir), str(out), None)
         return out.read_bytes()
 
@@ -128,10 +128,10 @@ class FoodOrderTest(unittest.TestCase):
             self.assertEqual(self.generate(tmp), self.expected)
 
 
-FMT = load_format()
-FIELDS = row_fields(FMT)
-JOB_COUNT = len(FMT['jobs'])
-GROUP_SLOT_CODES = sorted(s['code'] for s in FMT['slots'] if s['type'] in FMT['gearGroups']['slotTypes'])
+FMT: ItemFormat = load_format()
+FIELDS: dict[str, int] = row_fields(FMT)
+JOB_COUNT: int = len(FMT['jobs'])
+GROUP_SLOT_CODES: list[int] = sorted(s['code'] for s in FMT['slots'] if s['type'] in FMT['gearGroups']['slotTypes'])
 
 
 def item_row(slot_code: int, job_mask: int) -> list[int]:
@@ -162,8 +162,8 @@ class GearGroupsOrderTest(unittest.TestCase):
     )
     def test_shuffled_rows_give_the_same_groups(self, extra_rows: list[tuple[int, int]], rng: random.Random) -> None:
         # one piece every job wears in each slot, so no job is left without a piece, plus the random pieces
-        rows = [item_row(slot, (1 << JOB_COUNT) - 1) for slot in GROUP_SLOT_CODES] + [item_row(*r) for r in extra_rows]
-        shuffled = list(rows)
+        rows: list[list[int]] = [item_row(slot, (1 << JOB_COUNT) - 1) for slot in GROUP_SLOT_CODES] + [item_row(*r) for r in extra_rows]
+        shuffled: list[list[int]] = list(rows)
         rng.shuffle(shuffled)
         self.assertEqual(outcome(shuffled), outcome(rows))
 

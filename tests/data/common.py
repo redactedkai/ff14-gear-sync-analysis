@@ -21,17 +21,18 @@ import re
 import sys
 from collections.abc import Callable, Iterable
 from pathlib import Path
+from re import Match, Pattern
 from typing import TypeAlias
 
 Json: TypeAlias = bool | int | float | str | list['Json'] | dict[str, 'Json'] | None  # what json.loads returns
 
-ROOT = Path(__file__).resolve().parents[2]
-FIXTURES = Path(__file__).resolve().parent / 'fixtures'
+ROOT: Path = Path(__file__).resolve().parents[2]
+FIXTURES: Path = Path(__file__).resolve().parent / 'fixtures'
 sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
 
 # Raw stat order of a generated row (src/core/item-format.json), written out independently here.
-STAT_ORDER = ['str', 'dex', 'int', 'mind', 'vit', 'piety', 'ten', 'dh', 'crit', 'det', 'sks', 'sps', 'mainAttr', 'secAttr']
-ALL_JOBS_MASK = (1 << 23) - 1
+STAT_ORDER: list[str] = ['str', 'dex', 'int', 'mind', 'vit', 'piety', 'ten', 'dh', 'crit', 'det', 'sks', 'sps', 'mainAttr', 'secAttr']
+ALL_JOBS_MASK: int = (1 << 23) - 1
 
 
 def stats(**kw: int) -> str:
@@ -39,16 +40,16 @@ def stats(**kw: int) -> str:
     return ','.join(str(kw.get(k, 0)) for k in STAT_ORDER)
 
 
-TANK = stats(str=55, vit=59, ten=54, det=38)
-HEAL = stats(mind=33, vit=32, piety=22, dh=6, sps=31)
+TANK: str = stats(str=55, vit=59, ten=54, det=38)
+HEAL: str = stats(mind=33, vit=32, piety=22, dh=6, sps=31)
 
 
 def read_export(path: str | Path, name: str) -> Json:
     """The JSON value of `export const <name>=...;` (or `export const <name>: <type> = ...;`) in a generated JS or TS file
     (other lines are ignored)."""
-    start = re.compile(rf'export const {re.escape(name)}(?::[^=]+)?\s*=\s*')
+    start: Pattern[str] = re.compile(rf'export const {re.escape(name)}(?::[^=]+)?\s*=\s*')
     for line in Path(path).read_text(encoding='utf-8').splitlines():
-        found = start.match(line)
+        found: Match[str] | None = start.match(line)
         if found:
             return json.loads(line[found.end() :].rstrip().rstrip(';'))
     raise AssertionError(f'{name} not found in {path}')
@@ -60,7 +61,7 @@ def run_quiet(fn: Callable[..., object], *args: object) -> None:
         fn(*args)
 
 
-PARAM_GROW_HEADER = [
+PARAM_GROW_HEADER: list[str] = [
     '#',
     'ExpToNext',
     'MpModifier',
@@ -108,7 +109,7 @@ def add_shop(rows: list[list[str]], shop_id: str, listings: Iterable[tuple[str, 
 def edit_csv(path: str | Path, fn: Callable[[list[list[str]]], object]) -> None:
     """Rewrite a CSV in place: fn(rows) gets the rows as lists (header first) and changes them."""
     with Path(path).open(encoding='utf-8', newline='') as f:
-        rows = list(csv.reader(f))
+        rows: list[list[str]] = list(csv.reader(f))
     fn(rows)
     with Path(path).open('w', encoding='utf-8', newline='') as f:
         csv.writer(f, lineterminator='\n').writerows(rows)

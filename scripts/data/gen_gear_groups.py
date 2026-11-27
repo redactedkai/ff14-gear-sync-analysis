@@ -19,11 +19,12 @@ that is not a clique), or an unlinked pair sharing `unlinkedPercentMax` percent 
 import argparse
 import itertools
 import json
+from argparse import ArgumentParser, Namespace
 from collections.abc import Collection, Sequence
 from pathlib import Path
 
 import provenance
-from item_format import ROOT, ItemFormat, ItemRow, SchemaError, load_format, row_fields, run_main, whole
+from item_format import ROOT, GearGroupsFormat, ItemFormat, ItemRow, SchemaError, load_format, row_fields, run_main, whole
 
 
 def wearers_by_job(rows: Sequence[ItemRow], fields: dict[str, int], jobs: Sequence[str], slot_codes: Collection[int]) -> list[set[int]]:
@@ -41,19 +42,19 @@ def wearers_by_job(rows: Sequence[ItemRow], fields: dict[str, int], jobs: Sequen
 
 def gear_groups(rows: Sequence[ItemRow], fmt: ItemFormat) -> list[list[str]]:
     """[[job id, ...], ...]: the gear groups of the item rows `rows` under the rule in the module comment."""
-    jobs = fmt['jobs']
-    rule = fmt['gearGroups']
-    caps = fmt['jobLevelCaps']
-    fields = row_fields(fmt)
-    slot_codes = {s['code'] for s in fmt['slots'] if s['type'] in rule['slotTypes']}
-    sets = wearers_by_job(rows, fields, jobs, slot_codes)
+    jobs: list[str] = fmt['jobs']
+    rule: GearGroupsFormat = fmt['gearGroups']
+    caps: dict[str, int] = fmt['jobLevelCaps']
+    fields: dict[str, int] = row_fields(fmt)
+    slot_codes: set[int] = {s['code'] for s in fmt['slots'] if s['type'] in rule['slotTypes']}
+    sets: list[set[int]] = wearers_by_job(rows, fields, jobs, slot_codes)
     for job, wearable in zip(jobs, sets, strict=True):
         if not wearable:
             raise SchemaError(f'{job} can wear no piece of {", ".join(rule["slotTypes"])}: is the job mask order still right?')
 
     linked: set[tuple[int, int]] = set()
     for a, b in itertools.combinations(range(len(jobs)), 2):
-        share = 100 * len(sets[a] & sets[b]) / len(sets[a] | sets[b])
+        share: float = 100 * len(sets[a] & sets[b]) / len(sets[a] | sets[b])
         if share >= rule['linkPercent']:
             linked.add((a, b))
         elif share >= rule['unlinkedPercentMax']:
@@ -67,7 +68,7 @@ def gear_groups(rows: Sequence[ItemRow], fmt: ItemFormat) -> list[list[str]]:
     for a in range(len(jobs)):
         if a in placed:
             continue
-        members = [b for b in range(len(jobs)) if b == a or (min(a, b), max(a, b)) in linked]
+        members: list[int] = [b for b in range(len(jobs)) if b == a or (min(a, b), max(a, b)) in linked]
         members = [b for b in members if caps.get(jobs[b]) == caps.get(jobs[a])]
         for b, c in itertools.combinations(members, 2):
             if (b, c) not in linked:
@@ -81,7 +82,7 @@ def gear_groups(rows: Sequence[ItemRow], fmt: ItemFormat) -> list[list[str]]:
 
 def main(items_path: str | Path, out: str | Path) -> None:
     doc = json.loads(Path(items_path).read_text(encoding='utf-8'))
-    fmt = load_format()
+    fmt: ItemFormat = load_format()
     if doc['formatVersion'] != fmt['formatVersion']:
         found = doc['formatVersion']
         raise SchemaError(f'{items_path} has format version {found}, expected {fmt["formatVersion"]}: run gen_items.py first')
@@ -96,8 +97,8 @@ def main(items_path: str | Path, out: str | Path) -> None:
 
 
 if __name__ == '__main__':
-    ap = argparse.ArgumentParser()
+    ap: ArgumentParser = argparse.ArgumentParser()
     ap.add_argument('items', nargs='?', default='src/data/items.json')
     ap.add_argument('out', nargs='?', default='src/data/gear-groups.json')
-    args = ap.parse_args()
+    args: Namespace = ap.parse_args()
     run_main(main, args.items, args.out)

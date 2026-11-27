@@ -22,13 +22,16 @@ dates never go back; a version listed twice has the same date both times.
 import argparse
 import json
 import re
+from argparse import ArgumentParser, Namespace
 from datetime import UTC, datetime
 from pathlib import Path
+from re import Pattern
 
 import provenance
 from item_format import SchemaError, load_format, run_main
+from provenance import Source
 
-VERSION = re.compile(r'\d+\.\d+[a-z]?')
+VERSION: Pattern[str] = re.compile(r'\d+\.\d+[a-z]?')
 
 
 def release_day(timestamp: int) -> str:
@@ -45,7 +48,7 @@ def patch_table(entries: object) -> list[list[str]]:
     last_id: int | None = None
     listed: list[object] = entries
     for item in listed:
-        where = f'patchlist.json entry {item.get("ID")!r}' if isinstance(item, dict) else 'patchlist.json entry'
+        where: str = f'patchlist.json entry {item.get("ID")!r}' if isinstance(item, dict) else 'patchlist.json entry'
         if not isinstance(item, dict) or not all(k in item for k in ('ID', 'Version', 'Name_en', 'ReleaseDate')):
             raise SchemaError(f'{where} lacks ID, Version, Name_en or ReleaseDate. Did the list change shape?')
         entry: dict[str, object] = item
@@ -56,16 +59,16 @@ def patch_table(entries: object) -> list[list[str]]:
             raise SchemaError(f'{where}: the name {name!r} does not begin "Patch {version}"')
         if isinstance(stamp, bool) or not isinstance(stamp, int) or stamp <= 0:
             raise SchemaError(f'{where} ({version}): ReleaseDate {stamp!r}, expected a Unix timestamp in seconds')
-        entry_id = entry['ID']
+        entry_id: object = entry['ID']
         if isinstance(entry_id, bool) or not isinstance(entry_id, int):
             raise SchemaError(f'{where} ({version}): ID {entry_id!r}, expected an integer')
         if last_id is not None and not entry_id > last_id:
             raise SchemaError(f'{where} ({version}): ids do not rise (after {last_id})')
         last_id = entry_id
-        day = release_day(stamp)
+        day: str = release_day(stamp)
         if table and day < table[-1][1]:
             raise SchemaError(f'{where} ({version}) is released {day}, before {table[-1][0]} ({table[-1][1]}) listed above it')
-        same = [row for row in table if row[0] == version]
+        same: list[list[str]] = [row for row in table if row[0] == version]
         if same:
             if same[0][1] != day:
                 raise SchemaError(f'{where}: version {version} is listed with two dates, {same[0][1]} and {day}')
@@ -79,7 +82,7 @@ def main(patchlist: Path | str, out: Path | str, source: provenance.SourceArg = 
     source = provenance.resolve(source, Path(patchlist).parent, provenance.PATCHES_REPO)
     with Path(patchlist).open(encoding='utf-8') as f:
         entries = json.load(f)
-    doc = {
+    doc: dict[str, Source | int | list[list[str]] | str | None] = {
         '_generated': provenance.note(source, provenance.PATCHES_REPO),
         'source': source,
         'formatVersion': load_format()['formatVersion'],
@@ -89,11 +92,11 @@ def main(patchlist: Path | str, out: Path | str, source: provenance.SourceArg = 
 
 
 if __name__ == '__main__':
-    ap = argparse.ArgumentParser()
+    ap: ArgumentParser = argparse.ArgumentParser()
     ap.add_argument('patchlist')
     ap.add_argument('out', nargs='?', default='src/data/patches.json')
     ap.add_argument('--source-commit', help='commit sha of the patch list (default: detect from its directory)')
     ap.add_argument('--source-date', help='commit date of the patch list, ISO 8601')
-    args = ap.parse_args()
-    given = provenance.make(args.source_commit, args.source_date, provenance.PATCHES_REPO) if args.source_commit else 'detect'
+    args: Namespace = ap.parse_args()
+    given: str | Source = provenance.make(args.source_commit, args.source_date, provenance.PATCHES_REPO) if args.source_commit else 'detect'
     run_main(main, args.patchlist, args.out, given)

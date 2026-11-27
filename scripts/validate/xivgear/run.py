@@ -20,22 +20,24 @@ import json
 import os
 import shutil
 import subprocess
+from argparse import ArgumentParser, Namespace
 from collections import Counter
 from pathlib import Path
+from typing import Any  # any-ok: the results JSON, read by key
 
 print = functools.partial(print, flush=True)
 
-ROOT = Path(__file__).resolve().parents[3]
-HERE = Path(__file__).resolve().parent
-CLONE = ROOT / 'data' / 'xivgear'
-CORE = CLONE / 'packages' / 'core'
-CACHE = ROOT / 'data' / 'xivgear-cache'
-OUT = ROOT / 'scripts' / 'validate' / 'out'
-BUNDLE = OUT / 'xivgear-ours.cjs'
-TEST = CORE / 'src' / 'test' / 'zz_gear_sync_analysis_test.ts'
-JOBS = json.loads((ROOT / 'src' / 'core' / 'item-format.json').read_text(encoding='utf-8'))['jobs']  # the 23 combat jobs
+ROOT: Path = Path(__file__).resolve().parents[3]
+HERE: Path = Path(__file__).resolve().parent
+CLONE: Path = ROOT / 'data' / 'xivgear'
+CORE: Path = CLONE / 'packages' / 'core'
+CACHE: Path = ROOT / 'data' / 'xivgear-cache'
+OUT: Path = ROOT / 'scripts' / 'validate' / 'out'
+BUNDLE: Path = OUT / 'xivgear-ours.cjs'
+TEST: Path = CORE / 'src' / 'test' / 'zz_gear_sync_analysis_test.ts'
+JOBS: list[str] = json.loads((ROOT / 'src' / 'core' / 'item-format.json').read_text(encoding='utf-8'))['jobs']  # the 23 combat jobs
 # X1 (level sync item level) and X2 (level-scaling gear) are corrected on their side before comparing (ours.ts)
-PASS_TAGS = {'X3', 'D1', 'D2'}
+PASS_TAGS: set[str] = {'X3', 'D1', 'D2'}
 
 
 def bundle() -> None:
@@ -48,28 +50,28 @@ def bundle() -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
+    ap: ArgumentParser = argparse.ArgumentParser()
     ap.add_argument('--jobs', default=','.join(JOBS))
-    args = ap.parse_args()
+    args: Namespace = ap.parse_args()
     jobs = args.jobs.split(',')
     if not (CORE / 'node_modules').exists():
         raise SystemExit('No xivgear clone. Run: python scripts/validate/xivgear/fetch.py')
     bundle()
     shutil.copyfile(HERE / 'xg_sync_test.ts', TEST)
-    out_dir = OUT / 'xivgear'
+    out_dir: Path = OUT / 'xivgear'
     out_dir.mkdir(parents=True, exist_ok=True)
     levels = sorted({lv for lv, _ in json.loads((HERE / 'settings.json').read_text(encoding='utf-8'))['settings']})
-    base = {
+    base: dict[str, str] = {
         **os.environ,
         'XG_OURS': str(BUNDLE),
         'XG_OUT': str(out_dir),
         'XG_CACHE': str(CACHE),
         'XG_SETTINGS': str(HERE / 'settings.json'),
     }
-    npx = shutil.which('npx')
+    npx: str | None = shutil.which('npx')
     if not npx:
         raise SystemExit('npx not found')
-    cmd = [npx, 'ts-mocha', '--no-experimental-strip-types', '--timeout', '0', '--exit', str(TEST.relative_to(CORE))]
+    cmd: list[str] = [npx, 'ts-mocha', '--no-experimental-strip-types', '--timeout', '0', '--exit', str(TEST.relative_to(CORE))]
     for j in jobs:  # only the jobs run now; the others keep their last results
         for f in out_dir.glob(f'{j}-*.json'):
             f.unlink()
@@ -80,7 +82,7 @@ def main() -> None:
                 subprocess.run(cmd, cwd=CORE, check=True, env={**base, 'XG_JOBS': j, 'XG_LEVEL': str(lv)}, stdout=subprocess.DEVNULL)
     finally:
         TEST.unlink(missing_ok=True)
-    report = {'jobs': {}}
+    report: dict[str, dict[str, dict[str, Any]]] = {'jobs': {}}  # any-ok: the results JSON, read by key
     for j in JOBS:  # every job with results, including ones not run this time
         parts = [
             json.loads(f.read_text(encoding='utf-8')) for f in sorted(out_dir.glob(f'{j}-*.json'), key=lambda f: int(f.stem.split('-')[1]))
@@ -88,9 +90,11 @@ def main() -> None:
         if parts:
             report['jobs'][j] = {'job': j, 'pieces': parts[0]['pieces'], 'settings': [s for p in parts for s in p['settings']]}
     (OUT / 'xivgear.json').write_text(json.dumps(report), encoding='utf-8')
-    tags, stats, equal, pieces, fixed = Counter(), 0, 0, 0, Counter()
+    tags: Counter[str] = Counter()
+    fixed: Counter[str] = Counter()
+    stats = equal = pieces = 0
     for j, r in report['jobs'].items():
-        t = Counter()
+        t: Counter[str] = Counter()
         for s in r['settings']:
             t.update(s['tags'])
             fixed.update(s.get('corrected', {}))

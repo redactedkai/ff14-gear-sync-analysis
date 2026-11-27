@@ -11,10 +11,11 @@ import subprocess
 from argparse import ArgumentParser, Namespace
 from collections.abc import Collection, Mapping
 from pathlib import Path
+from subprocess import CompletedProcess
 from typing import Literal, TypedDict
 
-REPO = 'xivapi/ffxiv-datamining'
-PATCHES_REPO = 'xivapi/ffxiv-datamining-patches'
+REPO: str = 'xivapi/ffxiv-datamining'
+PATCHES_REPO: str = 'xivapi/ffxiv-datamining-patches'
 
 
 class Source(TypedDict):
@@ -26,7 +27,7 @@ class Source(TypedDict):
 
 
 def _git(csv_dir: str | Path, *args: str) -> str | None:
-    r = subprocess.run(['git', '-C', str(csv_dir), *args], capture_output=True, text=True, check=False)
+    r: CompletedProcess[str] = subprocess.run(['git', '-C', str(csv_dir), *args], capture_output=True, text=True, check=False)
     return r.stdout.strip() if r.returncode == 0 else None
 
 
@@ -34,10 +35,10 @@ def detect(csv_dir: str | Path, repo: str = REPO) -> Source | None:
     """{'repo', 'commit', 'date'} for the clone of `repo` ("owner/name") containing csv_dir, or None. The clone's origin
     must be that repository exactly: ffxiv-datamining-patches is not ffxiv-datamining."""
     try:
-        url = _git(csv_dir, 'remote', 'get-url', 'origin') or ''
+        url: str = _git(csv_dir, 'remote', 'get-url', 'origin') or ''
         if url.rstrip('/').removesuffix('.git').rsplit('/', 1)[-1] != repo.split('/')[1]:
             return None
-        out = _git(csv_dir, 'log', '-1', '--format=%H %cI')
+        out: str | None = _git(csv_dir, 'log', '-1', '--format=%H %cI')
     except OSError:  # git not installed
         return None
     if not out:
@@ -59,7 +60,7 @@ def local_edits(csv_dir: str | Path) -> list[str] | None:
     example ' M csv/en/Item.csv'), [] when it is clean, or None when git cannot tell. The provenance names the commit
     only, so data generated from an edited clone would claim to be that commit's."""
     try:
-        r = subprocess.run(
+        r: CompletedProcess[str] = subprocess.run(
             ['git', '-C', str(csv_dir), 'status', '--porcelain', '--untracked-files=no'], capture_output=True, text=True, check=False
         )
     except OSError:  # git not installed
@@ -100,12 +101,12 @@ def json_lines(doc: Mapping[str, object], expand: Collection[str] = (), ensure_a
     def compact(value: object) -> str:
         return json.dumps(value, ensure_ascii=ensure_ascii, separators=(',', ':'))
 
-    lines = []
+    lines: list[str] = []
     for key, value in doc.items():
-        head = compact(key) + ':'
+        head: str = compact(key) + ':'
         if key in expand and isinstance(value, dict) and value:
             members: dict[str, object] = value
-            entries = [compact(k) + ':' + compact(v) for k, v in members.items()]
+            entries: list[str] = [compact(k) + ':' + compact(v) for k, v in members.items()]
             lines.append(head + '{\n' + ',\n'.join(entries) + '\n}')
         elif key in expand and isinstance(value, list) and value:
             elements: list[object] = value

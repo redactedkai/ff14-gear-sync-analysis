@@ -24,12 +24,12 @@ from common import FIXTURES as SHEET_FIXTURES
 from common import edit_csv
 from item_format import SchemaError
 
-FIXTURES = SHEET_FIXTURES / 'food'
+FIXTURES: Path = SHEET_FIXTURES / 'food'
 
 
 def generate(csv_dir: Path | str) -> dict[str, Any]:  # any-ok: the parsed food.json, read by key in every test
     with tempfile.TemporaryDirectory() as tmp:
-        out = Path(tmp) / 'food.json'
+        out: Path = Path(tmp) / 'food.json'
         gen_food.main(str(csv_dir), str(out), None)
         return json.loads(out.read_text(encoding='utf-8'))
 
@@ -71,8 +71,8 @@ class FoodSortTiesTest(unittest.TestCase):
 
             def add_copy(rows: list[list[str]]) -> None:
                 header = rows[0]
-                by_name = {row[header.index('Name')]: row for row in rows[1:]}
-                original = by_name['Royal Toast']
+                by_name: dict[str, list[str]] = {row[header.index('Name')]: row for row in rows[1:]}
+                original: list[str] = by_name['Royal Toast']
                 copy = list(original)
                 copy[0] = str(copy_id)
                 copy[header.index('ItemAction')] = by_name['Prune Ponzecake'][header.index('ItemAction')]
@@ -86,7 +86,7 @@ class FoodSortTiesTest(unittest.TestCase):
         # the original (44082) has one substat, crit; the copy has Prune Ponzecake's, led by piety
         for copy_id, put_copy_first in ((1, False), (1, True), (99999, False), (99999, True)):
             with self.subTest(copy_id=copy_id, put_copy_first=put_copy_first):
-                expected = ['piety', 'crit'] if copy_id < 44082 else ['crit', 'piety']
+                expected: list[str] = ['piety', 'crit'] if copy_id < 44082 else ['crit', 'piety']
                 self.assertEqual(self.stats_of_royal_toasts(copy_id, put_copy_first), expected)
 
 
@@ -103,9 +103,9 @@ class FoodSchemaTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def edit(self, sheet: str, fn: Callable[[list[list[str]]], list[list[str]]]) -> None:
-        path = self.dir / f'{sheet}.csv'
+        path: Path = self.dir / f'{sheet}.csv'
         with path.open(encoding='utf-8', newline='') as f:
-            rows = list(csv.reader(f))
+            rows: list[list[str]] = list(csv.reader(f))
         rows = fn(rows)
         with path.open('w', encoding='utf-8', newline='') as f:
             csv.writer(f, lineterminator='\n').writerows(rows)
@@ -125,7 +125,7 @@ class FoodSchemaTest(unittest.TestCase):
         # the exporter writing 1/0 for CanBeHq or IsRelative must stop the generator, not leave out every meal
         def to_digits(column: str) -> Callable[[list[list[str]]], list[list[str]]]:
             def fn(rows: list[list[str]]) -> list[list[str]]:
-                cols = [i for i, c in enumerate(rows[0]) if c.startswith(column)]
+                cols: list[int] = [i for i, c in enumerate(rows[0]) if c.startswith(column)]
                 return [rows[0], *[[{'True': '1', 'False': '0'}.get(v, v) if i in cols else v for i, v in enumerate(r)] for r in rows[1:]]]
 
             return fn
@@ -140,7 +140,7 @@ class FoodSchemaTest(unittest.TestCase):
 
     def test_bad_percent(self) -> None:
         def zero(rows: list[list[str]]) -> list[list[str]]:
-            i = rows[0].index('ValueHQ[0]')
+            i: int = rows[0].index('ValueHQ[0]')
             return [rows[0], *[[*r[:i], '0', *r[i + 1 :]] if r[0] == '705' else r for r in rows[1:]]]
 
         self.edit('ItemFood', zero)

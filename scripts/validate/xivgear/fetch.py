@@ -12,11 +12,13 @@ import shutil
 import subprocess
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
-CLONE = ROOT / 'data' / 'xivgear'
-REPO = 'https://github.com/xiv-gear-planner/gear-planner.git'
-COMMIT = '6c3c878e708b9d98f1c4cb091723a2a0a6343603'  # 2026-10-11, "Use specific items endpoint for basedata. (#963)"; main on 2026-10-16
-PNPM = 'pnpm@9.12.3'  # package.json packageManager at COMMIT
+ROOT: Path = Path(__file__).resolve().parents[3]
+CLONE: Path = ROOT / 'data' / 'xivgear'
+REPO: str = 'https://github.com/xiv-gear-planner/gear-planner.git'
+COMMIT: str = (
+    '6c3c878e708b9d98f1c4cb091723a2a0a6343603'  # 2026-10-11, "Use specific items endpoint for basedata. (#963)"; main on 2026-10-16
+)
+PNPM: str = 'pnpm@9.12.3'  # package.json packageManager at COMMIT
 
 
 def run(*cmd: str) -> None:
@@ -24,7 +26,7 @@ def run(*cmd: str) -> None:
 
 
 def main() -> None:
-    npx = shutil.which('npx')
+    npx: str | None = shutil.which('npx')
     if not npx:
         raise SystemExit('npx not found')
     if not (CLONE / '.git').exists():

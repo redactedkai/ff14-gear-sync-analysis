@@ -9,12 +9,15 @@ import io
 import subprocess
 import tempfile
 import unittest
+from argparse import Namespace
 from pathlib import Path
+from subprocess import CompletedProcess
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import fetch
 import provenance
 import summary
+from provenance import Source
 
 
 class PinningTest(unittest.TestCase):
@@ -23,7 +26,7 @@ class PinningTest(unittest.TestCase):
 
     def test_fetch_commit_option(self) -> None:
         self.assertIsNone(fetch.parse_args([]).commit)
-        sha = 'd9582a624eaec69d45649366dee801c2f3a6e9b3'
+        sha: str = 'd9582a624eaec69d45649366dee801c2f3a6e9b3'
         self.assertEqual(fetch.parse_args(['--commit', sha]).commit, sha)
         for bad in ('d9582a6', 'not-a-commit', sha + '0'):
             with self.subTest(bad=bad), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
@@ -31,8 +34,8 @@ class PinningTest(unittest.TestCase):
 
     def test_fetch_patches_commit_option(self) -> None:
         self.assertIsNone(fetch.parse_args([]).patches_commit)
-        sha = 'd6397410fa051a8a35827c6b7f97fc59dd00d5e5'
-        args = fetch.parse_args(['--commit', 'a' * 40, '--patches-commit', sha])
+        sha: str = 'd6397410fa051a8a35827c6b7f97fc59dd00d5e5'
+        args: Namespace = fetch.parse_args(['--commit', 'a' * 40, '--patches-commit', sha])
         self.assertEqual((args.commit, args.patches_commit), ('a' * 40, sha))
         for bad in ('d639741', 'not-a-commit', sha + '0'):
             with self.subTest(bad=bad), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
@@ -41,10 +44,10 @@ class PinningTest(unittest.TestCase):
     def test_detect_tells_the_two_source_repositories_apart(self) -> None:
         """ffxiv-datamining-patches is not ffxiv-datamining: a clone is only the repository its origin names, exactly."""
         with tempfile.TemporaryDirectory() as tmp:
-            clone = Path(tmp)
+            clone: Path = Path(tmp)
 
             def run(*args: str) -> None:
-                cmd = ['git', '-c', 'user.name=test', '-c', 'user.email=test@example.com', '-C', str(clone), *args]
+                cmd: list[str] = ['git', '-c', 'user.name=test', '-c', 'user.email=test@example.com', '-C', str(clone), *args]
                 subprocess.run(cmd, check=True, capture_output=True)
 
             run('init', '--quiet')
@@ -52,7 +55,7 @@ class PinningTest(unittest.TestCase):
             run('add', '.')
             run('commit', '--quiet', '-m', 'patches')
             self.assertIsNone(provenance.detect(clone), 'no origin: not a data clone')
-            has_origin = False
+            has_origin: bool = False
             for url, expect_data, expect_patches in (
                 ('https://github.com/xivapi/ffxiv-datamining.git', True, False),
                 ('https://github.com/xivapi/ffxiv-datamining', True, False),
@@ -66,18 +69,18 @@ class PinningTest(unittest.TestCase):
                     data, patches = provenance.detect(clone), provenance.detect(clone, provenance.PATCHES_REPO)
                     self.assertEqual(data is not None, expect_data)
                     self.assertEqual(patches is not None, expect_patches)
-                    found = data or patches
+                    found: Source | None = data or patches
                     if found:
                         self.assertEqual(found['repo'], provenance.REPO if expect_data else provenance.PATCHES_REPO)
                         self.assertRegex(found['commit'], r'^[0-9a-f]{40}$')
 
     def test_local_edits(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            clone = Path(tmp)
+            clone: Path = Path(tmp)
             self.assertIsNone(provenance.local_edits(clone / 'missing'))
 
             def run(*args: str) -> None:
-                cmd = ['git', '-c', 'user.name=test', '-c', 'user.email=test@example.com', '-C', str(clone), *args]
+                cmd: list[str] = ['git', '-c', 'user.name=test', '-c', 'user.email=test@example.com', '-C', str(clone), *args]
                 subprocess.run(cmd, check=True, capture_output=True)
 
             run('init', '--quiet')
@@ -91,6 +94,8 @@ class PinningTest(unittest.TestCase):
             self.assertEqual(provenance.local_edits(clone / 'csv'), [' M csv/Item.csv'])
 
             # summary.json names each sheet's blob id at the commit (an untracked or missing sheet has none)
-            blob = subprocess.run(['git', '-C', str(clone), 'rev-parse', 'HEAD:csv/Item.csv'], capture_output=True, text=True, check=False)
+            blob: CompletedProcess[str] = subprocess.run(
+                ['git', '-C', str(clone), 'rev-parse', 'HEAD:csv/Item.csv'], capture_output=True, text=True, check=False
+            )
             self.assertEqual(summary.csv_blobs(clone / 'csv', ['Item', 'Scratch', 'Missing']), {'Item': blob.stdout.strip()})
             self.assertIsNone(summary.csv_blobs(clone / 'missing', ['Item']))

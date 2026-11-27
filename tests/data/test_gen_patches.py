@@ -14,14 +14,16 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from subprocess import CompletedProcess
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import gen_patches
 import provenance
 from common import ROOT, run_quiet
 from item_format import SchemaError
+from provenance import Source
 
-UTC_MIDNIGHT_0908 = 1788825600  # 2026-09-08 00:00:00 UTC
+UTC_MIDNIGHT_0908: int = 1788825600  # 2026-09-08 00:00:00 UTC
 
 
 def entry(patch_id: int, version: str, stamp: int | str, name: str | None = None) -> dict[str, int | str]:
@@ -29,7 +31,7 @@ def entry(patch_id: int, version: str, stamp: int | str, name: str | None = None
     return {'ID': patch_id, 'Version': version, 'Name_en': name or f'Patch {version}', 'ReleaseDate': stamp}
 
 
-REAL_START = [
+REAL_START: list[dict[str, int | str]] = [
     entry(0, '2.0', 1376611200, 'Patch 2.0: A Realm Reborn'),
     entry(2, '2.0', 1376611200, 'Patch 2.0: A Realm Reborn'),
     entry(3, '2.05', 1381968000),
@@ -45,11 +47,11 @@ class PatchTableTest(unittest.TestCase):
         self.assertEqual(gen_patches.release_day(UTC_MIDNIGHT_0908 - 1), '2026-09-07')
 
     def test_a_repeated_entry_is_kept_once_and_the_order_is_the_lists(self) -> None:
-        table = gen_patches.patch_table(REAL_START)
+        table: list[list[str]] = gen_patches.patch_table(REAL_START)
         self.assertEqual(table, [['2.0', '2013-08-16'], ['2.05', '2013-10-17'], ['2.1', '2013-12-17'], ['2.1b', '2013-12-17']])
 
     def test_stops_on_anything_unexpected(self) -> None:
-        later = entry(10, '7.56', 1788852416)
+        later: dict[str, int | str] = entry(10, '7.56', 1788852416)
         bad: dict[str, object] = {
             'not a list': {'a': 1},
             'empty': [],
@@ -88,20 +90,20 @@ class GenPatchesTest(unittest.TestCase):
         self.assertEqual(list(doc), ['_generated', 'source', 'formatVersion', 'PATCHES'])
         self.assertIsNone(doc['source'])
         self.assertIn('xivapi/ffxiv-datamining-patches (commit unknown)', doc['_generated'])
-        source = provenance.make('b' * 40, '2026-10-13T14:39:44+02:00', provenance.PATCHES_REPO)
+        source: Source = provenance.make('b' * 40, '2026-10-13T14:39:44+02:00', provenance.PATCHES_REPO)
         run_quiet(gen_patches.main, str(self.patchlist), str(self.out), source)
-        text = self.out.read_text(encoding='utf-8')
+        text: str = self.out.read_text(encoding='utf-8')
         doc = json.loads(text)
         self.assertEqual(doc['source'], source)
         self.assertIn('xivapi/ffxiv-datamining-patches ' + 'b' * 40, doc['_generated'])
-        lines = text.splitlines()
-        start = lines.index('"PATCHES":[')
+        lines: list[str] = text.splitlines()
+        start: int = lines.index('"PATCHES":[')
         self.assertEqual([json.loads(line.rstrip(',')) for line in lines[start + 1 : start + 5]], doc['PATCHES'])
         self.assertEqual(lines[start + 5], ']')
 
     def test_command_line_stamps_the_source_and_stops_on_a_bad_list(self) -> None:
-        script = ROOT / 'scripts' / 'data' / 'gen_patches.py'
-        run = subprocess.run(
+        script: Path = ROOT / 'scripts' / 'data' / 'gen_patches.py'
+        run: CompletedProcess[str] = subprocess.run(
             [
                 sys.executable,
                 str(script),

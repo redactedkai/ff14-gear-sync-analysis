@@ -29,18 +29,18 @@ DOCS = st.dictionaries(KEYS, st.one_of(ROWS, SCALARS, st.dictionaries(st.text(ma
 class JsonLinesRoundTripTest(unittest.TestCase):
     @given(doc=DOCS, expand=st.sets(KEYS), ensure_ascii=st.booleans())
     def test_the_text_parses_back_to_the_same_data(self, doc: dict[str, Json], expand: set[str], ensure_ascii: bool) -> None:
-        text = provenance.json_lines(doc, expand=tuple(expand), ensure_ascii=ensure_ascii)
+        text: str = provenance.json_lines(doc, expand=tuple(expand), ensure_ascii=ensure_ascii)
         self.assertEqual(json.loads(text), doc)
         # writing the parsed data again gives the same text: the format is a function of the data alone
         self.assertEqual(provenance.json_lines(json.loads(text), expand=tuple(expand), ensure_ascii=ensure_ascii), text)
 
     @given(doc=DOCS, expand=st.sets(KEYS), ensure_ascii=st.booleans())
     def test_written_file_is_lf_with_a_final_newline(self, doc: dict[str, Json], expand: set[str], ensure_ascii: bool) -> None:
-        text = provenance.json_lines(doc, expand=tuple(expand), ensure_ascii=ensure_ascii)
+        text: str = provenance.json_lines(doc, expand=tuple(expand), ensure_ascii=ensure_ascii)
         with tempfile.TemporaryDirectory() as tmp:
-            out = Path(tmp) / 'out.json'
+            out: Path = Path(tmp) / 'out.json'
             provenance.write_generated(out, text)
-            data = out.read_bytes()
+            data: bytes = out.read_bytes()
         self.assertNotIn(b'\r', data)
         self.assertTrue(data.endswith(b'\n'))
         self.assertFalse(data.endswith(b'\n\n'))
@@ -48,8 +48,8 @@ class JsonLinesRoundTripTest(unittest.TestCase):
 
     @given(rows=ROWS)
     def test_an_expanded_list_has_one_row_per_line(self, rows: list[list[Json]]) -> None:
-        text = provenance.json_lines({'items': rows}, expand=('items',))
-        lines = text.splitlines()
+        text: str = provenance.json_lines({'items': rows}, expand=('items',))
+        lines: list[str] = text.splitlines()
         if rows:
             self.assertEqual(len(lines), len(rows) + 4)  # '{', 'items:[', the rows, ']', '}'
         for line, row in zip(lines[2:], rows, strict=False):
@@ -60,26 +60,26 @@ class GeneratedFilesRoundTripTest(unittest.TestCase):
     """The item and meal files the generators write from the fixtures are fixed points of their own writer."""
 
     def check(self, path: Path, expand: tuple[str, ...], ensure_ascii: bool) -> dict[str, Json]:
-        data = Path(path).read_bytes()
+        data: bytes = Path(path).read_bytes()
         self.assertNotIn(b'\r', data)
         self.assertTrue(data.endswith(b'\n'))
-        text = data.decode('utf-8')
+        text: str = data.decode('utf-8')
         doc = json.loads(text)
         self.assertEqual(provenance.json_lines(doc, expand=expand, ensure_ascii=ensure_ascii), text)
         return doc
 
     def test_items_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            out = Path(tmp) / 'items.json'
+            out: Path = Path(tmp) / 'items.json'
             run_quiet(gen_items.main, str(FIXTURES), str(out), None)
-            doc = self.check(out, ('items',), ensure_ascii=False)
+            doc: dict[str, Json] = self.check(out, ('items',), ensure_ascii=False)
         self.assertTrue(doc['items'])
 
     def test_food_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            out = Path(tmp) / 'food.json'
+            out: Path = Path(tmp) / 'food.json'
             gen_food.main(str(FIXTURES / 'food'), str(out), None)
-            doc = self.check(out, ('foods',), ensure_ascii=True)
+            doc: dict[str, Json] = self.check(out, ('foods',), ensure_ascii=True)
         self.assertTrue(doc['foods'])
 
 

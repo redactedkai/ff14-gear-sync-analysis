@@ -9,11 +9,12 @@ Run: npm run test:py
 import re
 import unittest
 from pathlib import Path
+from re import Pattern
 
 import common
 
-USES = re.compile(r'\bAny\b|\bcast\(')
-BARE_ATTRIBUTE = re.compile(r'^\s+self\.\w+ = ')
+USES: Pattern[str] = re.compile(r'\bAny\b|\bcast\(')
+BARE_ATTRIBUTE: Pattern[str] = re.compile(r'^\s+self\.\w+ = ')
 
 
 class NoAnyTest(unittest.TestCase):

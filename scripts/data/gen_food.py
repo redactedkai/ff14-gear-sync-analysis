@@ -14,12 +14,14 @@ whose HQ percent is not 1 to 100 or whose HQ maximum is not positive.
 """
 
 import argparse
+from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
 import provenance
-from item_format import Row, SchemaError, check_bools, load_format, read_csv, run_main
+from item_format import FoodFormat, ItemFormat, Row, SchemaError, check_bools, load_format, read_csv, run_main
+from provenance import Source
 
-N_FOOD_PARAMS = 3  # stats per ItemFood row
+N_FOOD_PARAMS: int = 3  # stats per ItemFood row
 
 
 def food_columns() -> list[str]:
@@ -33,13 +35,13 @@ def meal_stats(
     `vitality`), or None when the meal is left out: a stat that is not a combat stat, a flat (non-relative) bonus, or no
     substat at all."""
     out: list[list[str | int]] = []
-    any_sub = False
+    any_sub: bool = False
     vit: list[int] | None = None
     for i in range(N_FOOD_PARAMS):
-        param = int(food_row[f'BaseParam[{i}]'])
+        param: int = int(food_row[f'BaseParam[{i}]'])
         if not param:
             continue
-        key = stat_of.get(param)
+        key: str | None = stat_of.get(param)
         if key is None or food_row[f'IsRelative[{i}]'] != 'True':
             return None
         if key not in carried and key != vitality:
@@ -60,41 +62,50 @@ def meal_stats(
 def main(csv_dir: Path | str, out: Path | str, source: provenance.SourceArg = 'detect') -> None:
     """source: provenance dict, None for unknown, or 'detect' to ask git about csv_dir."""
     source = provenance.resolve(source, csv_dir)
-    csv_path = Path(csv_dir)
-    fmt = load_format()
-    food = fmt['food']
-    stat_of = {s['baseParam']: s['key'] for s in fmt['stats'] if s['key'] in food['stats']}
-    items = read_csv(csv_path / 'Item.csv', ['#', 'Name', 'LevelItem', 'CanBeHq', food['uiCategoryColumn'], food['actionColumn']])
-    actions = {r['#']: r for r in read_csv(csv_path / 'ItemAction.csv', ['#', 'Action', 'Data[0]', food['foodRowColumn']])}
-    food_rows = {r['#']: r for r in read_csv(csv_path / 'ItemFood.csv', ['#', *food_columns()])}
+    csv_path: Path = Path(csv_dir)
+    fmt: ItemFormat = load_format()
+    food: FoodFormat = fmt['food']
+    stat_of: dict[int, str] = {s['baseParam']: s['key'] for s in fmt['stats'] if s['key'] in food['stats']}
+    items: list[dict[str, str]] = read_csv(
+        csv_path / 'Item.csv', ['#', 'Name', 'LevelItem', 'CanBeHq', food['uiCategoryColumn'], food['actionColumn']]
+    )
+    actions: dict[str, dict[str, str]] = {
+        r['#']: r for r in read_csv(csv_path / 'ItemAction.csv', ['#', 'Action', 'Data[0]', food['foodRowColumn']])
+    }
+    food_rows: dict[str, dict[str, str]] = {r['#']: r for r in read_csv(csv_path / 'ItemFood.csv', ['#', *food_columns()])}
     check_bools(items, ['CanBeHq'], 'Item.csv')
     check_bools(food_rows.values(), [f'IsRelative[{i}]' for i in range(N_FOOD_PARAMS)], 'ItemFood.csv')
     numbered_foods: list[tuple[int, list[object]]] = []  # (Item.csv row id, meal) pairs, the id only for the sort below
     for item in items:
         if item[food['uiCategoryColumn']] != str(food['uiCategory']) or item['CanBeHq'] != 'True':
             continue
-        action = actions.get(item[food['actionColumn']])
+        action: dict[str, str] | None = actions.get(item[food['actionColumn']])
         if action is None or int(action['Action']) not in food['actions'] or action['Data[0]'] != str(food['status']):
             continue
-        row = food_rows.get(action[food['foodRowColumn']])
+        row: dict[str, str] | None = food_rows.get(action[food['foodRowColumn']])
         if row is None:
-            missing = action[food['foodRowColumn']]
+            missing: str = action[food['foodRowColumn']]
             raise SchemaError(f'meal {item["#"]} ({item["Name"]}) points at ItemFood row {missing}, which does not exist')
-        kept = meal_stats(row, stat_of, food['carried'], food['vitality'])
+        kept: tuple[list[list[int | str]], list[int] | None] | None = meal_stats(row, stat_of, food['carried'], food['vitality'])
         if kept is not None:
             numbered_foods.append((int(item['#']), [item['Name'], int(item['LevelItem']), *kept]))
     numbered_foods.sort(
         key=lambda entry: (entry[1][1], entry[1][0], entry[0])
     )  # item level, name, then the row id so a tie never depends on file order
-    foods = [meal for _, meal in numbered_foods]
-    doc = {'_generated': provenance.note(source), 'source': source, 'formatVersion': fmt['formatVersion'], 'foods': foods}
+    foods: list[list[object]] = [meal for _, meal in numbered_foods]
+    doc: dict[str, Source | int | list[list[object]] | str | None] = {
+        '_generated': provenance.note(source),
+        'source': source,
+        'formatVersion': fmt['formatVersion'],
+        'foods': foods,
+    }
     provenance.write_generated(out, provenance.json_lines(doc, expand=('foods',)))  # one meal per line
 
 
 if __name__ == '__main__':
-    ap = argparse.ArgumentParser()
+    ap: ArgumentParser = argparse.ArgumentParser()
     ap.add_argument('csv_dir')
     ap.add_argument('out', nargs='?', default='src/data/food.json')
     provenance.add_cli_args(ap)
-    args = ap.parse_args()
+    args: Namespace = ap.parse_args()
     run_main(main, args.csv_dir, args.out, provenance.from_args(args))
