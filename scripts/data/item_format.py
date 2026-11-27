@@ -11,6 +11,7 @@ instead of producing quietly wrong data.
 import csv
 import json
 import sys
+from collections.abc import Iterable
 from pathlib import Path
 from typing import NotRequired, TypedDict
 
@@ -213,7 +214,10 @@ def load_format() -> ItemFormat:
         return json.load(f)
 
 
-def read_csv(path, required=()):
+Row = dict[str, str]  # one CSV row: header name -> cell text (every cell is a string, empty when blank)
+
+
+def read_csv(path: str | Path, required: Iterable[str] = ()) -> list[Row]:
     """All rows of a datamining CSV as dicts keyed by the header row. Raises SchemaError naming the sheet and every
     column of `required` that the header lacks."""
     path = Path(path)
@@ -227,7 +231,7 @@ def read_csv(path, required=()):
         return list(reader)
 
 
-def check_bools(rows, columns, sheet):
+def check_bools(rows: Iterable[Row], columns: Iterable[str], sheet: str) -> None:
     """Raises SchemaError when any of `columns` holds a value other than 'True' or 'False' in `rows` (dicts from
     read_csv), naming the sheet, the column and a few of the values found. The generators compare these columns with
     the string 'True', so an exporter that wrote booleans another way (1/0, true/false) would otherwise turn every
@@ -261,7 +265,7 @@ def item_columns():
     return ['#', *cols, *trailing, *item_row, *categories, *routes, materia['gateColumn']]
 
 
-def read_item_sheet(csv_dir, items=None):
+def read_item_sheet(csv_dir: str | Path, items: list[Row] | None = None) -> list[Row]:
     """All rows of Item.csv (dicts, as read_csv gives them), checked for every column of item_columns(). `items`: rows
     read already, returned as they are, so the item database generator reads the largest sheet once and passes it on
     to the functions that need it; each of them reads it itself when called alone (tests, gear_categories.py)."""
