@@ -13,7 +13,8 @@ import { readable, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
 const SGE = makeJobContext('SGE');
 
 /* the sheet text with one Sage set whose Auto-fill settings hold `fillSettings`, read back; its first set */
-const readSet = (fillSettings: object) => readable(parseSheet(JSON.stringify(sheetOf('SGE', [{ ...sageSet(), fillSettings }])), 's_1')).sets[0];
+const readSet = (fillSettings: object) =>
+  readable(parseSheet(JSON.stringify(sheetOf('SGE', [{ ...sageSet(), fillSettings }])), 's_1')).sets[0];
 
 test('a saved Target GCD typed as text is read as a number; a number and the empty box stay', () => {
   assert.equal(readSet({ goal: { gcd: '2.40' } })?.fillSettings?.goal?.gcd, 2.4);
