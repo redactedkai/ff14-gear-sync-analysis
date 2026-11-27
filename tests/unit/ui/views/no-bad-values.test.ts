@@ -71,7 +71,7 @@ test('Piece stats, Substat tiers and GCD hold no bad value for every job over it
 
       const speed = pick([null, 0, 1, 400, 1500, 99999, -5]);
       assert.equal(
-        firstBad(gcdView(level, pick([null, ...Object.keys(HASTE)]), speed, pick([300, 900]))),
+        firstBad(gcdView(level, pick(['', ...Object.keys(HASTE)]), speed, pick([300, 900]))),
         null,
         `GCD: ${label} speed ${speed}`,
       );
