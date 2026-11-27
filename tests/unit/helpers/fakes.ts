@@ -72,3 +72,64 @@ export function fakeWorkerScope<Reply>(): FakeWorkerScope<Reply> {
     },
   };
 }
+
+/* A stand-in for the page's Web Worker: it keeps a copy of each message posted to it (`posted`: the messages of type `Sent`,
+   which carry an `id`), and answers only when the test says so: `reply(i, body)` answers posted message i the way the worker
+   script does, `send(data)` delivers any message, `fail()` fires its 'error' event and `failMessage()` its 'messageerror'. Its
+   handlers throw when the code under test has switched them off, as a late call into a stopped worker should be seen. */
+export class FakeWorker<Sent extends { id: number }> extends EventTarget implements Worker {
+  readonly posted: Sent[] = [];
+  terminated = false;
+  onmessage: ((this: Worker, event: MessageEvent) => unknown) | null = null;
+  onmessageerror: ((this: Worker, event: MessageEvent) => unknown) | null = null;
+  onerror: ((this: AbstractWorker, event: ErrorEvent) => unknown) | null = null;
+
+  postMessage(message: Sent): void {
+    this.posted.push(structuredClone(message));
+  }
+
+  terminate(): void {
+    this.terminated = true;
+  }
+
+  /* Delivers one message from the worker script, as the page's `onmessage` gets it. */
+  send(data: unknown): void {
+    const handler = this.onmessage;
+    if (!handler) {
+      throw new Error('the worker has no onmessage handler');
+    }
+    handler.call(this, new MessageEvent('message', { data }));
+  }
+
+  /* The worker script's answer to posted message `i`: its id and `body`. */
+  reply(i: number, body: object): void {
+    this.send({ id: this.posted[i].id, ...body });
+  }
+
+  /* The worker failing to load or crashing: an 'error' event that can be cancelled (`preventDefault`), with the fields of an ErrorEvent. */
+  fail(): void {
+    const handler = this.onerror;
+    if (!handler) {
+      throw new Error('the worker has no onerror handler');
+    }
+    handler.call(
+      this,
+      Object.assign(new Event('error', { cancelable: true }), { message: '', filename: '', lineno: 0, colno: 0, error: null }),
+    );
+  }
+
+  /* A reply the page cannot read: a 'messageerror' event. */
+  failMessage(): void {
+    const handler = this.onmessageerror;
+    if (!handler) {
+      throw new Error('the worker has no onmessageerror handler');
+    }
+    handler.call(this, new MessageEvent('messageerror'));
+  }
+}
+
+/* `value` as the answer of a generic method whose caller picks the result type (a Solver's `request<Result>`): JSON.parse is
+   typed `any`, so the value takes the type asked for, with no cast. Only for a fake that answers a fixed value. */
+export function answerAs<Result>(value: unknown): Result {
+  return JSON.parse(JSON.stringify(value));
+}
