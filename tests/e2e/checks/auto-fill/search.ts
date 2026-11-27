@@ -12,15 +12,17 @@ import {
 } from './dialog.ts';
 import { ACTIVITY_KEYS } from '../../lib/constants.ts';
 import { DEFAULT_EXCLUDE } from '../../lib/core-worker.ts';
-import { coreFiltered, coreGear, coreRecipe } from '../../lib/core.ts';
-import { check, checkNoBadText, expect, poll, same } from '../../lib/expect.ts';
+import { coreFiltered, coreGear, coreRecipeFound } from '../../lib/core.ts';
+import { check, checkNoBadText, expect, mustFind, poll, same } from '../../lib/expect.ts';
 import { checkFromField } from '../gear-browser/gear-from.ts';
 import { SLOW_FILL_SHEET } from '../../lib/fixtures.ts';
 import { checkFromMenu, runFill, setFrom, setNumber, ticked, waitReady } from '../../lib/nav.ts';
 import { checkTotals } from '../../lib/shared-checks.ts';
 import { openSet, seedSheet } from '../../lib/sheets.ts';
 import { pickOption } from '../../lib/select.ts';
-import type { Page } from 'playwright';
+import type { Recipe } from '../../../../src/core/recipe.ts';
+import type { SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
+import type { Page, Worker } from 'playwright';
 
 /** An Auto-fill that leaves a slot empty because no piece of it has an equip level within the Auto-fill settings' Gear to search says
  * why under the bar: Sage has no weapon below level 60 (the lowest equip level in the item data), so an Auto-fill up to equip
@@ -58,7 +60,7 @@ export async function checkFillSearch(pg: Page) {
   if (!usable) {
     return;
   }
-  const line = result => searchLine(result.searched, result.all);
+  const line = (result: { searched: number; all: number }) => searchLine(result.searched, result.all);
 
   await seedSheet(pg, DIALOG_SHEET);
   await openSet(pg, DIALOG_SHEET.name, 'Empty');
@@ -70,7 +72,7 @@ export async function checkFillSearch(pg: Page) {
   // 1. Expansion and Item level: the count and the answer follow the browser's own filters; the menu closes by its button
   await pg.click('#s-exp');
   for (const box of await pg.locator('#s-exp-menu input').all()) {
-    if (filter.expOff.includes(await box.getAttribute('data-exp'))) {
+    if (filter.expOff.includes((await box.getAttribute('data-exp')) ?? '')) {
       await box.uncheck();
     }
   }
@@ -177,7 +179,9 @@ export async function checkFillSearch(pg: Page) {
 /* A Warrior sheet (level 100, no sync) whose set's Auto-fill is as heavy as the data makes it: every "Gear categories" box ticked
    (the most pieces), Determination > Critical Hit > Direct Hit, a Target GCD of 2.30, food and tier ranking. */
 
-const CANCEL_SHEET = {
+const SLOW_FILL = mustFind(SLOW_FILL_SHEET.sets[0].fillSettings, 'the Auto-fill settings of the slow sheet');
+
+const CANCEL_SHEET: SavedSheet = {
   ...SLOW_FILL_SHEET,
   id: 's_cancel',
   name: 'Cancel fill',
@@ -185,8 +189,8 @@ const CANCEL_SHEET = {
     {
       ...SLOW_FILL_SHEET.sets[0],
       fillSettings: {
-        goal: SLOW_FILL_SHEET.sets[0].fillSettings.goal,
-        searchCriteria: { ...SLOW_FILL_SHEET.sets[0].fillSettings.searchCriteria, exclude: [] },
+        goal: SLOW_FILL.goal,
+        searchCriteria: { ...SLOW_FILL.searchCriteria, exclude: [] },
       },
     },
   ],
@@ -198,8 +202,8 @@ const CANCEL_SHEET = {
  * machine's speed (a worker answers in a later task); the data (every box under Gear categories, three goal stats, a Target GCD,
  * food) keeps the worker busy when it is ended, but nothing here depends on how long a search takes. */
 export async function checkFillCancel(pg: Page) {
-  const quick = { target: 'det', tb: '', tb2: '', food: false, gcd: '', exclude: [] };
-  const want = await coreRecipe('WAR', { cap: null, sync: false, level: 100 }, quick);
+  const quick: Partial<Recipe> = { target: 'det', tb: '', tb2: '', food: false, gcd: '', exclude: [] };
+  const want = await coreRecipeFound('WAR', { cap: null, sync: false, level: 100 }, quick);
   await seedSheet(pg, CANCEL_SHEET);
   await openSet(pg, CANCEL_SHEET.name, 'Empty');
   // the worker has the job's gear once the Gear to search line shows
@@ -208,23 +212,30 @@ export async function checkFillCancel(pg: Page) {
   await pg.keyboard.press('Escape');
   await expect(pg.locator('#sh-settings-dialog')).toBeHidden();
   let closed = 0;
-  const watch = w => w.on('close', () => closed++);
+  const watch = (worker: Worker) => worker.on('close', () => closed++);
   pg.workers().forEach(watch);
   pg.on('worker', watch);
 
   // Auto-fill and Cancel in one task (the set page draws Cancel in a microtask)
-  const runs = await pg.evaluate("performance.getEntriesByName('fill').length");
+  const runs = await pg.evaluate(() => performance.getEntriesByName('fill').length);
   await pg.evaluate(async () => {
-    document.querySelector('#sh-fill').click();
+    const clickNow = (selector: string) => {
+      const button = document.querySelector<HTMLElement>(selector);
+      if (!button) {
+        throw new Error(`no ${selector}`);
+      }
+      button.click();
+    };
+    clickNow('#sh-fill');
     await Promise.resolve();
-    document.querySelector('#sh-cancel').click();
+    clickNow('#sh-cancel');
   });
   await expect(pg.locator('#sh-fill')).toBeEnabled();
   await expect(pg.locator('#sh-toast')).toBeVisible();
   await expect(pg.locator('#sh-apply')).toHaveCount(0);
-  await poll('Cancel to end the searching worker', () => ({ ok: closed === 1, got: `${closed} workers ended` }));
+  await poll('Cancel to end the searching worker', async () => ({ ok: closed === 1, got: `${closed} workers ended` }));
   check(pg.workers().length === 1, `${pg.workers().length} solver workers after Cancel, not 1`);
-  const finished = (await pg.evaluate("performance.getEntriesByName('fill').length")) - runs;
+  const finished = (await pg.evaluate(() => performance.getEntriesByName('fill').length)) - runs;
   check(finished === 0, `a cancelled Auto-fill still answered (${finished})`);
   await expect(pg.locator('#sh-total td.small')).toHaveNumber(11); // every slot empty: the set is as it was
 

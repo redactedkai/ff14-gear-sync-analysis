@@ -10,7 +10,7 @@ import { optimize } from '../../../src/core/optimizer/index.ts';
 import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.ts';
 import { statBase } from '../../../src/core/base-stats.ts';
 import { runRecipe } from '../../../src/core/recipe.ts';
-import type { Recipe } from '../../../src/core/recipe.ts';
+import type { Recipe, RecipeResult } from '../../../src/core/recipe.ts';
 import { makeSession } from '../../../src/core/session.ts';
 import { evaluateSet, makeSet } from '../../../src/core/set.ts';
 import type { StatKey } from '../../../src/core/constants.ts';
@@ -93,10 +93,15 @@ const DEFAULT_RECIPE: Omit<Recipe, 'target'> = {
   lvl: 100,
 };
 
+/** What coreRecipe finds: the totals, the meal's bonus per stat, its GCD text and its key, or only the status when there is no set. */
+export type RecipeAnswer =
+  | { status: 'ok'; totals: Record<string, number>; bonus: Record<string, number>; gcd: string; meal: string | null }
+  | { status: Exclude<RecipeResult['status'], 'ok'> };
+
 /** What an Auto-fill with the settings `fields` (a recipe's, over the defaults) finds for `jobId` under `sync` ({cap, sync,
  * level}): the character panel's totals of the set it suggests (gear, meal and the level's base, as the Total row shows
  * them), the meal's bonus per stat, its GCD text ("2.48s"), the meal's key, or only {status} when there is no set. */
-export function coreRecipe(jobId: string, sync: Sync, fields: Partial<Recipe>) {
+export function coreRecipe(jobId: string, sync: Sync, fields: Partial<Recipe>): RecipeAnswer {
   const job = makeJobContext(jobId);
   const level = sync.level ?? 100;
   const run = runRecipe(job, sync, level, { ...DEFAULT_RECIPE, target: job.mainKey, ...fields }, makeSession());

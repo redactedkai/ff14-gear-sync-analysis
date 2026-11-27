@@ -1,6 +1,6 @@
 // A set page: Auto-fill with no Worker, and over every real piece a healer can wear.
 
-import { coreGear, coreRecipe } from '../../lib/core.ts';
+import { coreGear, coreRecipeFound } from '../../lib/core.ts';
 import { check, checkNoBadText, expect } from '../../lib/expect.ts';
 import { FILL_SHEET } from '../../lib/fixtures.ts';
 import { afterFrames, runFill } from '../../lib/nav.ts';
@@ -15,7 +15,7 @@ import type { Page } from 'playwright';
  * worker is left running. The group's page errors are the runner's. */
 export async function checkWorkerFallback(pg: Page) {
   const sync = { cap: 123, sync: true, level: 50 };
-  const [mind, crit] = await Promise.all([coreRecipe('SGE', sync, {}), coreRecipe('SGE', sync, { target: 'crit' })]);
+  const [mind, crit] = await Promise.all([coreRecipeFound('SGE', sync, {}), coreRecipeFound('SGE', sync, { target: 'crit' })]);
   await seedSheet(pg, FILL_SHEET);
   await openSet(pg, FILL_SHEET.name, 'Empty');
   await runFill(pg);
@@ -38,16 +38,23 @@ export async function checkWorkerFallback(pg: Page) {
   await expect(pg.locator('#sh-apply')).toHaveCount(0);
 
   // Cancel at once (both clicks in one task, before the search's frames): the search is dropped, the set stays
-  const runs = await pg.evaluate("performance.getEntriesByName('fill').length");
+  const runs = await pg.evaluate(() => performance.getEntriesByName('fill').length);
   await pg.evaluate(async () => {
-    document.querySelector('#sh-fill').click();
+    const clickNow = (selector: string) => {
+      const button = document.querySelector<HTMLElement>(selector);
+      if (!button) {
+        throw new Error(`no ${selector}`);
+      }
+      button.click();
+    };
+    clickNow('#sh-fill');
     await Promise.resolve(); // the set page draws Cancel in a microtask
-    document.querySelector('#sh-cancel').click();
+    clickNow('#sh-cancel');
   });
   await expect(pg.locator('#sh-fill')).toBeEnabled();
   await expect(pg.locator('#sh-toast')).toBeVisible();
   await afterFrames(pg); // a search Cancel failed to drop would have run by now
-  const finished = (await pg.evaluate("performance.getEntriesByName('fill').length")) - runs;
+  const finished = (await pg.evaluate(() => performance.getEntriesByName('fill').length)) - runs;
   check(finished === 0, `a search cancelled before it started still ran (${finished})`);
   await expect(pg.locator('#sh-apply')).toHaveCount(0);
   await checkTotals(pg, 'after the cancelled Auto-fill', crit.totals);

@@ -10,8 +10,13 @@ import type { Page } from 'playwright';
 const noteAndButton = (pg: Page) =>
   pg.evaluate(() => {
     const round = Math.round;
-    const note = document.querySelector('#s-rank-pop').getBoundingClientRect();
-    const button = document.querySelector('#sh-settings-dialog [aria-controls="s-rank-pop"]').getBoundingClientRect();
+    const noteElement = document.querySelector('#s-rank-pop');
+    const buttonElement = document.querySelector('#sh-settings-dialog [aria-controls="s-rank-pop"]');
+    if (!noteElement || !buttonElement) {
+      throw new Error('the note or its button is missing');
+    }
+    const note = noteElement.getBoundingClientRect();
+    const button = buttonElement.getBoundingClientRect();
     return {
       noteTop: round(note.top),
       noteRight: round(note.right),

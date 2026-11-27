@@ -2,12 +2,14 @@
 
 import { DIALOG_SHEET, DIALOG_SYNC, expectSavedFill } from './dialog.ts';
 import { STORE_KEY, shot } from '../../lib/constants.ts';
-import { coreRecipe } from '../../lib/core.ts';
-import { check, checkNoBadText, expect, poll } from '../../lib/expect.ts';
+import { coreRecipeFound } from '../../lib/core.ts';
+import { check, checkNoBadText, expect, mustFind, poll } from '../../lib/expect.ts';
 import { runFill, setNumber } from '../../lib/nav.ts';
 import { checkTotals } from '../../lib/shared-checks.ts';
 import { expectApplyCount, expectMealEmpty, openSet, seedSheet } from '../../lib/sheets.ts';
 import { pickOption } from '../../lib/select.ts';
+import type { Recipe } from '../../../../src/core/recipe.ts';
+import type { SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 import type { Page } from 'playwright';
 
 /** Food in the Auto-fill settings: switched on, Auto-fill picks the meal with the core's numbers (every stat of the Total row,
@@ -16,10 +18,10 @@ import type { Page } from 'playwright';
  * GCD the meal and the gear are chosen together, so the GCD asked is the one reached with the meal; a second Auto-fill on the
  * applied set suggests only the meal. */
 export async function checkFillFood(pg: Page) {
-  const fill = fields => coreRecipe('SGE', DIALOG_SYNC, { target: 'crit', ...fields });
+  const fill = (fields: Partial<Recipe>) => coreRecipeFound('SGE', DIALOG_SYNC, { target: 'crit', ...fields });
   const [noFood, food, withGcd] = await Promise.all([fill({ food: false }), fill({}), fill({ gcd: 2.4 })]);
   const usable = [
-    check(food.meal && food.bonus.crit > 0, 'Sage level 100: the best meal adds no Critical Hit; pick another case'),
+    check(food.meal && (food.bonus.crit ?? 0) > 0, 'Sage level 100: the best meal adds no Critical Hit; pick another case'),
     check(food.totals.crit > noFood.totals.crit, 'Food does not raise Critical Hit; pick another case'),
     check(withGcd.meal && withGcd.bonus.sps > 0, 'Sage level 100: the meal for a GCD of 2.40 adds no speed; pick another case'),
   ].every(Boolean);
@@ -27,7 +29,8 @@ export async function checkFillFood(pg: Page) {
     return;
   }
   // the gear's totals alone, on the same base
-  const without = want => Object.fromEntries(Object.keys(want.totals).map(stat => [stat, want.totals[stat] - want.bonus[stat]]));
+  const without = (want: { totals: Record<string, number>; bonus: Record<string, number> }) =>
+    Object.fromEntries(Object.entries(want.totals).map(([stat, total]) => [stat, total - (want.bonus[stat] ?? 0)]));
   const takeBoxes = pg.locator('#sh-gear .takebox input');
   const applyCount = async () => Number.parseInt((await pg.locator('#sh-apply').innerText()).replace(/\D+/g, ''), 10);
 
@@ -44,10 +47,13 @@ export async function checkFillFood(pg: Page) {
   // 1. the best meal: the core's totals for every stat, its name on the Food row, a Take box per row and one for the meal
   await runFill(pg);
   await checkTotals(pg, 'Food on', food.totals);
-  await expect(pg.locator('#sh-meal-btn')).toContainText(food.meal);
+  await expect(pg.locator('#sh-meal-btn')).toContainText(mustFind(food.meal, 'the meal'));
   const boxes = await takeBoxes.count();
   check(boxes === 12, `${boxes} Take boxes for a Sage's 11 rows and a meal, expected 12`);
-  check((await takeBoxes.evaluateAll(b => b.filter(x => x.checked).length)) === boxes, 'a Take box starts unticked');
+  check(
+    (await takeBoxes.evaluateAll(boxes => boxes.filter(box => box instanceof HTMLInputElement && box.checked).length)) === boxes,
+    'a Take box starts unticked',
+  );
   check((await applyCount()) === boxes, `Apply says "${await pg.locator('#sh-apply').innerText()}" for ${boxes} Take boxes`);
   await pg.screenshot({ path: shot('fill-food.png'), fullPage: true });
 
@@ -81,7 +87,7 @@ export async function checkFillFood(pg: Page) {
   await expect(pg.locator('#sh-apply')).toHaveCount(0);
   await checkTotals(pg, 'applied with the meal', withGcd.totals);
   await expect(pg.locator('#sh-figures [data-fig="gcd"] b')).toHaveText(withGcd.gcd);
-  await expect(pg.locator('#sh-meal-btn')).toContainText(withGcd.meal);
+  await expect(pg.locator('#sh-meal-btn')).toContainText(mustFind(withGcd.meal, 'the meal'));
   await checkNoBadText(pg, 'a set with food');
   await pg.click('[data-tab=browse]');
 }
@@ -98,7 +104,7 @@ export async function checkFillBestMeal(pg: Page) {
 }
 
 /** One sheet of checkFillBestMeal: `several` says whether an Auto-fill ties several meals. */
-async function bestMealCase(pg: Page, sheet, several) {
+async function bestMealCase(pg: Page, sheet: SavedSheet, several: boolean) {
   await seedSheet(pg, sheet);
   await openSet(pg, sheet.name, 'Empty');
   await pg.click('#sh-settings');
@@ -106,14 +112,17 @@ async function bestMealCase(pg: Page, sheet, several) {
   await pg.locator('#s-food').check();
   await expectSavedFill(pg, sheet, 'Food on', f => f.goal.food === true);
   const note = pg.locator('#sh-food-row .mealline > .small');
-  const switchIs = on =>
+  const switchIs = (on: boolean) =>
     poll(`the Best for goal switch ${on ? 'on' : 'off'}`, async () => ({
       ok: (await pg.locator('#sh-meal-menu .menu-tools .toggle input').isChecked()) === on,
       got: !on,
     }));
   const count = pg.locator('#sh-meal-btn .same-count');
   const savedList = () =>
-    pg.evaluate(([key, id]) => JSON.parse(localStorage.getItem(`${key}:sheet:${id}`))?.sets[0]?.bestMeals ?? null, [STORE_KEY, sheet.id]);
+    pg.evaluate(([key, id]) => JSON.parse(localStorage.getItem(`${key}:sheet:${id}`) ?? 'null')?.sets[0]?.bestMeals ?? null, [
+      STORE_KEY,
+      sheet.id,
+    ] as const);
 
   // 1. the result waits: no note; applied whole: the note, and the tie list saved with the set (no "1 of N" count)
   await runFill(pg);
@@ -135,15 +144,21 @@ async function bestMealCase(pg: Page, sheet, several) {
 
   // 2. the layout against B17 (proto-b17-settings: .mealline, .pill)
   const layout = await pg.evaluate(() => {
-    const css = (el, ...props) => Object.fromEntries(props.map(p => [p, getComputedStyle(el)[p]]));
     const line = document.querySelector('#sh-food-row .mealline');
-    const small = line.querySelector(':scope > .small');
+    const small = line?.querySelector(':scope > .small');
     const btn = document.querySelector('#sh-meal-btn');
+    const same = btn?.closest('.same');
+    if (!line || !small || !btn || !same) {
+      throw new Error('the meal line, its note or the meal button is missing');
+    }
+    const lineStyle = getComputedStyle(line);
+    const noteStyle = getComputedStyle(small);
     return {
-      line: css(line, 'display', 'alignItems', 'flexWrap'),
+      line: { display: lineStyle.display, alignItems: lineStyle.alignItems, flexWrap: lineStyle.flexWrap },
       note: {
-        ...css(small, 'marginLeft', 'whiteSpace'),
-        gap: small.getBoundingClientRect().left - btn.closest('.same').getBoundingClientRect().right,
+        marginLeft: noteStyle.marginLeft,
+        whiteSpace: noteStyle.whiteSpace,
+        gap: small.getBoundingClientRect().left - same.getBoundingClientRect().right,
       },
       oneLine:
         small.getBoundingClientRect().top >= line.getBoundingClientRect().top &&
@@ -180,7 +195,9 @@ async function bestMealCase(pg: Page, sheet, several) {
     .first()
     .evaluate(el => {
       const after = getComputedStyle(el, '::after');
-      return Object.fromEntries(['content', 'width', 'height', 'marginLeft', 'maskImage', 'webkitMaskImage'].map(p => [p, after[p]]));
+      return Object.fromEntries(
+        (['content', 'width', 'height', 'marginLeft', 'maskImage', 'webkitMaskImage'] as const).map(prop => [prop, after[prop]]),
+      );
     });
   check(
     Math.abs(Number.parseFloat(star.width) - 15.2) < 0.5 && star.width === star.height && star.marginLeft === '6px',

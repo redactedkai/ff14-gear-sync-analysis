@@ -1,9 +1,10 @@
 // The Auto-fill settings popover's layout: the Goal part's controls sit on the columns of the Gear to search part's.
 
-import { check, expect, placedByZag, poll } from '../../lib/expect.ts';
+import { check, expect, mustFind, placedByZag, poll } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { openSageSet, openSet, seedSheet, seedSheets } from '../../lib/sheets.ts';
 import { pickOption } from '../../lib/select.ts';
+import type { SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 import type { Page } from 'playwright';
 
 const ALIGN_TOLERANCE_PX = 1;
@@ -23,12 +24,22 @@ export async function checkSettingsAlignment(pg: Page) {
     await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
     await placedByZag(pg, '#sh-settings-dialog');
     const edges = await pg.evaluate(() => {
-      const box = (selector: string) => document.querySelector(`#sh-settings-dialog ${selector}`).getBoundingClientRect();
+      const box = (selector: string) => {
+        const element = document.querySelector(`#sh-settings-dialog ${selector}`);
+        if (!element) {
+          throw new Error(`no ${selector} in the settings popover`);
+        }
+        return element.getBoundingClientRect();
+      };
+      const switchLabel = document.querySelector('#s-by-tier')?.closest('label');
+      if (!switchLabel) {
+        throw new Error('no label around the Spare points switch');
+      }
       return {
         gcdRight: box('#s-gcd').right,
         segLeft: box('.gcd-field .seg').left,
         segRight: box('.gcd-field .seg').right,
-        switchLeft: document.querySelector('#s-by-tier').closest('label').getBoundingClientRect().left,
+        switchLeft: switchLabel.getBoundingClientRect().left,
         pairLeft: box('#s-min').left,
         pairRight: box('#s-max').right,
         fromLeft: box('#s-from').left,
@@ -36,7 +47,7 @@ export async function checkSettingsAlignment(pg: Page) {
         pageScrolls: document.documentElement.scrollWidth > innerWidth,
       };
     });
-    const near = (name: string, got, want) =>
+    const near = (name: string, got: number, want: number) =>
       check(
         Math.abs(got - want) <= ALIGN_TOLERANCE_PX,
         `at ${width} px the ${name} is at ${got.toFixed(1)}, the control below it at ${want.toFixed(1)}`,
@@ -55,12 +66,24 @@ export async function checkSettingsAlignment(pg: Page) {
 
 // Target GCD label cases: a job, the haste its label line names, and the `parts` its sentence (the input's accessible name)
 // must hold besides the GCD range's two numbers (docs/engineering/ui.md, Target GCD)
-const LABEL_CASES = [
+interface LabelCase {
+  job: string;
+  /* The sheet to open (the default is the one named for the job). */
+  sheet?: string;
+  /* True when the goal is speed, so the Target GCD is off. */
+  off?: boolean;
+  /* What the label line's right part must be: null for none, a RegExp or the exact text. */
+  haste: RegExp | string | null;
+  /* Words (and numbers) the sentence must hold besides the range's two figures. */
+  parts: (string | number)[];
+}
+
+const LABEL_CASES: LabelCase[] = [
   { job: 'PLD', haste: null, parts: [] },
   { job: 'SAM', haste: /^Fuka \d+%$/, parts: ['Fuka', '%'] },
   { job: 'NIN', haste: 'Increase Attack Speed 15%', parts: ['Increase Attack Speed', 15] },
 ];
-const OFF_CASE = {
+const OFF_CASE: LabelCase = {
   job: 'PLD',
   sheet: 'Speed goal PLD',
   off: true,
@@ -72,7 +95,7 @@ const OFF_CASE = {
 const gcdFigures = (text: string) => (text.match(/\d\.\d\d/g) ?? []).length;
 
 /** A saved sheet for `job` with one empty set named "Empty" (every slot empty), for the label cases. */
-function emptySheetFor(job: string, id = `s_${job}`, name = `Label ${job}`) {
+function emptySheetFor(job: string, id = `s_${job}`, name = `Label ${job}`): SavedSheet {
   const empty = SET_SHEET.sets[0];
   const pieces = empty.pieces.map(piece => ({ slot: piece.slot }));
   return {
@@ -88,25 +111,35 @@ function emptySheetFor(job: string, id = `s_${job}`, name = `Label ${job}`) {
 async function measureGcdField(pg: Page) {
   return pg.evaluate(() => {
     const dialog = document.querySelector('#sh-settings-dialog');
-    const rect = element => element.getBoundingClientRect();
-    const label = dialog.querySelector('label[for="s-gcd"]');
-    const left = label.querySelector('.gcd-left');
+    if (!dialog) {
+      throw new Error('the settings popover is not open');
+    }
+    const need = (selector: string) => {
+      const element = dialog.querySelector(selector);
+      if (!element) {
+        throw new Error(`no ${selector} in the settings popover`);
+      }
+      return element;
+    };
+    const rect = (element: Element) => element.getBoundingClientRect();
+    const label = need('label[for="s-gcd"]');
+    const left = need('label[for="s-gcd"] .gcd-left');
     const side = label.querySelector('.gcd-side');
     const lineHeight = rect(left).height;
     return {
-      leftText: left.textContent.replace(/\s+/g, ' ').trim(),
+      leftText: (left.textContent ?? '').replace(/\s+/g, ' ').trim(),
       sideText: side ? side.textContent : null,
       sideTitle: side ? side.getAttribute('title') : null,
       sideCut: side ? side.scrollWidth > side.clientWidth : false,
       oneLine: rect(label).height <= lineHeight + 1,
       leftInside: rect(left).right <= rect(label).right && (!side || rect(left).right <= rect(side).left),
       sideInside: !side || rect(side).right <= rect(label).right + 0.5,
-      fieldHeight: rect(dialog.querySelector('.gcd-field')).height,
+      fieldHeight: rect(need('.gcd-field')).height,
       dialogHeight: rect(dialog).height,
-      boxLeft: rect(dialog.querySelector('#s-gcd')).left,
-      boxRight: rect(dialog.querySelector('#s-gcd')).right,
-      segLeft: rect(dialog.querySelector('.gcd-field .seg')).left,
-      segRight: rect(dialog.querySelector('.gcd-field .seg')).right,
+      boxLeft: rect(need('#s-gcd')).left,
+      boxRight: rect(need('#s-gcd')).right,
+      segLeft: rect(need('.gcd-field .seg')).left,
+      segRight: rect(need('.gcd-field .seg')).right,
       pageScrolls: document.documentElement.scrollWidth > innerWidth,
     };
   });
@@ -118,7 +151,7 @@ async function measureGcdField(pg: Page) {
  * and the box and button edges are the same in every case. */
 export async function checkGcdLabel(pg: Page) {
   await seedSheets(pg, [...LABEL_CASES.map(({ job }) => emptySheetFor(job)), emptySheetFor('PLD', 's_PLD_off', OFF_CASE.sheet)]);
-  let base = null;
+  let base: Awaited<ReturnType<typeof measureGcdField>> | null = null;
   for (const width of WIDTHS_PX) {
     await pg.setViewportSize({ width, height: 900 });
     for (const labelCase of [...LABEL_CASES, OFF_CASE]) {
@@ -139,7 +172,7 @@ export async function checkGcdLabel(pg: Page) {
         const got = ((await sentence.textContent()) ?? '').trim();
         return { ok: gcdFigures(got) === figures && labelCase.parts.every(part => got.includes(String(part))), got };
       });
-      const spoken = (await sentence.textContent()).trim();
+      const spoken = mustFind(await sentence.textContent(), 'the Target GCD sentence').trim();
       const name = /^- '?spinbutton "(.*?)"/m.exec(await pg.locator('#s-gcd').ariaSnapshot())?.[1] ?? '';
       check(name === spoken, `${where}: the Target GCD box's accessible name is "${name}", not its label "${spoken}"`);
       const got = await measureGcdField(pg);
@@ -164,7 +197,7 @@ export async function checkGcdLabel(pg: Page) {
       check(got.leftInside && got.sideInside, `${where}: the label's parts overlap or leave the line`);
       check(!got.pageScrolls, `${where}: the page scrolls sideways`);
       base ??= got;
-      for (const key of ['fieldHeight', 'dialogHeight', 'boxLeft', 'boxRight', 'segLeft', 'segRight']) {
+      for (const key of ['fieldHeight', 'dialogHeight', 'boxLeft', 'boxRight', 'segLeft', 'segRight'] as const) {
         check(
           Math.abs(got[key] - base[key]) <= (key.endsWith('Height') ? HEIGHT_TOLERANCE_PX : ALIGN_TOLERANCE_PX),
           `${where}: ${key} is ${got[key].toFixed(1)}, the first case's ${base[key].toFixed(1)}`,

@@ -11,11 +11,12 @@ import {
   searchLine,
 } from './dialog.ts';
 import { ACTIVITY_KEYS, shot } from '../../lib/constants.ts';
-import { coreGear, coreRecipe } from '../../lib/core.ts';
-import { check, checkNoBadText, expect, poll, same } from '../../lib/expect.ts';
+import { coreGear, coreRecipeFound } from '../../lib/core.ts';
+import { check, checkNoBadText, expect, mustFind, poll, same } from '../../lib/expect.ts';
 import { runFill, setNumber, ticked, waitReady } from '../../lib/nav.ts';
 import { openSet, seedSheet, reloadAtSheets } from '../../lib/sheets.ts';
 import { pickOption, selectOptions } from '../../lib/select.ts';
+import type { Recipe } from '../../../../src/core/recipe.ts';
 import type { Page } from 'playwright';
 
 /** The checked radio of the Target GCD mode (value exact or min). */
@@ -25,8 +26,8 @@ const MODE_CHECKED = '#sh-settings-dialog input[name="s-gcd-mode"]:checked';
  * GCD, each wired (it saves into the set's fillSettings and changes what Auto-fill finds, against the core), and all of it
  * kept across a reload. A change under a waiting Auto-fill result drops the result. Food and the filters are in the next steps. */
 export async function checkFillGoal(pg: Page) {
-  const fill = fields => coreRecipe('SGE', DIALOG_SYNC, fields);
-  const crit = { target: 'crit', food: false }; // the goal's own steps run with Food off (it is on by default); checkFillFood has it on
+  const fill = (fields: Partial<Recipe>) => coreRecipeFound('SGE', DIALOG_SYNC, fields);
+  const crit: Partial<Recipe> = { target: 'crit', food: false }; // the goal's own steps run with Food off (it is on by default); checkFillFood has it on
   const [free, noMelds, tier, plain, gcd, gcdMin] = await Promise.all([
     fill(crit),
     fill({ ...crit, melds: false }),
@@ -75,7 +76,7 @@ export async function checkFillGoal(pg: Page) {
   await pg.locator('#s-food').uncheck();
   await expectSavedFill(pg, DIALOG_SHEET, 'Food off', f => f.goal.food === false);
   await expect(pg.locator('label[for="s-gcd"] .sr-only')).toHaveNumber('2.50'); // the range starts at the base GCD
-  const onLabel = (await pg.locator('label[for="s-gcd"] .sr-only').textContent()).trim();
+  const onLabel = mustFind(await pg.locator('label[for="s-gcd"] .sr-only').textContent(), 'the Target GCD label').trim();
   await checkFilled(pg, 'Maximize Critical Hit', free, async () => {
     await expect(pg.locator('#sh-goal .gtxt')).toHaveText('CRT');
   });
@@ -109,7 +110,13 @@ export async function checkFillGoal(pg: Page) {
   await expect(pg.locator('#s-rank-pop')).toBeVisible();
   await poll('the Spare points note right edge on the ? button, inside the dialog', async () => {
     const edges = await pg.evaluate(() => {
-      const right = (selector: string) => document.querySelector(selector).getBoundingClientRect().right;
+      const right = (selector: string) => {
+        const element = document.querySelector(selector);
+        if (!element) {
+          throw new Error(`no ${selector}`);
+        }
+        return element.getBoundingClientRect().right;
+      };
       return { note: right('#s-rank-pop'), button: right('#sh-settings-dialog .shelp'), dialog: right('#sh-settings-dialog') };
     });
     return { ok: Math.abs(edges.note - edges.button) <= 1 && edges.note <= edges.dialog, got: edges };

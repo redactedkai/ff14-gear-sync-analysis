@@ -59,6 +59,15 @@ export const coreGear = (...args: Parameters<CoreFunctions['coreGear']>) => core
 
 export const coreFiltered = (...args: Parameters<CoreFunctions['coreFiltered']>) => core('coreFiltered', ...args);
 
+/** The same as coreRecipe, for a case where the Auto-fill must find a set: a run with no set throws, naming its status. */
+export async function coreRecipeFound(...args: Parameters<CoreFunctions['coreRecipe']>) {
+  const answer = await core('coreRecipe', ...args);
+  if (answer.status !== 'ok') {
+    throw new Error(`the core found no set for ${args[0]}: ${answer.status}`);
+  }
+  return answer;
+}
+
 export const coreRecipe = (...args: Parameters<CoreFunctions['coreRecipe']>) => core('coreRecipe', ...args);
 
 export const coreRings = (...args: Parameters<CoreFunctions['coreRings']>) => core('coreRings', ...args);

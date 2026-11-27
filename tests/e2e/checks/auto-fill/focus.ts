@@ -43,7 +43,9 @@ export async function checkEditLock(pg: Page) {
       .catch(() => check(false, `${sel} is off after the Auto-fill was cancelled`));
   }
   check(
-    (await pg.locator('#sh-sets .draghandle').evaluateAll(hs => hs.every(h => h.draggable))) === true,
+    (await pg
+      .locator('#sh-sets .draghandle')
+      .evaluateAll(handles => handles.every(handle => handle instanceof HTMLElement && handle.draggable))) === true,
     'a reorder handle cannot be dragged after the Auto-fill was cancelled',
   );
   await pg.click('[data-tab=browse]');
@@ -61,11 +63,14 @@ export async function checkSetPageFocus(pg: Page) {
   await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
   const popover = await pg.evaluate(() => {
     const box = document.querySelector('#sh-settings-dialog');
-    const goal = box.querySelector('#s-goal-h');
-    const gear = box.querySelector('#s-gear-h');
+    const goal = box?.querySelector('#s-goal-h');
+    const gear = box?.querySelector('#s-gear-h');
+    if (!box || !goal || !gear) {
+      throw new Error('the settings popover lacks its box or one of its headings');
+    }
     return {
       goalFirst: Boolean(goal.compareDocumentPosition(gear) & Node.DOCUMENT_POSITION_FOLLOWING),
-      buttons: [...box.querySelectorAll('button')].map(b => b.getAttribute('aria-label') || b.textContent.trim()),
+      buttons: [...box.querySelectorAll('button')].map(b => b.getAttribute('aria-label') || (b.textContent ?? '').trim()),
     };
   });
   check(popover.goalFirst, 'Goal does not come before Gear to search in the Auto-fill settings');
