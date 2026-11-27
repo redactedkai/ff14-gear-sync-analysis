@@ -105,17 +105,18 @@ CODE_DIVISOR = 1000
 # a piece's SubcategorySort below 1000 has no job or role prefix; the code is still the last three digits
 
 
-def code_of(item):
+def code_of(item: Row) -> int:
     return int(item['SubcategorySort']) % CODE_DIVISOR
 
 
-def savage_items(csv_dir, items, gear):
+def savage_items(csv_dir: Path | str, items: list[Row], gear: set[str]) -> tuple[set[str], set[str]]:
     """Ids of Savage gear: dyeable code-20 gear, plus everything bought with a currency that a shop selling such a
     piece also takes. Returns (ids, currencies)."""
     by_id = {r['#']: r for r in items}
     seed = {i for i in gear if code_of(by_id[i]) == 20 and by_id[i]['DyeCount'] not in ('', '0')}
-    listings = []  # (given, costs) as Item.csv ids (text, as in `gear`)
-    costs_of_shop, shops_selling_seed = {}, set()  # by shop row id
+    listings: list[tuple[list[str], list[str]]] = []  # (given, costs) as Item.csv ids (text, as in `gear`)
+    costs_of_shop: dict[str, set[str]] = {}  # by shop row id
+    shops_selling_seed: set[str] = set()
     for shop, _k, given, costs in shop_listings(read_csv(Path(csv_dir) / 'SpecialShop.csv', ['#', 'UseCurrencyType'])):
         given_ids = [str(g) for g in given]
         cost_ids = [str(c) for c in costs if c >= CODE_LIMIT]  # below CODE_LIMIT: currency codes
@@ -131,7 +132,7 @@ def savage_items(csv_dir, items, gear):
     return savage, currencies
 
 
-def override_items(csv_dir, items):
+def override_items(csv_dir: Path | str, items: list[Row]) -> dict[str, str]:
     """{item id: category} from ITEM_OVERRIDES and CURRENCY_OVERRIDES. Raises SchemaError if an id no longer has its
     expected name."""
     names = {int(r['#']): r['Name'] for r in items}
@@ -199,7 +200,7 @@ def check(kept: list[tuple[Row, Piece]], cats: dict[str, str]) -> list[str]:
     return problems
 
 
-def main(csv_dir):
+def main(csv_dir: Path | str) -> None:
     import gen_items  # here, so importing this module stays cheap
 
     kept = gen_items.select(csv_dir).kept

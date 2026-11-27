@@ -33,11 +33,11 @@ stops the run.
 """
 
 from collections import Counter, defaultdict
-from collections.abc import Collection, Iterable
+from collections.abc import Collection, Iterable, Mapping
 from pathlib import Path
 from typing import Literal
 
-from gear_sources import CODE_LIMIT, shop_listings
+from gear_sources import CODE_LIMIT, Listing, shop_listings
 from item_format import ACCESSORY_TYPES, Piece, Row, SchemaError, check_bools, check_ids, load_format, read_csv, read_item_sheet, slot_codes
 
 GIL, WOLF_MARK, MGP = 1, 25, 29
@@ -45,7 +45,7 @@ FIXED_ITEMS = {GIL: 'Gil', WOLF_MARK: 'Wolf Mark', MGP: 'MGP'}  # item id -> exp
 
 # Currencies the game files cannot place: item id -> (expected name, routes). A route is a set of activities; no route
 # means retired. Checked on the Console Games Wiki (docs/engineering/data-pipeline.md, "Gear categories").
-CURRENCIES = {
+CURRENCIES: dict[int, tuple[str, list[set[str]]]] = {
     10307: ('Centurio Seal', [{'Hunts'}]),
     26533: ('Sack of Nuts', [{'Hunts'}]),
     27: ('Allied Seal', [{'Hunts'}]),
@@ -190,7 +190,7 @@ GATHERER_SCRIP = ('4', 4)  # (UseCurrencyType, code): a gatherers' scrip, not a 
 CURRENT_TOME_CODES = {2, 3}
 
 
-def box_bits():
+def box_bits() -> tuple[dict[str, int], int]:
     """{box key: bit} from `activities` in item-format.json, and the market board bit (the next one)."""
     keys = [a['key'] for a in load_format()['activities']]
     return {k: 1 << i for i, k in enumerate(keys)}, 1 << len(keys)
@@ -207,14 +207,14 @@ Route = frozenset[str]
 Routes = frozenset[Route]
 
 
-def check_names(names, table, what, table_name):
+def check_names(names: dict[int, str], table: Mapping[int, tuple[str, *tuple[object, ...]]], what: str, table_name: str) -> None:
     """Raises SchemaError when an id of `table` ({id: (expected name, ...)}) names another item in Item.csv. The message
     names `table_name`, the table in this file to update."""
     expected = {i: entry[0] for i, entry in table.items()}
     check_ids(names, expected, 'Item.csv', what, f'{table_name} (scripts/data/gear_activities.py)')
 
 
-def is_id(value):
+def is_id(value: str) -> bool:
     """True for a cell that names a row: a whole number other than 0."""
     return value.isdigit() and int(value) != 0
 
@@ -272,7 +272,7 @@ def gil_shop_ways(csv_path: Path, ways: Ways, rebuys: set[int], festival_quests:
             ways[got].append(('activity', 'Vendor'))
 
 
-def tome_code(shop, cost):
+def tome_code(shop: Row, cost: int) -> int | None:
     """The tomestone code of a cost below CODE_LIMIT in `shop` (read through its UseCurrencyType: 1 Poetics, 2 and 3
     the current tomestones), or None when it is not a tomestone (a scrip)."""
     currency_type = shop['UseCurrencyType']
@@ -281,10 +281,10 @@ def tome_code(shop, cost):
     return cost if currency_type in TOME_TYPES or (currency_type == '16' and cost == 1) else None
 
 
-def live_tome_ilvls(listings, kept_ids, ilvl_of):
+def live_tome_ilvls(listings: Iterable[Listing], kept_ids: Collection[int], ilvl_of: dict[int, int]) -> dict[int, int]:
     """{current tomestone code: the highest item level of kept gear sold for it}: the live gear of each code. A code
     names "the nth current tomestone", so a listing for it at a lower item level is a retired shop's."""
-    newest = {}
+    newest: dict[int, int] = {}
     for shop, _k, given, costs in listings:
         for cost in costs:
             code = tome_code(shop, cost) if cost < CODE_LIMIT else None
@@ -295,11 +295,14 @@ def live_tome_ilvls(listings, kept_ids, ilvl_of):
     return newest
 
 
-def listing_costs(shop, given, costs, newest, kept_ids, ilvl_of):
+def listing_costs(
+    shop: Row, given: list[int], costs: list[int], newest: dict[int, int], kept_ids: Collection[int], ilvl_of: dict[int, int]
+) -> tuple[list[Cost], bool]:
     """(resolved costs, retired) of a SpecialShop listing: each cost as ('item', id) or ('activity', name) (gil:
     Vendor; tomestone codes: Poetics or Tomestones; other codes: Scrips), and True when the listing sells current
     tomestone gear below that code's live item level (newest, from live_tome_ilvls)."""
-    resolved, retired = [], False
+    resolved: list[Cost] = []
+    retired = False
     for cost in costs:
         if cost >= CODE_LIMIT:
             resolved.append(('item', cost))
@@ -319,7 +322,7 @@ def listing_costs(shop, given, costs, newest, kept_ids, ilvl_of):
     return resolved, retired
 
 
-def listing_gate(shop, k):
+def listing_gate(shop: Row, k: int) -> str | None:
     """'quest' when listing k of `shop` (or the whole shop) needs a quest first, 'achievement' when it needs an
     achievement, else None."""
     if shop[f'Item[{k}].Quest'] not in ('', '0') or shop['Quest'] not in ('', '0'):
@@ -380,7 +383,7 @@ class RouteFinder:
         untradable: set[int],
         tome_slot: dict[int, int],
         accessory_slots: set[int],
-    ):
+    ) -> None:
         self.ways, self.rebuys, self.category, self.slot_of = ways, rebuys, category, slot_of
         self.untradable, self.tome_slot, self.accessory_slots = untradable, tome_slot, accessory_slots
         self.currency_routes = {i: frozenset(frozenset(r) for r in rs) for i, (_, rs) in CURRENCIES.items()}
@@ -409,7 +412,7 @@ class RouteFinder:
     def resolve(self, item: int, depth: int) -> Routes:
         """The routes through the item's ways in: every way to pay all the costs of each way, a gil or free listing
         behind a quest or an achievement counting as that quest or achievement. With no live way in: no_way_in."""
-        found = set()
+        found: set[Route] = set()
         needs_retired = False  # some way in costs something retired
         for way in self.ways.get(item, ()):
             if way[0] == 'activity':
@@ -484,12 +487,12 @@ class Boxes:
     level}, whose highest is the level cap where Savage and Extreme split; tradeable: the ids whose IsUntradable is
     False; names: {item id: name}, for the error message."""
 
-    def __init__(self, level_of, tradeable, names):
+    def __init__(self, level_of: dict[int, int], tradeable: set[int], names: dict[int, str]) -> None:
         self.bits, self.market = box_bits()
         self.level_of, self.tradeable, self.names = level_of, tradeable, names
         self.cap = max(level_of.values()) if level_of else 0
 
-    def bit(self, activity, item):
+    def bit(self, activity: str, item: int) -> int:
         """The box bit of one activity of a kept piece. Raises SchemaError on an activity with no box."""
         if activity == 'Vendor' and item in self.tradeable:
             return self.market  # tradeable gil-vendor gear: the market board switch decides
@@ -504,10 +507,10 @@ class Boxes:
             key += '_current' if self.level_of[item] == self.cap else '_legacy'
         return self.bits[key]
 
-    def masks(self, item, routes):
+    def masks(self, item: int, routes: Routes) -> list[int]:
         """The sorted route masks of a kept piece: one per route that needs nothing retired, the market board bit alone
         when it is tradeable, and none that needs more than another one (it would add nothing)."""
-        masks = set()
+        masks: set[int] = set()
         for route in routes:
             if RETIRED in route:
                 continue
@@ -565,13 +568,13 @@ def routes(
     return masks, inferred
 
 
-def inferred_report(inferred):
+def inferred_report(inferred: Mapping[str, Mapping[str, int]]) -> str:
     """One line: how many kept pieces and currencies took their routes from a fallback rule (routes(), inferred), by
     activity, most first, so a patch that places many new pieces or currencies this way is noticed. For example
     'Routes inferred: 9,876 pieces with no way in the game files (Dungeon 3,210, ...); 201 currencies by the gear they
     buy most (Savage 52, ...)'."""
 
-    def by_activity(counts):
+    def by_activity(counts: Mapping[str, int]) -> str:
         return ', '.join(f'{activity} {n:,}' for activity, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
 
     pieces, currencies = inferred['pieces'], inferred['currencies']
@@ -584,7 +587,7 @@ def inferred_report(inferred):
 TOME_NAME_PREFIX = 'Allagan Tomestone of '
 
 
-def current_tome_names(csv_dir, items=None):
+def current_tome_names(csv_dir: Path | str, items: list[Row] | None = None) -> list[str]:
     """The short names of the current tomestones (TomestonesItem slots 2 and 3, in that order), e.g. ['Mathematics',
     'Mnemonics']. items: the Item.csv rows (read_item_sheet), read here when None. Raises SchemaError when a slot is
     empty."""

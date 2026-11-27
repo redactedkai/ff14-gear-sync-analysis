@@ -13,9 +13,10 @@ UseCurrencyType (tomestones, scrips, gil; gear_activities.py decodes them).
 """
 
 import re
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 
-from item_format import SchemaError, check_ids, read_csv
+from item_format import Row, SchemaError, check_ids, read_csv
 
 ULTIMATE_TOTEMS = {
     21197: 'Dreadwyrm Totem',  # The Unending Coil of Bahamut
@@ -31,7 +32,11 @@ FLAGS = {'crafted': 1, 'ultimate': 2}
 LISTING_GIVES, LISTING_COSTS = 2, 3  # items a SpecialShop listing gives (Item[k].Item[j]) and costs (Item[k].ItemCost[j])
 
 
-def listing_count(header):
+# One SpecialShop listing: (shop row, listing index k, item ids given, costs as ints; see shop_listings)
+Listing = tuple[Row, int, list[int], list[int]]
+
+
+def listing_count(header: Iterable[str]) -> int:
     """Number of listings per SpecialShop row (Item[0] .. Item[n-1])."""
     ks = [int(m.group(1)) for c in header if (m := re.match(r'Item\[(\d+)\]\.Item\[0\]$', c))]
     if not ks:
@@ -39,7 +44,7 @@ def listing_count(header):
     return max(ks) + 1
 
 
-def shop_listings(shops):
+def shop_listings(shops: list[Row]) -> Iterator[Listing]:
     """(shop row, listing index k, given, costs) for every listing of every SpecialShop row (dicts from read_csv):
     given is the item ids the listing gives (Item[k].Item[0..1]), costs what it costs (Item[k].ItemCost[0..2]), as
     ints with the zeros left out. A cost below CODE_LIMIT is a currency code, read through the shop's UseCurrencyType
@@ -52,12 +57,12 @@ def shop_listings(shops):
             yield shop, k, given, costs
 
 
-def flags(csv_dir, items):
+def flags(csv_dir: Path | str, items: Iterable[Row]) -> dict[int, int]:
     """{item id (int): bit mask over FLAGS}. items: the Item.csv rows (dicts with '#' and 'Name')."""
     d = Path(csv_dir)
-    out = {}
+    out: dict[int, int] = {}
 
-    def mark(item, key):
+    def mark(item: int, key: str) -> None:
         if item:
             out[item] = out.get(item, 0) | FLAGS[key]
 
