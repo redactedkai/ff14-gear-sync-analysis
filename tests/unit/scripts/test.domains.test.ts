@@ -172,7 +172,7 @@ test('domains guard: a .test.ts file is a unit test, listed once and mirrored to
   });
   const modules = new Set(['src/ui/text.ts', 'src/ui/views/gcd.ts']);
   assert.equal(mirroredModule('tests/unit/ui/text.test.ts', modules), 'src/ui/text.ts');
-  assert.equal(mirroredModule('tests/unit/ui/views/gcd.test.js', modules), 'src/ui/views/gcd.ts');
+  assert.equal(mirroredModule('tests/unit/ui/views/gcd.test.ts', modules), 'src/ui/views/gcd.ts');
   assert.deepEqual(domainsOfTest('tests/unit/ui/text.test.ts'), ['app']);
   assert.ok(unitFilesOf(['app']).includes('tests/unit/ui/text.test.ts'));
   assert.ok(unitFilesOf(['app']).includes('tests/unit/ui/view-cache.test.ts'));

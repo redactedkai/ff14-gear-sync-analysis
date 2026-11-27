@@ -121,7 +121,7 @@ export const DOMAINS = {
       'src/ui/{sync-charts,tier-window}.ts',
       'src/styles/math-{bar,piece-stats,gcd,tiers,controls}.css',
     ],
-    tests: ['tests/e2e/checks/math-page/**', 'tests/unit/ui/views/no-bad-values.test.js'],
+    tests: ['tests/e2e/checks/math-page/**', 'tests/unit/ui/views/no-bad-values.test.ts'],
   },
   app: {
     title: 'The page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls',
@@ -207,8 +207,8 @@ export const LONG = [
   'tests/unit/ui/sheets/ops.copy-sheet.test.js',
   'tests/unit/ui/sheets/storage.fuzz.test.js',
   'tests/unit/ui/state.fuzz.test.js',
-  'tests/unit/ui/views/gear.naive-browser.test.js',
-  'tests/unit/ui/views/no-bad-values.test.js',
+  'tests/unit/ui/views/gear.naive-browser.test.ts',
+  'tests/unit/ui/views/no-bad-values.test.ts',
 ];
 
 const SKIPPED_FOLDERS = new Set(['__pycache__', 'out', 'node_modules']);
@@ -259,7 +259,7 @@ export function domainsOfSource(file) {
   return domainsListing(file, 'src');
 }
 
-// The src/ file a unit test mirrors, or null: tests/unit/ui/views/gcd.test.js gives src/ui/views/gcd.ts; a `.concern` is
+// The src/ file a unit test mirrors, or null: tests/unit/ui/views/gcd.test.ts gives src/ui/views/gcd.ts; a `.concern` is
 // dropped; `index` is a real file in a folder (core/optimizer/index.pinned gives src/core/optimizer/index.ts).
 export function mirroredModule(testFile, sourceFiles) {
   const parts = testFile.match(/^tests\/unit\/(.+)\/([^/.]+)(?:\.[^/]+)?\.test\.(?:js|ts)$/);

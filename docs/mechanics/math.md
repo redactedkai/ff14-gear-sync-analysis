@@ -485,7 +485,7 @@ Three parts of the clamp rule rest on less than the Wiki check above:
   - xivgear does the same: its caps take the factor from the item (`BaseParamModifier`), and its `applyStatCaps` ([gear.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/gear.ts)) clamps every stat on a synced piece, main stats and Vitality included, exempting only weapon delay (`NO_SYNC_STATS`, [geartypes.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/xivmath/src/geartypes.ts)). With the factor-first order, its cap formula and this page's are the same.
 - **Lower-ranked substats** are clamped against the full-share cap. The alternative would clamp them against their own share at the cap (for example $\operatorname{round}(29 \times 0.7) = 20$ for a 70% Piety on a head piece at 123, instead of 29). **Verified** (published): the FFXIV Wiki's Item Level page shows accessories synced to item level 475 (cap 88).
   - An item level 600 piece's 127 / 89 becomes 88 / 88, so the 70% line reaches the full cap.
-  - An item level 500 piece's 93 / 65 becomes 88 / 65 (the formula gives the same six numbers; tests/unit/ui/views/sync-explainer.test.js).
+  - An item level 500 piece's 93 / 65 becomes 88 / 65 (the formula gives the same six numbers; tests/unit/ui/views/sync-explainer.test.ts).
   - A player's in-game report and The Balance's item level thresholds for "both substats capped" agree.
   - The evidence is in [validation.md, section 8](validation.md#8-in-game-captures-still-missing).
 - **No scaling up**: sync never raises a stat. **Verified** for substats (published): the Wiki's 65 stays 65 above, and its page says "Substats will not be scaled up".

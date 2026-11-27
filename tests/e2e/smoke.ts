@@ -10,7 +10,7 @@ Expected values come from outside the code under test where possible:
     computes for the same settings in Node (the core is checked against a brute force over every loadout in
     tests/unit);
   - a 130 head piece (Spell Speed / Piety) reproducing the ranked stats of a real item level 130 healer head piece
-    (Mind 33, Vitality 32, substats 31/22; its fixed Direct Hit 6 is not a rank; tests/unit/ui/views/piece.test.js finds it in
+    (Mind 33, Vitality 32, substats 31/22; its fixed Direct Hit 6 is not a rank; tests/unit/ui/views/piece.test.ts finds it in
     the item database);
   - level sync (synced level 90, item level sync off): level 100 healer head pieces capped at the item level 660
     head values (Mind 248; tests/unit/core/sync-target.test.ts derives them from the ItemLevel row), in the gear browser and
