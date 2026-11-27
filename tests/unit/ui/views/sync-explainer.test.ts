@@ -15,7 +15,7 @@ import { explainerItemLevelOf, explainerViewOf, meldKeysOf } from '../../helpers
 /* A store-shaped state: a job, a sync (item level `cap`, or level sync when `cap` is null), and the explainer's piece. */
 function app(job, { level, cap = null, slot = 'body', ilvl = null, subs = ['crit', makeJobContext(job).speedKey], slots = 2 }) {
   const a = appState({ job, sync: cap != null, cap, level }, {});
-  a.piece = { ilvl, slot, subs, slots };
+  a.piece = { ...a.piece, ilvl, slot, subs, slots };
   return a;
 }
 
