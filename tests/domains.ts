@@ -64,7 +64,7 @@ export const DOMAINS: Record<string, Domain> = {
     tests: [
       'tests/sweep/**',
       'tests/unit/helpers/exhaustive.ts',
-      'tests/unit/helpers/{exact-solver,pins,recipe-sets,tier-reference}.ts',
+      'tests/unit/helpers/{exact-solver,pins,recipe-sets,synthetic-candidates,tier-reference}.ts',
       'tests/unit/helpers/optimizer-view-sets.json',
     ],
   },
