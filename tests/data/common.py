@@ -21,7 +21,9 @@ import re
 import sys
 from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Any
+from typing import TypeAlias
+
+Json: TypeAlias = bool | int | float | str | list['Json'] | dict[str, 'Json'] | None  # what json.loads returns
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).resolve().parent / 'fixtures'
@@ -41,7 +43,7 @@ TANK = stats(str=55, vit=59, ten=54, det=38)
 HEAL = stats(mind=33, vit=32, piety=22, dh=6, sps=31)
 
 
-def read_export(path: str | Path, name: str) -> Any:
+def read_export(path: str | Path, name: str) -> Json:
     """The JSON value of `export const <name>=...;` (or `export const <name>: <type> = ...;`) in a generated JS or TS file
     (other lines are ignored)."""
     start = re.compile(rf'export const {re.escape(name)}(?::[^=]+)?\s*=\s*')

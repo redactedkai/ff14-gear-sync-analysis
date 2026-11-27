@@ -17,7 +17,6 @@ import tempfile
 import unittest
 from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Any
 from unittest import mock
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
@@ -28,7 +27,7 @@ import item_format
 import provenance
 import summary
 from common import FIXTURES, edit_csv, run_quiet
-from item_format import SchemaError, load_format, row_fields
+from item_format import ItemCell, SchemaError, load_format, row_fields
 
 
 class BadRowTest(unittest.TestCase):
@@ -187,8 +186,8 @@ class SummaryMainTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.tmp.cleanup()
 
-    def item_row(self, ilvl: int) -> list[Any]:
-        row: list[Any] = [0] * len(self.fmt['itemRow']['fields'])
+    def item_row(self, ilvl: int) -> list[ItemCell]:
+        row: list[ItemCell] = [0] * len(self.fmt['itemRow']['fields'])
         row[self.fields['name']], row[self.fields['ilvl']], row[self.fields['slotCode']] = 'x', ilvl, 3
         row[self.fields['routes']] = [1]
         return row
@@ -197,7 +196,7 @@ class SummaryMainTest(unittest.TestCase):
         base = {'source': self.SOURCE, 'formatVersion': self.fmt['formatVersion']}
         self.items.write_text(json.dumps({**base, 'items': [self.item_row(i) for i in item_levels]}), encoding='utf-8')
         self.food.write_text(json.dumps({**base, 'foods': [['m', 1, [], None]] * meals}), encoding='utf-8')
-        report: dict[str, Any] = {
+        report: summary.ItemReport = {
             'itemSheetRows': 10,
             'dropped': {'name': 1},
             'leftOut': {},

@@ -37,7 +37,7 @@ from collections import Counter
 from collections.abc import Collection, Mapping, Sequence
 from itertools import chain, pairwise
 from pathlib import Path
-from typing import Any, NamedTuple, TypedDict, cast
+from typing import NamedTuple, TypedDict
 
 import gear_activities
 import gear_categories
@@ -230,7 +230,9 @@ def materia_table(csv_dir: Path | str, fmt: ItemFormat, items: list[Row] | None 
     if problems:
         raise SchemaError(f'{sheet} materia table: ' + '; '.join(problems))
     mixed_values, gates = tables[first]
-    values = cast('list[int]', mixed_values)  # no problem was listed, so every value is a whole number
+    values = [v for v in mixed_values if isinstance(v, int)]
+    if len(values) != len(mixed_values):  # no problem was listed above, so every value is a whole number
+        raise SchemaError(f'{sheet} materia table: values {mixed_values} are not all whole numbers')
 
     # 4. the high grades, tied to the values
     high = high_grades(csv_path / f'{materia["gradeSheet"]}.csv', values, fmt)
@@ -337,7 +339,21 @@ def has_crafter_gatherer_stat(row: Row, params: Collection[int]) -> bool:
     return any(int(row[f'{col}[{i}]']) in params for col in ('BaseParam', 'BaseParamSpecial') for i in range(N_ITEM_PARAMS))
 
 
-def make_piece(row: Row, fields: dict[str, Any], fmt: ItemFormat) -> Piece:
+class PieceFields(TypedDict):
+    """What the selection rules of select() worked out for one kept item, for make_piece (the rest of a piece is copied from
+    its row): slot code, item level, job mask (bit i: `jobs[i]` may equip), the stat values by `stats` position, item
+    kind, (meld slots, overmeld) and the flag bits of gear_sources.FLAGS."""
+
+    slotCode: int
+    ilvl: int
+    jobMask: int
+    stats: list[int]
+    kind: int
+    meld: tuple[int, int]
+    flags: int
+
+
+def make_piece(row: Row, fields: PieceFields, fmt: ItemFormat) -> Piece:
     """The kept piece of an Item.csv row (see select): `fields` holds what the rules worked out (slotCode, ilvl,
     jobMask, stats, kind, meld, flags); the rest is copied from the row. rarity and gameId are -1 when not a whole
     number, for check_pieces to report."""
@@ -479,8 +495,18 @@ def select(csv_dir: str | Path, items: list[Row] | None = None) -> Selection:
         if meld is None:
             bad_meld.append(f'{row["Name"]} ({row[fmt["materia"]["slotColumn"]]}, {row[fmt["materia"]["overmeldColumn"]]})')
             continue
-        worked_out = {'slotCode': slot, 'ilvl': ilvl, 'jobMask': mask, 'stats': stats, 'kind': int(kind), 'meld': meld}
-        kept.append((row, make_piece(row, {**worked_out, 'flags': flags.get(int(row['#']), 0)}, fmt)))
+        if slot is None:  # only a multi-slot combination has no slot code, and it was left out above
+            raise AssertionError(f'{row["Name"]}: kept with no slot code')
+        piece_fields: PieceFields = {
+            'slotCode': slot,
+            'ilvl': ilvl,
+            'jobMask': mask,
+            'stats': stats,
+            'kind': int(kind),
+            'meld': meld,
+            'flags': flags.get(int(row['#']), 0),
+        }
+        kept.append((row, make_piece(row, piece_fields, fmt)))
 
     check_pieces(kept, bad_kind, bad_meld, n_kinds, fmt)
     return Selection(kept, multi_slot, dropped, dangling)

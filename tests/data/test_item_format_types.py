@@ -4,22 +4,36 @@ the same keys with the same kinds of value, so a key added to either side withou
 import json
 import typing
 import unittest
-from typing import Any
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import item_format
+from common import Json
 from item_format import FORMAT_PATH, ItemFormat, load_format
 
 
-def problems_of(value: Any, expected: Any, where: str) -> list[str]:
+def name_of(expected: object) -> str:
+    """The class name of `expected` (a TypedDict class or a scalar type)."""
+    return str(getattr(expected, '__name__', expected))
+
+
+def key_set(expected: object, attribute: str) -> frozenset[str]:
+    """The `__required_keys__` or `__optional_keys__` of a TypedDict class."""
+    keys = getattr(expected, attribute, None)
+    assert isinstance(keys, frozenset), f'{name_of(expected)} has no {attribute}'
+    return keys
+
+
+def problems_of(value: Json, expected: object, where: str) -> list[str]:
     """What differs between a parsed JSON `value` and the type `expected` (a TypedDict class, list[...], dict[str, ...]
     or a scalar type), as a list of messages that name the path `where`."""
     if typing.is_typeddict(expected):
         if not isinstance(value, dict):
             return [f'{where}: expected an object, found {type(value).__name__}']
         hints = typing.get_type_hints(expected)
-        problems = [f'{where}.{key}: in the file, not in {expected.__name__}' for key in value if key not in hints]
-        problems += [f'{where}.{key}: in {expected.__name__}, not in the file' for key in expected.__required_keys__ if key not in value]
+        problems = [f'{where}.{key}: in the file, not in {name_of(expected)}' for key in value if key not in hints]
+        problems += [
+            f'{where}.{key}: in {name_of(expected)}, not in the file' for key in key_set(expected, '__required_keys__') if key not in value
+        ]
         for key, item in value.items():
             if key in hints:
                 problems += problems_of(item, hints[key], f'{where}.{key}')
@@ -37,7 +51,7 @@ def problems_of(value: Any, expected: Any, where: str) -> list[str]:
         return [p for key, item in value.items() for p in problems_of(item, value_type, f'{where}.{key}')]
     # a scalar: bool is an int in Python, so a number must not stand where a bool is expected, or the other way round
     if type(value) is not expected:
-        return [f'{where}: expected {expected.__name__}, found {type(value).__name__}']
+        return [f'{where}: expected {name_of(expected)}, found {type(value).__name__}']
     return []
 
 
@@ -52,19 +66,19 @@ class ItemFormatTypesTest(unittest.TestCase):
 
     def test_only_comments_and_two_slot_keys_are_optional(self) -> None:
         """A missing key breaks a reader, so NotRequired is for the `_` comment keys and the two optional slot keys."""
-        classes: list[Any] = [
+        classes: list[type] = [
             c for c in vars(item_format).values() if typing.is_typeddict(c) and c is not item_format.Piece
         ]  # Piece is not in the file
         self.assertIn(ItemFormat, classes)
         for cls in classes:
-            for key in cls.__optional_keys__:
+            for key in key_set(cls, '__optional_keys__'):
                 self.assertTrue(
                     key.startswith('_') or (cls is item_format.Slot and key in ('twoHanded', 'blocks')), f'{cls.__name__}.{key}'
                 )
 
     def test_a_wrong_type_is_reported(self) -> None:
         """The checker itself: a missing key, an extra key and a wrong kind of value each show up."""
-        raw = load_format()
+        raw: dict[str, Json] = json.loads(FORMAT_PATH.read_text(encoding='utf-8'))
         broken = {**raw, 'extra': 1, 'formatVersion': '1'}
         del broken['jobs']
         found = problems_of(broken, ItemFormat, 'f')

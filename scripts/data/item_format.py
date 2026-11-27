@@ -13,7 +13,7 @@ import json
 import sys
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from pathlib import Path
-from typing import Any, NotRequired, TypedDict
+from typing import NotRequired, TypedDict
 
 ROOT = Path(__file__).resolve().parents[2]
 FORMAT_PATH = ROOT / 'src' / 'core' / 'item-format.json'
@@ -151,6 +151,12 @@ class AttributeColumns(TypedDict):
     vit: str
 
 
+def attribute_columns(columns: AttributeColumns) -> dict[str, str]:
+    """{attribute key: CSV column name} of an AttributeColumns, as a plain dict a loop can go over (a TypedDict's items()
+    are typed `object`)."""
+    return {'str': columns['str'], 'dex': columns['dex'], 'int': columns['int'], 'mind': columns['mind'], 'vit': columns['vit']}
+
+
 class JobModifiersFormat(TypedDict):
     _comment: NotRequired[str]
     columns: AttributeColumns
@@ -252,7 +258,26 @@ def load_format() -> ItemFormat:
 
 
 Row = dict[str, str]  # one CSV row: header name -> cell text (every cell is a string, empty when blank)
-ItemRow = list[Any]  # one row of items.json: the name first, then whole numbers and a stat list, by the `itemRow.fields` order
+ItemCell = str | int | list[int]  # one cell of an items.json row: the name, a whole number, or the stat list
+ItemRow = Sequence[ItemCell]  # one row of items.json (read only), its cells in the order of `itemRow.fields`
+
+
+def whole(row: ItemRow, index: int) -> int:
+    """The whole number in cell `index` of an items.json row; raises SchemaError when the cell holds anything else (a name or
+    the stat list), which means `itemRow.fields` no longer matches the rows."""
+    cell = row[index]
+    if isinstance(cell, bool) or not isinstance(cell, int):
+        raise SchemaError(f'items.json row {row[0]!r}: cell {index} is {cell!r}, expected a whole number')
+    return cell
+
+
+def whole_list(row: ItemRow, index: int) -> list[int]:
+    """The list of whole numbers in cell `index` of an items.json row (the stats, the routes); raises SchemaError when the
+    cell holds anything else."""
+    cell = row[index]
+    if not isinstance(cell, list):
+        raise SchemaError(f'items.json row {row[0]!r}: cell {index} is {cell!r}, expected a list of whole numbers')
+    return cell
 
 
 def read_csv(path: str | Path, required: Iterable[str] = ()) -> list[Row]:

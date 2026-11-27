@@ -28,16 +28,25 @@ the page uses. Missing columns or a mismatch stop the generator with exit status
 import argparse
 import re
 from pathlib import Path
-from typing import cast
 
 import provenance
-from item_format import ItemFormat, SchemaError, check_slot_percents, load_format, read_csv, run_main, slot_shares, stat_factors
+from item_format import (
+    ItemFormat,
+    SchemaError,
+    attribute_columns,
+    check_slot_percents,
+    load_format,
+    read_csv,
+    run_main,
+    slot_shares,
+    stat_factors,
+)
 
 
 def job_modifiers(class_job_csv: Path, fmt: ItemFormat) -> dict[str, dict[str, int]]:
     """{job: {attribute key: percent}} for every job in fmt['jobs'], from the ClassJob columns in fmt['jobModifiers'].
     A job with no row, or a modifier that is not a positive whole number, stops the generator (SchemaError)."""
-    cols = cast('dict[str, str]', fmt['jobModifiers']['columns'])  # a TypedDict of strings, whose items() are typed object
+    cols = attribute_columns(fmt['jobModifiers']['columns'])
     rows = {r['Abbreviation']: r for r in read_csv(class_job_csv, ['Abbreviation', *cols.values()])}
     out: dict[str, dict[str, int]] = {}
     for job in fmt['jobs']:
@@ -56,7 +65,7 @@ def clan_bonuses(tribe_csv: Path, race_csv: Path, fmt: ItemFormat) -> list[dict[
     same way). Raises SchemaError when a Tribe row 1 to `count` or a Race row 1 to `raceCount` is missing or has no name,
     when two clans share a name, or when an offset is not a whole number."""
     spec = fmt['clans']
-    cols, name_col = cast('dict[str, str]', spec['columns']), spec['nameColumn']
+    cols, name_col = attribute_columns(spec['columns']), spec['nameColumn']
     tribes = {int(r['#']): r for r in read_csv(tribe_csv, ['#', name_col, *cols.values()])}
     races = {int(r['#']): r for r in read_csv(race_csv, ['#', name_col])}
     missing = [f'Tribe {i}' for i in range(1, spec['count'] + 1) if not tribes.get(i, {}).get(name_col)]

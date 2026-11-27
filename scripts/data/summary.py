@@ -25,13 +25,45 @@ import json
 import subprocess
 from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import TypedDict, TypeVar
 
 import provenance
-from item_format import ROOT, ItemFormat, load_format, run_main
+from item_format import ROOT, ItemFormat, ItemRow, SchemaError, load_format, run_main, whole, whole_list
 from provenance import Source
 
-Counts = dict[str, Any]  # the counts of summary.json: whole numbers, and maps of them (by slot, by category, ...)
+Counts = Mapping[str, 'int | Counts']  # the counts of summary.json: whole numbers, and maps of them (by slot, by category, ...)
+
+
+class ItemsDoc(TypedDict):
+    """items.json as summarize() reads it: only the rows."""
+
+    items: list[ItemRow]
+
+
+class FoodDoc(TypedDict):
+    """food.json as summarize() reads it: only the meals, which it counts."""
+
+    foods: list[object]
+
+
+class ItemReport(TypedDict):
+    """What `gen_items.py --report` writes: the selection funnel and the inferred routes of the run, each a count by name."""
+
+    itemSheetRows: int
+    dropped: dict[str, int]
+    leftOut: dict[str, int]
+    dangling: dict[str, int]
+    inferredPieces: dict[str, int]
+    inferredCurrencies: dict[str, int]
+
+
+class SummaryDoc(TypedDict):
+    """summary.json as drift() reads the previous run: the counts, and the source they were made from."""
+
+    counts: Counts
+    source: Mapping[str, str]
+
+
 CountKey = TypeVar('CountKey', int, str)
 
 SUMMARY = ROOT / 'src' / 'data' / 'summary.json'
@@ -61,7 +93,7 @@ def csv_blobs(csv_dir: Path | str, sheets: list[str]) -> dict[str, str] | None:
     return dict(sorted(blobs.items()))
 
 
-def summarize(items_doc: Mapping[str, Any], food_doc: Mapping[str, Any], report: Mapping[str, Any], fmt: ItemFormat) -> Counts:
+def summarize(items_doc: ItemsDoc, food_doc: FoodDoc, report: ItemReport, fmt: ItemFormat) -> Counts:
     """The counts of summary.json (see the module docstring) from the generated item and food files and the item
     generator's report."""
     rows = items_doc['items']
@@ -84,29 +116,29 @@ def summarize(items_doc: Mapping[str, Any], food_doc: Mapping[str, Any], report:
         'leftOut': report['leftOut'],
         'dangling': report['dangling'],
         'rows': len(rows),
-        'maxIlvl': max((r[field['ilvl']] for r in rows), default=0),
-        'bySlot': {str(code): n for code, n in sorted(count(r[field['slotCode']] for r in rows).items())},
-        'byCategory': count(categories[r[field['category']]] for r in rows),
-        'byBox': {box: sum(1 for r in rows if has_bit(r[field['routes']], bit)) for bit, box in enumerate(boxes)},
-        'noRoute': sum(1 for r in rows if not r[field['routes']]),
+        'maxIlvl': max((whole(r, field['ilvl']) for r in rows), default=0),
+        'bySlot': {str(code): n for code, n in sorted(count(whole(r, field['slotCode']) for r in rows).items())},
+        'byCategory': count(categories[whole(r, field['category'])] for r in rows),
+        'byBox': {box: sum(1 for r in rows if has_bit(whole_list(r, field['routes']), bit)) for bit, box in enumerate(boxes)},
+        'noRoute': sum(1 for r in rows if not whole_list(r, field['routes'])),
         'inferredPieces': report['inferredPieces'],
         'inferredCurrencies': report['inferredCurrencies'],
         'meals': len(food_doc['foods']),
     }
 
 
-def flatten(counts: Mapping[str, Any], prefix: str = '') -> dict[str, int]:
+def flatten(counts: Counts, prefix: str = '') -> dict[str, int]:
     """{'dropped.name': 1921, 'rows': 20031, ...}: the counts as one level, for comparing two summaries."""
     flat: dict[str, int] = {}
     for key, value in counts.items():
-        if isinstance(value, dict):
+        if isinstance(value, Mapping):
             flat.update(flatten(value, f'{prefix}{key}.'))
         else:
             flat[f'{prefix}{key}'] = value
     return flat
 
 
-def drift(old: Mapping[str, Any], new: Mapping[str, Any]) -> list[str]:
+def drift(old: Counts, new: Counts) -> list[str]:
     """The counts that moved by more than DRIFT_SHARE and DRIFT_MIN between two `counts`, or appeared or went away, as
     text such as 'byCategory.savage 1,117 -> 0 (-100%)'."""
     before, after = flatten(old), flatten(new)
@@ -132,13 +164,21 @@ def commit_subject(csv_dir: Path | str) -> str:
     return run.stdout.strip() if run.returncode == 0 else ''
 
 
-def changelog_line(source: Source, subject: str, counts: Mapping[str, int], old_counts: Mapping[str, int] | None) -> str:
+def total(counts: Counts, key: str) -> int:
+    """The whole number under `key` in `counts` (rows, meals: a count, not a map of counts); raises SchemaError otherwise."""
+    value = counts[key]
+    if not isinstance(value, int):
+        raise SchemaError(f'summary count {key!r} is {value!r}, expected a whole number')
+    return value
+
+
+def changelog_line(source: Source, subject: str, counts: Counts, old_counts: Counts | None) -> str:
     """One changelog line, for example '- 2026-09-30, `d9582a6` "TC 7.25 (#119)": 20,031 rows (+0), 296 meals (+0)'.
     old_counts: the previous summary's counts, or None (no change shown)."""
 
     def with_change(key: str, label: str) -> str:
-        change = f' ({counts[key] - old_counts[key]:+,})' if old_counts and key in old_counts else ''
-        return f'{counts[key]:,} {label}{change}'
+        change = f' ({total(counts, key) - total(old_counts, key):+,})' if old_counts and key in old_counts else ''
+        return f'{total(counts, key):,} {label}{change}'
 
     title = f' "{subject}"' if subject else ''
     return f'- {source["date"][:10]}, `{source["commit"][:7]}`{title}: {with_change("rows", "rows")}, {with_change("meals", "meals")}'
@@ -151,10 +191,10 @@ def main(
     docstring)."""
     fmt = load_format()
     source = provenance.detect(csv_dir)
-    old = json.loads(summary_path.read_text(encoding='utf-8')) if summary_path.exists() else None
-    items_doc = json.loads(ITEMS.read_text(encoding='utf-8'))
-    food_doc = json.loads(FOOD.read_text(encoding='utf-8'))
-    report = json.loads(Path(report_path).read_text(encoding='utf-8'))
+    old: SummaryDoc | None = json.loads(summary_path.read_text(encoding='utf-8')) if summary_path.exists() else None
+    items_doc: ItemsDoc = json.loads(ITEMS.read_text(encoding='utf-8'))
+    food_doc: FoodDoc = json.loads(FOOD.read_text(encoding='utf-8'))
+    report: ItemReport = json.loads(Path(report_path).read_text(encoding='utf-8'))
     import fetch  # here: fetch imports the gear modules, not needed by the helpers above
 
     counts = summarize(items_doc, food_doc, report, fmt)

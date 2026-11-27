@@ -23,7 +23,7 @@ from collections.abc import Collection, Sequence
 from pathlib import Path
 
 import provenance
-from item_format import ROOT, ItemFormat, ItemRow, SchemaError, load_format, row_fields, run_main
+from item_format import ROOT, ItemFormat, ItemRow, SchemaError, load_format, row_fields, run_main, whole
 
 
 def wearers_by_job(rows: Sequence[ItemRow], fields: dict[str, int], jobs: Sequence[str], slot_codes: Collection[int]) -> list[set[int]]:
@@ -31,10 +31,10 @@ def wearers_by_job(rows: Sequence[ItemRow], fields: dict[str, int], jobs: Sequen
     slot, mask = fields['slotCode'], fields['jobMask']
     sets: list[set[int]] = [set() for _ in jobs]
     for index, row in enumerate(rows):
-        if row[slot] not in slot_codes:
+        if whole(row, slot) not in slot_codes:
             continue
         for bit in range(len(jobs)):
-            if row[mask] >> bit & 1:
+            if whole(row, mask) >> bit & 1:
                 sets[bit].add(index)
     return sets
 

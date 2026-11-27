@@ -10,13 +10,12 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any
 
 import common  # noqa: F401  (puts scripts/data on sys.path and registers the Hypothesis profile; first among our imports)
 import gen_food
 import gen_items
 import provenance
-from common import FIXTURES, run_quiet
+from common import FIXTURES, Json, run_quiet
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -29,14 +28,14 @@ DOCS = st.dictionaries(KEYS, st.one_of(ROWS, SCALARS, st.dictionaries(st.text(ma
 
 class JsonLinesRoundTripTest(unittest.TestCase):
     @given(doc=DOCS, expand=st.sets(KEYS), ensure_ascii=st.booleans())
-    def test_the_text_parses_back_to_the_same_data(self, doc: dict[str, Any], expand: set[str], ensure_ascii: bool) -> None:
+    def test_the_text_parses_back_to_the_same_data(self, doc: dict[str, Json], expand: set[str], ensure_ascii: bool) -> None:
         text = provenance.json_lines(doc, expand=tuple(expand), ensure_ascii=ensure_ascii)
         self.assertEqual(json.loads(text), doc)
         # writing the parsed data again gives the same text: the format is a function of the data alone
         self.assertEqual(provenance.json_lines(json.loads(text), expand=tuple(expand), ensure_ascii=ensure_ascii), text)
 
     @given(doc=DOCS, expand=st.sets(KEYS), ensure_ascii=st.booleans())
-    def test_written_file_is_lf_with_a_final_newline(self, doc: dict[str, Any], expand: set[str], ensure_ascii: bool) -> None:
+    def test_written_file_is_lf_with_a_final_newline(self, doc: dict[str, Json], expand: set[str], ensure_ascii: bool) -> None:
         text = provenance.json_lines(doc, expand=tuple(expand), ensure_ascii=ensure_ascii)
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / 'out.json'
@@ -48,7 +47,7 @@ class JsonLinesRoundTripTest(unittest.TestCase):
         self.assertEqual(data, text.encode('utf-8'))
 
     @given(rows=ROWS)
-    def test_an_expanded_list_has_one_row_per_line(self, rows: list[list[Any]]) -> None:
+    def test_an_expanded_list_has_one_row_per_line(self, rows: list[list[Json]]) -> None:
         text = provenance.json_lines({'items': rows}, expand=('items',))
         lines = text.splitlines()
         if rows:
@@ -60,7 +59,7 @@ class JsonLinesRoundTripTest(unittest.TestCase):
 class GeneratedFilesRoundTripTest(unittest.TestCase):
     """The item and meal files the generators write from the fixtures are fixed points of their own writer."""
 
-    def check(self, path: Path, expand: tuple[str, ...], ensure_ascii: bool) -> dict[str, Any]:
+    def check(self, path: Path, expand: tuple[str, ...], ensure_ascii: bool) -> dict[str, Json]:
         data = Path(path).read_bytes()
         self.assertNotIn(b'\r', data)
         self.assertTrue(data.endswith(b'\n'))

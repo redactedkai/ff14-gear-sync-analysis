@@ -8,7 +8,6 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import gen_gear_groups
@@ -16,7 +15,7 @@ from common import (
     ROOT,
     run_quiet,
 )
-from item_format import SchemaError, load_format, row_fields
+from item_format import ItemCell, SchemaError, load_format, row_fields
 
 
 class GenGearGroupsTest(unittest.TestCase):
@@ -27,9 +26,9 @@ class GenGearGroupsTest(unittest.TestCase):
         self.fmt = load_format()
         self.fields = row_fields(self.fmt)
 
-    def row(self, slot_code: int, jobs: list[str]):
+    def row(self, slot_code: int, jobs: list[str]) -> list[ItemCell]:
         """An item row (name, slot code and job mask only; the generator reads nothing else) wearable by `jobs`."""
-        row: list[Any] = [0] * len(self.fmt['itemRow']['fields'])
+        row: list[ItemCell] = [0] * len(self.fmt['itemRow']['fields'])
         row[self.fields['name']] = 'x'
         row[self.fields['slotCode']] = slot_code
         row[self.fields['jobMask']] = sum(1 << self.fmt['jobs'].index(j) for j in jobs)

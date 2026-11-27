@@ -14,7 +14,6 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import gen_patches
@@ -25,7 +24,7 @@ from item_format import SchemaError
 UTC_MIDNIGHT_0908 = 1788825600  # 2026-09-08 00:00:00 UTC
 
 
-def entry(patch_id: int, version: str, stamp: int | str, name: str | None = None) -> dict[str, Any]:
+def entry(patch_id: int, version: str, stamp: int | str, name: str | None = None) -> dict[str, int | str]:
     """One entry of patchlist.json with the fields the generator reads."""
     return {'ID': patch_id, 'Version': version, 'Name_en': name or f'Patch {version}', 'ReleaseDate': stamp}
 
@@ -51,7 +50,7 @@ class PatchTableTest(unittest.TestCase):
 
     def test_stops_on_anything_unexpected(self) -> None:
         later = entry(10, '7.56', 1788852416)
-        bad: dict[str, Any] = {
+        bad: dict[str, object] = {
             'not a list': {'a': 1},
             'empty': [],
             'a missing field': [{'ID': 1, 'Version': '7.0', 'Name_en': 'Patch 7.0'}],

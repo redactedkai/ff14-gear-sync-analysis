@@ -44,8 +44,10 @@ class GenJobIconsTest(unittest.TestCase):
     def test_every_job_embedded_as_its_own_png(self) -> None:
         run_quiet(gen_job_icons.main, self.icons, self.out)
         icons = read_export(self.out, 'JOB_ICONS')
+        assert isinstance(icons, dict)
         self.assertEqual(list(icons), JOBS)
         for job, url in icons.items():
+            assert isinstance(url, str)
             self.assertTrue(url.startswith('data:image/png;base64,'), job)
             data = __import__('base64').b64decode(url.split(',', 1)[1])
             self.assertEqual(data, (self.icons / f'{job}.png').read_bytes(), job)
