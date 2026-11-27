@@ -13,6 +13,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import gen_item_level
@@ -188,7 +189,7 @@ class GenItemLevelTest(unittest.TestCase):
         with open(self.dir / 'ParamGrow.csv', 'a', encoding='utf-8', newline='') as f:
             w = csv.writer(f, lineterminator='\n')
             for lv, speed in ((101, 0), (102, 0), (201, 100)):
-                row = dict.fromkeys(PARAM_GROW_HEADER, '0')
+                row: dict[str, Any] = dict.fromkeys(PARAM_GROW_HEADER, '0')
                 row.update({'#': lv, 'BaseSpeed': speed, 'LevelModifier': speed})
                 w.writerow([row[k] for k in PARAM_GROW_HEADER])
         _, pg = self.generate()

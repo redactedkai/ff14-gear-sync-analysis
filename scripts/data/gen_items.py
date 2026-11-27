@@ -35,7 +35,7 @@ import argparse
 import json
 from collections import Counter
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import gear_activities
 import gear_categories
@@ -120,13 +120,14 @@ def grade_values(row, key, fmt, gate_of_item, problems):
     values = [row[col] for col in value_cols]
     if not all(v.isdigit() and int(v) > 0 for v in values):
         problems.append(f'{where} values {",".join(values)}, expected {n_grades} positive numbers')
-    gates = []
+    gates: list[int | None] = []
     for col in item_cols:
         level = gate_of_item.get(row[col])
         if level is None or not level.isdigit():
             problems.append(f'{where} {col} = {row[col]}: no materia item with a {materia["gateColumn"]}')
         gates.append(int(level) if level and level.isdigit() else None)
-    if None not in gates and any(b < a for a, b in zip(gates, gates[1:], strict=False)):
+    known_gates = [g for g in gates if g is not None]
+    if len(known_gates) == len(gates) and any(b < a for a, b in zip(known_gates, known_gates[1:], strict=False)):
         problems.append(f'{where} gates {",".join(map(str, gates))} decrease')
     return [int(v) if v.isdigit() else v for v in values], gates
 
@@ -494,7 +495,7 @@ def main(csv_dir, out, source='detect', report=None):
     # each kept piece's fields plus its routes and category, in the order of `itemRow.fields` (row_fields raises if the
     # format file's rowField entries disagree with that list)
     fields = list(row_fields(fmt))
-    pieces = [{**piece, 'routes': routes[r['#']], 'category': cat_index[cats[r['#']]]} for r, piece in kept]
+    pieces: list[dict[str, Any]] = [{**piece, 'routes': routes[r['#']], 'category': cat_index[cats[r['#']]]} for r, piece in kept]
     materia, _decoys = materia_table(csv_dir, fmt, items)
     # A job no item is left for means the job columns or their values changed shape (e.g. 'True' became '1').
     seen = 0

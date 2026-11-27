@@ -8,6 +8,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import gen_gear_groups
@@ -28,7 +29,7 @@ class GenGearGroupsTest(unittest.TestCase):
 
     def row(self, slot_code, jobs):
         """An item row (name, slot code and job mask only; the generator reads nothing else) wearable by `jobs`."""
-        row = [0] * len(self.fmt['itemRow']['fields'])
+        row: list[Any] = [0] * len(self.fmt['itemRow']['fields'])
         row[self.fields['name']] = 'x'
         row[self.fields['slotCode']] = slot_code
         row[self.fields['jobMask']] = sum(1 << self.fmt['jobs'].index(j) for j in jobs)
