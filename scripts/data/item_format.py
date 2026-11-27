@@ -12,17 +12,203 @@ import csv
 import json
 import sys
 from pathlib import Path
+from typing import NotRequired, TypedDict
 
 ROOT = Path(__file__).resolve().parents[2]
 FORMAT_PATH = ROOT / 'src' / 'core' / 'item-format.json'
 N_ITEM_PARAMS = 6  # stat pairs per Item row (BaseParam[0..5], plus the same number of HQ pairs)
 
 
+# The shape of src/core/item-format.json. Keys starting with `_` are comments in the file, so they are NotRequired;
+# tests/data/test_item_format_types.py checks that these classes and the file list the same keys.
+class StatEntry(TypedDict):
+    key: str
+    baseParam: int
+    itemLevelColumn: str
+
+
+class CrafterGathererParam(TypedDict):
+    baseParam: int
+    name: str
+
+
+class Slot(TypedDict):
+    code: int
+    type: str
+    equipSlotColumn: str
+    twoHanded: NotRequired[bool]
+    blocks: NotRequired[list[str]]
+    percent: int
+    baseParamColumn: str
+
+
+class Activity(TypedDict):
+    key: str
+    label: str
+    section: str
+    on: bool
+    hint: str
+
+
+class GearGroupsFormat(TypedDict):
+    _comment: NotRequired[str]
+    slotTypes: list[str]
+    linkPercent: int
+    unlinkedPercentMax: int
+
+
+class ItemRowFormat(TypedDict):
+    _comment: NotRequired[str]
+    fields: list[str]
+
+
+class OvermeldColumns(TypedDict):
+    nq: str
+    hq: str
+
+
+class MateriaRowFields(TypedDict):
+    meldSlots: int
+    overmeld: int
+
+
+class MateriaFormat(TypedDict):
+    _comment: NotRequired[str]
+    sheet: str
+    itemColumn: str
+    valueColumn: str
+    statColumn: str
+    grades: int
+    statKeys: list[str]
+    gateColumn: str
+    gradeSheet: str
+    highColumn: str
+    overmeldColumns: OvermeldColumns
+    overmeldSlots: int
+    slotColumn: str
+    overmeldColumn: str
+    maxSlots: int
+    rowFields: MateriaRowFields
+
+
+class RarityFormat(TypedDict):
+    _comment: NotRequired[str]
+    itemColumn: str
+    rowField: int
+
+
+class GameIdFormat(TypedDict):
+    _comment: NotRequired[str]
+    itemColumn: str
+    rowField: int
+
+
+class LevelScaledFormat(TypedDict):
+    _comment: NotRequired[str]
+    itemColumn: str
+    value: int
+    known: list[int]
+    rowField: int
+
+
+class CategoryEntry(TypedDict):
+    key: str
+    label: str
+
+
+class CategoryFormat(TypedDict):
+    _comment: NotRequired[str]
+    rowField: int
+    list: list[CategoryEntry]
+
+
+class DamageDefenseEntry(TypedDict):
+    key: str
+    itemColumn: str
+    baseParam: int
+    itemLevelColumn: str
+    rowField: int
+
+
+class DamageDefenseFormat(TypedDict):
+    _comment: NotRequired[str]
+    entries: list[DamageDefenseEntry]
+
+
+class StatFactorFormat(TypedDict):
+    _comment: NotRequired[str]
+    itemColumn: str
+    baseParamColumn: str
+    count: int
+
+
+class AttributeColumns(TypedDict):
+    str: str
+    dex: str
+    int: str
+    mind: str
+    vit: str
+
+
+class JobModifiersFormat(TypedDict):
+    _comment: NotRequired[str]
+    columns: AttributeColumns
+
+
+class ClansFormat(TypedDict):
+    _comment: NotRequired[str]
+    count: int
+    raceCount: int
+    tribesPerRace: int
+    nameColumn: str
+    columns: AttributeColumns
+
+
+class FoodFormat(TypedDict):
+    _comment: NotRequired[str]
+    uiCategoryColumn: str
+    uiCategory: int
+    actionColumn: str
+    actions: list[int]
+    status: int
+    foodRowColumn: str
+    stats: list[str]
+    carried: list[str]
+    vitality: str
+
+
+class ItemFormat(TypedDict):
+    _comment: NotRequired[str]
+    formatVersion: int
+    jobs: list[str]
+    _jobLevelCapsNote: NotRequired[str]
+    jobLevelCaps: dict[str, int]
+    _statlessWeaponJobsNote: NotRequired[str]
+    statlessWeaponJobs: list[str]
+    gearGroups: GearGroupsFormat
+    stats: list[StatEntry]
+    crafterGathererParams: list[CrafterGathererParam]
+    slots: list[Slot]
+    activities: list[Activity]
+    itemRow: ItemRowFormat
+    materia: MateriaFormat
+    rarity: RarityFormat
+    gameId: GameIdFormat
+    levelScaled: LevelScaledFormat
+    category: CategoryFormat
+    damageDefense: DamageDefenseFormat
+    statFactor: StatFactorFormat
+    jobModifiers: JobModifiersFormat
+    clans: ClansFormat
+    food: FoodFormat
+
+
 class SchemaError(Exception):
     """The datamining CSVs no longer match what the generators and src/core/item-format.json expect."""
 
 
-def load_format():
+def load_format() -> ItemFormat:
+    """The parsed src/core/item-format.json, typed as ItemFormat (the types are checked against the file by a test)."""
     with open(FORMAT_PATH, encoding='utf-8') as f:
         return json.load(f)
 
@@ -86,7 +272,7 @@ WEAPON_TYPES = ('weapon', 'offhand')  # slot types of weapons and shields
 ACCESSORY_TYPES = ('ear', 'neck', 'wrist', 'ring')  # slot types of accessories (no dye slots on any of them)
 
 
-def slot_codes(fmt, types):
+def slot_codes(fmt: ItemFormat, types):
     """The slot codes (item-format.json `slots`) whose type is one of `types`, for example slot_codes(fmt,
     ACCESSORY_TYPES) = {8, 9, 10, 11}."""
     return {s['code'] for s in fmt['slots'] if s['type'] in types}
@@ -103,7 +289,7 @@ def check_ids(names, expected, sheet, what, table):
         raise SchemaError(f'{sheet}: {what} ids changed: ' + '; '.join(wrong) + '. ' + hint)
 
 
-def row_fields(fmt):
+def row_fields(fmt: ItemFormat):
     """{field name: position} of an items.json row, from `itemRow.fields` of item-format.json (name 0, slotCode 1, ...,
     defenseMag 19). The generators build and read rows by these names, never by position. Raises SchemaError when the
     `rowField` of another entry (materia.rowFields, rarity, gameId, levelScaled, category, the damageDefense entries)
@@ -128,7 +314,7 @@ def row_fields(fmt):
     return position
 
 
-def meld_fields(row, fmt):
+def meld_fields(row, fmt: ItemFormat):
     """(meldSlots, overmeld) of an Item.csv row: the guaranteed materia slots (0 to `maxSlots`) and 1 when overmelding is
     allowed. None when either value is out of range or not of the expected form; the caller lists those and raises."""
     m = fmt['materia']
@@ -138,7 +324,7 @@ def meld_fields(row, fmt):
     return int(slots), 1 if over == 'True' else 0
 
 
-def stat_factors(base_param_csv, fmt, entries=None):
+def stat_factors(base_param_csv, fmt: ItemFormat, entries=None):
     """The per-item stat factor table: {stat key: [percent for item kind 0..count-1]}, read from each stat's BaseParam
     row (`statFactor` in item-format.json). An Item row's BaseParamModifier picks the kind. `entries`: the {key,
     baseParam} rows to read, the stats by default (gen_item_level.py also reads the `damageDefense` entries). Raises
@@ -162,7 +348,7 @@ def stat_factors(base_param_csv, fmt, entries=None):
     return table
 
 
-def check_slot_percents(base_param_csv, fmt):
+def check_slot_percents(base_param_csv, fmt: ItemFormat):
     """Every stat's BaseParam row must give each slot the `percent` of that slot in item-format.json (the slot share the
     page uses). Raises SchemaError listing each mismatch."""
     rows = {r['#']: r for r in read_csv(base_param_csv, ['#', *(s['baseParamColumn'] for s in fmt['slots'])])}
@@ -179,7 +365,7 @@ def check_slot_percents(base_param_csv, fmt):
         raise SchemaError(f'{Path(base_param_csv).name} slot shares differ from {FORMAT_PATH.name}: ' + '; '.join(problems))
 
 
-def slot_shares(base_param_csv, fmt, entries):
+def slot_shares(base_param_csv, fmt: ItemFormat, entries):
     """{key: [slot share in thousandths per slot code]} for each {key, baseParam} entry, read from its BaseParam row's
     slot columns (each slot's `baseParamColumn`, in slot code order). For values whose shares differ from the stats'
     (`damageDefense` in item-format.json: weapon damage only on weapons, defense only on armor). Raises SchemaError on
