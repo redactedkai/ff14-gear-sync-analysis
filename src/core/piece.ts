@@ -58,7 +58,7 @@ export function meldCaps(job: JobContext, item: PoolItem): PerStat<number> {
     c = capsFor(job, item.type, item.ilvl, s.pct, s.factors);
     byJob.set(job, c);
   }
-  return c as PerStat<number>;
+  return c;
 }
 
 /* The most each stat on a pool item can be after sync and melds ({stat key: points}): the cap at the item level it

@@ -7,7 +7,7 @@
    A meal's effect never falls with more gear points and gear + food rises with every gear point, so ranking gear sets by
    gear totals gives the same order as ranking them with food: the optimizer needs no change, and the best food for a goal
    can be picked after the search (bestFood). */
-import { isOneOf, must, mustHave, present } from './guards.ts';
+import { entriesOf, isOneOf, must, mustHave, present } from './guards.ts';
 import { statBase } from './base-stats.ts';
 import { FOODS } from './tables.ts';
 import type { DimKey, JobContext, RawStatKey, StatKey, StatMap, Totals } from './types.ts';
@@ -77,15 +77,19 @@ export function allMeals(job: JobContext): readonly Meal[] {
   }
   const out: Meal[] = [];
   for (const [name, ilvl, stats, vitality] of FOODS) {
-    const mapped = stats.map(([raw, pct, max]) => Object.freeze({ stat: statKeyOf(job, raw), pct, max }));
-    if (mapped.some(s => s.stat == null)) {
+    const mapped: FoodStat[] = [];
+    for (const [raw, pct, max] of stats) {
+      const stat = statKeyOf(job, raw);
+      if (stat !== null) {
+        mapped.push(Object.freeze({ stat, pct, max }));
+      }
+    }
+    // a meal with a stat the job lacks is left out
+    if (mapped.length < stats.length) {
       continue;
     }
     const vit = vitality ? Object.freeze({ stat: 'vit' as const, pct: vitality[0], max: vitality[1] }) : null;
-    // every stat is the job's now (the check above)
-    out.push(
-      Object.freeze({ key: name, name, ilvl, pair: mapped.map(s => s.stat).join('+'), stats: Object.freeze(mapped as FoodStat[]), vit }),
-    );
+    out.push(Object.freeze({ key: name, name, ilvl, pair: mapped.map(s => s.stat).join('+'), stats: Object.freeze(mapped), vit }));
   }
   const frozen = Object.freeze(out);
   mealCache.set(job.jobId, frozen);
@@ -148,7 +152,7 @@ export function foodBonus(job: JobContext, food: FoodLines, totals: Totals, leve
 /* Gear totals plus a foodBonus result. */
 export function withFood(totals: Totals, bonus: FoodBonus): Totals {
   const t = { ...totals };
-  for (const [stat, b] of Object.entries(bonus) as [StatKey, FoodBonusLine][]) {
+  for (const [stat, b] of entriesOf<StatKey, FoodBonusLine>(bonus)) {
     t[stat] = (t[stat] || 0) + b.bonus;
   }
   return t;
@@ -157,7 +161,7 @@ export function withFood(totals: Totals, bonus: FoodBonus): Totals {
 /* How a meal ranks for the objective `keys` (non-empty target and tiebreak keys): the totals with food on each key, then
    the substat food points in all (Vitality left out, so it ranks only as a key). Ranked by betterRank. */
 export function mealRank(keys: readonly DimKey[], totalsWithFood: Totals, bonus: FoodBonus): number[] {
-  const subPoints = (Object.entries(bonus) as [StatKey, FoodBonusLine][]).reduce((n, [stat, b]) => (stat === 'vit' ? n : n + b.bonus), 0);
+  const subPoints = entriesOf<StatKey, FoodBonusLine>(bonus).reduce((n, [stat, b]) => (stat === 'vit' ? n : n + b.bonus), 0);
   return [...keys.map(k => totalsWithFood[k] || 0), subPoints];
 }
 

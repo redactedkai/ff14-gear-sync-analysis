@@ -4,6 +4,7 @@
    Identity: anything that is kept (a set's pieces, saved picks) refers to a database piece by its gameId (the game's
    item id, itemById), with its name stored beside it for a reader; poolKey (name, slot, item level) only groups the same
    piece from several sources, as the menus do. A gameId never changes; a name can, in a patch. */
+import { fromKeys } from './guards.ts';
 import {
   SLOT_LABEL,
   ITEM_STAT_ORDER,
@@ -325,7 +326,7 @@ function factsOfRows(rows: readonly ItemRow[] | undefined): ItemFacts | null {
     slots: first[ROW.meldSlots],
     overmeld: Boolean(first[ROW.overmeld]),
     category: first[ROW.category],
-    damageDefense: Object.fromEntries(DAMAGE_DEFENSE_KEYS.map(k => [k, first[ROW[k]]])) as Record<DamageDefenseKey, number>,
+    damageDefense: fromKeys(DAMAGE_DEFENSE_KEYS, k => first[ROW[k]]),
   };
 }
 

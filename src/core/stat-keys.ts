@@ -2,7 +2,8 @@
    Today's stat keys are the game's own (constants.ts STAT_LABEL). Saved data from before that holds position keys, which
    named a place in the job's stat list: `main` (the main stat), `spd` (the speed stat), `spec` (the special substat). */
 
-import type { JobContext } from './types.ts';
+import { fromKeys } from './guards.ts';
+import type { JobContext, PerStat, StatKey } from './types.ts';
 
 /* The old position keys and the JobContext field that holds the game key at that position. */
 const OLD_POSITION_KEY_FIELDS = Object.freeze({ main: 'mainKey', spd: 'speedKey', spec: 'specKey' } as const);
@@ -32,4 +33,10 @@ export function currentStatKey(job: JobContext, key: string): string {
 export function remapStatKey(from: JobContext, to: JobContext, key: string): string {
   const field = positionOf(from, key);
   return field && to[field] ? to[field] : key;
+}
+
+/* One value per stat key the job has (`job.stats`, in that order): `valueFor(stat)` for each. For a table that the page and
+   the optimizer index by the job's own keys. */
+export function statTable<T>(job: JobContext, valueFor: (stat: StatKey) => T): PerStat<T> {
+  return fromKeys(job.stats, valueFor);
 }

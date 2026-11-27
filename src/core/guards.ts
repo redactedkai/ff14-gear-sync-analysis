@@ -39,3 +39,20 @@ export function messageOf(error: unknown): string {
 export function isOneOf<K extends string>(keys: readonly K[], key: string | null | undefined): key is K {
   return key !== null && key !== undefined && (keys as readonly string[]).includes(key);
 }
+
+/* An object with one entry for each of `keys`, in that order, each the value `valueFor` gives for its key. The compiler cannot
+   see that a loop over a list of keys fills exactly those keys, so this is the one place that says so (the cast below;
+   tests/unit/core/guards.test.ts checks the keys and their order). */
+export function fromKeys<K extends string, V>(keys: readonly K[], valueFor: (key: K) => V): Record<K, V> {
+  const out: Partial<Record<K, V>> = {};
+  for (const key of keys) {
+    out[key] = valueFor(key);
+  }
+  return out as Record<K, V>;
+}
+
+/* The entries of `record` as [key, value] pairs, the keys typed as `K`. `Object.entries` types its keys as text; for an object
+   built from the keys `K` (fromKeys, a literal) they are those keys. The one cast below says so. */
+export function entriesOf<K extends string, V>(record: Partial<Record<K, V>>): [K, V][] {
+  return Object.entries(record) as [K, V][];
+}

@@ -1,5 +1,6 @@
 /* Stat formulas: how item level becomes the stats on a piece, and what item level sync clamps.
    See docs/mechanics/math.md (sections 4 and 5) for each rule and docs/mechanics/validation.md for the evidence. */
+import { statTable } from './stat-keys.ts';
 import { clamp } from './clamp.ts';
 import {
   SUB_WEIGHTS,
@@ -230,7 +231,7 @@ export function capsFor(
   pct?: number | null,
   factors: StatMap | null = null,
 ): PerStat<number> {
-  return Object.fromEntries(job.stats.map(s => [s, capValue(job, s, capIlvl, type, pct, factors?.[s])])) as PerStat<number>;
+  return statTable(job, s => capValue(job, s, capIlvl, type, pct, factors?.[s]));
 }
 
 /* Stats after sync. Pieces at or below the cap are untouched; above it every stat is clamped to capsFor. */

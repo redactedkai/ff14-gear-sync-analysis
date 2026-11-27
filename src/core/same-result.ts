@@ -145,8 +145,9 @@ export function sameResult(
 
   // 1. the player's picks, where they still fit
   // the keys are row indices (as text at run time, which indexes an array all the same)
-  for (const [i, gameId] of Object.entries(chosen) as unknown as [number, number | null][]) {
-    const c = picks[i]?.item && !picks[i].pinned && gameId != null && fitting(Number(i)).find(x => x.item.gameId === gameId);
+  for (const [key, gameId] of Object.entries(chosen)) {
+    const i = Number(key);
+    const c = picks[i]?.item && !picks[i].pinned && gameId != null && fitting(i).find(x => x.item.gameId === gameId);
     if (c) {
       shown[i] = asPick(picks[i].type, c);
     }

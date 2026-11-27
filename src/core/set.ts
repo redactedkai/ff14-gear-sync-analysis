@@ -18,6 +18,7 @@
    `meld` ({slots, overmeld}; meldInfo), uses the job's slot share and stat factors, and gets the item level table's
    weapon damage and defense (syncedValue in damage-defense.ts). An editable custom piece will have to carry the rest
    itself (architecture.md, section 7). */
+import { statTable } from './stat-keys.ts';
 import { SLOT_LABEL } from './constants.ts';
 import { mitigationPct, setDefense } from './damage-defense.ts';
 import { statBase } from './base-stats.ts';
@@ -172,7 +173,7 @@ export function evaluateSet(
     return item ? { piece, item, ...applyStones(job, item, piece.stones ?? [], sync) } : { piece, item: null };
   });
   const sumOver = (pick: (w: WornPiece) => StatMap): PerStat<number> =>
-    Object.fromEntries(job.stats.map(s => [s, worn.reduce((sum, w) => sum + (w.item ? pick(w)[s] || 0 : 0), 0)])) as PerStat<number>;
+    statTable(job, s => worn.reduce((sum, w) => sum + (w.item ? pick(w)[s] || 0 : 0), 0));
   const gear = sumOver(w => w.stats);
   const lost = sumOver(w => w.lost);
 
@@ -183,16 +184,11 @@ export function evaluateSet(
   const meal = (set.meal != null && allMeals(job).find(m => m.key === set.meal)) || null;
   const bonus = meal ? foodBonus(job, meal, gear, level, clanBase) : {};
   const totals = withFood(gear, bonus);
-  const base = Object.fromEntries(job.stats.map(s => [s, statBase(job, s, level)])) as PerStat<number>;
+  const base = statTable(job, s => statBase(job, s, level));
 
   // the character panel's numbers, one rule for every reader (clan-bonus.ts): without and with the meal
   const panelOf = (withMeal: boolean): PerStat<number> =>
-    Object.fromEntries(
-      job.stats.map(s => [
-        s,
-        characterStat(job, s, { base: base[s], gear: gear[s], meal: withMeal ? (bonus[s]?.bonus ?? 0) : 0, clan, roles }),
-      ]),
-    ) as PerStat<number>;
+    statTable(job, s => characterStat(job, s, { base: base[s], gear: gear[s], meal: withMeal ? (bonus[s]?.bonus ?? 0) : 0, clan, roles }));
   const panelGear = panelOf(false);
   const panel = panelOf(true);
 
@@ -237,7 +233,7 @@ export function evaluateSet(
   const haste = hasteFor(job.jobId, level);
   const hastePct = haste?.pct ?? 0;
   const tiers = job.stats.map(s => {
-    const value = totals[s] as number;
+    const value = totals[s] ?? 0;
     const g = s === job.speedKey && hastePct ? gcdTierAt(value || 0, level, BASE_GCD_MS, hastePct) : null;
     const tier = g ? { effect: `${g.gcd.toFixed(2)}s`, start: g.start, next: g.next } : statTier(job, s, value, level);
     if (!tier) {
@@ -258,7 +254,7 @@ export function evaluateSet(
   const defense = { phys: def.phys, mag: def.mag, physPct: mitigationPct(def.phys, level), magPct: mitigationPct(def.mag, level) };
 
   // 6. the GCD and DoT/HoT bonus of the speed with food
-  const spd = totals[job.speedKey] as number;
+  const spd = totals[job.speedKey] ?? 0;
   const gcd = {
     spd,
     haste,

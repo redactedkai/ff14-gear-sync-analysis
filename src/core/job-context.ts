@@ -1,7 +1,7 @@
 /* A JobContext is an immutable description of everything that depends on the selected job:
    which raw stats the stat keys mean, labels, weapon mode and slot shares.
    Core functions take it as their first argument instead of reading shared globals. */
-import { must } from './guards.ts';
+import { fromKeys, must } from './guards.ts';
 import {
   JOBS,
   DEFAULT_JOB,
@@ -74,8 +74,8 @@ export function makeJobContext(jobId: string | null | undefined): JobContext {
     stats,
     substats,
     // the names of the job's own stats, from the global tables
-    label: Object.fromEntries(stats.map(s => [s, STAT_LABEL[s]])) as PerStat<string>,
-    short: Object.fromEntries(stats.map(s => [s, STAT_SHORT[s]])) as PerStat<string>,
+    label: fromKeys(stats, s => STAT_LABEL[s]),
+    short: fromKeys(stats, s => STAT_SHORT[s]),
     weaponMode,
     slotPct: { ...BASE_SLOT_PCT, weapon: WEAPON_PCT[hasOffhand ? '1h+oh' : '2h'] },
     activeSlotTypes: SLOT_TYPES.filter(t => t !== 'offhand' || hasOffhand),
