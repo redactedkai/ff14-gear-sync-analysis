@@ -6,7 +6,8 @@ import type { Candidate, Eff, SlotType } from '../../../src/core/types.ts';
 let nextId = 0;
 
 /* A synthetic candidate: its `score`, effective stats `eff` and the slot types it blocks. One copy, no melds, and a
-   made-up head piece with its own id (c0, c1, ...), so two candidates are never the same piece. */
-export function syntheticCandidate(score: number, eff: Eff, blocks: readonly SlotType[] = []): Candidate {
-  return { item: mkItem(`c${nextId++}`, 'head', 100, {}), eff, score, sum: score, blocks, copies: 1, meld: null };
+   made-up head piece with its own id (c0, c1, ...), so two candidates are never the same piece. `own` replaces fields (the
+   piece, to make two candidates of one piece, or the copies). */
+export function syntheticCandidate(score: number, eff: Eff, blocks: readonly SlotType[] = [], own: Partial<Candidate> = {}): Candidate {
+  return { item: mkItem(`c${nextId++}`, 'head', 100, {}), eff, score, sum: score, blocks, copies: 1, meld: null, ...own };
 }

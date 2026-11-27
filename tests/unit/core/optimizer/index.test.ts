@@ -7,18 +7,24 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { optimize } from '../../../../src/core/optimizer/index.ts';
 import { pruneDominated, makeScorer } from '../../../../src/core/optimizer/candidates.ts';
 import { suffixBounds } from '../../../../src/core/optimizer/search.ts';
+import type { SearchSlot } from '../../../../src/core/optimizer/slot-index.ts';
+import { mkItem } from '../../../../src/core/items.ts';
 import { optimizeGcd } from '../../../../src/core/target-gcd.ts';
+import type { GcdFailure, GcdSuccess, GoalOptions } from '../../../../src/core/target-gcd.ts';
 import { rankByTier } from '../../../../src/core/tier-rank.ts';
+import type { TierRankFailure, TierRankSuccess } from '../../../../src/core/tier-rank.ts';
+import type { Candidate, SolveResult, StatKey, Sync } from '../../../../src/core/types.ts';
 import { exhaustive, gamePool, loadoutCount } from '../../helpers/exhaustive.ts';
+import { syntheticCandidate } from '../../helpers/synthetic-candidates.ts';
 
 const sge = makeJobContext('SGE');
-const SYNC = { cap: 123, sync: true };
-const NOSYNC = { cap: 123, sync: false };
+const SYNC: Sync = { cap: 123, sync: true };
+const NOSYNC: Sync = { cap: 123, sync: false };
 
 /* Real gear pools, one job per role: every database item the job can equip in a small item level window
    (equip level 50 or below), small enough that exhaustive() can try every loadout. The expected totals come
    from that brute force, not from the optimizer. */
-const REAL_POOLS = [
+const REAL_POOLS: [jobId: string, filter: { ilvlMin: number; ilvlMax: number; lvlMax: number }][] = [
   ['WHM', { ilvlMin: 130, ilvlMax: 135, lvlMax: 50 }],
   ['SGE', { ilvlMin: 120, ilvlMax: 130, lvlMax: 50 }],
   ['WAR', { ilvlMin: 130, ilvlMax: 135, lvlMax: 50 }],
@@ -43,7 +49,8 @@ for (const [jobId, filter] of REAL_POOLS) {
     assert.ok(n >= 1000 && n <= 200000, `${jobId}: ${n} loadouts`);
     for (const sync of [SYNC, NOSYNC]) {
       for (const target of job.substats) {
-        const opts = { target, tiebreak: [job.mainKey, 'vit'] };
+        const tiebreak: StatKey[] = [job.mainKey, 'vit'];
+        const opts = { target, tiebreak };
         const r = optimize(job, pool, sync, opts);
         const label = `${jobId} ${target} sync=${sync.sync}`;
         assert.ok(r.ok && !r.truncated, label);
@@ -59,9 +66,10 @@ for (const [jobId, filter] of REAL_POOLS) {
 
 /* The two ring slots are bounded together by the best legal pair: a Unique ring is never counted twice. */
 test('ring-pair bound: the best ring twice only with 2 copies, else the best plus the best other item', () => {
-  const cand = (name, sks, copies) => ({ item: { id: name }, eff: { sks }, score: sks, copies });
-  const slots = ['ring', 'ring'];
-  const bound = list => suffixBounds(slots, [list, list], ['sks']);
+  const cand = (name: string, sks: number, copies: number): Candidate =>
+    syntheticCandidate(sks, { sks }, [], { item: mkItem(name, 'ring', 100, {}, { copies }), copies });
+  const slots: SearchSlot[] = ['ring', 'ring'];
+  const bound = (list: Candidate[]) => suffixBounds(slots, [list, list], ['sks']);
   const u = cand('U', 10, 1);
   // Unique best ring: 10 + 6, not 20; the bound of the second ring slot alone stays the best single ring
   let b = bound([u, cand('A', 6, 1), cand('B', 5, 1)]);
@@ -86,20 +94,21 @@ test('ring-pair bound keeps a full-pool search small: Sage, cap 660, Spell Speed
 /* Dominance counts copies per item: two candidates of one Unique ring are one ring, so a third ring they both beat
    is still needed for the pair and must not be dropped. */
 test('dominance pruning counts the copies of one item once', () => {
-  const u = { id: 'U' };
+  const ring = (name: string) => mkItem(name, 'ring', 100, {});
+  const u = ring('U');
   const arr = [
-    { item: u, eff: { sks: 10 }, copies: 1, blocks: [] },
-    { item: u, eff: { sks: 9 }, copies: 1, blocks: [] },
-    { item: { id: 'C' }, eff: { sks: 5 }, copies: 1, blocks: [] },
+    syntheticCandidate(10, { sks: 10 }, [], { item: u }),
+    syntheticCandidate(9, { sks: 9 }, [], { item: u }),
+    syntheticCandidate(5, { sks: 5 }, [], { item: ring('C') }),
   ];
   assert.deepEqual(
-    pruneDominated(arr, ['sks'], 2).map(a => a.item.id),
+    pruneDominated(arr, ['sks'], 2).map(a => a.item.name),
     ['U', 'U', 'C'],
   );
   // a second, different item that beats C does make it droppable
-  arr.push({ item: { id: 'D' }, eff: { sks: 7 }, copies: 1, blocks: [] });
+  arr.push(syntheticCandidate(7, { sks: 7 }, [], { item: ring('D') }));
   assert.deepEqual(
-    pruneDominated(arr, ['sks'], 2).map(a => a.item.id),
+    pruneDominated(arr, ['sks'], 2).map(a => a.item.name),
     ['U', 'U', 'D'],
   );
 });
@@ -118,16 +127,19 @@ test('makeScorer: four keys rank in order, a fifth throws', () => {
 test('optimize, optimizeGcd and rankByTier: no goal given means the main stat', () => {
   const job = makeJobContext('SGE');
   const pool = gamePool(job, { ilvlMin: 690, ilvlMax: 730 });
-  const sync = { cap: null, sync: false, level: 100 };
-  const pickIds = res => res.picks.map(p => p.item?.id ?? null);
-  for (const run of [
+  const sync: Sync = { cap: null, sync: false, level: 100 };
+  const pickIds = (res: SolveResult | GcdSuccess | GcdFailure | TierRankSuccess | TierRankFailure): (string | null)[] => {
+    assert.ok(res.ok);
+    return res.picks.map(p => p.item?.id ?? null);
+  };
+  const runs: ((opts: GoalOptions) => SolveResult | GcdSuccess | GcdFailure | TierRankSuccess | TierRankFailure)[] = [
     opts => optimize(job, pool, sync, opts),
     opts => optimizeGcd(job, pool, sync, { ...opts, gcd: 2.45, mode: 'min' }),
     opts => rankByTier(job, pool, sync, opts),
-  ]) {
-    const noGoal = run({ tiebreak: ['crit'] });
-    assert.ok(noGoal.ok);
-    assert.deepEqual(pickIds(noGoal), pickIds(run({ target: 'mind', tiebreak: ['crit'] })));
-    assert.notDeepEqual(pickIds(noGoal), pickIds(run({ target: 'sps', tiebreak: ['crit'] })));
+  ];
+  for (const run of runs) {
+    const noGoal = pickIds(run({ tiebreak: ['crit'] }));
+    assert.deepEqual(noGoal, pickIds(run({ target: 'mind', tiebreak: ['crit'] })));
+    assert.notDeepEqual(noGoal, pickIds(run({ target: 'sps', tiebreak: ['crit'] })));
   }
 });
