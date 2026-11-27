@@ -333,7 +333,7 @@ test('what the Food menu template shows is in the view: hover text, item level t
 });
 
 test('every meal of every job has two or three stat lines, the most the template has room for', () => {
-  for (const id of Object.keys(JOBS)) {
+  for (const { id } of JOBS) {
     const job = makeJobContext(id);
     const totals = Object.fromEntries(job.stats.map(s => [s, 0]));
     const items = mealMenu(job, 100, totals, null).groups.flatMap(g => g.items);
