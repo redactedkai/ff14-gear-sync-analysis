@@ -1,7 +1,7 @@
 /* Builds a review page: one card per UI change, each with its options' screenshots, buttons to pick an option or
    Drop, a notes box, and "Copy my picks". The schema of the cards JSON is in SKILL.md next to this file.
 
-Run: node .claude/skills/review-page/make-page.mjs <cards.json> [--out <page.html>]
+Run: node .claude/skills/review-page/make-page.ts <cards.json> [--out <page.html>]
 Writes index.html next to the JSON unless --out is given. Shot paths in the JSON are read relative to the JSON file
 (or absolute) and written into the page relative to the page, so keep the shots where they are. Plain Node, no
 dependencies. Exits 1 on a schema error; a missing shot file is only a warning (the card shows a broken image).
@@ -10,31 +10,65 @@ dependencies. Exits 1 on a schema error; a missing shot file is only a warning (
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 
+/* The cards JSON as read from disk (SKILL.md has the schema). Nothing is trusted: every field may be missing or the
+   wrong type, which step 2 reports. */
+interface RawShots {
+  [view: string]: unknown;
+}
+interface RawOption {
+  key?: string;
+  label?: string;
+  text?: string;
+  shots?: RawShots;
+}
+interface RawCard {
+  id?: string;
+  group?: string;
+  title?: string;
+  problem?: string;
+  before?: { text?: string; shots?: RawShots };
+  options?: RawOption[];
+  drop?: boolean;
+  dependsOn?: string;
+  notes?: string;
+}
+interface RawReview {
+  title?: string;
+  intro?: string;
+  dropped?: string[];
+  storageKey?: string;
+  cards?: RawCard[];
+}
+
 // Step 1: read the arguments and the JSON.
 const args = process.argv.slice(2);
 const outFlag = args.indexOf('--out');
 const outArg = outFlag >= 0 ? args.splice(outFlag, 2)[1] : null;
 const jsonPath = args[0];
 if (!jsonPath) {
-  console.error('usage: node make-page.mjs <cards.json> [--out <page.html>]');
+  console.error('usage: node make-page.ts <cards.json> [--out <page.html>]');
   process.exit(1);
 }
 const jsonDir = dirname(resolve(jsonPath));
 const pagePath = resolve(outArg || resolve(jsonDir, 'index.html'));
 const pageDir = dirname(pagePath);
-const review = JSON.parse(readFileSync(jsonPath, 'utf8'));
+const review: RawReview = JSON.parse(readFileSync(jsonPath, 'utf8'));
 
 // Step 2: check the schema, so a typo stops here instead of making a page with a hole in it.
-const problems = [];
-const missingShots = [];
-const need = (cond, message) => cond || problems.push(message);
+const problems: string[] = [];
+const missingShots: string[] = [];
+const need = (cond: unknown, message: string): void => {
+  if (!cond) {
+    problems.push(message);
+  }
+};
 need(typeof review.title === 'string' && review.title, 'title: a non-empty string');
 need(Array.isArray(review.cards) && review.cards.length, 'cards: a non-empty array');
 need(review.dropped === undefined || Array.isArray(review.dropped), 'dropped: an array of strings');
 const seenIds = new Set();
 
 // Shot paths: JSON-relative in, page-relative (forward slashes) out.
-function pageRelative(shotPath) {
+function pageRelative(shotPath: string): string {
   const onDisk = isAbsolute(shotPath) ? shotPath : resolve(jsonDir, shotPath);
   if (!existsSync(onDisk)) {
     missingShots.push(shotPath);
@@ -43,12 +77,12 @@ function pageRelative(shotPath) {
 }
 
 // A shots object maps a view name ("1440 light") to a path; keep its order.
-function checkShots(shots, where) {
+function checkShots(shots: RawShots | undefined, where: string): Record<string, string> {
   if (shots === undefined) {
     return {};
   }
   need(shots && typeof shots === 'object' && !Array.isArray(shots), `${where}.shots: an object of view name to path`);
-  const out = {};
+  const out: Record<string, string> = {};
   for (const [view, shotPath] of Object.entries(shots || {})) {
     need(typeof shotPath === 'string', `${where}.shots["${view}"]: a path`);
     if (typeof shotPath === 'string') {
@@ -58,7 +92,7 @@ function checkShots(shots, where) {
   return out;
 }
 
-const cards = (review.cards || []).map((card, index) => {
+const cards = (review.cards || []).map((card: RawCard, index: number) => {
   const where = `cards[${index}]${card?.id ? ` (${card.id})` : ''}`;
   need(typeof card.id === 'string' && card.id, `${where}.id: a non-empty string`);
   need(!seenIds.has(card.id), `${where}.id: used twice`);
@@ -66,7 +100,7 @@ const cards = (review.cards || []).map((card, index) => {
   need(typeof card.title === 'string', `${where}.title: a string`);
   need(Array.isArray(card.options) && card.options.length, `${where}.options: a non-empty array`);
   const keys = new Set();
-  const options = (card.options || []).map((option, optionIndex) => {
+  const options = (card.options || []).map((option: RawOption, optionIndex: number) => {
     const optionWhere = `${where}.options[${optionIndex}]`;
     need(/^[a-z]$/.test(option.key || ''), `${optionWhere}.key: one lower-case letter`);
     need(!keys.has(option.key) && option.key !== 'drop', `${optionWhere}.key: used twice`);
@@ -96,18 +130,20 @@ if (problems.length) {
 }
 
 // Step 3: write the page. The data goes in a JSON script tag ("</" escaped so no text can close it).
+const title = review.title ?? ''; // a missing title stopped the run in step 2
 const data = {
-  title: review.title,
+  title,
   intro: review.intro || '',
   dropped: review.dropped || [],
-  storageKey: review.storageKey || `review-${review.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-picks`,
+  storageKey: review.storageKey || `review-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-picks`,
   cards,
 };
-const escapeHtml = text => String(text).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
+const escapeHtml = (text: string): string =>
+  String(text).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch] ?? ch);
 // function replacers, so a "$" in the text is not read as a replacement pattern
 const dataJson = JSON.stringify(data).replace(/<\//g, '<\\/');
 const page = template()
-  .replace('%%TITLE%%', () => escapeHtml(review.title))
+  .replace('%%TITLE%%', () => escapeHtml(title))
   .replace('%%DATA%%', () => dataJson);
 writeFileSync(pagePath, page);
 console.log(`${pagePath}: ${cards.length} cards`);

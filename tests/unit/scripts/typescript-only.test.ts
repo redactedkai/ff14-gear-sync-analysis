@@ -1,7 +1,7 @@
-/* The guard that keeps tests/ and scripts/ in TypeScript: no tracked `.js`, `.mjs` or `.cjs` file there except the ones
-   listed below, each kept on purpose. A new script or test is a `.ts` file (CLAUDE.md, "Code rules"); this fails with the
-   path of a stray one. src/ is not checked here: its two `.js` files (the entry and the ES5 startup-failure page) are
-   named in CLAUDE.md. */
+/* The guard that keeps tests/, scripts/ and .claude/ in TypeScript: no tracked `.js`, `.mjs` or `.cjs` file there except
+   the ones listed below, each kept on purpose. A new script or test is a `.ts` file (CLAUDE.md, "Code rules"); this
+   fails with the path of a stray one. src/ is not checked here: its two `.js` files (the entry and the ES5
+   startup-failure page) are named in CLAUDE.md. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -17,14 +17,14 @@ const KEPT_AS_JAVASCRIPT: Record<string, string> = {
   'tests/unit/scripts/fixtures/lit-lint/good-element.js': 'input for the Lit lint test: must be a .js file to be linted',
 };
 
-/* The tracked files under tests/ and scripts/ that end in .js, .mjs or .cjs (git's list, so generated `out/` folders,
-   which are ignored, do not count). */
+/* The tracked files under tests/, scripts/ and .claude/ that end in .js, .mjs or .cjs (git's list, so generated `out/`
+   folders, which are ignored, do not count). */
 function trackedJavaScript(): string[] {
-  const listing = execFileSync('git', ['ls-files', '--', 'tests', 'scripts'], { cwd: ROOT, encoding: 'utf8' });
+  const listing = execFileSync('git', ['ls-files', '--', 'tests', 'scripts', '.claude'], { cwd: ROOT, encoding: 'utf8' });
   return listing.split('\n').filter(file => /\.(js|mjs|cjs)$/.test(file));
 }
 
-test('tests/ and scripts/ hold no JavaScript file but the ones kept on purpose', () => {
+test('tests/, scripts/ and .claude/ hold no JavaScript file but the ones kept on purpose', () => {
   const strays = trackedJavaScript().filter(file => !(file in KEPT_AS_JAVASCRIPT));
   assert.deepEqual(strays, [], 'rename these to .ts, or add them to KEPT_AS_JAVASCRIPT with a reason');
 });

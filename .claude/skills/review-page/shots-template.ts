@@ -1,10 +1,11 @@
-// Usage: node shots.mjs <page.html> <tag> [ONLY regex] [--full]
+// Usage: node shots.ts <page.html> <tag> [ONLY regex] [--full]
 // Clipped screenshots of the region each finding changes, at 1440 px (and 960 px where `narrow` is set), light theme.
 // Saves shots/<id>-<tag>-<width>.png next to this script. --full saves full-page shots to full/ instead (for checking).
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
+import type { Page, Route } from 'playwright';
 const require = createRequire(resolve('package.json')); // run from the repo root, which has Playwright
 const { chromium } = require('playwright');
 
@@ -19,19 +20,27 @@ const KEY = 'ilvl-stat-lab-v4';
 
 const SGE = { job: 'SGE', cap: 123, sync: true, level: 100, tab: 'opt', mathTab: 'piece' };
 const SETTINGS = '.panel[aria-label="Job and sync settings"]';
-const settle = pg => pg.waitForTimeout(450);
-const run = async pg => {
+const settle = (pg: Page): Promise<void> => pg.waitForTimeout(450);
+const run = async (pg: Page): Promise<void> => {
   await pg.click('#o-run');
   await pg.waitForSelector('#o-out .panel', { timeout: 60000 });
   await pg.waitForSelector('#o-busy', { state: 'hidden', timeout: 60000 });
   await settle(pg);
 };
 
-// id -> {state, steps, clip: [selectors] (union of their boxes), narrow: also 960 px}
-const VIEWS = {
+/* One view to shoot: the saved state to seed (null: none), the clicks that reach it, the selectors whose boxes are
+   united into the clip, and whether to shoot 960 px too. */
+interface View {
+  state: object | null;
+  steps: (pg: Page) => Promise<void>;
+  clip: string[];
+  narrow?: boolean;
+}
+// id -> view
+const VIEWS: Record<string, View> = {
   '11-1': {
     state: { job: 'WAR', level: 100, sync: false, cap: null, tab: 'opt', opt: { target: 'crit' } },
-    steps: async pg => {
+    steps: async (pg: Page) => {
       // the user types the synced level, as a newcomer does
       await pg.fill('#level', '90');
       await pg.locator('#level').dispatchEvent('change');
@@ -42,7 +51,7 @@ const VIEWS = {
   },
   '11-2': {
     state: { ...SGE, opt: { target: 'mind', tb: 'spd', gcd: 2.4, food: true } },
-    steps: async pg => {
+    steps: async (pg: Page) => {
       await pg.click('[data-job-id="SCH"]');
       await settle(pg);
     },
@@ -124,7 +133,7 @@ const VIEWS = {
   },
   '10-4': {
     state: { ...SGE, tab: 'math', mathTab: 'piece' },
-    steps: async pg => {
+    steps: async (pg: Page) => {
       await pg.click('#m-help');
       await settle(pg);
     },
@@ -133,8 +142,13 @@ const VIEWS = {
 };
 
 const only = onlyArg ? new RegExp(onlyArg) : null;
+interface Job {
+  id: string;
+  v: View;
+  width: number;
+}
 const browser = await chromium.launch();
-const jobs = [];
+const jobs: Job[] = [];
 for (const [id, v] of Object.entries(VIEWS)) {
   if (only && !only.test(id)) {
     continue;
@@ -143,15 +157,15 @@ for (const [id, v] of Object.entries(VIEWS)) {
     jobs.push({ id, v, width });
   }
 }
-const errors = [];
-async function one({ id, v, width }) {
+const errors: string[] = [];
+async function one({ id, v, width }: Job): Promise<void> {
   const ctx = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: 'light', reducedMotion: 'reduce' });
-  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (route: Route) => route.abort());
   if (v.state) {
     await ctx.addInitScript(
-      ([k, s]) => {
+      ([storageKey, savedState]: [string, string]) => {
         if (!sessionStorage.getItem('seeded')) {
-          localStorage.setItem(k, s);
+          localStorage.setItem(storageKey, savedState);
           sessionStorage.setItem('seeded', '1');
         }
       },
@@ -159,7 +173,7 @@ async function one({ id, v, width }) {
     );
   }
   const pg = await ctx.newPage();
-  pg.on('pageerror', e => errors.push(`${id}: ${e.message}`));
+  pg.on('pageerror', (e: Error) => errors.push(`${id}: ${e.message}`));
   await pg.goto(URL);
   await settle(pg);
   await v.steps(pg);
@@ -179,7 +193,7 @@ async function one({ id, v, width }) {
   if (full) {
     await pg.screenshot({ path: file, fullPage: true, animations: 'disabled', caret: 'hide' });
   } else {
-    const box = await pg.evaluate(sels => {
+    const box = await pg.evaluate((sels: string[]) => {
       let top = Infinity,
         bottom = -Infinity,
         left = Infinity,
