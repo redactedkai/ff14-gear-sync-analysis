@@ -1,6 +1,6 @@
 /* Stories of <gsa-math-screen>: a click on a sub-tab link shows that sub-tab and hides the other two (through the store), a pick in the
    Job menu edits the store and the bar follows it; axe. The links' own behaviour is math-bar.spec.ts, the job each sub-tab edits is
-   math-inputs.test.js. */
+   math-inputs.test.ts. */
 import { expect, test } from '../fixtures.ts';
 import { PICKED_JOB, START_JOB_NAME, type Default } from './math-screen.story.js';
 

@@ -178,7 +178,7 @@ export const DOMAINS = {
       'tests/unit/helpers/{fakes,esbuild-output}.ts',
       'tests/unit/scripts/**',
       'tests/unit/smoke-helpers/**',
-      'tests/unit/ui/no-alpine.test.js',
+      'tests/unit/ui/no-alpine.test.ts',
     ],
   },
 };
@@ -203,10 +203,10 @@ export const LONG = [
   'tests/unit/core/recipe.real-gear.test.ts',
   'tests/unit/core/recipe.round-trip.test.ts',
   'tests/unit/core/target-gcd.exhaustive.test.ts',
-  'tests/unit/ui/elements/set-page/fill-run.best-meals.test.js',
+  'tests/unit/ui/elements/set-page/fill-run.best-meals.test.ts',
   'tests/unit/ui/sheets/ops.copy-sheet.test.js',
   'tests/unit/ui/sheets/storage.fuzz.test.js',
-  'tests/unit/ui/state.fuzz.test.js',
+  'tests/unit/ui/state.fuzz.test.ts',
   'tests/unit/ui/views/gear.naive-browser.test.ts',
   'tests/unit/ui/views/no-bad-values.test.ts',
 ];

@@ -519,7 +519,7 @@ Notes:
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.ts` (`syncTarget`, `levelSyncIlvl`) |
 | GCD, tier scan and tier lookup | `src/core/speed.ts` (`gcdFor`, `gcdTiers`, `gcdTierAt`) |
 | Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.js` (`exhaustive`, `gamePool`) |
-| Unit tests named above | `tests/unit/core/formulas.model-accuracy.test.ts`, `core/formulas.test.ts`, `core/formulas.caps-at-123.test.ts`, `core/formulas.sync-clamp.test.ts`, `core/formulas.sync-cap-order.test.ts`, `core/sync-target.test.ts`, `core/speed.test.ts`, `core/optimizer/index.test.js`, `core/optimizer/index.exhaustive.test.js`, `core/optimizer/index.speed-limits.test.js`, `core/formulas.stat-factor.test.ts`, `ui/views/*.test.js`, `core/items.test.ts`, `core/item-format.test.ts`, `core/tables.provenance.test.ts`, `ui/state.test.js` |
+| Unit tests named above | `tests/unit/core/formulas.model-accuracy.test.ts`, `core/formulas.test.ts`, `core/formulas.caps-at-123.test.ts`, `core/formulas.sync-clamp.test.ts`, `core/formulas.sync-cap-order.test.ts`, `core/sync-target.test.ts`, `core/speed.test.ts`, `core/optimizer/index.test.js`, `core/optimizer/index.exhaustive.test.js`, `core/optimizer/index.speed-limits.test.js`, `core/formulas.stat-factor.test.ts`, `ui/views/*.test.js`, `core/items.test.ts`, `core/item-format.test.ts`, `core/tables.provenance.test.ts`, `ui/state.test.ts` |
 | Generator tests | `tests/data/test_*.py` |
 | Smoke test | `tests/e2e/smoke.ts` |
 | Check against ffxiv-gearing (section 9) | `scripts/validate/gearing/` (`fetch.py` clones and builds it, `run.mjs --site local\|live` compares, `ours.js` is this project's side) |
