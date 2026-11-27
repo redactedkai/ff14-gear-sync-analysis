@@ -8,6 +8,8 @@ so a fixture inside this project's own repo is not mistaken for game data.
 
 import json
 import subprocess
+from argparse import ArgumentParser, Namespace
+from collections.abc import Collection, Mapping
 from pathlib import Path
 from typing import Literal, TypedDict
 
@@ -77,25 +79,25 @@ def note(source: Source | None, repo: str = REPO) -> str:
     return f'GENERATED from {source["repo"]} {source["commit"]} ({source["date"]}). Do not edit; see docs/engineering/data-pipeline.md.'
 
 
-def add_cli_args(parser):
+def add_cli_args(parser: ArgumentParser) -> None:
     parser.add_argument('--source-commit', help='datamining commit sha (default: detect from the CSV directory)')
     parser.add_argument('--source-date', help='datamining commit date, ISO 8601')
 
 
-def from_args(args) -> SourceArg:
+def from_args(args: Namespace) -> SourceArg:
     """Provenance from --source-commit/--source-date, else detected from the CSV directory."""
     if args.source_commit:
         return make(args.source_commit, args.source_date)
     return detect(args.csv_dir)
 
 
-def json_lines(doc, expand=(), ensure_ascii=True):
+def json_lines(doc: Mapping[str, object], expand: Collection[str] = (), ensure_ascii: bool = True) -> str:
     """`doc` (a dict) as JSON text with one top-level key per line, and, for each key in `expand`, one entry of its list
     or dict per line; everything else is compact. So a patch's diff of a generated file shows the rows that changed
     (an item, a stat's budget column, a level) instead of one changed line holding the whole file. Parses to the same
     value as json.dumps(doc); the page bundle (esbuild) minifies it, so the built page does not grow."""
 
-    def compact(value):
+    def compact(value: object) -> str:
         return json.dumps(value, ensure_ascii=ensure_ascii, separators=(',', ':'))
 
     lines = []
@@ -111,6 +113,6 @@ def json_lines(doc, expand=(), ensure_ascii=True):
     return '{\n' + ',\n'.join(lines) + '\n}\n'
 
 
-def write_generated(out, js):
+def write_generated(out: str | Path, js: str) -> None:
     """Write a generated file as UTF-8 with LF line endings on every platform (the repo stores LF)."""
     Path(out).write_text(js, encoding='utf-8', newline='\n')

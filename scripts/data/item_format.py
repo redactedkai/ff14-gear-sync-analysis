@@ -11,9 +11,9 @@ instead of producing quietly wrong data.
 import csv
 import json
 import sys
-from collections.abc import Iterable
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from pathlib import Path
-from typing import NotRequired, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 ROOT = Path(__file__).resolve().parents[2]
 FORMAT_PATH = ROOT / 'src' / 'core' / 'item-format.json'
@@ -233,6 +233,14 @@ class Piece(TypedDict):
     category: NotRequired[int]
 
 
+class BaseParamRef(TypedDict):
+    """What stat_factors and slot_shares need of an entry: the stat or value's `key` and its BaseParam row. StatEntry and
+    DamageDefenseEntry both fit it."""
+
+    key: str
+    baseParam: int
+
+
 class SchemaError(Exception):
     """The datamining CSVs no longer match what the generators and src/core/item-format.json expect."""
 
@@ -244,6 +252,7 @@ def load_format() -> ItemFormat:
 
 
 Row = dict[str, str]  # one CSV row: header name -> cell text (every cell is a string, empty when blank)
+ItemRow = list[Any]  # one row of items.json: the name first, then whole numbers and a stat list, by the `itemRow.fields` order
 
 
 def read_csv(path: str | Path, required: Iterable[str] = ()) -> list[Row]:
@@ -265,7 +274,7 @@ def check_bools(rows: Iterable[Row], columns: Iterable[str], sheet: str) -> None
     read_csv), naming the sheet, the column and a few of the values found. The generators compare these columns with
     the string 'True', so an exporter that wrote booleans another way (1/0, true/false) would otherwise turn every
     value into false without notice (every HQ bonus gone, every piece tradeable)."""
-    bad = []
+    bad: list[str] = []
     for column in columns:
         found = sorted({r[column] for r in rows} - {'True', 'False'})
         if found:
@@ -277,7 +286,7 @@ def check_bools(rows: Iterable[Row], columns: Iterable[str], sheet: str) -> None
         )
 
 
-def item_columns():
+def item_columns() -> list[str]:
     """The Item.csv columns the item database generator reads: gen_items.py and, through it, gear_categories.py and
     gear_activities.py (read_csv raises SchemaError on any that is missing)."""
     fmt = load_format()
@@ -305,13 +314,13 @@ WEAPON_TYPES = ('weapon', 'offhand')  # slot types of weapons and shields
 ACCESSORY_TYPES = ('ear', 'neck', 'wrist', 'ring')  # slot types of accessories (no dye slots on any of them)
 
 
-def slot_codes(fmt: ItemFormat, types):
+def slot_codes(fmt: ItemFormat, types: Collection[str]) -> set[int]:
     """The slot codes (item-format.json `slots`) whose type is one of `types`, for example slot_codes(fmt,
     ACCESSORY_TYPES) = {8, 9, 10, 11}."""
     return {s['code'] for s in fmt['slots'] if s['type'] in types}
 
 
-def check_ids(names, expected, sheet, what, table):
+def check_ids(names: Mapping[int, str], expected: Mapping[int, str], sheet: str, what: str, table: str) -> None:
     """Raises SchemaError when a hand-kept id no longer names what it was kept for. names: {id: name} of `sheet`;
     expected: {id: expected name}; what: what the ids are (for the message, e.g. 'currency'); table: the table and file
     to update, e.g. 'CURRENCIES (scripts/data/gear_activities.py)'. A patch that reuses an id thus stops the run
@@ -322,7 +331,7 @@ def check_ids(names, expected, sheet, what, table):
         raise SchemaError(f'{sheet}: {what} ids changed: ' + '; '.join(wrong) + '. ' + hint)
 
 
-def row_fields(fmt: ItemFormat):
+def row_fields(fmt: ItemFormat) -> dict[str, int]:
     """{field name: position} of an items.json row, from `itemRow.fields` of item-format.json (name 0, slotCode 1, ...,
     defenseMag 19). The generators build and read rows by these names, never by position. Raises SchemaError when the
     `rowField` of another entry (materia.rowFields, rarity, gameId, levelScaled, category, the damageDefense entries)
@@ -347,7 +356,7 @@ def row_fields(fmt: ItemFormat):
     return position
 
 
-def meld_fields(row, fmt: ItemFormat):
+def meld_fields(row: Row, fmt: ItemFormat) -> tuple[int, int] | None:
     """(meldSlots, overmeld) of an Item.csv row: the guaranteed materia slots (0 to `maxSlots`) and 1 when overmelding is
     allowed. None when either value is out of range or not of the expected form; the caller lists those and raises."""
     m = fmt['materia']
@@ -357,7 +366,7 @@ def meld_fields(row, fmt: ItemFormat):
     return int(slots), 1 if over == 'True' else 0
 
 
-def stat_factors(base_param_csv, fmt: ItemFormat, entries=None):
+def stat_factors(base_param_csv: str | Path, fmt: ItemFormat, entries: Sequence[BaseParamRef] | None = None) -> dict[str, list[int]]:
     """The per-item stat factor table: {stat key: [percent for item kind 0..count-1]}, read from each stat's BaseParam
     row (`statFactor` in item-format.json). An Item row's BaseParamModifier picks the kind. `entries`: the {key,
     baseParam} rows to read, the stats by default (gen_item_level.py also reads the `damageDefense` entries). Raises
@@ -365,7 +374,8 @@ def stat_factors(base_param_csv, fmt: ItemFormat, entries=None):
     sf = fmt['statFactor']
     cols = [f'{sf["baseParamColumn"]}[{i}]' for i in range(sf['count'])]
     rows = {r['#']: r for r in read_csv(base_param_csv, ['#', *cols])}
-    table, problems = {}, []
+    table: dict[str, list[int]] = {}
+    problems: list[str] = []
     for st in fmt['stats'] if entries is None else entries:
         r = rows.get(str(st['baseParam']))
         if r is None:
@@ -381,11 +391,11 @@ def stat_factors(base_param_csv, fmt: ItemFormat, entries=None):
     return table
 
 
-def check_slot_percents(base_param_csv, fmt: ItemFormat):
+def check_slot_percents(base_param_csv: str | Path, fmt: ItemFormat) -> None:
     """Every stat's BaseParam row must give each slot the `percent` of that slot in item-format.json (the slot share the
     page uses). Raises SchemaError listing each mismatch."""
     rows = {r['#']: r for r in read_csv(base_param_csv, ['#', *(s['baseParamColumn'] for s in fmt['slots'])])}
-    problems = []
+    problems: list[str] = []
     for st in fmt['stats']:
         r = rows.get(str(st['baseParam']))
         if r is None:
@@ -400,7 +410,7 @@ def check_slot_percents(base_param_csv, fmt: ItemFormat):
         raise SchemaError(f'{Path(base_param_csv).name} slot shares differ from {FORMAT_PATH.name}: ' + '; '.join(problems))
 
 
-def slot_shares(base_param_csv, fmt: ItemFormat, entries):
+def slot_shares(base_param_csv: str | Path, fmt: ItemFormat, entries: Sequence[BaseParamRef]) -> dict[str, list[int]]:
     """{key: [slot share in thousandths per slot code]} for each {key, baseParam} entry, read from its BaseParam row's
     slot columns (each slot's `baseParamColumn`, in slot code order). For values whose shares differ from the stats'
     (`damageDefense` in item-format.json: weapon damage only on weapons, defense only on armor). Raises SchemaError on
@@ -409,7 +419,8 @@ def slot_shares(base_param_csv, fmt: ItemFormat, entries):
     if [s['code'] for s in slots] != list(range(len(slots))):
         raise SchemaError(f'{FORMAT_PATH.name} slot codes are not 0..{len(slots) - 1}')
     rows = {r['#']: r for r in read_csv(base_param_csv, ['#', *(s['baseParamColumn'] for s in slots)])}
-    table, problems = {}, []
+    table: dict[str, list[int]] = {}
+    problems: list[str] = []
     for e in entries:
         r = rows.get(str(e['baseParam']))
         if r is None:
@@ -425,7 +436,7 @@ def slot_shares(base_param_csv, fmt: ItemFormat, entries):
     return table
 
 
-def run_main(main, *args):
+def run_main(main: Callable[..., object], *args: object) -> None:
     """Run a generator's main(); a SchemaError exits with status 1 and a one-line message instead of a traceback."""
     try:
         main(*args)
