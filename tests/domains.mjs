@@ -85,7 +85,7 @@ export const DOMAINS = {
       'src/ui/draw-in-steps.ts',
       'src/styles/{set-page,pieces,fill-settings}.css',
     ],
-    tests: ['tests/e2e/checks/set-page/**', 'tests/unit/helpers/{set-page-bind,frames}.ts'],
+    tests: ['tests/e2e/checks/set-page/**', 'tests/unit/helpers/{set-page-bind,frames,solver-answers}.ts'],
   },
   sheets: {
     title: 'The Sheets tab: manager, a sheet page, dialogs, saved sheets',
