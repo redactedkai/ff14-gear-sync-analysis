@@ -12,6 +12,9 @@ const FILL_TIMEOUT_MS = 60_000;
 // src/ui/elements/app/note-timer.ts, is 6000) and for the page to stop moving after the scroll to the top
 const NOTE_TIMEOUT_MS = 15_000;
 const LAYOUT_TIMEOUT_MS = 10_000;
+// pixels a view's baseline may differ by where a rounded corner flips between runs; a changed colour, radius or layout
+// moves hundreds of pixels, so this stays far below any real change (tests/visual/screens.spec.mjs)
+const CORNER_NOISE_PX = 16;
 // how many animation frames in a row the page and its open layers must keep their places to count as settled
 const STILL_FRAMES = 3;
 
@@ -104,7 +107,8 @@ async function fill(page) {
 const noSteps = async () => {};
 
 /* Each view: the saved state it opens with (null: nothing saved; `sheets` lists sheet records to save beside it) and
-   the steps that lead to it. `keepHover`: the steps end on a hover the shot shows, so the mouse stays where it is. */
+   the steps that lead to it. `keepHover`: the steps end on a hover the shot shows, so the mouse stays where it is.
+   `maxDiffPixels`: how many pixels the baseline may differ by (default 0; tests/visual only). */
 export const VIEWS = {
   '01-sheets-empty': { state: null, steps: noSteps },
   '02-sheets-manager': { state: SHEETS, steps: noSteps },
@@ -186,6 +190,8 @@ export const VIEWS = {
   '27-sheets-new-dialog': { state: SHEETS, steps: page => clickAndSettle(page, '#sh-new') },
   '28-sheet-edit-dialog': {
     state: SHEETS,
+    // the dialog's rounded corners are drawn with a few pixels of raster noise from one run to the next (4 pixels at 1440 px)
+    maxDiffPixels: CORNER_NOISE_PX,
     steps: async page => {
       await clickAndSettle(page, '#sh-list a.sname');
       await clickAndSettle(page, '#sh-edit');

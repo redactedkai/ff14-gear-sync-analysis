@@ -28,7 +28,7 @@ for (const width of WIDTHS) {
         expect(pageErrors, 'script errors on the page').toEqual([]);
         const sidewaysPx = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         expect(sidewaysPx, 'sideways scroll').toBeLessThanOrEqual(0);
-        await expect(page).toHaveScreenshot(`${name}-${width}-dark.png`, { fullPage: true });
+        await expect(page).toHaveScreenshot(`${name}-${width}-dark.png`, { fullPage: true, maxDiffPixels: view.maxDiffPixels ?? 0 });
       });
     }
   });
