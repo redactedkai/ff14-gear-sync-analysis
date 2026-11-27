@@ -101,7 +101,8 @@ function declarations(block) {
 
 /** The theme tokens in the CSS text `css`: `light` (the `:root` block), `darkSetting` (the block under
  * `@media (prefers-color-scheme: dark)`, for a page with no forced theme) and `darkForced` (`:root[data-theme="dark"]`).
- * The dark blocks hold only the tokens that change; `color-scheme` is not a token and is left out. */
+ * The dark blocks hold only the tokens that change; `color-scheme` is not a token and is left out.
+ * @returns {{ light: Record<string, string>, darkSetting: Record<string, string>, darkForced: Record<string, string> }} */
 export function readThemeTokens(css) {
   const plain = css.replace(/\/\*[\s\S]*?\*\//g, '');
   const media = blockAfter(plain, '@media (prefers-color-scheme: dark)');
@@ -112,7 +113,8 @@ export function readThemeTokens(css) {
   };
 }
 
-/** The tokens a page shows under `scheme` ('light' or 'dark'): the light ones, with the dark ones over them. */
+/** The tokens a page shows under `scheme` ('light' or 'dark'): the light ones, with the dark ones over them.
+ * @returns {Record<string, string>} */
 export function tokensFor(css, scheme) {
   const tokens = readThemeTokens(css);
   return scheme === 'dark' ? { ...tokens.light, ...tokens.darkForced } : tokens.light;

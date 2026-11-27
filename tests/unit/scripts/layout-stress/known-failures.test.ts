@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { KNOWN_FAILURES, applyKnownFailures } from '../../../../scripts/layout-stress/known-failures.mjs';
 
-const finding = (rule, screen, view, extra = {}) => ({
+const finding = (rule: string, screen: string, view: string, extra: Record<string, string> = {}) => ({
   rule,
   severity: 'fail',
   screen,

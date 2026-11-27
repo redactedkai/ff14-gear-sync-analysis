@@ -28,7 +28,7 @@ const FILES_IN_ORDER = [
 ];
 
 /* The layer each file is imported into (src/styles/entry.css). */
-const LAYER_OF = name => {
+const LAYER_OF = (name: string): string => {
   if (['tokens', 'base', 'controls', 'fallbacks'].includes(name)) {
     return name;
   }
@@ -50,19 +50,19 @@ test('readStyles: the order statement, then each file of the cascade order insid
 });
 
 test('expandStyles: an import is replaced by its file, a comment line is left out', () => {
-  const files = { 'a.css': '.a {\n  color: red;\n}\n', 'b.css': '.b {\n  color: blue;\n}\n' };
+  const files: Record<string, string> = { 'a.css': '.a {\n  color: red;\n}\n', 'b.css': '.b {\n  color: blue;\n}\n' };
   const entry = '/* the entry */\n@import "./a.css"; /* first */\n@import "./b.css";\n';
   assert.equal(
-    expandStyles(entry, name => files[name]),
+    expandStyles(entry, (name: string) => files[name]),
     `${files['a.css']}\n${files['b.css']}`,
   );
 });
 
 test('expandStyles: an import with layer(name) goes inside @layer, and the order statement stays where it is', () => {
-  const files = { 'a.css': '.a {\n  color: red;\n}\n', 'b.css': '.b {\n  color: blue;\n}\n' };
+  const files: Record<string, string> = { 'a.css': '.a {\n  color: red;\n}\n', 'b.css': '.b {\n  color: blue;\n}\n' };
   const entry = '@layer one, two;\n@import "./a.css" layer(one);\n@import "./b.css" layer(two);\n';
   assert.equal(
-    expandStyles(entry, name => files[name]),
+    expandStyles(entry, (name: string) => files[name]),
     '@layer one, two;\n\n@layer one {\n.a {\n  color: red;\n}\n}\n\n@layer two {\n.b {\n  color: blue;\n}\n}\n',
   );
 });

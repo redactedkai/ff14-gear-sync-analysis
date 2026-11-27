@@ -14,10 +14,11 @@ import { readThemeTokens } from '../../e2e/lib/visual.mjs';
 import { findLiteralColors } from '../helpers/css-colors.ts';
 
 const SRC = new URL('../../../src/', import.meta.url);
-const walk = dir => readdirSync(dir).flatMap(name => (statSync(join(dir, name)).isDirectory() ? walk(join(dir, name)) : [join(dir, name)]));
+const walk = (dir: string): string[] =>
+  readdirSync(dir).flatMap(name => (statSync(join(dir, name)).isDirectory() ? walk(join(dir, name)) : [join(dir, name)]));
 
 test('the scan finds a literal color of every kind, and passes var() and the token blocks', () => {
-  const bad = (css, count = 1) => assert.equal(findLiteralColors(css).length, count, css);
+  const bad = (css: string, count = 1) => assert.equal(findLiteralColors(css).length, count, css);
   bad('.a { color: #fff; }');
   bad('.a { background: rgba(0, 0, 0, .5); }');
   bad('.a { border: 1px solid hsl(10 20% 30%); }');
@@ -26,7 +27,7 @@ test('the scan finds a literal color of every kind, and passes var() and the tok
   bad('@keyframes k { from { background: #abc; } }');
   bad('.a { color: var(--fg); } .b { color: #123 }'); // the last declaration has no semicolon
   bad(':root { --bg: #fff; } .a { --mine: #fff; }'); // a custom property outside the token blocks is a literal too
-  const fine = css => assert.deepEqual(findLiteralColors(css), [], css);
+  const fine = (css: string) => assert.deepEqual(findLiteralColors(css), [], css);
   fine(':root { --bg: #fff; --pop: 0 0 1px rgba(0, 0, 0, 0.2); }');
   fine('@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #000; } } :root[data-theme="dark"] { --bg: #000; }');
   fine('.a { color: var(--fg); background: transparent; border: 1px solid var(--line); outline-color: currentColor; }');
@@ -63,8 +64,8 @@ test('the page HTML paints no literal color: no style attribute or fill/stroke/c
 });
 
 /* The quoted colors in the .js and .ts files under `dir`, as "file: match". */
-function quotedColors(dir) {
-  const found = [];
+function quotedColors(dir: string): string[] {
+  const found: string[] = [];
   for (const file of walk(dir).filter(f => /\.(js|ts)$/.test(f))) {
     const code = readFileSync(file, 'utf8');
     for (const [match] of code.matchAll(/['"`]\s*(#[0-9a-f]{3,8}|(?:rgba?|hsla?)\([^'"`)]*\))\s*['"`]/gi)) {

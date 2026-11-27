@@ -17,7 +17,7 @@ import {
 /* The windows testing.md section 3.1 names for CSS screens: 1280 x 720 -> 1265 x 565, 1536 x 864 -> 1521 x 709, 1920 x 1080 -> 1905 x 925,
    2560 x 1440 -> 2545 x 1285 (the scrollbar 15 px wide, the taskbar and browser bars 155 px tall). Those are the doc's own numbers. */
 test('a window is the CSS screen less the scrollbar, taskbar and browser bars', () => {
-  const at = (physicalWidth, physicalHeight, scale) => {
+  const at = (physicalWidth: number, physicalHeight: number, scale: number): string => {
     const setup = setupFor(physicalWidth, physicalHeight, scale);
     return `${setup.width}x${setup.height}`;
   };
@@ -41,10 +41,7 @@ test('the matrix has every screen at every scale and checks a window two setups 
   assert.ok(windows.size < supported.length, 'some setups share a window');
   assert.equal([...windows.values()].flat().length, supported.length);
   assert.deepEqual(
-    windows
-      .get('1905x925')
-      .map(setup => setup.physical)
-      .sort(),
+    (windows.get('1905x925') ?? []).map((setup: { physical: string }) => setup.physical).sort(),
     ['1920x1080', '3840x2160'].sort(),
   );
   // every window is at least the floor less the scrollbar

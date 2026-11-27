@@ -43,3 +43,32 @@ export function fakeStorage({ failWith = null }: { failWith?: Error | null } = {
 export function quotaError(): Error & { code: number } {
   return Object.assign(new Error('full'), { name: 'QuotaExceededError', code: 22 });
 }
+
+/* The `self` a Web Worker script runs against, as a stand-in: `scope` is what the script gets (it sets `onmessage`; a copy of
+   each message it posts is kept in `posted`, as a real post would copy it) and `send(data)` delivers one message to it, the way
+   `worker.postMessage(data)` does. `Reply` is the shape of the messages the script posts. */
+export interface FakeWorkerScope<Reply> {
+  readonly posted: Reply[];
+  readonly scope: { postMessage(message: Reply): void; onmessage?: (event: { data: unknown }) => void; __solverData?: unknown };
+  send(data: unknown): void;
+}
+
+/* A new FakeWorkerScope with nothing posted and no handler yet. */
+export function fakeWorkerScope<Reply>(): FakeWorkerScope<Reply> {
+  const posted: Reply[] = [];
+  const scope: FakeWorkerScope<Reply>['scope'] = {
+    postMessage: message => {
+      posted.push(structuredClone(message));
+    },
+  };
+  return {
+    posted,
+    scope,
+    send(data) {
+      if (!scope.onmessage) {
+        throw new Error('the worker script has set no onmessage handler');
+      }
+      scope.onmessage({ data });
+    },
+  };
+}

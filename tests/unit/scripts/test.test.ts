@@ -4,20 +4,34 @@ import assert from 'node:assert/strict';
 import { changedPathsOf, domainsOfChange, domainsOfChanges, parseArguments } from '../../../scripts/test.mjs';
 import { DOMAIN_NAMES, LONG, unitFilesOf } from '../../domains.mjs';
 
+/* The options `argv` parses to; fails the test when it names an error. */
+function optionsOf(argv: string[]) {
+  const result = parseArguments(argv);
+  assert.ok(!('error' in result), `parseArguments(${argv.join(' ')}): ${'error' in result ? result.error : ''}`);
+  return result;
+}
+
+/* The error text `argv` parses to; fails the test when it parses. */
+function errorOf(argv: string[]): string {
+  const result = parseArguments(argv);
+  assert.ok('error' in result, `parseArguments(${argv.join(' ')}) is an error`);
+  return result.error;
+}
+
 test('wrapper options: no option runs all domains; --full turns on Python, sweep and smoke; flags after -- go to node', () => {
-  const none = parseArguments([]);
+  const none = optionsOf([]);
   assert.deepEqual(none.domains, DOMAIN_NAMES);
   assert.equal(none.domainsGiven, false);
-  const full = parseArguments(['--domain', 'sheets,set-page', '--full', '--', '--test-name-pattern=x']);
+  const full = optionsOf(['--domain', 'sheets,set-page', '--full', '--', '--test-name-pattern=x']);
   assert.deepEqual(full.domains, ['sheets', 'set-page']);
   assert.deepEqual([full.py, full.sweep, full.smoke], [true, true, true]);
   assert.deepEqual(full.nodeFlags, ['--test-name-pattern=x']);
 });
 
 test('wrapper options: an unknown domain or option is an error', () => {
-  assert.match(parseArguments(['--domain', 'nope']).error, /unknown domain nope/);
-  assert.match(parseArguments(['--domain']).error, /unknown domain/);
-  assert.match(parseArguments(['--wat']).error, /unknown option --wat/);
+  assert.match(errorOf(['--domain', 'nope']), /unknown domain nope/);
+  assert.match(errorOf(['--domain']), /unknown domain/);
+  assert.match(errorOf(['--wat']), /unknown option --wat/);
 });
 
 test('wrapper selection: a unit test goes to the domain of its module; --fast leaves out the long files only', () => {
@@ -50,7 +64,7 @@ test('changed files: git status lines give the new path of a rename, untracked f
 });
 
 test('changed files: a source file, a unit test, a smoke check and a build setting each map to their domain', () => {
-  const domainsOf = path => domainsOfChange({ path }).domains;
+  const domainsOf = (path: string) => domainsOfChange({ path }).domains;
   assert.deepEqual(domainsOf('src/ui/views/gcd.ts'), ['math-page']);
   assert.deepEqual(domainsOf('src/core/optimizer/index.ts'), ['solver']);
   assert.deepEqual(domainsOf('scripts/data/regen.py'), ['data']);
@@ -84,6 +98,6 @@ test('changed files: the picked domains come in registry order, one line per pat
 });
 
 test('wrapper options: --changed cannot be combined with --domain', () => {
-  assert.equal(parseArguments(['--changed']).changed, true);
-  assert.match(parseArguments(['--changed', '--domain', 'sheets']).error, /--changed picks the domains itself/);
+  assert.equal(optionsOf(['--changed']).changed, true);
+  assert.match(errorOf(['--changed', '--domain', 'sheets']), /--changed picks the domains itself/);
 });

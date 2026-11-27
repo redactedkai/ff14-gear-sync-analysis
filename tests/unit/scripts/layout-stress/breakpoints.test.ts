@@ -4,26 +4,31 @@ import assert from 'node:assert/strict';
 import { findChangePoints } from '../../../../scripts/layout-stress/breakpoints.mjs';
 
 /* A layout that is "stacked" below 1100 px, "side by side" from 1100 px, and has a third state from 1299 px. */
-const layoutAt = width => {
+const layoutAt = (width: number): string => {
   if (width < 1100) {
     return 'stacked';
   }
   return width < 1299 ? 'side' : 'wide';
 };
-const run = (extra = {}) => {
-  const asked = [];
+/* What a measured width gives: the layout the width is in. */
+interface Measured {
+  layout: string;
+}
+
+const run = (extra: { measure?: (width: number) => Promise<Measured>; describe?: () => string[] } = {}) => {
+  const asked: number[] = [];
   return {
     asked,
     promise: findChangePoints({
       from: 960,
       to: 2560,
       step: 40,
-      measure: async width => {
+      measure: async (width: number) => {
         asked.push(width);
         return { layout: layoutAt(width) };
       },
-      keyOf: result => result.layout,
-      describe: (before, after) => [`${before.layout} -> ${after.layout}`],
+      keyOf: (result: Measured) => result.layout,
+      describe: (before: Measured, after: Measured) => [`${before.layout} -> ${after.layout}`],
       ...extra,
     }),
   };
@@ -47,8 +52,8 @@ test('a layout that never changes has no change points, and each width is measur
   assert.deepEqual(result.changes, []);
   assert.equal(new Set(asked).size, asked.length);
   assert.equal(result.measured, 41); // 960 to 2560 every 40 px
-  assert.equal(result.series.at(0).width, 960);
-  assert.equal(result.series.at(-1).width, 2560);
+  assert.equal(result.series[0].width, 960);
+  assert.equal(result.series[result.series.length - 1].width, 2560);
 });
 
 test('the search measures far fewer widths than every pixel, in order', async () => {
@@ -63,7 +68,7 @@ test('the search measures far fewer widths than every pixel, in order', async ()
 });
 
 test('a change point on a coarse width itself is found', async () => {
-  const { promise } = run({ measure: async width => ({ layout: width >= 1000 ? 'b' : 'a' }), describe: () => ['x'] });
+  const { promise } = run({ measure: async (width: number) => ({ layout: width >= 1000 ? 'b' : 'a' }), describe: () => ['x'] });
   assert.deepEqual(
     (await promise).changes.map(change => change.at),
     [1000],

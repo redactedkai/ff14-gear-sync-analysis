@@ -27,7 +27,7 @@ const SOURCE_FILES = [...listFiles('src'), ...listFiles('scripts')];
 const TEST_FILES = listFiles('tests');
 
 // "file: no domain" or "file: a and b" for each file that does not have exactly one domain.
-function ownershipProblems(files, domainsOf) {
+function ownershipProblems(files: string[], domainsOf: (file: string) => string[]): string[] {
   return files.flatMap(file => {
     const owners = domainsOf(file);
     return owners.length === 1 ? [] : [`${file}: ${owners.length ? owners.join(' and ') : 'no domain'}`];
@@ -99,7 +99,7 @@ test("domains: a smoke step's file is in the folder of its step's domain (the do
 });
 
 test('domains: every domain has a test:<domain> script in package.json, and no other test:<name> names a domain', () => {
-  const scripts = JSON.parse(readFileSync(`${ROOT}/package.json`, 'utf8')).scripts;
+  const scripts: Record<string, string> = JSON.parse(readFileSync(`${ROOT}/package.json`, 'utf8')).scripts;
   const missing = DOMAIN_NAMES.filter(name => !(`test:${name}` in scripts));
   assert.deepEqual(missing, []);
   // a script that runs the wrapper for a domain must name a real one
@@ -136,7 +136,7 @@ test('domains: an unknown or empty domain name is an error that lists the valid 
 
 /* TypeScript files: a .ts file must be seen by the guard like a .js file. Each test plants one in a temporary tree
    (the registry's folders, one stray file) and expects the guard's own functions to report it. */
-function withPlantedFiles(paths, run) {
+function withPlantedFiles<Result>(paths: string[], run: (root: string) => Result): Result {
   const root = mkdtempSync(join(tmpdir(), 'domains-ts-'));
   try {
     for (const path of paths) {

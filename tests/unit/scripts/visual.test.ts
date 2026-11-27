@@ -9,7 +9,7 @@ import { VIEWS } from '../../../scripts/shots/views.mjs';
 import { IMAGE_ENV, PINNED_IMAGE, hasBaselines, pinnedTag, plan } from '../../../scripts/visual.mjs';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..');
-const read = relative => readFileSync(join(ROOT, relative), 'utf8');
+const read = (relative: string): string => readFileSync(join(ROOT, relative), 'utf8');
 
 /* A folder with one baseline image in it, and an empty one. */
 function foldersWithAndWithoutBaselines() {
@@ -22,7 +22,7 @@ test('outside the pinned image: nothing runs and the message names the image', (
   const { withImage } = foldersWithAndWithoutBaselines();
   const decision = plan({ env: {}, argv: ['--update'], snapshotFolder: withImage });
   assert.equal(decision.run, false);
-  assert.ok(decision.message.includes(PINNED_IMAGE));
+  assert.ok(decision.message?.includes(PINNED_IMAGE));
 });
 
 test('in the pinned image: no baselines yet is a message, baselines run, --update runs without them', () => {

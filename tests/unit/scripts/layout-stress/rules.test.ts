@@ -22,7 +22,16 @@ import {
   severityOf,
 } from '../../../../scripts/layout-stress/rules.mjs';
 
-const control = (id, l, t, r, b, extra = {}) => ({ id, l, t, r, b, c: -1, up: -1, ...extra });
+const control = (id: string, l: number, t: number, r: number, b: number, extra: Record<string, unknown> = {}) => ({
+  id,
+  l,
+  t,
+  r,
+  b,
+  c: -1,
+  up: -1,
+  ...extra,
+});
 
 test('every rule has a severity of fail or warn, an unknown rule throws, and the table lists every rule', () => {
   for (const [id, [severity, text]] of Object.entries(RULES)) {
@@ -131,7 +140,13 @@ test('two measures of one scope: the same shape and sizes match; a moved control
 });
 
 test("the layout key changes with a scope's rows, sideways scroll and wrapped labels, and the change is described", () => {
-  const probe = (rows, extra = {}) => ({ scopes: { bar: { controls: rows } }, hscroll: false, wrapped: [], clipped: [], ...extra });
+  const probe = (rows: ReturnType<typeof control>[], extra: Record<string, unknown> = {}) => ({
+    scopes: { bar: { controls: rows } },
+    hscroll: false,
+    wrapped: [],
+    clipped: [],
+    ...extra,
+  });
   const one = probe([control('a', 0, 0, 10, 10), control('b', 20, 0, 30, 10)]);
   const two = probe([control('a', 0, 0, 10, 10), control('b', 0, 20, 10, 30)]);
   assert.notEqual(layoutKey(one), layoutKey(two));

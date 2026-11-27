@@ -5,8 +5,8 @@ import assert from 'node:assert/strict';
 import { readStyles } from '../../../scripts/build/styles.mjs';
 
 /* The top-level constructs of `css` (comments removed): {head, hasBlock}, where head is the text before the `{` or the `;`. */
-function topLevel(css) {
-  const found = [];
+function topLevel(css: string): { head: string; hasBlock: boolean }[] {
+  const found: { head: string; hasBlock: boolean }[] = [];
   let depth = 0;
   let start = 0;
   for (let at = 0; at < css.length; at++) {
@@ -35,7 +35,7 @@ const declared = order
   ? order.head
       .replace('@layer', '')
       .split(',')
-      .map(name => name.trim())
+      .map((name: string) => name.trim())
   : [];
 
 test('the stylesheet names its layers once, first, in one @layer statement', () => {

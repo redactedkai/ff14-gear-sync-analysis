@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { splitKnown } from '../../e2e/lib/axe.mjs';
 
-const violation = (rule, targets) => ({ rule, impact: 'serious', help: `${rule} help`, targets });
+const violation = (rule: string, targets: string[]) => ({ rule, impact: 'serious', help: `${rule} help`, targets });
 
 test('splitKnown: no known entries leaves every violation new', () => {
   const found = [violation('region', ['.tabs']), violation('button-name', ['#a', '#b'])];

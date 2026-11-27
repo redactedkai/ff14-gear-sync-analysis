@@ -175,7 +175,7 @@ export const DOMAINS = {
       'tests/e2e/lib/{late-frames,layer-wait}.ts',
       'tests/e2e/lib/page-globals.d.ts',
       'tests/unit/helpers/common.ts',
-      'tests/unit/helpers/fakes.ts',
+      'tests/unit/helpers/{fakes,esbuild-output}.ts',
       'tests/unit/scripts/**',
       'tests/unit/smoke-helpers/**',
       'tests/unit/ui/no-alpine.test.js',

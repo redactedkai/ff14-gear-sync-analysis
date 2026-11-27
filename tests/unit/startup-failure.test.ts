@@ -7,11 +7,31 @@ import { startupScript } from '../../scripts/build/build.mjs';
 import { STORE_KEY } from '../../src/ui/store-key.ts';
 import { UNLOAD_GUARD_OFF_KEY } from '../../src/ui/router/unload-guard.ts';
 
+/* A node of the page stand-in: an element (its tag, children and text) or a text node. */
+interface StubNode {
+  id?: string;
+  text?: string;
+  children?: StubNode[];
+}
+
+/* An element of the page stand-in: it keeps its children and the text it was given. */
+interface StubElement extends StubNode {
+  tag: string;
+  style: { setProperty(): void };
+  children: StubNode[];
+  appendChild(child: StubNode): StubNode;
+  insertBefore(child: StubNode): void;
+  setAttribute(): void;
+  removeAttribute(): void;
+  hasAttribute(): boolean;
+  textContent: string;
+}
+
 /* A page stand-in: elements are plain objects that keep their children and text. `keys` are the localStorage keys. The script's
    own `error` listener is fed one error, so the check ends with the failure message and its Reset or "none" paragraph. */
-function runStartupScript(keys) {
+function runStartupScript(keys: string[]): string[] {
   const storage = new Map(keys.map(key => [key, '1']));
-  const element = tag => ({
+  const element = (tag: string): StubElement => ({
     tag,
     style: { setProperty() {} },
     children: [],
@@ -25,23 +45,26 @@ function runStartupScript(keys) {
     setAttribute() {},
     removeAttribute() {},
     hasAttribute: () => false,
+    get textContent() {
+      return this.text ?? '';
+    },
     set textContent(text) {
       this.text = text;
     },
   });
-  const timers = [];
+  const onReadyCallbacks: (() => void)[] = [];
   const body = element('body');
   const document = {
     head: element('head'),
     body,
     documentElement: element('html'),
     createElement: element,
-    createTextNode: text => ({ text }),
+    createTextNode: (text: string): StubNode => ({ text }),
     getElementById: () => null,
     querySelector: () => null,
-    addEventListener: (type, fn) => type === 'DOMContentLoaded' && timers.push(fn),
+    addEventListener: (type: string, onReady: () => void) => type === 'DOMContentLoaded' && onReadyCallbacks.push(onReady),
   };
-  const listeners = {};
+  const listeners: Record<string, (event: { error: Error }) => void> = {};
   const sandbox = {
     document,
     location: { hash: '', reload() {} },
@@ -49,23 +72,23 @@ function runStartupScript(keys) {
       get length() {
         return storage.size;
       },
-      key: index => [...storage.keys()][index] ?? null,
-      removeItem: key => storage.delete(key),
+      key: (index: number) => [...storage.keys()][index] ?? null,
+      removeItem: (key: string) => storage.delete(key),
     },
-    addEventListener: (type, fn) => {
-      listeners[type] = fn;
+    addEventListener: (type: string, listener: (event: { error: Error }) => void) => {
+      listeners[type] = listener;
     },
     removeEventListener() {},
-    setTimeout: fn => fn(),
+    setTimeout: (callback: () => void) => callback(),
     String,
   };
   vm.runInNewContext(startupScript(), sandbox);
   listeners.error({ error: new Error('injected failure') });
-  for (const onReady of timers) {
+  for (const onReady of onReadyCallbacks) {
     onReady();
   }
-  const ids = [];
-  const collect = node => {
+  const ids: string[] = [];
+  const collect = (node: StubNode): void => {
     if (node.id) {
       ids.push(node.id);
     }

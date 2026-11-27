@@ -19,7 +19,8 @@ import {
   tokensFor,
 } from '../../e2e/lib/visual.mjs';
 
-const near = (got, want, tolerance = 0.005) => assert.ok(Math.abs(got - want) <= tolerance, `${got} is not ${want} +/- ${tolerance}`);
+const near = (got: number, want: number, tolerance = 0.005): void =>
+  assert.ok(Math.abs(got - want) <= tolerance, `${got} is not ${want} +/- ${tolerance}`);
 
 test('luminance: black is 0, white is 1', () => {
   assert.equal(luminance([0, 0, 0]), 0);

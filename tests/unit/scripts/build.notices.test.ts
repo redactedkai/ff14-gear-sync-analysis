@@ -9,25 +9,30 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as esbuild from 'esbuild';
 import { NOTICE_PACKAGES, ROOT, esbuildOptions } from '../../../scripts/build/build.mjs';
+import { outputText } from '../helpers/esbuild-output.ts';
 
 /* The bundled packages whose code holds the notice that esbuild keeps, with the text that shows it in the output. */
 const CARRIES_OWN_NOTICE = [{ bundles: /^(lit|lit-html|lit-element|@lit\/.*)$/, shows: 'SPDX-License-Identifier: BSD-3-Clause' }];
 
 /* The holder each group's LICENSE must name, written here and not read from the file the group points at: a group that points
    at another project's LICENSE (Zag at Floating UI's) must fail. Update it when a group is added to NOTICE_PACKAGES. */
-const LICENSE_HOLDER = { Zag: 'Chakra UI', 'Floating UI': 'Floating UI contributors', 'proxy-compare': 'Daishi Kato' };
+const LICENSE_HOLDER: Record<string, string> = {
+  Zag: 'Chakra UI',
+  'Floating UI': 'Floating UI contributors',
+  'proxy-compare': 'Daishi Kato',
+};
 
 /* The npm package name of a path inside node_modules, or null. */
-const packageOf = path => path.match(/node_modules\/((?:@[^/]+\/)?[^/]+)/)?.[1] ?? null;
+const packageOf = (path: string): string | null => path.match(/node_modules\/((?:@[^/]+\/)?[^/]+)/)?.[1] ?? null;
 
 test('every third-party package the page bundles has its licence notice in the page script', async () => {
   const result = await esbuild.build({ ...esbuildOptions(), metafile: true });
-  const output = result.outputFiles.find(file => file.path.endsWith('.js')).text;
+  const output = outputText(result);
   const bundled = new Set(
     Object.values(result.metafile.outputs)
       .flatMap(out => Object.keys(out.inputs))
       .map(packageOf)
-      .filter(Boolean),
+      .filter((name): name is string => name !== null),
   );
   assert.ok(bundled.size > 5, 'the build bundles the libraries');
   for (const name of bundled) {

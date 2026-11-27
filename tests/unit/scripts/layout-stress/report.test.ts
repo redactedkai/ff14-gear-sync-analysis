@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { FONT_SETUPS } from '../../../../scripts/layout-stress/matrix.mjs';
 import { escapeHtml, groupFindings, renderReport, shortList, windowRows } from '../../../../scripts/layout-stress/report.mjs';
 
-const finding = (rule, severity, window, extra = {}) => ({
+const finding = (rule: string, severity: string, window: string, extra: Record<string, unknown> = {}) => ({
   rule,
   severity,
   screen: 'gear',
@@ -64,7 +64,7 @@ test('the window rows of a screen and setup count failures and warnings and name
   ];
   const rows = windowRows(results, { browser: 'chromium', screen: 'gear', setup: 'page' });
   assert.deepEqual(
-    rows.map(row => [row.window, row.fails, row.warns, row.rules]),
+    rows.map((row: { window: string; fails: number; warns: number; rules: string[] }) => [row.window, row.fails, row.warns, row.rules]),
     [
       ['960x700', 0, 0, []],
       ['1905x925', 1, 1, ['label-one-line', 'no-overlap']],

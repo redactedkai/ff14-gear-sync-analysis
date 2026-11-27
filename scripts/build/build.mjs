@@ -152,6 +152,7 @@ export function bundledLicenseNotices() {
 
 /* The options of the page's esbuild build. `minify`: whether to minify; `info`: the branch and commit being built (buildInfo), which
    decide the marks of a test build (buildMarks), handed to the page's code as the constant `__BUILD_MARKS__`. */
+/** @returns {import('esbuild').BuildOptions & { write: false }} */
 export function esbuildOptions({ minify = true, info = buildInfo() } = {}) {
   return {
     plugins: [jsonParseData, solverWorker, pageStyles],

@@ -6,6 +6,8 @@ import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { readStyles } from '../../../scripts/build/styles.mjs';
 import { buildMarks, esbuildOptions, SRC, startupScript } from '../../../scripts/build/build.mjs';
+import { fakeWorkerScope } from '../helpers/fakes.ts';
+import { outputText } from '../helpers/esbuild-output.ts';
 
 /* esbuild reads a .ts module imported with its .ts extension (which Node's type stripping needs too), strips the types
    and bundles it; the page's own text.ts and view-cache.ts are built this way. */
@@ -35,10 +37,8 @@ test('build marks: none on main or an unknown branch; DEV elsewhere, with branch
 });
 
 test('build: a test build carries its marks in the page code, the live build none', async () => {
-  const script = async info => {
-    const result = await esbuild.build(esbuildOptions({ info }));
-    return result.outputFiles.find(file => file.path.endsWith('.js')).text;
-  };
+  const script = async (info: { branch: string | null; commit: string | null }) =>
+    outputText(await esbuild.build(esbuildOptions({ info })));
   assert.match(await script({ branch: 'dev', commit: 'abc1234' }), /dev @ abc1234/);
   assert.doesNotMatch(await script({ branch: 'main', commit: 'abc1234' }), /abc1234/);
 });
@@ -95,7 +95,7 @@ test('page template: the body is the boot shell and one empty page root, nothing
 test('build keeps the MIT notices found in the bundled code', async () => {
   const { build } = await import('esbuild');
   const result = await build(esbuildOptions());
-  const script = result.outputFiles.find(f => f.path.endsWith('.js')).text;
+  const script = outputText(result);
   assert.match(script, /Bundled license information/);
   assert.match(script, /SPDX-License-Identifier: BSD-3-Clause/);
 });
@@ -123,10 +123,12 @@ test('build loads each data file as JSON.parse of its compacted text, equal to t
   });
   const script = result.outputFiles[0].text;
   assert.equal(script.match(/JSON\.parse\(/g)?.length, files.length);
-  const sandbox = {};
+  const sandbox: { __data?: unknown[] } = {};
   new Function('globalThis', script)(sandbox);
+  const data = sandbox.__data;
+  assert.ok(data, 'the script set __data');
   files.forEach((name, i) => {
-    assert.deepEqual(sandbox.__data[i], JSON.parse(readFileSync(join(dataDir, name), 'utf8')), name);
+    assert.deepEqual(data[i], JSON.parse(readFileSync(join(dataDir, name), 'utf8')), name);
   });
 });
 
@@ -183,8 +185,9 @@ test('build: the solver worker loads from the posted data texts and answers like
     logLevel: 'error',
   });
   const script = result.outputFiles[0].text;
-  const sandbox = {};
+  const sandbox: { __worker?: { WORKER_DATA: Record<string, string>; WORKER_SOURCE: string; items: number } } = {};
   new Function('globalThis', script)(sandbox);
+  assert.ok(sandbox.__worker, 'the script set __worker');
   const { WORKER_DATA, WORKER_SOURCE } = sandbox.__worker;
   assert.ok(sandbox.__worker.items > 0);
   assert.ok('items.json' in WORKER_DATA && 'item-level.json' in WORKER_DATA);
@@ -196,23 +199,23 @@ test('build: the solver worker loads from the posted data texts and answers like
   assert.ok(script.length < items.length * 1.5, `${script.length} bytes for ${items.length} of items`);
 
   // the worker: loads on the first message, then answers requests tagged with their ids
-  const posted = [];
-  const self = { postMessage: message => posted.push(structuredClone(message)) };
-  new Function('self', WORKER_SOURCE)(self);
-  self.onmessage({ data: { data: structuredClone(WORKER_DATA) } });
-  assert.equal(self.__solverData, undefined, 'the texts are let go once loaded');
+  const worker = fakeWorkerScope<{ id: number; result: unknown }>();
+  new Function('self', WORKER_SOURCE)(worker.scope);
+  worker.send({ data: structuredClone(WORKER_DATA) });
+  assert.equal(worker.scope.__solverData, undefined, 'the texts are let go once loaded');
   const { inProcessSolver, solverRequest } = await import('../../../src/ui/solver.ts');
   const { inputsOf, makeApp } = await import('../helpers/views.ts');
   const app = makeApp('WHM', { cap: 200, level: 100 });
   app.recipe.food = true;
   const inputs = inputsOf(app);
   // pool items' own ids ('i1552') count the items built in their thread, so they differ between the two
-  const withoutPoolIds = view =>
+  const withoutPoolIds = (view: unknown): unknown =>
     JSON.parse(JSON.stringify(view, (key, value) => (key === 'id' && /^i\d+$/.test(value) ? undefined : value)));
-  for (const kind of ['gearToSearch', 'solve']) {
+  for (const kind of ['gearToSearch', 'solve'] as const) {
     const request = solverRequest(kind, inputs);
-    self.onmessage({ data: structuredClone({ id: 7, ...request }) });
-    const reply = posted.pop();
+    worker.send(structuredClone({ id: 7, ...request }));
+    const reply = worker.posted.pop();
+    assert.ok(reply, 'the worker answered');
     assert.equal(reply.id, 7);
     const local = (await inProcessSolver().request(request)).result;
     assert.deepEqual(withoutPoolIds(reply.result), withoutPoolIds(local), kind);

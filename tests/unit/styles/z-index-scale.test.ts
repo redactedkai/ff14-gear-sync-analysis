@@ -7,8 +7,8 @@ import { readStyles } from '../../../scripts/build/styles.mjs';
 const css = readStyles().replace(/\/\*[\s\S]*?\*\//g, '');
 
 /* The value of each --z-* token, from the first :root block that defines it, as {name: number}. */
-function zTokens() {
-  const tokens = {};
+function zTokens(): Record<string, number> {
+  const tokens: Record<string, number> = {};
   for (const [, name, value] of css.matchAll(/(--z-[a-z0-9-]+):\s*(\d+)\s*;/g)) {
     tokens[name] ??= Number(value);
   }

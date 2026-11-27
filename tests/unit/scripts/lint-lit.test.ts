@@ -7,7 +7,7 @@ import { ESLint } from 'eslint';
 const FIXTURE_DIR = 'tests/unit/scripts/fixtures/lit-lint';
 
 /* The rule ids ESLint reports for one fixture file. */
-async function ruleIdsOf(fileName) {
+async function ruleIdsOf(fileName: string): Promise<(string | null)[]> {
   const eslint = new ESLint();
   const [result] = await eslint.lintFiles([`${FIXTURE_DIR}/${fileName}`]);
   return result.messages.map(message => message.ruleId);
