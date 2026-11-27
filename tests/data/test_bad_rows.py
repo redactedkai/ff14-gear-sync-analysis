@@ -9,12 +9,14 @@ Run: npm run test:py (npm run check:all runs them too)
 """
 
 import contextlib
+import copy
 import io
 import json
 import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest import mock
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
@@ -134,7 +136,8 @@ class BadRowTest(unittest.TestCase):
 
     def test_an_ultimate_totem_piece_in_another_category_is_a_problem(self):
         row, piece = self.kept_pieces()[0]
-        piece = {**piece, 'flags': gear_categories.FLAGS['ultimate']}
+        piece = copy.copy(piece)
+        piece['flags'] = gear_categories.FLAGS['ultimate']
         problems = gear_categories.check([(row, piece)], {row['#']: 'dungeon'})
         self.assertEqual(len(problems), 1)
         self.assertIn('bought with an ultimate totem but categorized dungeon', problems[0])
@@ -184,7 +187,7 @@ class SummaryMainTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def item_row(self, ilvl):
-        row = [0] * len(self.fmt['itemRow']['fields'])
+        row: list[Any] = [0] * len(self.fmt['itemRow']['fields'])
         row[self.fields['name']], row[self.fields['ilvl']], row[self.fields['slotCode']] = 'x', ilvl, 3
         row[self.fields['routes']] = [1]
         return row

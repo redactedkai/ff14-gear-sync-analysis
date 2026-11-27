@@ -118,12 +118,12 @@ class UnknownCodeStopsTest(unittest.TestCase):
     def test_the_category_list_of_the_format_must_match_the_categories(self, extra, repeat):
         gen_items.category_index(load_format())  # the shipped list is accepted
         with_unknown = load_format()
-        with_unknown['category']['list'].append({'key': extra})
+        with_unknown['category']['list'].append({'key': extra, 'label': extra})
         with self.assertRaises(SchemaError):
             gen_items.category_index(with_unknown)
         changed = load_format()
         if repeat:
-            changed['category']['list'].append(dict(changed['category']['list'][0]))
+            changed['category']['list'].append(changed['category']['list'][0])
         else:
             changed['category']['list'].pop()
         with self.assertRaises(SchemaError):
