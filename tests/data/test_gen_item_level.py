@@ -53,11 +53,11 @@ class GenItemLevelTest(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp: tempfile.TemporaryDirectory[str] = tempfile.TemporaryDirectory()
         self.dir: Path = Path(self.tmp.name)
-        shutil.copy(FIXTURES / 'ItemLevel.csv', self.dir / 'ItemLevel.csv')
-        shutil.copy(FIXTURES / 'BaseParam.csv', self.dir / 'BaseParam.csv')
-        shutil.copy(FIXTURES / 'ClassJob.csv', self.dir / 'ClassJob.csv')
-        shutil.copy(FIXTURES / 'Tribe.csv', self.dir / 'Tribe.csv')
-        shutil.copy(FIXTURES / 'Race.csv', self.dir / 'Race.csv')
+        _ = shutil.copy(FIXTURES / 'ItemLevel.csv', self.dir / 'ItemLevel.csv')
+        _ = shutil.copy(FIXTURES / 'BaseParam.csv', self.dir / 'BaseParam.csv')
+        _ = shutil.copy(FIXTURES / 'ClassJob.csv', self.dir / 'ClassJob.csv')
+        _ = shutil.copy(FIXTURES / 'Tribe.csv', self.dir / 'Tribe.csv')
+        _ = shutil.copy(FIXTURES / 'Race.csv', self.dir / 'Race.csv')
         write_param_grow(self.dir / 'ParamGrow.csv', range(101))
         with (FIXTURES / 'ItemLevel.csv').open(encoding='utf-8', newline='') as f:
             self.header: list[str] = next(csv.reader(f))
@@ -155,15 +155,15 @@ class GenItemLevelTest(unittest.TestCase):
     def test_clan_with_a_non_integer_offset_fails(self) -> None:
         text: str = (self.dir / 'Tribe.csv').read_text(encoding='utf-8')
         text = text.replace('1,Midlander,Midlander,0,0,2,', '1,Midlander,Midlander,0,0,two,', 1)
-        (self.dir / 'Tribe.csv').write_text(text, encoding='utf-8')
+        _ = (self.dir / 'Tribe.csv').write_text(text, encoding='utf-8')
         with self.assertRaisesRegex(SchemaError, 'Midlander'):
-            self.generate()
+            _ = self.generate()
 
     def test_missing_clan_row_fails(self) -> None:
         lines: list[str] = [row for row in (self.dir / 'Tribe.csv').read_text(encoding='utf-8').splitlines() if not row.startswith('16,')]
-        (self.dir / 'Tribe.csv').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+        _ = (self.dir / 'Tribe.csv').write_text('\n'.join(lines) + '\n', encoding='utf-8')
         with self.assertRaisesRegex(SchemaError, 'Tribe 16'):
-            self.generate()
+            _ = self.generate()
 
     def test_item_level_columns(self) -> None:
         il, _ = self.generate()
@@ -198,10 +198,10 @@ class GenItemLevelTest(unittest.TestCase):
     def test_param_grow_missing_level_fails(self) -> None:
         write_param_grow(self.dir / 'ParamGrow.csv', [lv for lv in range(101) if lv != 57])
         with self.assertRaisesRegex(SchemaError, r'ParamGrow.csv: level\(s\) 57 missing'):
-            self.generate()
+            _ = self.generate()
 
     def test_non_contiguous_item_level_ids_fail(self) -> None:
         with (self.dir / 'ItemLevel.csv').open('a', encoding='utf-8', newline='') as f:
             csv.writer(f, lineterminator='\n').writerow(['9'] + ['0'] * (len(self.header) - 1))
         with self.assertRaisesRegex(SchemaError, 'ItemLevel.csv ids'):
-            self.generate()
+            _ = self.generate()

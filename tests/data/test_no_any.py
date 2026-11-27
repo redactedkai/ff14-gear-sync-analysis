@@ -25,7 +25,7 @@ class NoAnyTest(unittest.TestCase):
                 if 'node_modules' in path.parts or 'out' in path.parts or path == Path(__file__):
                     continue
                 for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
-                    if USES.search(line) and '# any-ok:' not in line:
+                    if (USES.search(line)) is not None and '# any-ok:' not in line:
                         found.append(f'{path.relative_to(common.ROOT)}:{number}: {line.strip()}')
         self.assertEqual(found, [], 'type it by what it holds, or mark the line `# any-ok: <why>`')
 
@@ -37,10 +37,10 @@ class NoAnyTest(unittest.TestCase):
                 if 'node_modules' in path.parts or 'out' in path.parts:
                     continue
                 for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
-                    if BARE_ATTRIBUTE.match(line):
+                    if (BARE_ATTRIBUTE.match(line)) is not None:
                         found.append(f'{path.relative_to(common.ROOT)}:{number}: {line.strip()}')
         self.assertEqual(found, [], 'write the type: `self.name: Type = value`')
 
 
 if __name__ == '__main__':
-    unittest.main()
+    _ = unittest.main()

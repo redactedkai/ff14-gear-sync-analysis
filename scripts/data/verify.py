@@ -47,7 +47,7 @@ def first_difference(committed: str, made: str) -> str:
     """A few lines that show where two texts differ (unified diff, cut short), or a note on the length when only the
     ending differs."""
     diff: list[str] = list(difflib.unified_diff(committed.splitlines(), made.splitlines(), 'src/data', 'generated', n=0, lineterm=''))
-    if not diff:
+    if len(diff) == 0:
         return f'  same lines, different bytes (committed {len(committed)} characters, generated {len(made)})'
     shown: list[str] = [line[:200] for line in diff[:MAX_DIFF_LINES]]
     return '\n'.join('  ' + line for line in shown) + ('\n  ...' if len(diff) > MAX_DIFF_LINES else '')
@@ -68,7 +68,7 @@ def generate(work: Path, full: bool) -> list[str]:
         summary.main(CSV, work / 'items-report.json', changelog=False, summary_path=work / 'summary.json')
     names: list[str] = ['item-level.json', 'items.json', 'gear-groups.json', 'food.json', 'job-icons.ts', 'patches.json', 'summary.json']
     if full:
-        subprocess.run(['node', str(MAX_SPEED_SCRIPT), str(work / 'max-speed.json')], check=True, stdout=subprocess.DEVNULL)
+        _ = subprocess.run(['node', str(MAX_SPEED_SCRIPT), str(work / 'max-speed.json')], check=True, stdout=subprocess.DEVNULL)
         names.append('max-speed.json')
     return names
 
@@ -85,12 +85,15 @@ def max_speed_is_current() -> bool:
 def main(argv: Sequence[str] | None = None) -> int:
     """Exit code 0 when every generated file equals its committed copy, 1 otherwise."""
     ap: ArgumentParser = argparse.ArgumentParser(description='Compare src/data/ with what the generators make from the data clones.')
-    ap.add_argument('--full', action='store_true', help='also run the five-minute search for max-speed.json and compare it byte for byte')
+    _ = ap.add_argument(
+        '--full', action='store_true', help='also run the five-minute search for max-speed.json and compare it byte for byte'
+    )
     args: Namespace = ap.parse_args(argv)
     if not CSV.exists() or not (PATCHES_DIR / 'patchlist.json').exists():
         sys.exit('No CSVs or no patch list yet. Run: python scripts/data/fetch.py')
     for directory in (CSV, PATCHES_DIR):
-        if provenance.local_edits(directory):
+        edits: list[str] | None = provenance.local_edits(directory)
+        if edits is not None and len(edits) > 0:
             sys.exit(f'{directory.relative_to(ROOT)} has local edits, so its data is not that of the commit it names. Undo them first.')
     different = 0
     with tempfile.TemporaryDirectory() as tmp:
@@ -110,7 +113,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             print('current    max-speed.json (inputs hash only; --full searches again)')
         else:
             print('Warning: max-speed.json is stale (its data or the src/core code changed since it was made): run regen.py.')
-    if different:
+    if different != 0:
         print(f'{different} file(s) differ from src/data/.')
         return 1
     print('byte-identical: src/data/ is what the generators make from the data clones.')

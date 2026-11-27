@@ -85,8 +85,9 @@ def crafter_gatherer_params(base_param_csv: Path, fmt: ItemFormat) -> set[int]:
     for param in fmt['crafterGathererParams']:
         found: str | None = names.get(str(param['baseParam']))
         if found != param['name']:
-            bad.append(f'{param["baseParam"]} ({param["name"]}): found {found or "no row"!r}')
-    if bad:
+            shown: str = 'no row' if found is None or found == '' else found
+            bad.append(f'{param["baseParam"]} ({param["name"]}): found {shown!r}')
+    if len(bad) > 0:
         raise SchemaError('BaseParam.csv crafter/gatherer stat rows changed: ' + '; '.join(bad))
     return {param['baseParam'] for param in fmt['crafterGathererParams']}
 
@@ -111,7 +112,7 @@ def materia_rows(rows: list[Row], fmt: ItemFormat, sheet: str) -> tuple[dict[str
     problems: list[str] = [
         f'{key}: {len(by_stat.get(key, []))} rows with items, expected 1' for key in materia['statKeys'] if len(by_stat.get(key, [])) != 1
     ]
-    if problems:
+    if len(problems) > 0:
         raise SchemaError(f'{sheet}: ' + '; '.join(problems))
     return {key: found[0] for key, found in by_stat.items()}, decoys
 
@@ -135,8 +136,10 @@ def grade_values(
             return int(rest[:-1])
         return None
 
-    extra: list[str] = [col for col, v in row.items() if v not in ('', '0') and (grade_index(col) or 0) >= n_grades]
-    if extra:
+    extra: list[str] = [
+        col for col, v in row.items() if v not in ('', '0') and (grade if (grade := grade_index(col)) is not None else 0) >= n_grades
+    ]
+    if len(extra) > 0:
         problems.append(f'{where} has more than {n_grades} grades: {", ".join(extra)}')
     values: list[str] = [row[col] for col in value_cols]
     if not all(v.isdigit() and int(v) > 0 for v in values):
@@ -146,7 +149,7 @@ def grade_values(
         level: str | None = gate_of_item.get(row[col])
         if level is None or not level.isdigit():
             problems.append(f'{where} {col} = {row[col]}: no materia item with a {materia["gateColumn"]}')
-        gates.append(int(level) if level and level.isdigit() else None)
+        gates.append(int(level) if (level is not None and level != '') and level.isdigit() else None)
     known_gates: list[int] = [g for g in gates if g is not None]
     if len(known_gates) == len(gates) and any(b < a for a, b in pairwise(known_gates)):
         problems.append(f'{where} gates {",".join(map(str, gates))} decrease')
@@ -161,8 +164,8 @@ def high_grades(grade_csv: Path, values: Sequence[int], fmt: ItemFormat) -> list
     n_grades: int = materia['grades']
     sheet: str = Path(grade_csv).name
     rate: dict[str, str] = {r['#']: r[materia['highColumn']] for r in read_csv(grade_csv, ['#', materia['highColumn']])}
-    missing: list[str] = [str(g) for g in range(n_grades) if not (rate.get(str(g)) or '').isdigit()]
-    if missing:
+    missing: list[str] = [str(g) for g in range(n_grades) if not rate.get(str(g), '').isdigit()]
+    if len(missing) > 0:
         raise SchemaError(f'{sheet}: no {materia["highColumn"]} for grade row(s) {", ".join(missing)}')
     high: list[int] = [g + 1 for g in range(n_grades) if rate[str(g)] == '0']
     peaks: list[int] = [g + 1 for g in range(n_grades) if all(values[g] > values[h] for h in (g - 1, g + 1) if 0 <= h < n_grades)]
@@ -182,7 +185,7 @@ def overmeld_rates(grade_csv: Path, fmt: ItemFormat) -> dict[str, list[list[int]
     columns: dict[str, list[str]] = {kind: [f'{name}[{i}]' for i in range(n_slots)] for kind, name in materia['overmeldColumns'].items()}
     rows: dict[str, dict[str, str]] = {r['#']: r for r in read_csv(grade_csv, ['#', *chain.from_iterable(columns.values())])}
     missing: list[str] = [str(g) for g in range(n_grades) if str(g) not in rows]
-    if missing:
+    if len(missing) > 0:
         raise SchemaError(f'{sheet}: no overmeld rates for grade row(s) {", ".join(missing)}')
     table: dict[str, list[list[int]]] = {}
     problems: list[str] = []
@@ -197,9 +200,9 @@ def overmeld_rates(grade_csv: Path, fmt: ItemFormat) -> dict[str, list[list[int]
             if rates != sorted(rates, reverse=True):
                 problems.append(f'grade row {g} {kind} rates {",".join(cells)} rise from one slot to the next')
             table[kind].append(rates)
-    if not problems and any(h < n for nq, hq in zip(table['nq'], table['hq'], strict=True) for n, h in zip(nq, hq, strict=True)):
+    if (len(problems) == 0) and any(h < n for nq, hq in zip(table['nq'], table['hq'], strict=True) for n, h in zip(nq, hq, strict=True)):
         problems.append('an HQ rate is below the NQ rate')
-    if problems:
+    if len(problems) > 0:
         raise SchemaError(f'{sheet}: ' + '; '.join(problems))
     return table
 
@@ -232,7 +235,7 @@ def materia_table(csv_dir: Path | str, fmt: ItemFormat, items: list[Row] | None 
     }
     first: str = materia['statKeys'][0]
     problems += [f'{key} values or gates differ from {first}' for key in materia['statKeys'][1:] if tables[key] != tables[first]]
-    if problems:
+    if len(problems) > 0:
         raise SchemaError(f'{sheet} materia table: ' + '; '.join(problems))
     mixed_values, gates = tables[first]
     values: list[int] = [v for v in mixed_values if isinstance(v, int)]
@@ -255,11 +258,11 @@ def damage_defense(row: Row, fmt: ItemFormat) -> dict[str, int]:
     out: dict[str, int] = {}
     for entry in fmt['damageDefense']['entries']:
         value: str = row[entry['itemColumn']]
-        if value and not value.isdigit():
+        if (value != '') and not value.isdigit():
             raise SchemaError(
                 f'Item.csv {entry["itemColumn"]} of {row["Name"]} ({row["#"]}) is {value!r}, expected a whole number or nothing'
             )
-        total = int(value) if value else 0
+        total = int(value) if value != '' else 0
         if row['CanBeHq'] == 'True':
             for i in range(N_ITEM_PARAMS):
                 if row[f'BaseParamSpecial[{i}]'] == str(entry['baseParam']):
@@ -304,7 +307,7 @@ def slot_code(slot_row: Row | None, fmt: ItemFormat) -> int | None:
     for slot in fmt['slots']:
         if slot_row[slot['equipSlotColumn']] != '1':
             continue
-        expect: set[str] = {'OffHand'} if slot.get('twoHanded') else {column[t] for t in slot.get('blocks', [])}
+        expect: set[str] = {'OffHand'} if slot.get('twoHanded') is True else {column[t] for t in slot.get('blocks', [])}
         if blocked == expect:
             return slot['code']
     return None
@@ -395,22 +398,22 @@ def check_pieces(kept: list[tuple[Row, Piece]], bad_kind: list[str], bad_meld: l
     (bad_kind), meld fields out of range (bad_meld), a rarity or row id that is not a whole number, a repeated row id,
     or a level-scaling value outside `levelScaled.known`. bad_kind and bad_meld: the names select() listed."""
     stat_factor, rarity_col, scaled = fmt['statFactor'], fmt['rarity']['itemColumn'], fmt['levelScaled']
-    if bad_kind:
+    if len(bad_kind) > 0:
         # an item kind BaseParam has no factor for: the page could not know the item's stat factors
         cols: str = f'{stat_factor["baseParamColumn"]}[0..{n_kinds - 1}]'
         raise SchemaError(f'Item.csv {stat_factor["itemColumn"]} outside BaseParam.csv {cols}: ' + ', '.join(bad_kind[:10]))
     bad_rarity: list[str] = [f'{r["Name"]} ({r[rarity_col]!r})' for r, piece in kept if piece['rarity'] < 0]
-    if bad_rarity:
+    if len(bad_rarity) > 0:
         raise SchemaError(f'Item.csv {rarity_col} is not a whole number: ' + ', '.join(bad_rarity[:10]))
     ids: list[int] = [piece['gameId'] for _, piece in kept]
     bad_id: list[str] = [f'{r["Name"]} ({r["#"]!r})' for r, piece in kept if piece['gameId'] < 0]
-    if bad_id or len(set(ids)) != len(ids):
+    if (len(bad_id) > 0) or len(set(ids)) != len(ids):
         raise SchemaError('Item.csv row ids are not unique whole numbers: ' + ', '.join(bad_id[:10]))
     known_scaled: set[str] = {str(v) for v in scaled['known']}
     bad_scaled: list[str] = [f'{r["Name"]} ({r[scaled["itemColumn"]]!r})' for r, _ in kept if r[scaled['itemColumn']] not in known_scaled]
-    if bad_scaled:
+    if len(bad_scaled) > 0:
         raise SchemaError(f'Item.csv {scaled["itemColumn"]} outside {scaled["known"]}: ' + ', '.join(bad_scaled[:10]))
-    if bad_meld:
+    if len(bad_meld) > 0:
         materia: MateriaFormat = fmt['materia']
         expect: str = f'{materia["slotColumn"]} 0 to {materia["maxSlots"]}, {materia["overmeldColumn"]} True or False'
         raise SchemaError(f'Item.csv meld fields outside {expect}: ' + ', '.join(bad_meld[:10]))
@@ -458,7 +461,7 @@ def select(csv_dir: str | Path, items: list[Row] | None = None) -> Selection:
     dropped = dict.fromkeys(DROP_RULES, 0)
     dangling: Counter[str] = Counter()
     for row in items:
-        if not row['Name']:
+        if (row['Name']) == '':
             dropped['name'] += 1
             continue
         slot_row: dict[str, str] | None = slot_categories.get(row['EquipSlotCategory'])
@@ -476,7 +479,7 @@ def select(csv_dir: str | Path, items: list[Row] | None = None) -> Selection:
         if row['ClassJobCategory'] not in mask_of_category:
             dangling['ClassJobCategory'] += 1
         mask: int = mask_of_category.get(row['ClassJobCategory'], 0)
-        if not mask:
+        if mask == 0:
             dropped['job'] += 1
             continue
         stats: list[int] = item_stats(row, stat_index)
@@ -539,7 +542,7 @@ def category_index(fmt: ItemFormat) -> dict[str, int]:
     missing: list[str] = sorted(kept - set(keys))
     unknown: list[str] = sorted(set(keys) - kept)
     twice: list[str] = sorted({k for k in keys if keys.count(k) > 1})
-    if missing or unknown or twice:
+    if (len(missing) > 0) or (len(unknown) > 0) or len(twice) > 0:
         raise SchemaError(f'item-format.json category.list: missing {missing}, unknown {unknown}, listed twice {twice}')
     return {k: i for i, k in enumerate(keys)}
 
@@ -556,7 +559,7 @@ def main(csv_dir: Path | str, out: Path | str, source: provenance.SourceArg = 'd
     n_items: int = len(kept) + sum(dropped.values())
     cats: dict[str, str] = gear_categories.categorize(csv_dir, kept, slot_codes(fmt, WEAPON_TYPES), items)
     problems: list[str] = gear_categories.check(kept, cats)
-    if problems:
+    if len(problems) > 0:
         raise SchemaError(f'{len(problems)} gear category cross-check problem(s): ' + '; '.join(problems[:10]))
     left_out: Counter[str] = Counter(cats[r['#']] for r, _ in kept if cats[r['#']] in gear_categories.LEFT_OUT)
     kept = [(r, row) for r, row in kept if cats[r['#']] not in gear_categories.LEFT_OUT]
@@ -571,8 +574,8 @@ def main(csv_dir: Path | str, out: Path | str, source: provenance.SourceArg = 'd
     seen = 0
     for piece in pieces:
         seen |= piece['jobMask']
-    absent: list[str] = [j for i, j in enumerate(fmt['jobs']) if not seen >> i & 1]
-    if absent:
+    absent: list[str] = [j for i, j in enumerate(fmt['jobs']) if (seen >> i & 1) == 0]
+    if len(absent) > 0:
         raise SchemaError(f'ClassJobCategory.csv: no item is wearable by {", ".join(absent)}. Did the job columns change?')
     pieces.sort(key=lambda p: (-p['ilvl'], p['slotCode'], p['name'], p['gameId']))  # the game id last, so a tie never depends on file order
     rows: list[list[object]] = [[value_of(piece, f) for f in fields] for piece in pieces]
@@ -590,10 +593,10 @@ def main(csv_dir: Path | str, out: Path | str, source: provenance.SourceArg = 'd
     print(drop_report(n_items, dropped, left_out, len(rows), selection.dangling))
     print(gear_activities.inferred_report(inferred))
     # gear of a new kind a patch added that the format cannot place yet (none today)
-    if selection.multi_slot:
+    if len(selection.multi_slot) > 0:
         multi_slot: list[str] = selection.multi_slot
         print(f'Warning: left out {len(multi_slot)} multi-slot pieces with no slot code: ' + ', '.join(multi_slot))
-    if report:
+    if bool(report):
         counts: dict[str, dict[str, int] | int] = {
             'itemSheetRows': n_items,
             'dropped': dropped,
@@ -613,13 +616,17 @@ def drop_report(
     20,031'. A rule that left nothing out is skipped. The counts follow the selection figure of
     docs/engineering/data-pipeline.md, section 4. dangling (Selection.dangling): rows whose slot or job category id
     has no row, named after the rule they fall under when there are any."""
-    dangling_ids: Mapping[str, int] = dangling or {}
+    dangling_ids: Mapping[str, int] = {} if dangling is None else dangling
     under: dict[str, str] = {'slot': 'EquipSlotCategory', 'job': 'ClassJobCategory'}
     parts: list[str] = []
     for rule, n in dropped.items():
-        if n:
+        if n != 0:
             sheet: str | None = under.get(rule)
-            note: str = f' ({dangling_ids[sheet]:,} with an id that has no {sheet} row)' if sheet and dangling_ids.get(sheet) else ''
+            note: str = (
+                f' ({dangling_ids[sheet]:,} with an id that has no {sheet} row)'
+                if (sheet is not None and sheet != '') and dangling_ids.get(sheet, 0) > 0
+                else ''
+            )
             parts.append(f'{DROP_RULES[rule]} -{n:,}{note}')
     parts += [f'category {cat} (LEFT_OUT) -{n:,}' for cat, n in sorted(left_out.items())]
     return f'Item.csv {n_items:,} rows: ' + ', '.join(parts) + f'; kept {n_kept:,}'
@@ -627,9 +634,9 @@ def drop_report(
 
 if __name__ == '__main__':
     ap: ArgumentParser = argparse.ArgumentParser()
-    ap.add_argument('csv_dir')
-    ap.add_argument('out', nargs='?', default='src/data/items.json')
+    _ = ap.add_argument('csv_dir')
+    _ = ap.add_argument('out', nargs='?', default='src/data/items.json')
     provenance.add_cli_args(ap)
-    ap.add_argument('--report', help="write this run's counts to this JSON file (for summary.py)")
+    _ = ap.add_argument('--report', help="write this run's counts to this JSON file (for summary.py)")
     args: Namespace = ap.parse_args()
     run_main(main, args.csv_dir, args.out, provenance.from_args(args), args.report)

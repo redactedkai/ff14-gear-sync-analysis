@@ -77,7 +77,7 @@ class ToolSettingsTest(unittest.TestCase):
         lines: list[str] = [
             line.strip()
             for line in (ROOT / 'requirements-dev.txt').read_text(encoding='utf-8').splitlines()
-            if line.strip() and not line.startswith('#')
+            if (line.strip()) != '' and not line.startswith('#')
         ]
         for tool in PINNED_TOOLS:
             with self.subTest(tool=tool):
@@ -106,7 +106,15 @@ class ToolSettingsTest(unittest.TestCase):
         pyrefly = self.config['tool']['pyrefly']
         self.assertEqual(pyrefly['preset'], 'strict')
         self.assertTrue(all(pyrefly['errors'].values()), 'the errors table only turns checks on')
-        for kind in ('unknown-variable-type', 'unknown-argument-type', 'unknown-attribute-access', 'unannotated-return', 'implicit-any'):
+        for kind in (
+            'unknown-variable-type',
+            'unknown-argument-type',
+            'unknown-attribute-access',
+            'unannotated-return',
+            'implicit-any',
+            'implicit-bool',
+            'unused-call-result',
+        ):
             self.assertIs(pyrefly['errors'][kind], True, kind)
 
     def test_pyrefly_has_one_exception_the_override_decorator_in_tests(self) -> None:
@@ -118,4 +126,4 @@ class ToolSettingsTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    _ = unittest.main()

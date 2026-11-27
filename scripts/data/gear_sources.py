@@ -15,6 +15,7 @@ UseCurrencyType (tomestones, scrips, gil; gear_activities.py decodes them).
 import re
 from collections.abc import Iterable, Iterator
 from pathlib import Path
+from typing import TypeAlias
 
 from item_format import Row, SchemaError, check_ids, read_csv
 
@@ -33,13 +34,13 @@ LISTING_GIVES, LISTING_COSTS = 2, 3  # items a SpecialShop listing gives (Item[k
 
 
 # One SpecialShop listing: (shop row, listing index k, item ids given, costs as ints; see shop_listings)
-Listing = tuple[Row, int, list[int], list[int]]
+Listing: TypeAlias = tuple[Row, int, list[int], list[int]]
 
 
 def listing_count(header: Iterable[str]) -> int:
     """Number of listings per SpecialShop row (Item[0] .. Item[n-1])."""
-    ks: list[int] = [int(m.group(1)) for c in header if (m := re.match(r'Item\[(\d+)\]\.Item\[0\]$', c))]
-    if not ks:
+    ks: list[int] = [int(m.group(1)) for c in header if ((m := re.match(r'Item\[(\d+)\]\.Item\[0\]$', c)) is not None)]
+    if len(ks) == 0:
         raise SchemaError('SpecialShop.csv has no Item[k].Item[0] columns. Did a game patch rename them?')
     return max(ks) + 1
 
@@ -49,11 +50,11 @@ def shop_listings(shops: list[Row]) -> Iterator[Listing]:
     given is the item ids the listing gives (Item[k].Item[0..1]), costs what it costs (Item[k].ItemCost[0..2]), as
     ints with the zeros left out. A cost below CODE_LIMIT is a currency code, read through the shop's UseCurrencyType
     (gear_activities.py). Listings that give nothing are included (given empty)."""
-    n: int = listing_count(shops[0].keys()) if shops else 0
+    n: int = listing_count(shops[0].keys()) if len(shops) > 0 else 0
     for shop in shops:
         for k in range(n):
-            given: list[int] = [item for j in range(LISTING_GIVES) if (item := int(shop[f'Item[{k}].Item[{j}]']))]
-            costs: list[int] = [cost for j in range(LISTING_COSTS) if (cost := int(shop[f'Item[{k}].ItemCost[{j}]']))]
+            given: list[int] = [item for j in range(LISTING_GIVES) if ((item := int(shop[f'Item[{k}].Item[{j}]'])) != 0)]
+            costs: list[int] = [cost for j in range(LISTING_COSTS) if ((cost := int(shop[f'Item[{k}].ItemCost[{j}]'])) != 0)]
             yield shop, k, given, costs
 
 
@@ -63,7 +64,7 @@ def flags(csv_dir: Path | str, items: Iterable[Row]) -> dict[int, int]:
     out: dict[int, int] = {}
 
     def mark(item: int, key: str) -> None:
-        if item:
+        if item != 0:
             out[item] = out.get(item, 0) | FLAGS[key]
 
     for r in read_csv(d / 'Recipe.csv', ['ItemResult']):

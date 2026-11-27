@@ -80,14 +80,16 @@ def main(icon_dir: Path | str, out: Path | str) -> None:
         data: bytes = path.read_bytes()
         size: tuple[int, int] | None = png_size(data)
         if size != (SIZE, SIZE):
-            problems.append(f'{job}: {path.name} is ' + (f'{size[0]} x {size[1]}' if size else 'not a PNG') + f', expected {SIZE} x {SIZE}')
+            problems.append(
+                f'{job}: {path.name} is ' + (f'{size[0]} x {size[1]}' if size is not None else 'not a PNG') + f', expected {SIZE} x {SIZE}'
+            )
             continue
         if not is_complete_png(data):
             problems.append(f'{job}: {path.name} is cut short (no PNG end chunk)')
             continue
         icons[job] = 'data:image/png;base64,' + base64.b64encode(data).decode('ascii')
         hashes[job] = hashlib.sha256(data).hexdigest()
-    if problems:
+    if len(problems) > 0:
         raise SchemaError('job icons: ' + '; '.join(problems) + '. Run: python scripts/data/fetch.py')
     date, how = fetch_date(icon_dir, [icon_dir / f'{job}.png' for job in icons])
     declaration: str = 'export const JOB_ICONS: Readonly<Record<string, string>> = '
@@ -97,7 +99,7 @@ def main(icon_dir: Path | str, out: Path | str) -> None:
 
 if __name__ == '__main__':
     ap: ArgumentParser = argparse.ArgumentParser()
-    ap.add_argument('icon_dir', nargs='?', default=str(ROOT / 'data' / 'icons'))
-    ap.add_argument('out', nargs='?', default=str(ROOT / 'src' / 'data' / 'job-icons.ts'))
+    _ = ap.add_argument('icon_dir', nargs='?', default=str(ROOT / 'data' / 'icons'))
+    _ = ap.add_argument('out', nargs='?', default=str(ROOT / 'src' / 'data' / 'job-icons.ts'))
     args: Namespace = ap.parse_args()
     run_main(main, args.icon_dir, args.out)

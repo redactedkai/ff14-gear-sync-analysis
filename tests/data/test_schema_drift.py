@@ -40,7 +40,7 @@ class SchemaDriftTest(unittest.TestCase):
         self.tmp: tempfile.TemporaryDirectory[str] = tempfile.TemporaryDirectory()
         self.dir: Path = Path(self.tmp.name)
         for f in FIXTURES.glob('*.csv'):
-            shutil.copy(f, self.dir / f.name)
+            _ = shutil.copy(f, self.dir / f.name)
         write_param_grow(self.dir / 'ParamGrow.csv', range(101))
 
     def tearDown(self) -> None:
@@ -74,7 +74,7 @@ class SchemaDriftTest(unittest.TestCase):
         the generator rather than make every piece non-HQ, non-Unique or tradeable."""
         for col in ('CanBeHq', 'IsUnique', 'IsUntradable'):
             with self.subTest(col=col):
-                shutil.copy(FIXTURES / 'Item.csv', self.dir / 'Item.csv')
+                _ = shutil.copy(FIXTURES / 'Item.csv', self.dir / 'Item.csv')
 
                 def fn(rows: list[list[str]], col: str = col) -> None:
                     i = rows[0].index(col)
@@ -87,7 +87,7 @@ class SchemaDriftTest(unittest.TestCase):
     def test_missing_equip_slot_column(self) -> None:
         for col in ('Gloves', 'OffHand', 'MainHand', 'FingerL'):
             with self.subTest(col=col):
-                shutil.copy(FIXTURES / 'EquipSlotCategory.csv', self.dir / 'EquipSlotCategory.csv')
+                _ = shutil.copy(FIXTURES / 'EquipSlotCategory.csv', self.dir / 'EquipSlotCategory.csv')
                 rename_column(self.dir / 'EquipSlotCategory.csv', col, col + 'X')
                 self.assert_fails(gen_items, 'EquipSlotCategory.csv', col)
 
@@ -96,7 +96,7 @@ class SchemaDriftTest(unittest.TestCase):
         cols += ('BaseParam[0]', 'BaseParamValue[5]', 'BaseParamSpecial[2]', 'BaseParamValueSpecial[5]')
         for col in cols:
             with self.subTest(col=col):
-                shutil.copy(FIXTURES / 'Item.csv', self.dir / 'Item.csv')
+                _ = shutil.copy(FIXTURES / 'Item.csv', self.dir / 'Item.csv')
                 rename_column(self.dir / 'Item.csv', col, 'Renamed' + col)
                 self.assert_fails(gen_items, 'Item.csv', col)
 
@@ -138,10 +138,10 @@ class SchemaDriftTest(unittest.TestCase):
         )
         for sheet, col in cols:
             with self.subTest(col=col):
-                shutil.copy(FIXTURES / sheet, self.dir / sheet)
+                _ = shutil.copy(FIXTURES / sheet, self.dir / sheet)
                 rename_column(self.dir / sheet, col, col + 'X')
                 self.assert_fails(gen_items, sheet, col)
-                shutil.copy(FIXTURES / sheet, self.dir / sheet)
+                _ = shutil.copy(FIXTURES / sheet, self.dir / sheet)
 
     def test_changed_currency_id(self) -> None:
         # a currency the game files cannot place is keyed by id with its name: a patch that reuses the id stops the run
@@ -251,7 +251,7 @@ class SchemaDriftTest(unittest.TestCase):
         rename_column(self.dir / 'BaseParam.csv', 'MeldParam[12]', 'MeldParam12')
         self.assert_fails(gen_item_level, 'BaseParam.csv', 'MeldParam[12]')
         self.assert_fails(gen_items, 'BaseParam.csv', 'MeldParam[12]')
-        shutil.copy(FIXTURES / 'BaseParam.csv', self.dir / 'BaseParam.csv')
+        _ = shutil.copy(FIXTURES / 'BaseParam.csv', self.dir / 'BaseParam.csv')
         rename_column(self.dir / 'Item.csv', 'BaseParamModifier', 'Modifier')
         self.assert_fails(gen_items, 'Item.csv', 'BaseParamModifier')
 
@@ -266,16 +266,16 @@ class SchemaDriftTest(unittest.TestCase):
     def test_missing_meld_columns(self) -> None:
         for col in ('MateriaSlotCount', 'IsAdvancedMeldingPermitted'):
             with self.subTest(col=col):
-                shutil.copy(FIXTURES / 'Item.csv', self.dir / 'Item.csv')
+                _ = shutil.copy(FIXTURES / 'Item.csv', self.dir / 'Item.csv')
                 rename_column(self.dir / 'Item.csv', col, col + 'X')
                 self.assert_fails(gen_items, 'Item.csv', col)
-        shutil.copy(FIXTURES / 'Item.csv', self.dir / 'Item.csv')
+        _ = shutil.copy(FIXTURES / 'Item.csv', self.dir / 'Item.csv')
         for sheet, col in (('Materia.csv', 'Item[11]'), ('Materia.csv', 'Value[0]'), ('MateriaGrade.csv', 'OvermeldNQPercent[1]')):
             with self.subTest(col=col):
-                shutil.copy(FIXTURES / sheet, self.dir / sheet)
+                _ = shutil.copy(FIXTURES / sheet, self.dir / sheet)
                 rename_column(self.dir / sheet, col, col + 'X')
                 self.assert_fails(gen_items, sheet, col)
-                shutil.copy(FIXTURES / sheet, self.dir / sheet)
+                _ = shutil.copy(FIXTURES / sheet, self.dir / sheet)
 
     def test_meld_slots_above_five(self) -> None:
         def fn(rows: list[list[str]]) -> None:
@@ -348,7 +348,7 @@ class SchemaDriftTest(unittest.TestCase):
             ('OvermeldHQPercent[0]', '79', ('MateriaGrade.csv', 'HQ rate is below')),
         ]:
             with self.subTest(cell=cell, value=value):
-                shutil.copy(FIXTURES / 'MateriaGrade.csv', self.dir / 'MateriaGrade.csv')
+                _ = shutil.copy(FIXTURES / 'MateriaGrade.csv', self.dir / 'MateriaGrade.csv')
                 self.set_cell('MateriaGrade.csv', '0', cell, value)
                 self.assert_fails(gen_items, *words)
 
@@ -427,7 +427,7 @@ class SchemaDriftTest(unittest.TestCase):
         fmt = load_format()
         fmt['slots'][0]['code'] = 99
         with self.assertRaisesRegex(SchemaError, r'slot codes are not 0\.\.14'):
-            item_format.slot_shares(self.dir / 'BaseParam.csv', fmt, fmt['damageDefense']['entries'])
+            _ = item_format.slot_shares(self.dir / 'BaseParam.csv', fmt, fmt['damageDefense']['entries'])
 
     def test_command_line_exits_nonzero(self) -> None:
         rename_column(self.dir / 'ClassJobCategory.csv', 'SGE', 'SAGE')

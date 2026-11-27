@@ -62,7 +62,7 @@ class GenGearGroupsTest(unittest.TestCase):
         self.assertIn(['PLD', 'WAR'], groups)
         # 79 percent is in the gap between linked and clearly apart, so the generator stops
         with self.assertRaisesRegex(SchemaError, 'not clear'):
-            gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 79), (['PLD'], 21), *rest]), self.fmt)
+            _ = gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 79), (['PLD'], 21), *rest]), self.fmt)
         # 40 / 140 shared: apart
         groups = gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 40), (['PLD'], 60), (['WAR'], 60), *rest]), self.fmt)
         self.assertIn(['PLD'], groups)
@@ -71,10 +71,10 @@ class GenGearGroupsTest(unittest.TestCase):
         rest: list[tuple[list[str], int]] = [([j], 100) for j in self.fmt['jobs'] if j not in ('PLD', 'WAR')]
         # 70 shared of 130 pieces either wears (54 percent) is neither linked nor clearly apart
         with self.assertRaisesRegex(SchemaError, 'not clear'):
-            gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 70), (['PLD'], 30), (['WAR'], 30), *rest]), self.fmt)
+            _ = gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 70), (['PLD'], 30), (['WAR'], 30), *rest]), self.fmt)
         # a job that can wear nothing: the job mask order is probably wrong
         with self.assertRaisesRegex(SchemaError, 'can wear no piece'):
-            gen_gear_groups.gear_groups([self.row(0, self.fmt['jobs'])], self.fmt)
+            _ = gen_gear_groups.gear_groups([self.row(0, self.fmt['jobs'])], self.fmt)
 
     def test_shipped_groups_follow_the_shipped_items(self) -> None:
         items = json.loads((ROOT / 'src' / 'data' / 'items.json').read_text(encoding='utf-8'))

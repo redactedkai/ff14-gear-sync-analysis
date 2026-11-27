@@ -18,12 +18,17 @@ import provenance
 from common import FIXTURES, Json, run_quiet
 from hypothesis import given
 from hypothesis import strategies as st
+from hypothesis.strategies import SearchStrategy
 
 # JSON values as the generators write them: numbers, strings of any characters (line breaks, quotes, non-ASCII), lists.
-SCALARS = st.one_of(st.integers(min_value=-(10**9), max_value=10**9), st.text(max_size=12), st.booleans(), st.none())
-ROWS = st.lists(st.lists(SCALARS, max_size=6), max_size=8)
-KEYS = st.sampled_from(['items', 'foods', 'groups', 'note', 'source', 'formatVersion'])
-DOCS = st.dictionaries(KEYS, st.one_of(ROWS, SCALARS, st.dictionaries(st.text(max_size=6), SCALARS, max_size=4)), max_size=6)
+SCALARS: SearchStrategy[bool | int | str | None] = st.one_of(
+    st.integers(min_value=-(10**9), max_value=10**9), st.text(max_size=12), st.booleans(), st.none()
+)
+ROWS: SearchStrategy[list[list[bool | int | str | None]]] = st.lists(st.lists(SCALARS, max_size=6), max_size=8)
+KEYS: SearchStrategy[str] = st.sampled_from(['items', 'foods', 'groups', 'note', 'source', 'formatVersion'])
+DOCS: SearchStrategy[dict[str, bool | dict[str, bool | int | str | None] | int | list[list[bool | int | str | None]] | str | None]] = (
+    st.dictionaries(KEYS, st.one_of(ROWS, SCALARS, st.dictionaries(st.text(max_size=6), SCALARS, max_size=4)), max_size=6)
+)
 
 
 class JsonLinesRoundTripTest(unittest.TestCase):
@@ -50,7 +55,7 @@ class JsonLinesRoundTripTest(unittest.TestCase):
     def test_an_expanded_list_has_one_row_per_line(self, rows: list[list[Json]]) -> None:
         text: str = provenance.json_lines({'items': rows}, expand=('items',))
         lines: list[str] = text.splitlines()
-        if rows:
+        if len(rows) > 0:
             self.assertEqual(len(lines), len(rows) + 4)  # '{', 'items:[', the rows, ']', '}'
         for line, row in zip(lines[2:], rows, strict=False):
             self.assertEqual(json.loads(line.rstrip(',')), row)
@@ -84,4 +89,4 @@ class GeneratedFilesRoundTripTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    _ = unittest.main()

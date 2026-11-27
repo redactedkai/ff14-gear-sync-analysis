@@ -46,18 +46,18 @@ def bundle() -> None:
         "platform: 'node', target: 'node18', outfile: process.argv[2], logLevel: 'warning'}))"
     )
     OUT.mkdir(parents=True, exist_ok=True)
-    subprocess.run(['node', '-e', script, str(HERE / 'ours.ts'), str(BUNDLE)], cwd=ROOT, check=True)
+    _ = subprocess.run(['node', '-e', script, str(HERE / 'ours.ts'), str(BUNDLE)], cwd=ROOT, check=True)
 
 
 def main() -> None:
     ap: ArgumentParser = argparse.ArgumentParser()
-    ap.add_argument('--jobs', default=','.join(JOBS))
+    _ = ap.add_argument('--jobs', default=','.join(JOBS))
     args: Namespace = ap.parse_args()
     jobs = args.jobs.split(',')
     if not (CORE / 'node_modules').exists():
         raise SystemExit('No xivgear clone. Run: python scripts/validate/xivgear/fetch.py')
     bundle()
-    shutil.copyfile(HERE / 'xg_sync_test.ts', TEST)
+    _ = shutil.copyfile(HERE / 'xg_sync_test.ts', TEST)
     out_dir: Path = OUT / 'xivgear'
     out_dir.mkdir(parents=True, exist_ok=True)
     levels = sorted({lv for lv, _ in json.loads((HERE / 'settings.json').read_text(encoding='utf-8'))['settings']})
@@ -69,7 +69,7 @@ def main() -> None:
         'XG_SETTINGS': str(HERE / 'settings.json'),
     }
     npx: str | None = shutil.which('npx')
-    if not npx:
+    if npx is None or npx == '':
         raise SystemExit('npx not found')
     cmd: list[str] = [npx, 'ts-mocha', '--no-experimental-strip-types', '--timeout', '0', '--exit', str(TEST.relative_to(CORE))]
     for j in jobs:  # only the jobs run now; the others keep their last results
@@ -79,7 +79,7 @@ def main() -> None:
         # one process per job and level: their data managers are not freed between settings
         for j in jobs:
             for lv in levels:
-                subprocess.run(cmd, cwd=CORE, check=True, env={**base, 'XG_JOBS': j, 'XG_LEVEL': str(lv)}, stdout=subprocess.DEVNULL)
+                _ = subprocess.run(cmd, cwd=CORE, check=True, env={**base, 'XG_JOBS': j, 'XG_LEVEL': str(lv)}, stdout=subprocess.DEVNULL)
     finally:
         TEST.unlink(missing_ok=True)
     report: dict[str, dict[str, dict[str, Any]]] = {'jobs': {}}  # any-ok: the results JSON, read by key
@@ -87,9 +87,9 @@ def main() -> None:
         parts = [
             json.loads(f.read_text(encoding='utf-8')) for f in sorted(out_dir.glob(f'{j}-*.json'), key=lambda f: int(f.stem.split('-')[1]))
         ]
-        if parts:
+        if len(parts) > 0:
             report['jobs'][j] = {'job': j, 'pieces': parts[0]['pieces'], 'settings': [s for p in parts for s in p['settings']]}
-    (OUT / 'xivgear.json').write_text(json.dumps(report), encoding='utf-8')
+    _ = (OUT / 'xivgear.json').write_text(json.dumps(report), encoding='utf-8')
     tags: Counter[str] = Counter()
     fixed: Counter[str] = Counter()
     stats = equal = pieces = 0
@@ -105,15 +105,15 @@ def main() -> None:
         s0 = r['settings'][0]
         print(
             f'{j}: {s0["pieces"]} pieces in both, {s0["oursOnly"]} only ours, {s0["theirsOnly"]} only theirs; '
-            f'differences {dict(t) or "none"}'
+            f'differences {dict(t) if len(t) > 0 else "none"}'
         )
     print(f'\n{pieces:,} piece checks, {stats:,} stats compared, {equal:,} equal ({equal / max(stats, 1):.4%})')
-    print(f'  pieces re-synced on their side first: {dict(fixed) or "none"} (X1 level item level, X2 scaling gear)')
+    print(f'  pieces re-synced on their side first: {dict(fixed) if len(fixed) > 0 else "none"} (X1 level item level, X2 scaling gear)')
     for k, v in sorted(tags.items()):
         print(f'  {k}: {v:,}')
-    bad = {k: v for k, v in tags.items() if k not in PASS_TAGS}
-    print('PASS: every difference has a known cause' if not bad else f'FAIL: {bad}')
-    if bad:
+    bad: dict[str, int] = {k: v for k, v in tags.items() if k not in PASS_TAGS}
+    print('PASS: every difference has a known cause' if len(bad) == 0 else f'FAIL: {bad}')
+    if len(bad) > 0:
         raise SystemExit(1)
 
 

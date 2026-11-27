@@ -72,9 +72,9 @@ def clan_bonuses(tribe_csv: Path, race_csv: Path, fmt: ItemFormat) -> list[dict[
     cols, name_col = attribute_columns(spec['columns']), spec['nameColumn']
     tribes: dict[int, dict[str, str]] = {int(r['#']): r for r in read_csv(tribe_csv, ['#', name_col, *cols.values()])}
     races: dict[int, dict[str, str]] = {int(r['#']): r for r in read_csv(race_csv, ['#', name_col])}
-    missing = [f'Tribe {i}' for i in range(1, spec['count'] + 1) if not tribes.get(i, {}).get(name_col)]
-    missing += [f'Race {i}' for i in range(1, spec['raceCount'] + 1) if not races.get(i, {}).get(name_col)]
-    if missing:
+    missing = [f'Tribe {i}' for i in range(1, spec['count'] + 1) if tribes.get(i, {}).get(name_col, '') == '']
+    missing += [f'Race {i}' for i in range(1, spec['raceCount'] + 1) if races.get(i, {}).get(name_col, '') == '']
+    if len(missing) > 0:
         raise SchemaError(f'Tribe.csv or Race.csv has no name for {", ".join(missing)}')
     if spec['count'] != spec['raceCount'] * spec['tribesPerRace']:
         raise SchemaError(f'item-format.json clans: {spec["count"]} clans is not {spec["raceCount"]} races x {spec["tribesPerRace"]}')
@@ -102,14 +102,14 @@ def level_data(param_grow_csv: Path) -> list[list[int]]:
     whole number."""
     rows: dict[int, dict[str, str]] = {int(r['#']): r for r in read_csv(param_grow_csv, ['#', *PARAM_GROW_COLUMNS])}
     top: int = max((level for level, r in rows.items() if level >= 1 and r['ItemLevelSync'] not in ('', '0')), default=0)
-    if not top:
+    if top == 0:
         raise SchemaError(f'{Path(param_grow_csv).name}: no level has an ItemLevelSync')
     bad: list[str] = [
         str(level)
         for level in range(1, top + 1)
         if level not in rows or not all(rows[level][c].isdigit() and int(rows[level][c]) > 0 for c in PARAM_GROW_COLUMNS)
     ]
-    if bad:
+    if len(bad) > 0:
         cols: str = ', '.join(PARAM_GROW_COLUMNS)
         raise SchemaError(f'{Path(param_grow_csv).name}: level(s) {", ".join(bad[:10])} missing or without a positive {cols}')
     return [[int(rows[level][c]) for c in PARAM_GROW_COLUMNS] for level in range(1, top + 1)]
@@ -153,8 +153,8 @@ def main(csv_dir: Path | str, out: Path | str, source: provenance.SourceArg = 'd
 
 if __name__ == '__main__':
     ap: ArgumentParser = argparse.ArgumentParser()
-    ap.add_argument('csv_dir')
-    ap.add_argument('out', nargs='?', default='src/data/item-level.json')
+    _ = ap.add_argument('csv_dir')
+    _ = ap.add_argument('out', nargs='?', default='src/data/item-level.json')
     provenance.add_cli_args(ap)
     args: Namespace = ap.parse_args()
     run_main(main, args.csv_dir, args.out, provenance.from_args(args))

@@ -35,7 +35,7 @@ def wearers_by_job(rows: Sequence[ItemRow], fields: dict[str, int], jobs: Sequen
         if whole(row, slot) not in slot_codes:
             continue
         for bit in range(len(jobs)):
-            if whole(row, mask) >> bit & 1:
+            if (whole(row, mask) >> bit & 1) != 0:
                 sets[bit].add(index)
     return sets
 
@@ -49,7 +49,7 @@ def gear_groups(rows: Sequence[ItemRow], fmt: ItemFormat) -> list[list[str]]:
     slot_codes: set[int] = {s['code'] for s in fmt['slots'] if s['type'] in rule['slotTypes']}
     sets: list[set[int]] = wearers_by_job(rows, fields, jobs, slot_codes)
     for job, wearable in zip(jobs, sets, strict=True):
-        if not wearable:
+        if len(wearable) == 0:
             raise SchemaError(f'{job} can wear no piece of {", ".join(rule["slotTypes"])}: is the job mask order still right?')
 
     linked: set[tuple[int, int]] = set()
@@ -73,7 +73,7 @@ def gear_groups(rows: Sequence[ItemRow], fmt: ItemFormat) -> list[list[str]]:
         for b, c in itertools.combinations(members, 2):
             if (b, c) not in linked:
                 raise SchemaError(f"{jobs[a]}'s group is not a clique: {jobs[b]} and {jobs[c]} are not linked to each other")
-        if placed & set(members):
+        if len(placed & set(members)) > 0:
             raise SchemaError(f"{jobs[a]}'s group overlaps an earlier group")
         placed.update(members)
         groups.append([jobs[b] for b in members])
@@ -98,7 +98,7 @@ def main(items_path: str | Path, out: str | Path) -> None:
 
 if __name__ == '__main__':
     ap: ArgumentParser = argparse.ArgumentParser()
-    ap.add_argument('items', nargs='?', default='src/data/items.json')
-    ap.add_argument('out', nargs='?', default='src/data/gear-groups.json')
+    _ = ap.add_argument('items', nargs='?', default='src/data/items.json')
+    _ = ap.add_argument('out', nargs='?', default='src/data/gear-groups.json')
     args: Namespace = ap.parse_args()
     run_main(main, args.items, args.out)

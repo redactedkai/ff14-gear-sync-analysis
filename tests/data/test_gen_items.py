@@ -82,7 +82,7 @@ class GenItemsTest(unittest.TestCase):
         self.assertEqual(row_fields(fmt)['category'], fmt['category']['rowField'])
         fmt['rarity']['rowField'] = 13
         with self.assertRaises(SchemaError) as cm:
-            row_fields(fmt)
+            _ = row_fields(fmt)
         self.assertIn('rarity rowField 13', str(cm.exception))
 
     def test_one_row_per_line(self) -> None:
@@ -205,7 +205,7 @@ class GenItemsTest(unittest.TestCase):
         market: int = 1 << len(keys)
 
         def as_keys(masks: Iterable[int]) -> list[str]:
-            return sorted('+'.join(k for i, k in enumerate(keys) if m >> i & 1) for m in masks if m != market)  # keys in box order
+            return sorted('+'.join(k for i, k in enumerate(keys) if (m >> i & 1) != 0) for m in masks if m != market)  # keys in box order
 
         for name, want in expect.items():
             with self.subTest(name=name):
@@ -331,7 +331,7 @@ class GenItemsTest(unittest.TestCase):
     def test_category_list_must_match(self) -> None:
         # a category with no label, a key gear_categories.py doesn't know, or a key listed twice stops the generator
         fmt: ItemFormat = load_format()
-        gen_items.category_index(fmt)
+        _ = gen_items.category_index(fmt)
         cases: dict[str, list[CategoryEntry]] = {
             'missing': [c for c in fmt['category']['list'] if c['key'] != 'dungeon'],
             'unknown': [*fmt['category']['list'], {'key': 'raid_finder', 'label': 'Raid finder'}],
@@ -339,7 +339,7 @@ class GenItemsTest(unittest.TestCase):
         }
         for word, lst in cases.items():
             with self.subTest(word=word), self.assertRaises(SchemaError) as e:
-                gen_items.category_index({**fmt, 'category': {**fmt['category'], 'list': lst}})
+                _ = gen_items.category_index({**fmt, 'category': {**fmt['category'], 'list': lst}})
             self.assertIn(word, str(e.exception))
 
     def test_crafter_gatherer_gear_excluded(self) -> None:
@@ -388,7 +388,7 @@ class ItemSortTiesTest(unittest.TestCase):
         """The rows of the items.json made from a copy of the fixtures where Test Greataxe (id 1001) also appears as `copy_id`
         with one more point of Strength, listed before the original or after it."""
         with tempfile.TemporaryDirectory() as tmp:
-            shutil.copytree(FIXTURES, tmp, dirs_exist_ok=True)
+            _ = shutil.copytree(FIXTURES, tmp, dirs_exist_ok=True)
 
             def add_copy(rows: list[list[str]]) -> None:
                 header = rows[0]

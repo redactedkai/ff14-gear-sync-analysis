@@ -28,7 +28,12 @@ UTC_MIDNIGHT_0908: int = 1788825600  # 2026-09-08 00:00:00 UTC
 
 def entry(patch_id: int, version: str, stamp: int | str, name: str | None = None) -> dict[str, int | str]:
     """One entry of patchlist.json with the fields the generator reads."""
-    return {'ID': patch_id, 'Version': version, 'Name_en': name or f'Patch {version}', 'ReleaseDate': stamp}
+    return {
+        'ID': patch_id,
+        'Version': version,
+        'Name_en': name if name is not None and name != '' else f'Patch {version}',
+        'ReleaseDate': stamp,
+    }
 
 
 REAL_START: list[dict[str, int | str]] = [
@@ -67,7 +72,7 @@ class PatchTableTest(unittest.TestCase):
         }
         for what, entries in bad.items():
             with self.subTest(what), self.assertRaises(SchemaError):
-                gen_patches.patch_table(entries)
+                _ = gen_patches.patch_table(entries)
 
     def test_a_version_with_a_letter_is_a_patch(self) -> None:
         self.assertEqual(gen_patches.patch_table([entry(1, '2.1b', 1387238400, 'Patch 2.1b: A Realm Awoken')]), [['2.1b', '2013-12-17']])
@@ -78,7 +83,7 @@ class GenPatchesTest(unittest.TestCase):
         self.tmp: tempfile.TemporaryDirectory[str] = tempfile.TemporaryDirectory()
         self.dir: Path = Path(self.tmp.name)
         self.patchlist: Path = self.dir / 'patchlist.json'
-        self.patchlist.write_text(json.dumps(REAL_START), encoding='utf-8')
+        _ = self.patchlist.write_text(json.dumps(REAL_START), encoding='utf-8')
         self.out: Path = self.dir / 'patches.json'
 
     def tearDown(self) -> None:
@@ -121,7 +126,7 @@ class GenPatchesTest(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
         doc = json.loads(self.out.read_text(encoding='utf-8'))
         self.assertEqual(doc['source'], {'repo': 'xivapi/ffxiv-datamining-patches', 'commit': 'c' * 40, 'date': '2026-10-13T00:00:00Z'})
-        self.patchlist.write_text(json.dumps([entry(1, '7.56', 'soon')]), encoding='utf-8')
+        _ = self.patchlist.write_text(json.dumps([entry(1, '7.56', 'soon')]), encoding='utf-8')
         run = subprocess.run([sys.executable, str(script), str(self.patchlist), str(self.out)], capture_output=True, text=True, check=False)
         self.assertEqual(run.returncode, 1)
         self.assertIn('ReleaseDate', run.stderr)
@@ -136,4 +141,4 @@ class GenPatchesTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    _ = unittest.main()

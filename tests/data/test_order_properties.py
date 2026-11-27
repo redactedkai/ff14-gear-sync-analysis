@@ -42,7 +42,7 @@ def copy_with_tie(source_dir: Path, target_dir: Path, original_name: str) -> Non
     """Copy every CSV of source_dir into target_dir, adding to Item.csv a copy (id COPY_ID) of the row named
     `original_name` (a tie on every sort key but the id)."""
     for path in Path(source_dir).glob('*.csv'):
-        shutil.copy(path, Path(target_dir) / path.name)
+        _ = shutil.copy(path, Path(target_dir) / path.name)
     rows: list[list[str]] = read_rows(Path(target_dir) / 'Item.csv')
     name_column: int = rows[0].index('Name')
     original: list[str] = next(r for r in rows[1:] if r[name_column] == original_name)
@@ -90,7 +90,7 @@ class ItemDatabaseOrderTest(unittest.TestCase):
     def test_shuffled_sheets_give_the_same_file(self, rng: random.Random) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             for path in self.base.glob('*.csv'):
-                shutil.copy(path, Path(tmp) / path.name)
+                _ = shutil.copy(path, Path(tmp) / path.name)
             shuffle_all(tmp, rng)
             self.assertEqual(self.generate(tmp), self.expected)
 
@@ -123,7 +123,7 @@ class FoodOrderTest(unittest.TestCase):
     def test_shuffled_sheets_give_the_same_file(self, rng: random.Random) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             for path in self.base.glob('*.csv'):
-                shutil.copy(path, Path(tmp) / path.name)
+                _ = shutil.copy(path, Path(tmp) / path.name)
             shuffle_all(tmp, rng)
             self.assertEqual(self.generate(tmp), self.expected)
 
@@ -169,4 +169,4 @@ class GearGroupsOrderTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    _ = unittest.main()

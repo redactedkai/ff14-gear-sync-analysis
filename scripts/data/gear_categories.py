@@ -144,7 +144,7 @@ def override_items(csv_dir: Path | str, items: list[Row]) -> dict[str, str]:
     currencies: dict[int, str] = {i: cat for i, (_, cat) in CURRENCY_OVERRIDES.items()}
     for _shop, _k, given, costs in shop_listings(read_csv(Path(csv_dir) / 'SpecialShop.csv', ['UseCurrencyType'])):
         cat = next((currencies[c] for c in costs if c in currencies), None)
-        if cat:
+        if cat is not None and cat != '':
             out.update({str(g): cat for g in given})
     return out
 
@@ -171,12 +171,12 @@ def categorize(
             cat = 'field_op'
         elif code == 20 and r['#'] in savage:
             cat = 'savage'
-        elif code in (60, 61) and piece['flags'] & FLAGS['ultimate']:  # bought with an ultimate totem
+        elif code in (60, 61) and (piece['flags'] & FLAGS['ultimate']) != 0:  # bought with an ultimate totem
             cat = 'ultimate'
         elif code == 250 and piece['equipLevel'] <= AETHERIAL_MAX_EQUIP:
             cat = 'aetherial'
         out[r['#']] = overrides.get(r['#'], cat)
-    if unknown:
+    if len(unknown) > 0:
         listed: str = ', '.join(f'{c} ({n} pieces)' for c, n in sorted(unknown.items()))
         raise SchemaError(
             f'Item.csv: SubcategorySort code(s) with no known category: {listed}. See docs/engineering/subcategory-sort-codes.md.'
@@ -194,9 +194,9 @@ def check(kept: list[tuple[Row, Piece]], cats: dict[str, str]) -> list[str]:
         cat, src = cats[r['#']], piece['flags']
         if cat == 'savage' and piece['slotCode'] not in accessory_slots and r['DyeCount'] in ('', '0'):
             problems.append(f'{r["Name"]}: categorized savage but has no dye slot (a currency shared with other gear?)')
-        if src & FLAGS['ultimate'] and cat != 'ultimate':
+        if (src & FLAGS['ultimate']) != 0 and cat != 'ultimate':
             problems.append(f'{r["Name"]}: bought with an ultimate totem but categorized {cat}')
-        if src & FLAGS['crafted'] and cat != 'crafted':
+        if (src & FLAGS['crafted']) != 0 and cat != 'crafted':
             problems.append(f'{r["Name"]}: a recipe result but categorized {cat}')
     return problems
 
@@ -213,7 +213,7 @@ def main(csv_dir: Path | str) -> None:
         print(f'  {cat:15s} {counts.get(cat, 0):6,d}')
     totems: str = ', '.join(ULTIMATE_TOTEMS.values())
     print(f'(ultimate = bought with: {totems})')
-    if problems:
+    if len(problems) > 0:
         raise SchemaError(f'{len(problems)} cross-check problem(s): ' + '; '.join(problems[:10]))
 
 
@@ -221,5 +221,5 @@ if __name__ == '__main__':
     from item_format import run_main
 
     ap: ArgumentParser = argparse.ArgumentParser()
-    ap.add_argument('csv_dir')
+    _ = ap.add_argument('csv_dir')
     run_main(main, ap.parse_args().csv_dir)

@@ -27,13 +27,13 @@ from argparse import ArgumentParser, Namespace
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import TypedDict, TypeVar
+from typing import TypeAlias, TypedDict, TypeVar
 
 import provenance
 from item_format import ROOT, ItemCell, ItemFormat, ItemRow, SchemaError, load_format, run_main, whole, whole_list
 from provenance import Source
 
-Counts = Mapping[str, 'int | Counts']  # the counts of summary.json: whole numbers, and maps of them (by slot, by category, ...)
+Counts: TypeAlias = Mapping[str, 'int | Counts']  # the counts of summary.json: whole numbers, and maps of them (by slot, by category, ...)
 
 
 class ItemsDoc(TypedDict):
@@ -86,7 +86,7 @@ def csv_blobs(csv_dir: Path | str, sheets: list[str]) -> dict[str, str] | None:
         )
     except OSError:  # git not installed
         return None
-    if run.returncode:
+    if run.returncode != 0:
         return None
     blobs: dict[str, str] = {}
     for line in run.stdout.splitlines():
@@ -122,7 +122,7 @@ def summarize(items_doc: ItemsDoc, food_doc: FoodDoc, report: ItemReport, fmt: I
         'bySlot': {str(code): n for code, n in sorted(count(whole(r, field['slotCode']) for r in rows).items())},
         'byCategory': count(categories[whole(r, field['category'])] for r in rows),
         'byBox': {box: sum(1 for r in rows if has_bit(whole_list(r, field['routes']), bit)) for bit, box in enumerate(boxes)},
-        'noRoute': sum(1 for r in rows if not whole_list(r, field['routes'])),
+        'noRoute': sum(1 for r in rows if len(whole_list(r, field['routes'])) == 0),
         'inferredPieces': report['inferredPieces'],
         'inferredCurrencies': report['inferredCurrencies'],
         'meals': len(food_doc['foods']),
@@ -152,7 +152,7 @@ def drift(old: Counts, new: Counts) -> list[str]:
         elif now is None:
             lines.append(f'{key} gone (was {was:,})')
         elif abs(now - was) > max(DRIFT_SHARE * was, DRIFT_MIN):
-            share: str = f' ({(now - was) / was:+.0%})' if was else ''
+            share: str = f' ({(now - was) / was:+.0%})' if was != 0 else ''
             lines.append(f'{key} {was:,} -> {now:,}{share}')
     return lines
 
@@ -181,10 +181,10 @@ def changelog_line(source: Source, subject: str, counts: Counts, old_counts: Cou
     old_counts: the previous summary's counts, or None (no change shown)."""
 
     def with_change(key: str, label: str) -> str:
-        change: str = f' ({total(counts, key) - total(old_counts, key):+,})' if old_counts and key in old_counts else ''
+        change: str = f' ({total(counts, key) - total(old_counts, key):+,})' if old_counts is not None and key in old_counts else ''
         return f'{total(counts, key):,} {label}{change}'
 
-    title: str = f' "{subject}"' if subject else ''
+    title: str = f' "{subject}"' if subject != '' else ''
     return f'- {source["date"][:10]}, `{source["commit"][:7]}`{title}: {with_change("rows", "rows")}, {with_change("meals", "meals")}'
 
 
@@ -214,8 +214,10 @@ def main(
     # what moved since the previous run
     if old is not None:
         moved: list[str] = drift(old['counts'], counts)
-        since: str = f'the last run (commit {(old.get("source") or {}).get("commit", "unknown")[:7]})'
-        if moved:
+        old_source: Mapping[str, str] | None = old.get('source')
+        old_commit: str = 'unknown' if old_source is None else old_source.get('commit', 'unknown')
+        since: str = f'the last run (commit {old_commit[:7]})'
+        if len(moved) > 0:
             print(
                 f'Warning: {len(moved)} count(s) moved by more than {DRIFT_SHARE:.0%} since {since}; look into each before committing: '
                 + '; '.join(moved)
@@ -224,10 +226,10 @@ def main(
             print(f'No count moved by more than {DRIFT_SHARE:.0%} since {since}.')
 
     # one changelog line per data update
-    if changelog and source and changelog_path.exists():
+    if changelog and bool(source) and changelog_path.exists():
         text: str = changelog_path.read_text(encoding='utf-8')
         if f'`{source["commit"][:7]}`' not in text:
-            line: str = changelog_line(source, commit_subject(csv_dir), counts, old and old['counts'])
+            line: str = changelog_line(source, commit_subject(csv_dir), counts, old['counts'] if old is not None else None)
             text = text.rstrip('\n')
             gap = '\n' if text.splitlines()[-1].startswith('- ') else '\n\n'  # a blank line before the first entry
             provenance.write_generated(changelog_path, text + gap + line + '\n')
@@ -236,8 +238,8 @@ def main(
 
 if __name__ == '__main__':
     ap: ArgumentParser = argparse.ArgumentParser(description='Write src/data/summary.json and report how the counts moved.')
-    ap.add_argument('csv_dir')
-    ap.add_argument('report')
-    ap.add_argument('--no-changelog', action='store_true', help='do not add a line to docs/data-changelog.md')
+    _ = ap.add_argument('csv_dir')
+    _ = ap.add_argument('report')
+    _ = ap.add_argument('--no-changelog', action='store_true', help='do not add a line to docs/data-changelog.md')
     args: Namespace = ap.parse_args()
     run_main(main, args.csv_dir, args.report, not args.no_changelog)

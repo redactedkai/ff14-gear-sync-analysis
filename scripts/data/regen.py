@@ -44,7 +44,7 @@ def read_clone(directory: Path, repo: str, what: str, restore: str, allow_dirty:
     edits: list[str] | None = provenance.local_edits(directory)
     if edits is None:
         sys.exit(f'Could not read the git status of {directory}. Run: python scripts/data/fetch.py')
-    if edits:
+    if len(edits) > 0:
         listed: str = '\n  '.join(edits[:10]) + ('\n  ...' if len(edits) > 10 else '')
         message: str = (
             f'The {what} clone has local edits, so the generated files would name commit {source["commit"][:7]} but hold other '
@@ -95,7 +95,7 @@ def is_python_step(command: Sequence[str]) -> bool:
 def main(argv: Sequence[str] | None = None) -> None:
     """Regenerate src/data/ and rebuild dist/ (see the module docstring). Exits with the first failing step's status."""
     ap: ArgumentParser = argparse.ArgumentParser(description='Regenerate src/data/ from the data clones in data/, then rebuild dist/.')
-    ap.add_argument('--allow-dirty', action='store_true', help='run even when a data clone has local edits (do not commit the result)')
+    _ = ap.add_argument('--allow-dirty', action='store_true', help='run even when a data clone has local edits (do not commit the result)')
     args: Namespace = ap.parse_args(argv)
     if not CSV.exists() or not PATCHLIST.exists():
         sys.exit('No CSVs or no patch list yet. Run: python scripts/data/fetch.py')
@@ -112,9 +112,9 @@ def main(argv: Sequence[str] | None = None) -> None:
             done: CompletedProcess[str] = subprocess.run(
                 command, stdout=subprocess.PIPE, text=True, encoding='utf-8' if python else None, check=False
             )
-            if python and done.stdout.strip():
+            if python and done.stdout.strip() != '':
                 progress.note(done.stdout.rstrip())
-            if done.returncode:
+            if done.returncode != 0:
                 sys.exit(done.returncode)
     print('Done.')
 

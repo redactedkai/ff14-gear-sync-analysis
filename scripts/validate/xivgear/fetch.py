@@ -22,16 +22,16 @@ PNPM: str = 'pnpm@9.12.3'  # package.json packageManager at COMMIT
 
 
 def run(*cmd: str) -> None:
-    subprocess.run(cmd, cwd=CLONE, check=True, shell=False)
+    _ = subprocess.run(cmd, cwd=CLONE, check=True, shell=False)
 
 
 def main() -> None:
     npx: str | None = shutil.which('npx')
-    if not npx:
+    if npx is None or npx == '':
         raise SystemExit('npx not found')
     if not (CLONE / '.git').exists():
         CLONE.parent.mkdir(parents=True, exist_ok=True)
-        subprocess.run(['git', 'clone', '-q', REPO, str(CLONE)], check=True)
+        _ = subprocess.run(['git', 'clone', '-q', REPO, str(CLONE)], check=True)
     run('git', 'fetch', '-q', 'origin')
     run('git', 'checkout', '-q', COMMIT)
     run(npx, '--yes', PNPM, 'install', '--frozen-lockfile', '--ignore-scripts')

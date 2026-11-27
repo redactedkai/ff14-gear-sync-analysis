@@ -67,7 +67,7 @@ class FoodSortTiesTest(unittest.TestCase):
         """The substat lists of every Royal Toast made from a copy of the fixtures where the meal also appears as `copy_id`,
         with the action (so the stats) of Prune Ponzecake, listed before the original or after it."""
         with tempfile.TemporaryDirectory() as tmp:
-            shutil.copytree(FIXTURES, tmp, dirs_exist_ok=True)
+            _ = shutil.copytree(FIXTURES, tmp, dirs_exist_ok=True)
 
             def add_copy(rows: list[list[str]]) -> None:
                 header = rows[0]
@@ -97,7 +97,7 @@ class FoodSchemaTest(unittest.TestCase):
         self.tmp: tempfile.TemporaryDirectory[str] = tempfile.TemporaryDirectory()
         self.dir: Path = Path(self.tmp.name)
         for f in FIXTURES.iterdir():
-            shutil.copy(f, self.dir / f.name)
+            _ = shutil.copy(f, self.dir / f.name)
 
     def tearDown(self) -> None:
         self.tmp.cleanup()
@@ -113,13 +113,13 @@ class FoodSchemaTest(unittest.TestCase):
     def test_renamed_column(self) -> None:
         self.edit('ItemFood', lambda rows: [[c.replace('MaxHQ[0]', 'MaxHq[0]') for c in rows[0]], *rows[1:]])
         with self.assertRaisesRegex(SchemaError, r'ItemFood.csv is missing column\(s\): MaxHQ\[0\]'):
-            generate(self.dir)
+            _ = generate(self.dir)
 
     def test_missing_food_row(self) -> None:
         # drop Rroneek au Gratin's ItemFood row (705)
         self.edit('ItemFood', lambda rows: [r for r in rows if r[0] != '705'])
         with self.assertRaisesRegex(SchemaError, r'Rroneek au Gratin.*ItemFood row 705'):
-            generate(self.dir)
+            _ = generate(self.dir)
 
     def test_boolean_columns_other_than_true_false(self) -> None:
         # the exporter writing 1/0 for CanBeHq or IsRelative must stop the generator, not leave out every meal
@@ -133,10 +133,10 @@ class FoodSchemaTest(unittest.TestCase):
         for sheet, column in (('Item', 'CanBeHq'), ('ItemFood', 'IsRelative')):
             with self.subTest(column=column):
                 for f in FIXTURES.iterdir():
-                    shutil.copy(f, self.dir / f.name)
+                    _ = shutil.copy(f, self.dir / f.name)
                 self.edit(sheet, to_digits(column))
                 with self.assertRaisesRegex(SchemaError, rf"{sheet}.csv: expected True or False: {column}.*'1'"):
-                    generate(self.dir)
+                    _ = generate(self.dir)
 
     def test_bad_percent(self) -> None:
         def zero(rows: list[list[str]]) -> list[list[str]]:
@@ -145,8 +145,8 @@ class FoodSchemaTest(unittest.TestCase):
 
         self.edit('ItemFood', zero)
         with self.assertRaisesRegex(SchemaError, r'ItemFood row 705: sps HQ 0%'):
-            generate(self.dir)
+            _ = generate(self.dir)
 
 
 if __name__ == '__main__':
-    unittest.main()
+    _ = unittest.main()

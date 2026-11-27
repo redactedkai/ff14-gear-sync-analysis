@@ -17,16 +17,16 @@ COMMIT: str = '8d75ef89c317401727066a28025fb4d860a92f20'  # 2026-10-13, "Update 
 
 
 def run(*cmd: str) -> None:
-    subprocess.run(cmd, cwd=CLONE, check=True, shell=False)
+    _ = subprocess.run(cmd, cwd=CLONE, check=True, shell=False)
 
 
 def main() -> None:
     npm: str | None = shutil.which('npm')
-    if not npm:
+    if npm is None or npm == '':
         raise SystemExit('npm not found')
     if not (CLONE / '.git').exists():
         CLONE.parent.mkdir(parents=True, exist_ok=True)
-        subprocess.run(['git', 'clone', '-q', REPO, str(CLONE)], check=True)
+        _ = subprocess.run(['git', 'clone', '-q', REPO, str(CLONE)], check=True)
     run('git', 'fetch', '-q', 'origin')
     run('git', 'checkout', '-q', COMMIT)
     run(npm, 'ci', '--ignore-scripts', '--no-audit', '--no-fund')

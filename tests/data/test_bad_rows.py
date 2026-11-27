@@ -37,14 +37,14 @@ class BadRowTest(unittest.TestCase):
         self.tmp: tempfile.TemporaryDirectory[str] = tempfile.TemporaryDirectory()
         self.dir: Path = Path(self.tmp.name)
         for f in FIXTURES.glob('*.csv'):
-            shutil.copy(f, self.dir / f.name)
+            _ = shutil.copy(f, self.dir / f.name)
 
     def tearDown(self) -> None:
         self.tmp.cleanup()
 
     def assert_stops(self, fn: Callable[[], object], *needles: str) -> None:
         with self.assertRaises(SchemaError) as stop:
-            fn()
+            _ = fn()
         for needle in needles:
             self.assertIn(needle, str(stop.exception))
 
@@ -56,7 +56,7 @@ class BadRowTest(unittest.TestCase):
             header: list[str] = rows[0]
             for row in rows[1:]:
                 if row[header.index('Value[0]')] != '0' and row[header.index('Item[0]')] != '0':
-                    change(row, header)
+                    _ = change(row, header)
 
         edit_csv(self.dir / 'Materia.csv', edit)
 
@@ -164,7 +164,9 @@ class BadRowTest(unittest.TestCase):
     # gen_gear_groups
     def test_item_data_of_another_format_version_stops_the_gear_groups(self) -> None:
         items: Path = self.dir / 'items.json'
-        items.write_text(json.dumps({'formatVersion': load_format()['formatVersion'] + 1, 'source': None, 'items': []}), encoding='utf-8')
+        _ = items.write_text(
+            json.dumps({'formatVersion': load_format()['formatVersion'] + 1, 'source': None, 'items': []}), encoding='utf-8'
+        )
         self.assert_stops(
             lambda: gen_gear_groups.main(str(items), str(self.dir / 'groups.json')), 'format version', 'run gen_items.py first'
         )
@@ -187,7 +189,7 @@ class SummaryMainTest(unittest.TestCase):
         self.summary_path: Path = self.dir / 'summary.json'
         self.changelog_path: Path = self.dir / 'data-changelog.md'
         self.write_inputs(item_levels=[100, 90], meals=2)
-        self.changelog_path.write_text('# Data changelog\n\n- 2026-01-01, `abcdef0`: 1 rows, 1 meals\n', encoding='utf-8', newline='\n')
+        _ = self.changelog_path.write_text('# Data changelog\n\n- 2026-01-01, `abcdef0`: 1 rows, 1 meals\n', encoding='utf-8', newline='\n')
 
     def tearDown(self) -> None:
         self.tmp.cleanup()
@@ -200,8 +202,8 @@ class SummaryMainTest(unittest.TestCase):
 
     def write_inputs(self, item_levels: Iterable[int], meals: int) -> None:
         base: dict[str, Source | int] = {'source': self.SOURCE, 'formatVersion': self.fmt['formatVersion']}
-        self.items.write_text(json.dumps({**base, 'items': [self.item_row(i) for i in item_levels]}), encoding='utf-8')
-        self.food.write_text(json.dumps({**base, 'foods': [['m', 1, [], None]] * meals}), encoding='utf-8')
+        _ = self.items.write_text(json.dumps({**base, 'items': [self.item_row(i) for i in item_levels]}), encoding='utf-8')
+        _ = self.food.write_text(json.dumps({**base, 'foods': [['m', 1, [], None]] * meals}), encoding='utf-8')
         report: summary.ItemReport = {
             'itemSheetRows': 10,
             'dropped': {'name': 1},
@@ -210,7 +212,7 @@ class SummaryMainTest(unittest.TestCase):
             'inferredPieces': {},
             'inferredCurrencies': {},
         }
-        self.report.write_text(json.dumps(report), encoding='utf-8')
+        _ = self.report.write_text(json.dumps(report), encoding='utf-8')
 
     def run_main(self) -> str:
         output: StringIO = io.StringIO()
@@ -240,7 +242,7 @@ class SummaryMainTest(unittest.TestCase):
         self.assertEqual(len(lines), 4)
 
     def test_a_second_run_with_moved_counts_warns_and_adds_no_second_changelog_line(self) -> None:
-        self.run_main()
+        _ = self.run_main()
         self.write_inputs(item_levels=[100] * 40, meals=2)  # rows 2 -> 40: far past the drift limit
         printed: str = self.run_main()
         self.assertIn('Warning: ', printed)
@@ -249,7 +251,7 @@ class SummaryMainTest(unittest.TestCase):
         self.assertEqual(len(self.changelog_path.read_text(encoding='utf-8').splitlines()), 4)
 
     def test_a_second_run_with_the_same_counts_reports_no_drift(self) -> None:
-        self.run_main()
+        _ = self.run_main()
         self.assertIn('No count moved by more than', self.run_main())
 
     def test_no_changelog_flag_leaves_the_changelog_alone(self) -> None:
@@ -265,10 +267,10 @@ class SummaryMainTest(unittest.TestCase):
         self.assertTrue(self.summary_path.exists())
 
     def test_a_report_missing_its_counts_raises_a_bare_key_error_today(self) -> None:
-        self.report.write_text('{}', encoding='utf-8')
+        _ = self.report.write_text('{}', encoding='utf-8')
         with self.assertRaises(KeyError):
-            self.run_main()
+            _ = self.run_main()
 
 
 if __name__ == '__main__':
-    unittest.main()
+    _ = unittest.main()

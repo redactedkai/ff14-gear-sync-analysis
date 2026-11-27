@@ -39,7 +39,7 @@ def meal_stats(
     vit: list[int] | None = None
     for i in range(N_FOOD_PARAMS):
         param: int = int(food_row[f'BaseParam[{i}]'])
-        if not param:
+        if param == 0:
             continue
         key: str | None = stat_of.get(param)
         if key is None or food_row[f'IsRelative[{i}]'] != 'True':
@@ -104,8 +104,8 @@ def main(csv_dir: Path | str, out: Path | str, source: provenance.SourceArg = 'd
 
 if __name__ == '__main__':
     ap: ArgumentParser = argparse.ArgumentParser()
-    ap.add_argument('csv_dir')
-    ap.add_argument('out', nargs='?', default='src/data/food.json')
+    _ = ap.add_argument('csv_dir')
+    _ = ap.add_argument('out', nargs='?', default='src/data/food.json')
     provenance.add_cli_args(ap)
     args: Namespace = ap.parse_args()
     run_main(main, args.csv_dir, args.out, provenance.from_args(args))

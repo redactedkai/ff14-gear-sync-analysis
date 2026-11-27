@@ -42,7 +42,7 @@ def release_day(timestamp: int) -> str:
 def patch_table(entries: object) -> list[list[str]]:
     """[[version, release day]] for the entries of patchlist.json (a list of dicts), oldest first, with a repeated entry
     (same version, same day) kept once. Raises SchemaError as the module's header lists."""
-    if not isinstance(entries, list) or not entries:
+    if not isinstance(entries, list) or (len(entries) == 0):
         raise SchemaError('patchlist.json is not a list with entries')
     table: list[list[str]] = []
     last_id: int | None = None
@@ -53,9 +53,9 @@ def patch_table(entries: object) -> list[list[str]]:
             raise SchemaError(f'{where} lacks ID, Version, Name_en or ReleaseDate. Did the list change shape?')
         entry: dict[str, object] = item
         version, name, stamp = entry['Version'], entry['Name_en'], entry['ReleaseDate']
-        if not isinstance(version, str) or not VERSION.fullmatch(version):
+        if not isinstance(version, str) or ((VERSION.fullmatch(version)) is None):
             raise SchemaError(f'{where}: version {version!r}, expected like "7.56" or "2.1b"')
-        if not isinstance(name, str) or not re.match(rf'Patch {re.escape(version)}\b', name):
+        if not isinstance(name, str) or ((re.match(rf'Patch {re.escape(version)}\b', name)) is None):
             raise SchemaError(f'{where}: the name {name!r} does not begin "Patch {version}"')
         if isinstance(stamp, bool) or not isinstance(stamp, int) or stamp <= 0:
             raise SchemaError(f'{where} ({version}): ReleaseDate {stamp!r}, expected a Unix timestamp in seconds')
@@ -66,10 +66,10 @@ def patch_table(entries: object) -> list[list[str]]:
             raise SchemaError(f'{where} ({version}): ids do not rise (after {last_id})')
         last_id = entry_id
         day: str = release_day(stamp)
-        if table and day < table[-1][1]:
+        if (len(table) > 0) and day < table[-1][1]:
             raise SchemaError(f'{where} ({version}) is released {day}, before {table[-1][0]} ({table[-1][1]}) listed above it')
         same: list[list[str]] = [row for row in table if row[0] == version]
-        if same:
+        if len(same) > 0:
             if same[0][1] != day:
                 raise SchemaError(f'{where}: version {version} is listed with two dates, {same[0][1]} and {day}')
             continue
@@ -93,10 +93,10 @@ def main(patchlist: Path | str, out: Path | str, source: provenance.SourceArg = 
 
 if __name__ == '__main__':
     ap: ArgumentParser = argparse.ArgumentParser()
-    ap.add_argument('patchlist')
-    ap.add_argument('out', nargs='?', default='src/data/patches.json')
-    ap.add_argument('--source-commit', help='commit sha of the patch list (default: detect from its directory)')
-    ap.add_argument('--source-date', help='commit date of the patch list, ISO 8601')
+    _ = ap.add_argument('patchlist')
+    _ = ap.add_argument('out', nargs='?', default='src/data/patches.json')
+    _ = ap.add_argument('--source-commit', help='commit sha of the patch list (default: detect from its directory)')
+    _ = ap.add_argument('--source-date', help='commit date of the patch list, ISO 8601')
     args: Namespace = ap.parse_args()
     given: str | Source = provenance.make(args.source_commit, args.source_date, provenance.PATCHES_REPO) if args.source_commit else 'detect'
     run_main(main, args.patchlist, args.out, given)

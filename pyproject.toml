@@ -38,8 +38,7 @@ preset = "strict"
 [tool.pyrefly.errors]
 # The strict preset plus every other check that is clean today: no implicit Any (a variable, argument, attribute, return or
 # type argument the checker cannot type), no unused or unreachable code, no needless comparison, conversion or cast, no
-# implicit import or re-export, no unannotated attribute. Left off: implicit-bool and unused-call-result (about 140 sites each,
-# style rather than typing).
+# implicit import or re-export, no unannotated attribute, no implicit truthiness, no discarded call result.
 unknown-variable-type = true
 unknown-argument-type = true
 unknown-attribute-access = true
@@ -63,6 +62,8 @@ unsafe-overlap = true
 redundant-cast = true
 untyped-namedtuple = true
 unused-coroutine = true
+implicit-bool = true
+unused-call-result = true
 
 [[tool.pyrefly.sub-config]]
 matches = "tests/**"

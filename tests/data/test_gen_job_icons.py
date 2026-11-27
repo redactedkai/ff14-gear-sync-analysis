@@ -56,7 +56,7 @@ class GenJobIconsTest(unittest.TestCase):
         self.icons: Path = self.tmp / 'icons'
         self.icons.mkdir()
         for i, job in enumerate(JOBS):
-            (self.icons / f'{job}.png').write_bytes(fake_png(tag=i))  # a different file per job
+            _ = (self.icons / f'{job}.png').write_bytes(fake_png(tag=i))  # a different file per job
         self.out: Path = self.tmp / 'job-icons.ts'
 
     def test_every_job_embedded_as_its_own_png(self) -> None:
@@ -72,7 +72,7 @@ class GenJobIconsTest(unittest.TestCase):
 
     def test_header_names_fetch_date_and_hashes(self) -> None:
         """The header records the fetch date (fetch.py's record, else the newest file date) and each PNG's sha256."""
-        (self.icons / gen_job_icons.FETCH_RECORD).write_text('2026-10-12\n', encoding='utf-8')
+        _ = (self.icons / gen_job_icons.FETCH_RECORD).write_text('2026-10-12\n', encoding='utf-8')
         run_quiet(gen_job_icons.main, self.icons, self.out)
         text: str = self.out.read_text(encoding='utf-8')
         self.assertIn('Fetched 2026-10-12 (fetch.py)', text)
@@ -92,14 +92,14 @@ class GenJobIconsTest(unittest.TestCase):
         self.assertFalse(self.out.exists())
 
     def test_a_png_cut_short_with_a_good_header_fails(self) -> None:
-        (self.icons / 'SGE.png').write_bytes(fake_png(whole=False))
+        _ = (self.icons / 'SGE.png').write_bytes(fake_png(whole=False))
         with self.assertRaisesRegex(SchemaError, r'SGE: SGE.png is cut short \(no PNG end chunk\)'):
             gen_job_icons.main(self.icons, self.out)
         self.assertFalse(self.out.exists())
 
     def test_wrong_size_or_not_png_fails(self) -> None:
-        (self.icons / 'PLD.png').write_bytes(fake_png(40, 40))
-        (self.icons / 'WAR.png').write_bytes(b'<html>error page</html>')
+        _ = (self.icons / 'PLD.png').write_bytes(fake_png(40, 40))
+        _ = (self.icons / 'WAR.png').write_bytes(b'<html>error page</html>')
         with self.assertRaisesRegex(SchemaError, r'PLD: PLD.png is 40 x 40, expected 64 x 64; WAR: WAR.png is not a PNG'):
             gen_job_icons.main(self.icons, self.out)
 
@@ -131,13 +131,13 @@ class IconDownloadTest(unittest.TestCase):
             fetch.download_icon('https://example.invalid/icon.png', self.dest)
 
     def test_a_whole_png_replaces_the_old_icon_and_leaves_no_temp_file(self) -> None:
-        self.dest.write_bytes(b'old')
+        _ = self.dest.write_bytes(b'old')
         self.download(fake_png(tag=7))
         self.assertEqual(self.dest.read_bytes(), fake_png(tag=7))
         self.assertEqual([p.name for p in self.tmp.iterdir()], ['SGE.png'])
 
     def test_a_cut_short_png_is_refused_and_the_old_icon_stays(self) -> None:
-        self.dest.write_bytes(fake_png(tag=1))
+        _ = self.dest.write_bytes(fake_png(tag=1))
         with self.assertRaisesRegex(SystemExit, 'SGE.png: the download .* is not a whole 64 x 64 PNG'):
             self.download(fake_png(tag=2, whole=False))
         self.assertEqual(self.dest.read_bytes(), fake_png(tag=1))

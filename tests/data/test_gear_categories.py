@@ -40,7 +40,7 @@ class GearCategoriesTest(unittest.TestCase):
         self.tmp: tempfile.TemporaryDirectory[str] = tempfile.TemporaryDirectory()
         self.dir: Path = Path(self.tmp.name)
         for f in FIXTURES.glob('*.csv'):
-            shutil.copy(f, self.dir / f.name)
+            _ = shutil.copy(f, self.dir / f.name)
 
         def items(rows: list[list[str]]) -> None:
             h = rows[0]
@@ -88,7 +88,7 @@ class GearCategoriesTest(unittest.TestCase):
         kept = [(r, row) for r, row in kept if ids[r['#']] not in gear_categories.LEFT_OUT]
         keys: list[str] = [a['key'] for a in load_format()['activities']]
         out, _ = gear_activities.routes(self.dir, kept, ids)
-        return {r['Name']: sorted('+'.join(k for i, k in enumerate(keys) if m >> i & 1) for m in out[r['#']]) for r, _ in kept}
+        return {r['Name']: sorted('+'.join(k for i, k in enumerate(keys) if (m >> i & 1) != 0) for m in out[r['#']]) for r, _ in kept}
 
     def test_inferred_routes_are_counted(self) -> None:
         """Pieces and currencies placed by a fallback rule are counted by activity for the report printed on every
@@ -151,7 +151,7 @@ class GearCategoriesTest(unittest.TestCase):
 
         edit_csv(self.dir / 'Item.csv', fn)
         with self.assertRaises(SchemaError) as cm:
-            self.categories()
+            _ = self.categories()
         self.assertIn('Proto Ultima Heat Shielding', str(cm.exception))
 
     def test_unknown_code_stops(self) -> None:
@@ -161,7 +161,7 @@ class GearCategoriesTest(unittest.TestCase):
 
         edit_csv(self.dir / 'Item.csv', fn)
         with self.assertRaises(SchemaError) as cm:
-            self.categories()
+            _ = self.categories()
         self.assertIn('999 (1 pieces)', str(cm.exception))
 
     def test_cross_check_flags_a_recipe_result_outside_crafted(self) -> None:

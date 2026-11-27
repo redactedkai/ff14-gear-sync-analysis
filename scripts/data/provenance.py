@@ -12,7 +12,7 @@ from argparse import ArgumentParser, Namespace
 from collections.abc import Collection, Mapping
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import Literal, TypedDict
+from typing import Literal, TypeAlias, TypedDict
 
 REPO: str = 'xivapi/ffxiv-datamining'
 PATCHES_REPO: str = 'xivapi/ffxiv-datamining-patches'
@@ -35,19 +35,20 @@ def detect(csv_dir: str | Path, repo: str = REPO) -> Source | None:
     """{'repo', 'commit', 'date'} for the clone of `repo` ("owner/name") containing csv_dir, or None. The clone's origin
     must be that repository exactly: ffxiv-datamining-patches is not ffxiv-datamining."""
     try:
-        url: str = _git(csv_dir, 'remote', 'get-url', 'origin') or ''
+        origin: str | None = _git(csv_dir, 'remote', 'get-url', 'origin')
+        url: str = '' if origin is None else origin
         if url.rstrip('/').removesuffix('.git').rsplit('/', 1)[-1] != repo.split('/')[1]:
             return None
         out: str | None = _git(csv_dir, 'log', '-1', '--format=%H %cI')
     except OSError:  # git not installed
         return None
-    if not out:
+    if out is None or out == '':
         return None
     commit, date = out.split(' ', 1)
     return make(commit, date, repo)
 
 
-SourceArg = Source | Literal['detect'] | None  # what a generator's `source` parameter takes: a record, none, or ask git
+SourceArg: TypeAlias = Source | Literal['detect'] | None  # what a generator's `source` parameter takes: a record, none, or ask git
 
 
 def resolve(source: SourceArg, directory: str | Path, repo: str = REPO) -> Source | None:
@@ -65,7 +66,7 @@ def local_edits(csv_dir: str | Path) -> list[str] | None:
         )
     except OSError:  # git not installed
         return None
-    return [line for line in r.stdout.splitlines() if line.strip()] if r.returncode == 0 else None
+    return [line for line in r.stdout.splitlines() if (line.strip()) != ''] if r.returncode == 0 else None
 
 
 def make(commit: str, date: str, repo: str = REPO) -> Source:
@@ -81,8 +82,8 @@ def note(source: Source | None, repo: str = REPO) -> str:
 
 
 def add_cli_args(parser: ArgumentParser) -> None:
-    parser.add_argument('--source-commit', help='datamining commit sha (default: detect from the CSV directory)')
-    parser.add_argument('--source-date', help='datamining commit date, ISO 8601')
+    _ = parser.add_argument('--source-commit', help='datamining commit sha (default: detect from the CSV directory)')
+    _ = parser.add_argument('--source-date', help='datamining commit date, ISO 8601')
 
 
 def from_args(args: Namespace) -> SourceArg:
@@ -104,11 +105,11 @@ def json_lines(doc: Mapping[str, object], expand: Collection[str] = (), ensure_a
     lines: list[str] = []
     for key, value in doc.items():
         head: str = compact(key) + ':'
-        if key in expand and isinstance(value, dict) and value:
+        if key in expand and isinstance(value, dict) and len(value) > 0:
             members: dict[str, object] = value
             entries: list[str] = [compact(k) + ':' + compact(v) for k, v in members.items()]
             lines.append(head + '{\n' + ',\n'.join(entries) + '\n}')
-        elif key in expand and isinstance(value, list) and value:
+        elif key in expand and isinstance(value, list) and len(value) > 0:
             elements: list[object] = value
             lines.append(head + '[\n' + ',\n'.join(compact(v) for v in elements) + '\n]')
         else:
@@ -118,4 +119,4 @@ def json_lines(doc: Mapping[str, object], expand: Collection[str] = (), ensure_a
 
 def write_generated(out: str | Path, js: str) -> None:
     """Write a generated file as UTF-8 with LF line endings on every platform (the repo stores LF)."""
-    Path(out).write_text(js, encoding='utf-8', newline='\n')
+    _ = Path(out).write_text(js, encoding='utf-8', newline='\n')

@@ -14,7 +14,7 @@ import sys
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from csv import DictReader
 from pathlib import Path
-from typing import NotRequired, TypedDict
+from typing import NotRequired, TypeAlias, TypedDict
 
 ROOT: Path = Path(__file__).resolve().parents[2]
 FORMAT_PATH: Path = ROOT / 'src' / 'core' / 'item-format.json'
@@ -258,9 +258,9 @@ def load_format() -> ItemFormat:
         return json.load(f)
 
 
-Row = dict[str, str]  # one CSV row: header name -> cell text (every cell is a string, empty when blank)
-ItemCell = str | int | list[int]  # one cell of an items.json row: the name, a whole number, or the stat list
-ItemRow = Sequence[ItemCell]  # one row of items.json (read only), its cells in the order of `itemRow.fields`
+Row: TypeAlias = dict[str, str]  # one CSV row: header name -> cell text (every cell is a string, empty when blank)
+ItemCell: TypeAlias = str | int | list[int]  # one cell of an items.json row: the name, a whole number, or the stat list
+ItemRow: TypeAlias = Sequence[ItemCell]  # one row of items.json (read only), its cells in the order of `itemRow.fields`
 
 
 def whole(row: ItemRow, index: int) -> int:
@@ -287,9 +287,9 @@ def read_csv(path: str | Path, required: Iterable[str] = ()) -> list[Row]:
     path = Path(path)
     with path.open(encoding='utf-8', newline='') as f:
         reader: DictReader[str] = csv.DictReader(f)
-        header: set[str] = set(reader.fieldnames or ())
+        header: set[str] = set(() if reader.fieldnames is None else reader.fieldnames)
         missing: list[str] = [c for c in dict.fromkeys(required) if c not in header]
-        if missing:
+        if len(missing) > 0:
             hint: str = f'Did a game patch rename them? Update {FORMAT_PATH.name} or the generator.'
             raise SchemaError(f'{path.name} is missing column(s): {", ".join(missing)}. {hint}')
         return list(reader)
@@ -303,9 +303,9 @@ def check_bools(rows: Iterable[Row], columns: Iterable[str], sheet: str) -> None
     bad: list[str] = []
     for column in columns:
         found: list[str] = sorted({r[column] for r in rows} - {'True', 'False'})
-        if found:
+        if len(found) > 0:
             bad.append(f'{column} has {", ".join(repr(v) for v in found[:5])}')
-    if bad:
+    if len(bad) > 0:
         raise SchemaError(
             f'{sheet}: expected True or False: {"; ".join(bad)}. Did the exporter change how it writes booleans? '
             'Update the generators that read these columns.'
@@ -352,7 +352,7 @@ def check_ids(names: Mapping[int, str], expected: Mapping[int, str], sheet: str,
     to update, e.g. 'CURRENCIES (scripts/data/gear_activities.py)'. A patch that reuses an id thus stops the run
     instead of placing another item."""
     wrong: list[str] = [f'{i} is {names.get(i)!r}, expected {name!r}' for i, name in expected.items() if names.get(i) != name]
-    if wrong:
+    if len(wrong) > 0:
         hint: str = f'A patch reused the ids: find each by name in {sheet} and update its id in {table}.'
         raise SchemaError(f'{sheet}: {what} ids changed: ' + '; '.join(wrong) + '. ' + hint)
 
@@ -377,7 +377,7 @@ def row_fields(fmt: ItemFormat) -> dict[str, int]:
     ]
     if len(position) != len(fields):
         wrong.append('a name is listed twice')
-    if wrong:
+    if len(wrong) > 0:
         raise SchemaError(f'{FORMAT_PATH.name}: itemRow.fields and the rowField entries disagree: ' + '; '.join(wrong))
     return position
 
@@ -412,7 +412,7 @@ def stat_factors(base_param_csv: str | Path, fmt: ItemFormat, entries: Sequence[
             problems.append(f'{st["key"]} {sf["baseParamColumn"]} = {",".join(vals)}, expected percents 1 to 100')
             continue
         table[st['key']] = [int(v) for v in vals]
-    if problems:
+    if len(problems) > 0:
         raise SchemaError(f'{Path(base_param_csv).name} stat factors: ' + '; '.join(problems))
     return table
 
@@ -432,7 +432,7 @@ def check_slot_percents(base_param_csv: str | Path, fmt: ItemFormat) -> None:
             for s in fmt['slots']
             if r[s['baseParamColumn']] != str(s['percent'])
         )
-    if problems:
+    if len(problems) > 0:
         raise SchemaError(f'{Path(base_param_csv).name} slot shares differ from {FORMAT_PATH.name}: ' + '; '.join(problems))
 
 
@@ -457,7 +457,7 @@ def slot_shares(base_param_csv: str | Path, fmt: ItemFormat, entries: Sequence[B
             problems.append(f'{e["key"]} slot shares {",".join(vals)}, expected whole numbers')
             continue
         table[e['key']] = [int(v) for v in vals]
-    if problems:
+    if len(problems) > 0:
         raise SchemaError(f'{Path(base_param_csv).name} slot shares: ' + '; '.join(problems))
     return table
 
@@ -465,6 +465,6 @@ def slot_shares(base_param_csv: str | Path, fmt: ItemFormat, entries: Sequence[B
 def run_main(main: Callable[..., object], *args: object) -> None:
     """Run a generator's main(); a SchemaError exits with status 1 and a one-line message instead of a traceback."""
     try:
-        main(*args)
+        _ = main(*args)
     except SchemaError as e:
         sys.exit(f'error: {e}')

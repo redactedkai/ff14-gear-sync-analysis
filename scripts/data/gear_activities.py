@@ -35,7 +35,7 @@ stops the run.
 from collections import Counter, defaultdict
 from collections.abc import Collection, Iterable, Mapping
 from pathlib import Path
-from typing import Literal
+from typing import Literal, TypeAlias
 
 from gear_sources import CODE_LIMIT, Listing, shop_listings
 from item_format import ACCESSORY_TYPES, Piece, Row, SchemaError, check_bools, check_ids, load_format, read_csv, read_item_sheet, slot_codes
@@ -203,12 +203,12 @@ def box_bits() -> tuple[dict[str, int], int]:
 # How an item can be got, from the game files (ways_in): ('activity', name) for a fixed activity, or ('shop', costs, gate)
 # for a SpecialShop listing, where each cost is ('activity', name) or ('item', id) and gate is 'quest', 'achievement'
 # or None (the listing needs a quest or an achievement first).
-Cost = tuple[Literal['activity'], str] | tuple[Literal['item'], int]
-Way = tuple[Literal['activity'], str] | tuple[Literal['shop'], tuple[Cost, ...], str | None]
-Ways = defaultdict[int, list[Way]]
+Cost: TypeAlias = tuple[Literal['activity'], str] | tuple[Literal['item'], int]
+Way: TypeAlias = tuple[Literal['activity'], str] | tuple[Literal['shop'], tuple[Cost, ...], str | None]
+Ways: TypeAlias = defaultdict[int, list[Way]]
 # A route: the activities a player must do all of to get the item. An item's routes: any one of them gets it.
-Route = frozenset[str]
-Routes = frozenset[Route]
+Route: TypeAlias = frozenset[str]
+Routes: TypeAlias = frozenset[Route]
 
 
 def check_names(names: dict[int, str], table: Mapping[int, tuple[str, *tuple[object, ...]]], what: str, table_name: str) -> None:
@@ -265,14 +265,14 @@ def gil_shop_ways(csv_path: Path, ways: Ways, rebuys: set[int], festival_quests:
             continue
         got, shop = int(row['Item']), int(float(row['#']))  # '#' is "shop.listing"
         quests_needed: list[int] = [int(row[col]) for col in quest_cols if row[col] not in ('', '0')]
-        achievement: int = int(row['AchievementRequired'] or 0)
+        achievement: int = int(row['AchievementRequired'] if row['AchievementRequired'] != '' else 0)
         if shop in festival_shops:
             ways[got].append(('activity', 'Event'))
-        elif quests_needed or achievement:
+        elif (len(quests_needed) > 0) or achievement != 0:
             rebuys.add(got)
             for quest in quests_needed:
                 ways[got].append(('activity', 'Event' if quest in festival_quests else 'Quest'))
-            if achievement and achievement_item.get(achievement) == got:
+            if (achievement != 0) and achievement_item.get(achievement) == got:
                 ways[got].append(('activity', 'Achievement'))
         else:
             ways[got].append(('activity', 'Vendor'))
@@ -344,7 +344,7 @@ def special_shop_ways(csv_path: Path, ways: Ways, kept_ids: Collection[int], ilv
     check_ids(shop_names, RETIRED_SHOPS, 'SpecialShop.csv', 'retired shop', 'RETIRED_SHOPS (scripts/data/gear_activities.py)')
     shops = [s for s in shops if int(s['#']) not in RETIRED_SHOPS]
     listings: list[tuple[dict[str, str], int, list[int], list[int]]] = [
-        listing for listing in shop_listings(shops) if listing[2]
+        listing for listing in shop_listings(shops) if len(listing[2]) > 0
     ]  # (shop row, listing index, given, costs)
     newest: dict[int, int] = live_tome_ilvls(listings, kept_ids, ilvl_of)
     for shop, k, given, costs in listings:
@@ -416,7 +416,8 @@ class RouteFinder:
         elif item in FIXED_ITEMS:
             result = single({GIL: 'Vendor', WOLF_MARK: 'PvP', MGP: 'Gold Saucer'}[item])
         elif item in self.currency_routes:
-            result = self.currency_routes[item] or single(RETIRED)
+            currency_routes: Routes = self.currency_routes[item]
+            result = currency_routes if len(currency_routes) > 0 else single(RETIRED)
         elif self.category.get(item) == 'relic':
             result = single('Relic')
         else:
@@ -445,10 +446,10 @@ class RouteFinder:
                     needs_retired = True
                     continue
                 route: frozenset[str] = need
-                if gate and need <= {'Vendor'}:  # a gil (or free) listing behind a quest or an achievement
+                if (gate is not None and gate != '') and need <= {'Vendor'}:  # a gil (or free) listing behind a quest or an achievement
                     route = frozenset({'Quest' if gate == 'quest' else 'Achievement'})
-                found.add(route or frozenset({'Vendor'}))
-        return frozenset(found) if found else self.no_way_in(item, needs_retired, depth)
+                found.add(route if len(route) > 0 else frozenset({'Vendor'}))
+        return frozenset(found) if len(found) > 0 else self.no_way_in(item, needs_retired, depth)
 
     def no_way_in(self, item: int, needs_retired: bool, depth: int = 0) -> Routes:
         """The routes of an item with no live way in (inferred, docs/engineering/data-pipeline.md, Sources): a kept
@@ -464,7 +465,7 @@ class RouteFinder:
         if needs_retired:
             return single(RETIRED)
         cat: str | None = self.buys_most(item)
-        if not cat:
+        if cat is None or cat == '':
             return frozenset()
         activity = CURRENCY_FROM_CATEGORY.get(cat, DROP_ACTIVITY[cat])
         if depth < MAX_DEPTH:
@@ -494,7 +495,7 @@ class RouteFinder:
             for way in ways
             if way[0] == 'shop' and ('item', currency) in way[1]
         )
-        return count.most_common(1)[0][0] if count else None
+        return count.most_common(1)[0][0] if len(count) > 0 else None
 
 
 class Boxes:
@@ -509,7 +510,7 @@ class Boxes:
         self.level_of: dict[int, int] = level_of
         self.tradeable: set[int] = tradeable
         self.names: dict[int, str] = names
-        self.cap: int = max(level_of.values()) if level_of else 0
+        self.cap: int = max(level_of.values()) if len(level_of) > 0 else 0
 
     def bit(self, activity: str, item: int) -> int:
         """The box bit of one activity of a kept piece. Raises SchemaError on an activity with no box."""
@@ -562,7 +563,7 @@ def routes(
     check_names(names, {i: (name,) for i, name in FIXED_ITEMS.items() if i != GIL}, 'fixed currency', 'FIXED_ITEMS')
     category: dict[int, str] = {int(r['#']): cats[r['#']] for r, _ in kept}
     missing: list[str] = sorted({c for c in category.values() if c not in DROP_ACTIVITY})
-    if missing:
+    if len(missing) > 0:
         raise SchemaError(
             f'gear_activities.py: no drop activity for categories {missing}. Add each to DROP_ACTIVITY in '
             'scripts/data/gear_activities.py: the activity a piece of that category with no source in the game files takes.'
@@ -617,7 +618,7 @@ def current_tome_names(csv_dir: Path | str, items: list[Row] | None = None) -> l
     names: dict[str, str] = {r['#']: r['Name'] for r in read_item_sheet(csv_dir, items)}
     slot_item: dict[int, str] = {int(r['Tomestones']): r['Item'] for r in read_csv(d / 'TomestonesItem.csv', ['Item', 'Tomestones'])}
     missing: list[int] = [c for c in sorted(CURRENT_TOME_CODES) if slot_item.get(c, '0') == '0']
-    if missing:
+    if len(missing) > 0:
         raise SchemaError(f'TomestonesItem.csv: no tomestone in slot(s) {missing}')
     return [names[slot_item[c]].removeprefix(TOME_NAME_PREFIX) for c in sorted(CURRENT_TOME_CODES)]
 

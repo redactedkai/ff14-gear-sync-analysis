@@ -50,7 +50,7 @@ def read_export(path: str | Path, name: str) -> Json:
     start: Pattern[str] = re.compile(rf'export const {re.escape(name)}(?::[^=]+)?\s*=\s*')
     for line in Path(path).read_text(encoding='utf-8').splitlines():
         found: Match[str] | None = start.match(line)
-        if found:
+        if found is not None:
             return json.loads(line[found.end() :].rstrip().rstrip(';'))
     raise AssertionError(f'{name} not found in {path}')
 
@@ -58,7 +58,7 @@ def read_export(path: str | Path, name: str) -> Json:
 def run_quiet(fn: Callable[..., object], *args: object) -> None:
     """Call fn(*args) with its printed output discarded."""
     with contextlib.redirect_stdout(io.StringIO()):
-        fn(*args)
+        _ = fn(*args)
 
 
 PARAM_GROW_HEADER: list[str] = [
@@ -110,7 +110,7 @@ def edit_csv(path: str | Path, fn: Callable[[list[list[str]]], object]) -> None:
     """Rewrite a CSV in place: fn(rows) gets the rows as lists (header first) and changes them."""
     with Path(path).open(encoding='utf-8', newline='') as f:
         rows: list[list[str]] = list(csv.reader(f))
-    fn(rows)
+    _ = fn(rows)
     with Path(path).open('w', encoding='utf-8', newline='') as f:
         csv.writer(f, lineterminator='\n').writerows(rows)
 

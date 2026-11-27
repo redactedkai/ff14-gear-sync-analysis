@@ -30,7 +30,7 @@ class PinningTest(unittest.TestCase):
         self.assertEqual(fetch.parse_args(['--commit', sha]).commit, sha)
         for bad in ('d9582a6', 'not-a-commit', sha + '0'):
             with self.subTest(bad=bad), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-                fetch.parse_args(['--commit', bad])
+                _ = fetch.parse_args(['--commit', bad])
 
     def test_fetch_patches_commit_option(self) -> None:
         self.assertIsNone(fetch.parse_args([]).patches_commit)
@@ -39,7 +39,7 @@ class PinningTest(unittest.TestCase):
         self.assertEqual((args.commit, args.patches_commit), ('a' * 40, sha))
         for bad in ('d639741', 'not-a-commit', sha + '0'):
             with self.subTest(bad=bad), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-                fetch.parse_args(['--patches-commit', bad])
+                _ = fetch.parse_args(['--patches-commit', bad])
 
     def test_detect_tells_the_two_source_repositories_apart(self) -> None:
         """ffxiv-datamining-patches is not ffxiv-datamining: a clone is only the repository its origin names, exactly."""
@@ -48,10 +48,10 @@ class PinningTest(unittest.TestCase):
 
             def run(*args: str) -> None:
                 cmd: list[str] = ['git', '-c', 'user.name=test', '-c', 'user.email=test@example.com', '-C', str(clone), *args]
-                subprocess.run(cmd, check=True, capture_output=True)
+                _ = subprocess.run(cmd, check=True, capture_output=True)
 
             run('init', '--quiet')
-            (clone / 'patchlist.json').write_text('[]\n', encoding='utf-8')
+            _ = (clone / 'patchlist.json').write_text('[]\n', encoding='utf-8')
             run('add', '.')
             run('commit', '--quiet', '-m', 'patches')
             self.assertIsNone(provenance.detect(clone), 'no origin: not a data clone')
@@ -69,8 +69,8 @@ class PinningTest(unittest.TestCase):
                     data, patches = provenance.detect(clone), provenance.detect(clone, provenance.PATCHES_REPO)
                     self.assertEqual(data is not None, expect_data)
                     self.assertEqual(patches is not None, expect_patches)
-                    found: Source | None = data or patches
-                    if found:
+                    found: Source | None = data if data is not None else patches
+                    if bool(found):
                         self.assertEqual(found['repo'], provenance.REPO if expect_data else provenance.PATCHES_REPO)
                         self.assertRegex(found['commit'], r'^[0-9a-f]{40}$')
 
@@ -81,16 +81,16 @@ class PinningTest(unittest.TestCase):
 
             def run(*args: str) -> None:
                 cmd: list[str] = ['git', '-c', 'user.name=test', '-c', 'user.email=test@example.com', '-C', str(clone), *args]
-                subprocess.run(cmd, check=True, capture_output=True)
+                _ = subprocess.run(cmd, check=True, capture_output=True)
 
             run('init', '--quiet')
             (clone / 'csv').mkdir()
-            (clone / 'csv' / 'Item.csv').write_text('#,Name\n1,Test\n', encoding='utf-8')
+            _ = (clone / 'csv' / 'Item.csv').write_text('#,Name\n1,Test\n', encoding='utf-8')
             run('add', '.')
             run('commit', '--quiet', '-m', 'data')
-            (clone / 'csv' / 'Scratch.csv').write_text('untracked\n', encoding='utf-8')
+            _ = (clone / 'csv' / 'Scratch.csv').write_text('untracked\n', encoding='utf-8')
             self.assertEqual(provenance.local_edits(clone / 'csv'), [])  # untracked files are not edits
-            (clone / 'csv' / 'Item.csv').write_text('#,Name\n1,Edited\n', encoding='utf-8')
+            _ = (clone / 'csv' / 'Item.csv').write_text('#,Name\n1,Edited\n', encoding='utf-8')
             self.assertEqual(provenance.local_edits(clone / 'csv'), [' M csv/Item.csv'])
 
             # summary.json names each sheet's blob id at the commit (an untracked or missing sheet has none)

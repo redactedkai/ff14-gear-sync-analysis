@@ -31,7 +31,7 @@ TANK_HELM: str = 'Test Tank Helm'  # a kept dungeon piece (code 270), item level
 
 def fixture_copy(directory: Path | str) -> None:
     for path in FIXTURES.glob('*.csv'):
-        shutil.copy(path, Path(directory) / path.name)
+        _ = shutil.copy(path, Path(directory) / path.name)
 
 
 def item_id_of(csv_dir: Path | str, name: str) -> str:
@@ -63,14 +63,14 @@ class UnknownCodeStopsTest(unittest.TestCase):
             set_item_cells(tmp, item_id_of(tmp, TANK_HELM), {'SubcategorySort': str(role * gear_categories.CODE_DIVISOR + code)})
             kept: list[tuple[dict[str, str], Piece]] = gen_items.select(tmp).kept
             with self.assertRaises(SchemaError) as stop:
-                gear_categories.categorize(tmp, kept, WEAPON_SLOTS)
+                _ = gear_categories.categorize(tmp, kept, WEAPON_SLOTS)
             self.assertIn(f'{code} (1 pieces)', str(stop.exception))
 
     @given(activity=st.text(max_size=20).filter(lambda a: a not in gear_activities.ACTIVITY_BOX))
     def test_an_activity_with_no_box_stops_the_routes(self, activity: str) -> None:
         boxes: Boxes = gear_activities.Boxes({1: 100}, set(), {1: 'x'})
         with self.assertRaises(SchemaError):
-            boxes.bit(activity, 1)
+            _ = boxes.bit(activity, 1)
 
     @given(activity=st.sampled_from(sorted(gear_activities.ACTIVITY_BOX)))
     def test_every_activity_with_a_box_maps_to_a_bit(self, activity: str) -> None:
@@ -87,7 +87,7 @@ class UnknownCodeStopsTest(unittest.TestCase):
             cats = {row['#']: 'dungeon' for row, _ in kept}
             cats[kept[0][0]['#']] = category
             with self.assertRaises(SchemaError) as stop:
-                gear_activities.routes(tmp, kept, cats)
+                _ = gear_activities.routes(tmp, kept, cats)
             self.assertIn(repr(category), str(stop.exception))
 
     @given(wrong_name=st.text(max_size=12).filter(lambda n: n != 'Kept Name'), item_id=st.integers(min_value=1, max_value=10**6))
@@ -110,26 +110,26 @@ class UnknownCodeStopsTest(unittest.TestCase):
         columns: list[str] = ['#', 'Name', 'Extra']
         with tempfile.TemporaryDirectory() as tmp:
             path: Path = Path(tmp) / 'Sheet.csv'
-            path.write_text(','.join(c for c in columns if c not in missing) + '\n', encoding='utf-8')
+            _ = path.write_text(','.join(c for c in columns if c not in missing) + '\n', encoding='utf-8')
             with self.assertRaises(SchemaError) as stop:
-                read_csv(path, columns)
+                _ = read_csv(path, columns)
             for column in missing:
                 self.assertIn(column, str(stop.exception))
 
     @given(extra=st.text(min_size=1, max_size=10).filter(lambda k: k not in gear_categories.CATEGORIES), repeat=st.booleans())
     def test_the_category_list_of_the_format_must_match_the_categories(self, extra: str, repeat: bool) -> None:
-        gen_items.category_index(load_format())  # the shipped list is accepted
+        _ = gen_items.category_index(load_format())  # the shipped list is accepted
         with_unknown: ItemFormat = load_format()
         with_unknown['category']['list'].append({'key': extra, 'label': extra})
         with self.assertRaises(SchemaError):
-            gen_items.category_index(with_unknown)
+            _ = gen_items.category_index(with_unknown)
         changed: ItemFormat = load_format()
         if repeat:
             changed['category']['list'].append(changed['category']['list'][0])
         else:
-            changed['category']['list'].pop()
+            _ = changed['category']['list'].pop()
         with self.assertRaises(SchemaError):
-            gen_items.category_index(changed)
+            _ = gen_items.category_index(changed)
 
 
 class DropRulesTest(unittest.TestCase):
@@ -187,4 +187,4 @@ class DropRulesTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    _ = unittest.main()
