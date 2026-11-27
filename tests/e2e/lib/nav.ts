@@ -2,7 +2,7 @@
 // the saved state.
 
 import type { BrowserContext, Locator, Page } from 'playwright';
-import { allExpansions } from '../checks/gear-browser/filters.mjs';
+import { allExpansions } from '../checks/gear-browser/filters.ts';
 import { ACTIVITY_KEYS_BY_SECTION, ACTIVITY_LABEL, ACTIVITY_SECTION, NAV_TIMEOUT, STORE_KEY, TIMEOUT } from './constants.ts';
 import { check, expect, placedByZag, poll, same } from './expect.ts';
 import { afterTwoFramesAndATask } from './layer-wait.ts';

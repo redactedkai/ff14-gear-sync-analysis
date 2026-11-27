@@ -9,7 +9,7 @@ import {
   expectSavedFill,
   openFillSettings,
   searchLine,
-} from './dialog.mjs';
+} from './dialog.ts';
 import { ACTIVITY_KEYS, shot } from '../../lib/constants.ts';
 import { coreGear, coreRecipe } from '../../lib/core.ts';
 import { check, checkNoBadText, expect, poll, same } from '../../lib/expect.ts';

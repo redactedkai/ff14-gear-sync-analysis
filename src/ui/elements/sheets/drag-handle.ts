@@ -8,7 +8,7 @@ import type { ListKind } from './sheet-action.ts';
    no order of its own to move in). */
 export function dragHandle(reorder: RowReorder, kind: ListKind, index: number, off: boolean) {
   // The handle has no accessible name: the page's accessibility check lists that as a known finding (KNOWN_AXE in
-  // tests/e2e/checks/look/accessibility.mjs, "reported to the owner, not yet changed"), so the lint rule is off for this one element.
+  // tests/e2e/checks/look/accessibility.ts, "reported to the owner, not yet changed"), so the lint rule is off for this one element.
   /* eslint-disable lit-a11y/accessible-name */
   return html`<span
     class=${off ? 'draghandle off' : 'draghandle'}

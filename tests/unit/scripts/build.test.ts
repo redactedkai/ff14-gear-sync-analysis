@@ -72,7 +72,7 @@ test('page template: the Google Fonts stylesheet does not block first paint', as
 /* The page painted half-built for a moment on every load (owner's report): the app script is the last thing in the file, and the
    browser paints the markup above it while still reading it. The body holds the page as one empty element, <gsa-app class="wrap">,
    which the startup script keeps unpainted until the check has run (the boot shell shows meanwhile), so nothing of the page
-   can show half-built. checkFirstPaint (tests/e2e/checks/settings/first-paint.mjs) watches the frames themselves. */
+   can show half-built. checkFirstPaint (tests/e2e/checks/settings/first-paint.ts) watches the frames themselves. */
 test('page template: the body is the boot shell and one empty page root, nothing else', async () => {
   const html = await readTemplate();
   const css = readStyles();

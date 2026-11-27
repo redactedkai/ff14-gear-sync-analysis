@@ -9,12 +9,12 @@ import {
   expectSavedFill,
   openFillSettings,
   searchLine,
-} from './dialog.mjs';
+} from './dialog.ts';
 import { ACTIVITY_KEYS } from '../../lib/constants.ts';
 import { DEFAULT_EXCLUDE } from '../../lib/core-worker.ts';
 import { coreFiltered, coreGear, coreRecipe } from '../../lib/core.ts';
 import { check, checkNoBadText, expect, poll, same } from '../../lib/expect.ts';
-import { checkFromField } from '../gear-browser/gear-from.mjs';
+import { checkFromField } from '../gear-browser/gear-from.ts';
 import { SLOW_FILL_SHEET } from '../../lib/fixtures.ts';
 import { checkFromMenu, runFill, setFrom, setNumber, ticked, waitReady } from '../../lib/nav.ts';
 import { checkTotals } from '../../lib/shared-checks.ts';

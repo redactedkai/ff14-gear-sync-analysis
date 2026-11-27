@@ -50,14 +50,14 @@ test('wrapper selection: a unit test goes to the domain of its module; --fast le
 test('changed files: git status lines give the new path of a rename, untracked files and deletions', () => {
   const porcelain = [
     ' M src/ui/views/gcd.ts',
-    '?? tests/e2e/checks/set-page/columns.mjs',
+    '?? tests/e2e/checks/set-page/columns.ts',
     'R  src/ui/old-name.js -> src/ui/store.js',
     ' D src/styles.css',
     '',
   ].join('\n');
   assert.deepEqual(changedPathsOf(porcelain), [
     { path: 'src/ui/views/gcd.ts', deleted: false },
-    { path: 'tests/e2e/checks/set-page/columns.mjs', deleted: false },
+    { path: 'tests/e2e/checks/set-page/columns.ts', deleted: false },
     { path: 'src/ui/store.js', deleted: false },
     { path: 'src/styles.css', deleted: true },
   ]);
@@ -69,8 +69,8 @@ test('changed files: a source file, a unit test, a smoke check and a build setti
   assert.deepEqual(domainsOf('src/core/optimizer/index.ts'), ['solver']);
   assert.deepEqual(domainsOf('scripts/data/regen.py'), ['data']);
   assert.deepEqual(domainsOf('tests/unit/ui/views/set-rows.test.js'), ['set-page']);
-  assert.deepEqual(domainsOf('tests/e2e/checks/auto-fill/focus.mjs'), ['auto-fill']);
-  assert.deepEqual(domainsOf('tests/e2e/checks/set-page/overmeld-odds.mjs'), ['set-page']);
+  assert.deepEqual(domainsOf('tests/e2e/checks/auto-fill/focus.ts'), ['auto-fill']);
+  assert.deepEqual(domainsOf('tests/e2e/checks/set-page/overmeld-odds.ts'), ['set-page']);
   assert.deepEqual(domainsOf('package.json'), ['tooling']);
 });
 

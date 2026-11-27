@@ -4,7 +4,7 @@ import { COLUMN_WINDOWS, columnsDiffer, measureColumns } from '../../lib/columns
 import { check, expect } from '../../lib/expect.ts';
 import { waitReady } from '../../lib/nav.ts';
 import { figuresRadio, seedSheets, reloadAtSheets } from '../../lib/sheets.ts';
-import { edgeSheet } from './edges.mjs';
+import { edgeSheet } from './edges.ts';
 
 /* A sheet of `job` with two empty gear sets. */
 const twoSetSheet = (id, name, job) => {

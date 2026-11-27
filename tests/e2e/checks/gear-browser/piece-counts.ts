@@ -7,7 +7,7 @@ import { ACTIVITY_KEYS } from '../../lib/constants.ts';
 import { check, expect, poll, same } from '../../lib/expect.ts';
 import { setJob, showTab } from '../../lib/nav.ts';
 import { openSet, seedSheet } from '../../lib/sheets.ts';
-import { DIALOG_SHEET } from '../auto-fill/dialog.mjs';
+import { DIALOG_SHEET } from '../auto-fill/dialog.ts';
 
 /** Sage's gear of item level 790 to 795 (the highest there is) by box: the Savage set (nine armor pieces and the weapon) and the
  * augmented tomestone set (nine armor pieces and a weapon, each armor piece a hunt seal upgrade and a Savage upgrade, the weapon a

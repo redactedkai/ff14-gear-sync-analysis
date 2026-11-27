@@ -1,6 +1,6 @@
 // Accessibility rules (axe-core) on every main screen and on the open menus and dialogs, dark scheme.
 
-import { openViewSet, viewSheets } from './screens.mjs';
+import { openViewSet, viewSheets } from './screens.ts';
 import { axeViolations, splitKnown } from '../../lib/axe.ts';
 import { check, expect, stepRecord } from '../../lib/expect.ts';
 import { seedSheets } from '../../lib/sheets.ts';

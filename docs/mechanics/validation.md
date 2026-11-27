@@ -258,7 +258,7 @@ Which test holds each check, and how strong is its expected value? What each tes
 | `core/food` | Real meals; xivgear's food values; best meal and gear | Game data; second-hand; brute-force reference |
 | `core/optimizer/index.exact-solver`, `core/food.reference`, `core/piece.sync-cap-grid`, `core/meld.real-pieces` | Optimizer, food, caps and melds on every job or piece | Independent references written in the test |
 | `tests/data/test_*.py` | Tests on small CSV fixtures | Hand-built fixtures (9) |
-| `tests/e2e/checks/tabs/walk.mjs` | The built page, eight jobs | Mixed (10) |
+| `tests/e2e/checks/tabs/walk.ts` | The built page, eight jobs | Mixed (10) |
 
 Notes:
 

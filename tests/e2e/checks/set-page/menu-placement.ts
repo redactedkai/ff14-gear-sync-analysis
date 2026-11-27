@@ -3,7 +3,7 @@
 
 import { check, expect, poll } from '../../lib/expect.ts';
 import { expectApplyCount, openSet, seedSheet } from '../../lib/sheets.ts';
-import { edgeSheet } from '../sheets/edges.mjs';
+import { edgeSheet } from '../sheets/edges.ts';
 
 const WINDOW = { width: 960, height: 720 }; // the narrowest window; the page scrolls here with a draft
 

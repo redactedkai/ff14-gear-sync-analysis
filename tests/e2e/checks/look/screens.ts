@@ -1,6 +1,6 @@
 // The Sheets screens for the theme and viewport checks.
 
-import { edgeSheet } from '../sheets/edges.mjs';
+import { edgeSheet } from '../sheets/edges.ts';
 import { FILL_SHEET, pieceSheet } from '../../lib/fixtures.ts';
 import { openSet } from '../../lib/sheets.ts';
 

@@ -2,7 +2,7 @@
 
 import type { SavedSheet } from '../../../src/ui/sheets/saved-types.ts';
 import type { SlotType, Stone } from '../../../src/core/types.ts';
-import { edgeSheet } from '../checks/sheets/edges.mjs';
+import { edgeSheet } from '../checks/sheets/edges.ts';
 import { DEFAULT_EXCLUDE } from './core-worker.ts';
 
 const SLOTS: SlotType[] = ['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring', 'ring'];

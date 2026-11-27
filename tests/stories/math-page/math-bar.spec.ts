@@ -6,7 +6,7 @@ import { test, expect } from '../fixtures.ts';
 import type { Default } from './math-bar.story.js';
 
 const STORY = 'math-page/math-bar/Default';
-// the one finding axe has on the bar, known on the page too (KNOWN_AXE in tests/e2e/checks/look/accessibility.mjs): the chips' names leave out
+// the one finding axe has on the bar, known on the page too (KNOWN_AXE in tests/e2e/checks/look/accessibility.ts): the chips' names leave out
 // their visible text. The page's check sees the Sync settings chip unsynced ("Unsynced" is in its name); here it says "Lv 85 · IL 123", which is not.
 // TODO: both go when the chips' names include their visible text.
 const KNOWN_CHIPS = ['label-content-name-mismatch: #p-piece-chip', 'label-content-name-mismatch: #p-piece-chip | #p-sync-chip'];

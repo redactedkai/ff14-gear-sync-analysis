@@ -1,6 +1,6 @@
 // Dark mode and light mode.
 
-import { openViewSet, viewSheets } from './screens.mjs';
+import { openViewSet, viewSheets } from './screens.ts';
 import { shot } from '../../lib/constants.ts';
 import { check, expect, same, stepRecord } from '../../lib/expect.ts';
 import { runFill, setNumber } from '../../lib/nav.ts';

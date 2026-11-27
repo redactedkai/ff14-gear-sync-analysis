@@ -6,7 +6,7 @@ import { clickAtPoint, clickAtRightEnd, dragAcross } from '../row-clicks.ts';
 import { LOWERED_TO, type Default } from './sheet-page.story.js';
 
 // The drag handles have no accessible name: a finding the page's own accessibility check lists as known (KNOWN_AXE in
-// tests/e2e/checks/look/accessibility.mjs). Remove this filter with that entry when the handles get a name.
+// tests/e2e/checks/look/accessibility.ts). Remove this filter with that entry when the handles get a name.
 const withoutHandleName = (found: string[]) =>
   found.filter(line => !line.startsWith('aria-command-name: ') || !line.includes('.draghandle'));
 

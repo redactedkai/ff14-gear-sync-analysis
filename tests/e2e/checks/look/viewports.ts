@@ -1,6 +1,6 @@
 // The five viewports, and the rules that switch at a width.
 
-import { openViewSet, viewSheets } from './screens.mjs';
+import { openViewSet, viewSheets } from './screens.ts';
 import { shot } from '../../lib/constants.ts';
 import { check, expect, placedByZag, poll, stepRecord } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
