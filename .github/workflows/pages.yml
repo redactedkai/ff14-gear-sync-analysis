@@ -49,6 +49,10 @@ jobs:
 
       # lint, typecheck, build, unit tests, the component stories in Chromium and the browser smoke test; a failure stops the deploy
       - run: npm run check
+      # `check` stops at its first failing step; when it fails, the smoke test runs alone as well, so its result is not hidden
+      # behind an earlier failure (the build it needs is already there)
+      - if: failure()
+        run: npm run test:smoke
       # the component stories in Chromium, Firefox and WebKit (check ran them in Chromium only)
       - run: npm run test:stories:all
       # the long random sweep of tier ranking against its reference (tests/sweep/), kept out of npm test for speed
