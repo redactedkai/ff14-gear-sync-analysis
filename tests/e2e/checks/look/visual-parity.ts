@@ -8,6 +8,7 @@
 import { check, expect } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { seedSheet } from '../../lib/sheets.ts';
+import type { SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 import type { Page } from 'playwright';
 
 /** The computed value of a design token's colour (read through a probe element, so it holds in either theme), and the computed
@@ -27,7 +28,7 @@ const tokenColour = (pg: Page, token: string) =>
 export async function checkVisualParity(pg: Page) {
   // the seeded Sage set with a Sage-only weapon (Phantom Pendulums Eclipticum), so that Copy to Scholar has a piece to clear
   const [mine] = SET_SHEET.sets;
-  const withWeapon = {
+  const withWeapon: SavedSheet = {
     ...SET_SHEET,
     sets: [{ ...mine, pieces: [{ slot: 'weapon', gameId: 37291, stones: [] }, ...mine.pieces.slice(1)] }],
   };
@@ -40,7 +41,11 @@ export async function checkVisualParity(pg: Page) {
   await expect(pg.locator('#sh-dlg-clear')).toBeVisible();
   const part = await tokenColour(pg, '--cap-part');
   const warning = await pg.evaluate(() => {
-    const style = getComputedStyle(document.querySelector('#sh-dlg-clear'));
+    const warningBox = document.querySelector('#sh-dlg-clear');
+    if (!warningBox) {
+      throw new Error('no clearing warning in the Copy dialog');
+    }
+    const style = getComputedStyle(warningBox);
     return `${style.borderLeftColor} ${style.borderLeftWidth}`;
   });
   check(warning === `${part} 3px`, `look: the Copy dialog warning left rule (colour, width) is "${warning}", not "${part} 3px"`);

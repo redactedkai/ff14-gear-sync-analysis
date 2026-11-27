@@ -3,9 +3,10 @@
 import { edgeSheet } from '../sheets/edges.ts';
 import { FILL_SHEET, pieceSheet } from '../../lib/fixtures.ts';
 import { openSet } from '../../lib/sheets.ts';
+import type { Stone } from '../../../../src/core/types.ts';
 import type { Page } from 'playwright';
 
-const VIEW_STONES = [
+const VIEW_STONES: Stone[] = [
   { stat: 'crit', grade: 12 },
   { stat: 'crit', grade: 12 },
 ];

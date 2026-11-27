@@ -2,17 +2,20 @@
 
 import { openViewSet, viewSheets } from './screens.ts';
 import { axeViolations, splitKnown } from '../../lib/axe.ts';
-import { check, expect, stepRecord } from '../../lib/expect.ts';
+import { check, currentRecord, expect } from '../../lib/expect.ts';
 import { seedSheets } from '../../lib/sheets.ts';
 import type { Page } from 'playwright';
 
 // TODO: each entry goes when the page is fixed: names for the drag handles, an h4 before the materia menu title, a <main> around
 // the page, and the visible text inside the two aria-labels.
+/** One finding the page has today: see KNOWN_AXE. */
+type KnownAxe = { rule: string; target?: string; targetContains?: string; note: string };
+
 /** Findings the page has today (reported to the owner, not yet changed): printed as "KNOWN FAILURE" lines, they do not fail the
  * run, and a finding that stops happening fails it until it is removed here. `rule` is axe's rule id, `target` limits the entry
  * to one element's selector and `targetContains` to selectors holding that text (none of the two: any element), `note` says
  * what is wrong. */
-const KNOWN_AXE = [
+const KNOWN_AXE: KnownAxe[] = [
   { rule: 'aria-command-name', targetContains: '.draghandle', note: 'the drag handles of the sheet and set lists have no accessible name' },
   { rule: 'heading-order', target: 'h5', note: 'the materia menu title is an h5 with no h4 before it' },
   { rule: 'landmark-one-main', note: 'the page has no <main> landmark' },
@@ -21,16 +24,14 @@ const KNOWN_AXE = [
 
 /** Runs axe on the open screen `name` and records what it finds: a failed check for each new violation (rule, level, and the
  * first elements), a KNOWN FAILURE line for each known one. `seen` collects the KNOWN_AXE entries that happened. */
-async function checkScreen(pg: Page, name: string, seen) {
+async function checkScreen(pg: Page, name: string, seen: Set<KnownAxe>) {
   const { fresh, matched } = splitKnown(await axeViolations(pg), KNOWN_AXE);
   for (const entry of matched) {
     seen.add(entry);
-    stepRecord
-      .getStore()
-      .known.set(
-        `axe ${entry.rule} ${entry.target ?? entry.targetContains ?? ''}`,
-        `KNOWN FAILURE (accessibility, ${entry.rule}): ${entry.note}`,
-      );
+    currentRecord().known.set(
+      `axe ${entry.rule} ${entry.target ?? entry.targetContains ?? ''}`,
+      `KNOWN FAILURE (accessibility, ${entry.rule}): ${entry.note}`,
+    );
   }
   for (const violation of fresh) {
     const shown = violation.targets.slice(0, 3).join(', ');
@@ -40,7 +41,7 @@ async function checkScreen(pg: Page, name: string, seen) {
 }
 
 /** Opens math sub-tab `sub` ('piece', 'gcd' or 'tiers'). */
-async function openMathTab(pg: Page, sub) {
+async function openMathTab(pg: Page, sub: 'piece' | 'gcd' | 'tiers') {
   await pg.click(`[data-sub=${sub}]`);
   await expect(pg.locator(`#tab-${sub}`)).toBeVisible();
 }
@@ -49,7 +50,7 @@ async function openMathTab(pg: Page, sub) {
  * browser with its Job menu open, and the three Math sub-tabs, in the dark scheme (light is not checked for now). The page has
  * no iframes, so one run of the injected script covers each state. */
 export async function checkAccessibility(pg: Page) {
-  const seen = new Set(); // the KNOWN_AXE entries that happened
+  const seen = new Set<KnownAxe>(); // the KNOWN_AXE entries that happened
   await pg.emulateMedia({ colorScheme: 'dark' });
   await seedSheets(pg, viewSheets());
   await pg.click('[data-tab=sheets]');
@@ -90,7 +91,7 @@ export async function checkAccessibility(pg: Page) {
     ['piece', 'Stat Allocation'],
     ['gcd', 'GCD Scaling'],
     ['tiers', 'Substat tiers'],
-  ]) {
+  ] as const) {
     await openMathTab(pg, sub);
     await checkScreen(pg, name, seen);
   }

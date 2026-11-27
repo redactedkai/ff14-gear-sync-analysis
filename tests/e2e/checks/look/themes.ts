@@ -2,7 +2,7 @@
 
 import { openViewSet, viewSheets } from './screens.ts';
 import { shot } from '../../lib/constants.ts';
-import { check, expect, same, stepRecord } from '../../lib/expect.ts';
+import { check, currentRecord, expect, mustFind, same } from '../../lib/expect.ts';
 import { runFill, setNumber } from '../../lib/nav.ts';
 import { seedSheets } from '../../lib/sheets.ts';
 import { judge, parseComputed, probeText, probeTheme, readStyles, tokenColor, tokensFor } from '../../lib/visual.ts';
@@ -10,7 +10,14 @@ import type { Page } from 'playwright';
 
 /** Probes of the theme checks: `named` are `{ name, selector }` elements whose text must reach WCAG AA (an `optional` one may be
  * missing); `surfaces` are `{ name, selector, token }` elements whose background is the token's color. */
-const THEME_SCREENS = {
+interface ThemeScreen {
+  named: { name: string; selector: string; optional?: boolean }[];
+  surfaces: { name: string; selector: string; token: string }[];
+  /* The fewest texts the probe must find. */
+  min: number;
+}
+
+const THEME_SCREENS: Record<string, ThemeScreen> = {
   manager: {
     named: [
       { name: 'column names', selector: '#sh-list thead th' },
@@ -96,14 +103,17 @@ const THEME_SCREENS = {
   },
 };
 
+/** A colour scheme. */
+type Scheme = 'light' | 'dark';
+
 /** Contrast findings the page has today (reported to the owner, not yet changed): printed as "KNOWN FAILURE" lines, they do not
  * fail the run, and a finding that stops happening fails it until it is removed here (checkThemes). `test` is matched against the
  * probed element's name, `scheme` limits it to one scheme; `note` says what is under WCAG AA 4.5. None today. */
-const KNOWN_LOW_CONTRAST = [];
+const KNOWN_LOW_CONTRAST: { id: string; test: RegExp; scheme?: Scheme; note: string }[] = [];
 
 /** The six ways the page can be told its scheme: the system setting alone (dark, light), and `data-theme` forced to each value
  * under each system setting. The scheme shown is the forced one, else the system's (CLAUDE.md, "Page rules"). */
-const THEME_COMBINATIONS = [
+const THEME_COMBINATIONS: [system: Scheme, forced: Scheme | null][] = [
   ['dark', null],
   ['light', null],
   ['dark', 'dark'],
@@ -116,7 +126,7 @@ const THEME_COMBINATIONS = [
  * stylesheet's for the scheme shown (read from src/styles/tokens.css, not from the page), the body and the listed surfaces are painted
  * in them, and every probed text reaches WCAG AA against the background it sits on (4.5, large text 3). Screenshots of the two
  * system settings go to the output folder. */
-async function inEveryTheme(pg: Page, screenName: string, seen) {
+async function inEveryTheme(pg: Page, screenName: string, seen: Set<string>) {
   const screen = THEME_SCREENS[screenName];
   const css = readStyles();
   const tokens = { light: tokensFor(css, 'light'), dark: tokensFor(css, 'dark') };
@@ -145,8 +155,9 @@ async function inEveryTheme(pg: Page, screenName: string, seen) {
         .map(n => `${n} ${JSON.stringify(printed(shown.tokens[n]))} (want ${JSON.stringify(printed(tokens[scheme][n]))})`)
         .join('; ')}`,
     );
-    const rgbOf = (token: string) => tokenColor(tokens[scheme][token]).slice(0, 3);
-    const isColor = (text: string, token: string) => same(parseComputed(text)?.slice(0, 3), rgbOf(token));
+    const rgbOf = (token: string) =>
+      mustFind(tokenColor(mustFind(tokens[scheme][token], `the ${token} token`)), `the colour of ${token}`).slice(0, 3);
+    const isColor = (text: string | null, token: string) => same(parseComputed(text)?.slice(0, 3), rgbOf(token));
     check(
       isColor(shown.body, '--bg'),
       `theme (${where}): the page background is ${shown.body}, not ${scheme} --bg ${tokens[scheme]['--bg']}`,
@@ -160,22 +171,32 @@ async function inEveryTheme(pg: Page, screenName: string, seen) {
 
     // contrast
     const samples = await pg.evaluate(probeText, { named: screen.named, root: '#tab-sheets' });
-    const wanted = new Map(screen.named.map(n => [n.name, n]));
-    const missing = samples.filter(s => s.missing && !wanted.get(s.name).optional).map(s => s.name);
+    const wanted = new Map(screen.named.map(entry => [entry.name, entry]));
+    const missing: string[] = [];
+    const judged: ({ name: string } & ReturnType<typeof judge>)[] = [];
+    for (const sample of samples) {
+      if ('missing' in sample) {
+        if (!wanted.get(sample.name)?.optional) {
+          missing.push(sample.name);
+        }
+      } else {
+        judged.push({ name: sample.name, ...judge(sample) });
+      }
+    }
     check(!missing.length, `theme (${where}): nothing to read for ${missing.join(', ')}`);
-    const judged = samples.filter(s => !s.missing).map(s => ({ name: s.name, ...judge(s) }));
     check(judged.length >= screen.min, `theme (${where}): only ${judged.length} texts probed, expected at least ${screen.min}`);
-    const knownFor = j => KNOWN_LOW_CONTRAST.find(k => k.test.test(j.name) && (!k.scheme || k.scheme === scheme));
+    const knownFor = (j: { name: string }) => KNOWN_LOW_CONTRAST.find(k => k.test.test(j.name) && (!k.scheme || k.scheme === scheme));
     const low = judged.filter(j => !j.ok && !knownFor(j));
-    for (const j of judged.filter(entry => !entry.ok && knownFor(entry))) {
+    for (const j of judged) {
       const known = knownFor(j);
+      if (j.ok || !known) {
+        continue;
+      }
       seen.add(`${known.id}|${scheme}`);
-      stepRecord
-        .getStore()
-        .known.set(
-          `contrast ${known.id} ${scheme}`,
-          `KNOWN FAILURE (contrast, ${scheme}): ${known.note} (${j.ratio.toFixed(2)}, ${j.name.slice(0, 40)})`,
-        );
+      currentRecord().known.set(
+        `contrast ${known.id} ${scheme}`,
+        `KNOWN FAILURE (contrast, ${scheme}): ${known.note} (${j.ratio.toFixed(2)}, ${j.name.slice(0, 40)})`,
+      );
     }
     const lowNames = [...new Map(low.map(j => [j.name, j])).values()];
     check(
@@ -199,7 +220,7 @@ async function inEveryTheme(pg: Page, screenName: string, seen) {
  * sheet dialog with a field note and an error line. The stylesheet itself is checked for literal colors in
  * tests/unit/styles/theme-tokens.test.ts. */
 export async function checkThemes(pg: Page) {
-  const seen = new Set(); // the known contrast findings that happened (KNOWN_LOW_CONTRAST), as "id|scheme"
+  const seen = new Set<string>(); // the known contrast findings that happened (KNOWN_LOW_CONTRAST), as "id|scheme"
   await seedSheets(pg, viewSheets());
   await pg.click('[data-tab=sheets]');
   await expect(pg.locator('#sh-list')).toBeVisible();

@@ -2,7 +2,7 @@
 
 import { openViewSet, viewSheets } from './screens.ts';
 import { shot } from '../../lib/constants.ts';
-import { check, expect, placedByZag, poll, stepRecord } from '../../lib/expect.ts';
+import { check, currentRecord, expect, placedByZag, poll } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { hasHScroll, runFill, showMath } from '../../lib/nav.ts';
 import { expectPieceEmpty, openSageSet, seedSheet, seedSheets, sheetNames } from '../../lib/sheets.ts';
@@ -45,7 +45,9 @@ export async function checkBreakpoints(pg: Page) {
 }
 
 /** The test windows of docs/engineering/testing.md section 3.1, by CSS screen: [name, width, height]. */
-const VIEWPORTS = [
+type Viewport = [name: string, width: number, height: number];
+
+const VIEWPORTS: Viewport[] = [
   ['960 floor', 960, 700],
   ['1280 x 720', 1265, 565],
   ['1536 x 864', 1521, 709],
@@ -62,27 +64,35 @@ const PAGE_SIDE_GUTTER = 16;
 /** In the page: the window's and the container's widths, for the container and sideways-scroll checks. */
 const probeWidths = () => {
   const root = document.documentElement;
-  const wrap = document.querySelector('.wrap').getBoundingClientRect();
+  const wrapElement = document.querySelector('.wrap');
+  if (!wrapElement) {
+    throw new Error('no page container');
+  }
+  const wrap = wrapElement.getBoundingClientRect();
   return { inner: innerWidth, client: root.clientWidth, scroll: root.scrollWidth, left: wrap.left, right: wrap.right, width: wrap.width };
 };
 
 /** In the page: the boxes of a set page's sticky header, the column names row and the first body row, the window's height
  * and the scroll position. */
 const probeSetBoxes = () => {
-  const box = el => {
-    const r = el.getBoundingClientRect();
+  const box = (element: Element) => {
+    const r = element.getBoundingClientRect();
     return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
   };
   const names = document.querySelector('#sh-gear thead th');
-  const centerHit = (el, selector: string) => {
-    const r = el.getBoundingClientRect();
+  const centerHit = (element: Element, selector: string) => {
+    const r = element.getBoundingClientRect();
     return Boolean(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest(selector));
   };
   const head = document.querySelector('#sh-set .shead');
+  const firstRow = document.querySelector('#sh-gear tbody tr');
+  if (!names || !head || !firstRow) {
+    throw new Error('the set page lacks its header, column names or first row');
+  }
   return {
     head: box(head),
     names: box(names),
-    firstRow: box(document.querySelector('#sh-gear tbody tr')),
+    firstRow: box(firstRow),
     headOnTop: centerHit(head, '.shead'),
     namesOnTop: centerHit(names, 'th'),
     scrollY: Math.round(scrollY),
@@ -94,13 +104,18 @@ const probeSetBoxes = () => {
 
 /** In the page: the box of the open menu `selector` and the sticky header's bottom edge. */
 const probeMenu = (selector: string) => {
-  const r = document.querySelector(selector).getBoundingClientRect();
+  const menu = document.querySelector(selector);
+  const head = document.querySelector('#sh-set .shead');
+  if (!menu || !head) {
+    throw new Error(`no ${selector} or no sticky header`);
+  }
+  const r = menu.getBoundingClientRect();
   return {
     top: r.top,
     bottom: r.bottom,
     left: r.left,
     right: r.right,
-    headBottom: document.querySelector('#sh-set .shead').getBoundingClientRect().bottom,
+    headBottom: head.getBoundingClientRect().bottom,
     innerHeight,
     clientWidth: document.documentElement.clientWidth,
   };
@@ -109,7 +124,7 @@ const probeMenu = (selector: string) => {
 /** Assert the width rules of one screen at the window `vp` ([name, width, height]): no sideways scroll (the page's
  * scrollWidth within the window's innerWidth), and the container as wide as the documented cap allows, min(1280, the
  * page's width less its side padding), centered. */
-async function checkWidths(pg: Page, vp, screenName: string) {
+async function checkWidths(pg: Page, vp: Viewport, screenName: string) {
   const w = await pg.evaluate(probeWidths);
   const where = `${vp[0]} (${vp[1]} x ${vp[2]}), ${screenName}`;
   check(w.scroll <= w.inner, `viewport ${where}: scrollWidth ${w.scroll} is more than innerWidth ${w.inner}`);
@@ -126,11 +141,11 @@ async function checkWidths(pg: Page, vp, screenName: string) {
 
 /** Menus that end below the window's bottom edge at a test window today, with the row scrolled as far up as the page allows (reported to the owner, not yet changed), by
  * "<width>x<height>|<menu>": printed as "KNOWN FAILURE" lines; a menu that now fits fails the run until it is removed. */
-const KNOWN_MENU_OVERFLOW = new Map();
+const KNOWN_MENU_OVERFLOW = new Map<string, string>();
 
 /** Assert an open menu `selector` fits the window and stays below the sticky header (the piece menu check of checkPickMenu, here at
  * every window). */
-async function checkMenuFits(pg: Page, vp, what: string, selector: string, seen) {
+async function checkMenuFits(pg: Page, vp: Viewport, what: string, selector: string, seen: Set<string>) {
   const m = await pg.evaluate(probeMenu, selector);
   const where = `${vp[0]} (${vp[1]} x ${vp[2]}), ${what}`;
   check(
@@ -145,12 +160,10 @@ async function checkMenuFits(pg: Page, vp, what: string, selector: string, seen)
   const known = KNOWN_MENU_OVERFLOW.get(`${vp[1]}x${vp[2]}|${what}`);
   if (known && below > 1) {
     seen.add(`${vp[1]}x${vp[2]}|${what}`);
-    stepRecord
-      .getStore()
-      .known.set(
-        `menu ${where}`,
-        `KNOWN FAILURE (layout, ${where}): ${known}; ends at ${Math.round(m.bottom)}, the window's ${m.innerHeight}`,
-      );
+    currentRecord().known.set(
+      `menu ${where}`,
+      `KNOWN FAILURE (layout, ${where}): ${known}; ends at ${Math.round(m.bottom)}, the window's ${m.innerHeight}`,
+    );
   } else {
     check(below <= 1, `viewport ${where}: the menu ends at ${Math.round(m.bottom)}, below the window's ${m.innerHeight}`);
   }
@@ -162,14 +175,21 @@ async function alignRowUnderHeader(pg: Page, selector: string) {
   // the header's height and the column names' place settle after a window resize, so scroll again until the scroll position
   // holds still (a row near the page's end cannot reach the top: the page stops at its end, which is the most room it has)
   await pg.evaluate(async rowSelector => {
-    const frames = () => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)));
+    const frames = () => new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => done())));
     let stable = 0;
     for (let tries = 0; tries < 40 && stable < 3; tries++) {
       await frames();
       const before = scrollY;
-      const row = document.querySelector(rowSelector).getBoundingClientRect();
-      const head = document.querySelector('#sh-set .shead').getBoundingClientRect();
-      const names = document.querySelector('#sh-gear thead th').getBoundingClientRect();
+      const boxOf = (query: string) => {
+        const element = document.querySelector(query);
+        if (!element) {
+          throw new Error(`no ${query}`);
+        }
+        return element.getBoundingClientRect();
+      };
+      const row = boxOf(rowSelector);
+      const head = boxOf('#sh-set .shead');
+      const names = boxOf('#sh-gear thead th');
       scrollBy(0, row.top - (head.bottom + names.height + 4));
       await frames();
       stable = Math.abs(scrollY - before) < 0.5 ? stable + 1 : 0;
@@ -183,10 +203,13 @@ async function tabTo(pg: Page, id: string, limit = 60) {
   for (let i = 0; i < limit; i++) {
     await pg.keyboard.press('Tab');
     const at = await pg.evaluate(() => {
-      const el = document.activeElement;
-      const r = el.getBoundingClientRect();
+      const focused = document.activeElement;
+      if (!focused) {
+        throw new Error('nothing has the focus');
+      }
+      const r = focused.getBoundingClientRect();
       const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-      return { id: el.id, shown: Boolean(hit) && el.contains(hit) };
+      return { id: focused.id, shown: Boolean(hit) && focused.contains(hit) };
     });
     if (at.id === id) {
       return at.shown ? 'reached' : 'hidden under another element';
@@ -202,7 +225,7 @@ async function tabTo(pg: Page, id: string, limit = 60) {
  * below the sticky header at the top and, scrolled to the bottom, the header and the column names still on top of the rows; and
  * the Tab key reaching Auto-fill, then (a piece picked by hand) Apply and Discard, each in view. */
 export async function checkViewports(pg: Page) {
-  const seen = new Set(); // the known menu overflows that happened (KNOWN_MENU_OVERFLOW)
+  const seen = new Set<string>(); // the known menu overflows that happened (KNOWN_MENU_OVERFLOW)
   await seedSheets(pg, viewSheets());
   await pg.setViewportSize({ width: VIEWPORTS[0][1], height: VIEWPORTS[0][2] });
   await pg.click('[data-tab=sheets]');

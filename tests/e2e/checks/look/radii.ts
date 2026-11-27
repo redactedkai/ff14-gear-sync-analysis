@@ -7,7 +7,7 @@
 // scrollbar) and the stuck column-name row (the shots draw sticky parts in place, so its arc is never stuck).
 
 import { PAGE } from '../../lib/constants.ts';
-import { check, expect, sleep } from '../../lib/expect.ts';
+import { check, expect, mustFind, sleep } from '../../lib/expect.ts';
 import { FILL_SHEET, SET_SHEET } from '../../lib/fixtures.ts';
 import { newPage, waitReady } from '../../lib/nav.ts';
 import { seedSheets } from '../../lib/sheets.ts';
@@ -18,7 +18,7 @@ const FOUR = '4px 4px 4px 4px'; // the one radius: fields, buttons, panels, tabl
 /* surface, selector (first match), computed corners (top-left, top-right, bottom-right, bottom-left). The values are
    B17's (docs/scratchpad/sheet-flow/proto-b17-settings), measured in a browser; docs/engineering/ui.md lists them. */
 
-const RADII = {
+const RADII: Record<'sheetMenu', [surface: string, selector: string, corners: string][]> = {
   sheetMenu: [
     ['Breadcrumb menu box', '#sh-sheet-menu', FOUR],
     ['Breadcrumb menu row', '#sh-sheet-menu .setitem', FOUR],
@@ -37,7 +37,7 @@ const radiiAt = (pg: Page, selector: string) =>
   }, selector);
 
 /** Check every row of RADII[screen] on the open screen. */
-async function checkRadiiOf(pg: Page, screen) {
+async function checkRadiiOf(pg: Page, screen: keyof typeof RADII) {
   for (const [surface, selector, want] of RADII[screen]) {
     const got = await radiiAt(pg, selector);
     check(got === want, `radius: ${surface} (${selector}) is ${got}, not ${want}`);
@@ -45,17 +45,20 @@ async function checkRadiiOf(pg: Page, screen) {
 }
 
 /** Colour of the device pixels at `points` ([x, y] in device pixels of `png`), read through a canvas on `reader`. */
-async function pixelsOf(reader, png, points) {
+async function pixelsOf(reader: Page, png: Buffer, points: [number, number][]) {
   return await reader.evaluate(
     async ([base64, pts]) => {
       const img = new Image();
       img.src = `data:image/png;base64,${base64}`;
       await img.decode();
       const ctx = Object.assign(document.createElement('canvas'), { width: img.width, height: img.height }).getContext('2d');
+      if (!ctx) {
+        throw new Error('the page has no 2D canvas');
+      }
       ctx.drawImage(img, 0, 0);
       return pts.map(([x, y]) => [...ctx.getImageData(x, y, 1, 1).data].slice(0, 3));
     },
-    [png.toString('base64'), points],
+    [png.toString('base64'), points] as const,
   );
 }
 
@@ -65,10 +68,11 @@ async function pixelsOf(reader, png, points) {
  * corners are rounded; every surface has the documented radius. Each assertion fails when its CSS is taken out (verified
  * on a broken copy of the page). */
 export async function checkRadii(pg: Page) {
-  const ctx = await pg
-    .context()
-    .browser()
-    .newContext({ viewport: { width: 1920, height: 950 }, deviceScaleFactor: 2, colorScheme: 'dark' });
+  const ctx = await mustFind(pg.context().browser(), 'the browser of the page').newContext({
+    viewport: { width: 1920, height: 950 },
+    deviceScaleFactor: 2,
+    colorScheme: 'dark',
+  });
   const page = await newPage(ctx);
   const reader = await ctx.newPage();
   try {
@@ -89,12 +93,12 @@ export async function checkRadii(pg: Page) {
     // the scrollbar thumbs
     const thumb = await page.evaluate(() => {
       // every style rule, also those inside a cascade layer block (the page's rules are all in one)
-      const styleRules = rules =>
+      const styleRules = (rules: CSSRuleList): CSSStyleRule[] =>
         [...rules].flatMap(rule => {
-          if (rule.selectorText !== undefined) {
+          if (rule instanceof CSSStyleRule) {
             return [rule];
           }
-          return rule.cssRules ? styleRules(rule.cssRules) : [];
+          return rule instanceof CSSGroupingRule ? styleRules(rule.cssRules) : [];
         });
       return [...document.styleSheets]
         .flatMap(sheet => {
@@ -115,17 +119,24 @@ export async function checkRadii(pg: Page) {
     await sleep(200);
     const head = await page.evaluate(() => {
       const cells = [...document.querySelectorAll('#sh-gear thead th')];
-      const box = el => {
-        const r = el.getBoundingClientRect();
+      const firstCell = cells[0];
+      const lastCell = cells.at(-1);
+      const header = document.querySelector('#sh-set .shead');
+      const pageColour = getComputedStyle(document.body).backgroundColor.match(/\d+/g);
+      if (!firstCell || !lastCell || !header || !pageColour) {
+        throw new Error('the column names, the page header or the page colour is missing');
+      }
+      const box = (element: Element) => {
+        const r = element.getBoundingClientRect();
         return { left: r.left, right: r.right, top: r.top };
       };
       return {
-        first: box(cells[0]),
-        last: box(cells.at(-1)),
+        first: box(firstCell),
+        last: box(lastCell),
         // stuck: scrolled, and the cell's top edge is exactly the page header's bottom edge (not a pixel under it)
-        stuckGap: cells[0].getBoundingClientRect().top - document.querySelector('#sh-set .shead').getBoundingClientRect().bottom,
+        stuckGap: firstCell.getBoundingClientRect().top - header.getBoundingClientRect().bottom,
         scrolled: scrollY > 0,
-        page: getComputedStyle(document.body).backgroundColor.match(/\d+/g).slice(0, 3).map(Number),
+        page: pageColour.slice(0, 3).map(Number),
       };
     });
     check(
@@ -136,9 +147,9 @@ export async function checkRadii(pg: Page) {
     for (const [corner, x0, y0, flip] of [
       ['top-left', head.first.left, head.first.top, false],
       ['top-right', head.last.right - 4, head.first.top, true],
-    ]) {
+    ] as const) {
       const png = await page.screenshot({ clip: { x: x0, y: y0, width: 4, height: 4 } }); // 8 x 8 device pixels
-      const points = [];
+      const points: [number, number][] = [];
       for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 8; j++) {
           const cx = (i + 0.5) / 2; // the pixel centre in css px, from the clip's left edge
@@ -150,7 +161,7 @@ export async function checkRadii(pg: Page) {
         }
       }
       const colours = await pixelsOf(reader, png, points);
-      const off = colours.filter(c => c.some((v, k) => Math.abs(v - head.page[k]) > 3));
+      const off = colours.filter(c => c.some((v, k) => Math.abs(v - (head.page[k] ?? Number.NaN)) > 3));
       check(
         points.length >= 6 && off.length === 0,
         `radius: stuck header ${corner} corner: ${off.length} of ${points.length} pixels outside the arc are not the page colour (${JSON.stringify(off[0])}, want ${JSON.stringify(head.page)})`,

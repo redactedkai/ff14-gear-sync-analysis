@@ -51,7 +51,7 @@ export async function checkFillFood(pg: Page) {
   const boxes = await takeBoxes.count();
   check(boxes === 12, `${boxes} Take boxes for a Sage's 11 rows and a meal, expected 12`);
   check(
-    (await takeBoxes.evaluateAll(boxes => boxes.filter(box => box instanceof HTMLInputElement && box.checked).length)) === boxes,
+    (await takeBoxes.evaluateAll(inputs => inputs.filter(input => input instanceof HTMLInputElement && input.checked).length)) === boxes,
     'a Take box starts unticked',
   );
   check((await applyCount()) === boxes, `Apply says "${await pg.locator('#sh-apply').innerText()}" for ${boxes} Take boxes`);
