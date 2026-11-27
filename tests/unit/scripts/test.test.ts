@@ -1,7 +1,7 @@
-/* The test wrapper (scripts/test.mjs): how it reads its options and which unit files a domain selects. */
+/* The test wrapper (scripts/test.ts): how it reads its options and which unit files a domain selects. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { changedPathsOf, domainsOfChange, domainsOfChanges, parseArguments } from '../../../scripts/test.mjs';
+import { changedPathsOf, domainsOfChange, domainsOfChanges, parseArguments } from '../../../scripts/test.ts';
 import { DOMAIN_NAMES, LONG, unitFilesOf } from '../../domains.ts';
 
 /* The options `argv` parses to; fails the test when it names an error. */

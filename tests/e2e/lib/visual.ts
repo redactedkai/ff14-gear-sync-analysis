@@ -10,7 +10,7 @@
    - the tokens: the `:root` blocks of src/styles/tokens.css (the light values, the dark values twice), read here as text,
      never from the page under test. */
 
-import { readStyles as readPageStyles } from '../../../scripts/build/styles.mjs';
+import { readStyles as readPageStyles } from '../../../scripts/build/styles.ts';
 
 // ---------- WCAG 2.1 contrast ----------
 

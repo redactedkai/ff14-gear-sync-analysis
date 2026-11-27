@@ -1,5 +1,5 @@
 // The test domains: every file of src/ and scripts/ belongs to one domain (a part of the product a maintainer changes in
-// one sitting), and so does every file of tests/. scripts/test.mjs runs one domain's tests, tests/e2e/smoke.ts one
+// one sitting), and so does every file of tests/. scripts/test.ts runs one domain's tests, tests/e2e/smoke.ts one
 // domain's browser checks, and tests/unit/scripts/test.domains.test.ts fails when a file has no domain or two.
 //
 // Which domain is a test in?

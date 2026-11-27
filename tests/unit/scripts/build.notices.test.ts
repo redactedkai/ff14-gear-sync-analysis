@@ -1,4 +1,4 @@
-/* The licence notices of the bundled packages (scripts/build/build.mjs): the page's script must carry the notice of every
+/* The licence notices of the bundled packages (scripts/build/build.ts): the page's script must carry the notice of every
    third-party package it bundles. Lit keeps its notice in its code, which esbuild moves to the end; the
    other groups are in NOTICE_PACKAGES, copied from their LICENSE files. To update when a package is added to the page: add
    its group to NOTICE_PACKAGES (or, if its code carries its own notice, to CARRIES_OWN_NOTICE below), and list it in the
@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as esbuild from 'esbuild';
-import { NOTICE_PACKAGES, ROOT, esbuildOptions } from '../../../scripts/build/build.mjs';
+import { NOTICE_PACKAGES, ROOT, esbuildOptions } from '../../../scripts/build/build.ts';
 import { outputText } from '../helpers/esbuild-output.ts';
 
 /* The bundled packages whose code holds the notice that esbuild keeps, with the text that shows it in the output. */
@@ -48,7 +48,7 @@ test('every third-party package the page bundles has its licence notice in the p
       continue;
     }
     const own = CARRIES_OWN_NOTICE.find(each => each.bundles.test(name));
-    assert.ok(own, `${name} is bundled and has no licence notice: add it to NOTICE_PACKAGES (scripts/build/build.mjs)`);
+    assert.ok(own, `${name} is bundled and has no licence notice: add it to NOTICE_PACKAGES (scripts/build/build.ts)`);
     assert.ok(output.includes(own.shows), `${name}: its own notice (${own.shows}) is not in the page script`);
   }
 });

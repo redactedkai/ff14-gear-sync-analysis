@@ -13,7 +13,7 @@ With that said, this is a hobby project that I work on my free time. Bug reports
 ## Requirements
 
 - Node 22.18 or later (it runs `.ts` files by stripping their types). Run `npm install` once (or `npm ci` for a clean install that matches `package-lock.json` exactly, as CI does), and `npx playwright install chromium` once for the smoke test and the component stories (`npx playwright install firefox webkit` too for `test:stories:all`). Building and testing the page needs only Node.
-- Python 3.11 or later, only for the data pipeline, its generator tests, Ruff and Pyrefly: `python -m pip install -r requirements-dev.txt`. CI runs Ruff, Pyrefly and the generator tests on 3.11 (the oldest supported) and 3.13 (`.python-version`). The npm scripts run `python3` or `python`, whichever exists (`scripts/py.mjs`).
+- Python 3.11 or later, only for the data pipeline, its generator tests, Ruff and Pyrefly: `python -m pip install -r requirements-dev.txt`. CI runs Ruff, Pyrefly and the generator tests on 3.11 (the oldest supported) and 3.13 (`.python-version`). The npm scripts run `python3` or `python`, whichever exists (`scripts/py.ts`).
 
 Run all commands from the repo root.
 

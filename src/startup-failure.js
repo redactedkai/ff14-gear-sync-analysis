@@ -1,4 +1,4 @@
-/* The "failed to start" message. A classic script (not an ES module), ES5 syntax only, that scripts/build/build.mjs
+/* The "failed to start" message. A classic script (not an ES module), ES5 syntax only, that scripts/build/build.ts
    (startupScript) minifies and inlines as the first thing in <head>, before the page's <style> and long before the app's
    <script>, so it still runs when the stylesheet or the app's script is broken. It depends on nothing of the page: no app
    CSS (inline styles with CSS system colors only, so it reads in the light and the dark OS theme), no framework, no markup

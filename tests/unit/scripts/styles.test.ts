@@ -1,10 +1,10 @@
-/* The stylesheet text the tests read (scripts/build/styles.mjs): the files src/styles/entry.css imports, in order, with the
+/* The stylesheet text the tests read (scripts/build/styles.ts): the files src/styles/entry.css imports, in order, with the
    layer wrapper and the order statement when the entry has them. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { STYLES_DIR, expandStyles, readStyles } from '../../../scripts/build/styles.mjs';
+import { STYLES_DIR, expandStyles, readStyles } from '../../../scripts/build/styles.ts';
 
 /* The files of the page's stylesheet in cascade order, as the old single list had them. */
 const FILES_IN_ORDER = [

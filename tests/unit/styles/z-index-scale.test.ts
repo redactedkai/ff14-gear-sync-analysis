@@ -2,7 +2,7 @@
    order the page has always had, and the rules a library positioner needs are in place. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readStyles } from '../../../scripts/build/styles.mjs';
+import { readStyles } from '../../../scripts/build/styles.ts';
 
 const css = readStyles().replace(/\/\*[\s\S]*?\*\//g, '');
 

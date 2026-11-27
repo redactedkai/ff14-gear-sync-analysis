@@ -1,6 +1,6 @@
 # Screenshot baselines (tests/visual/): dark theme, two widths, in the pinned Playwright image only. Screenshots differ
 # between operating systems, so the baselines are made and compared nowhere else (docs/engineering/testing.md,
-# "Screenshot baselines"). Keep the image tag the same as PINNED_IMAGE in scripts/visual.mjs (a unit test checks it).
+# "Screenshot baselines"). Keep the image tag the same as PINNED_IMAGE in scripts/visual.ts (a unit test checks it).
 #
 # - compare: on a push to dev or main and on pull requests, runs `npm run test:visual`. With no baselines in the folder it
 #   passes with a message. On a difference it fails and uploads the expected, actual and diff images and the report.

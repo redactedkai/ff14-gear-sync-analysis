@@ -2,14 +2,14 @@
 /* Build the single-file page: bundle src/main.js (and the CSS it imports: src/styles/*.css) with esbuild,
    then inline both into src/index.html -> dist/index.html. The result opens straight from file://.
 
-   Run from anywhere:  node scripts/build/build.mjs   (or: npm run build)
-   scripts/build/dev.mjs reuses the exports below for watch + serve. */
+   Run from anywhere:  node scripts/build/build.ts   (or: npm run build)
+   scripts/build/dev.ts reuses the exports below for watch + serve. */
 import * as esbuild from 'esbuild';
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ENTRY_FILE, STYLES_DIR } from './styles.mjs';
+import { ENTRY_FILE, STYLES_DIR } from './styles.ts';
 import { STORE_KEY } from '../../src/ui/store-key.ts';
 import { UNLOAD_GUARD_OFF_KEY } from '../../src/ui/router/unload-guard.ts';
 

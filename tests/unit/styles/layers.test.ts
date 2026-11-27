@@ -2,7 +2,7 @@
    beats all layered rules whatever their specificity, and every layer a block uses is named in the order statement. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readStyles } from '../../../scripts/build/styles.mjs';
+import { readStyles } from '../../../scripts/build/styles.ts';
 
 /* The top-level constructs of `css` (comments removed): {head, hasBlock}, where head is the text before the `{` or the `;`. */
 function topLevel(css: string): { head: string; hasBlock: boolean }[] {

@@ -19,7 +19,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as esbuild from 'esbuild';
 import { chromium } from 'playwright';
-import { BROWSER_TARGETS, jsonParseData } from '../build/build.mjs';
+import { BROWSER_TARGETS, jsonParseData } from '../build/build.ts';
 import { listOption, numberOption } from './args.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');

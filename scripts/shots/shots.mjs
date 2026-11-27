@@ -12,7 +12,7 @@ In a few shots a few dozen antialiased edge pixels (round buttons, a menu's edge
 which compare.mjs's default threshold allows.
 
 Without --page, it builds the page from src/ itself into <dir>/page.html, as the live page looks (no DEV badge or
-footer branch line, which would differ between branches: scripts/build/build.mjs, buildReleasePage), and leaves
+footer branch line, which would differ between branches: scripts/build/build.ts, buildReleasePage), and leaves
 dist/index.html alone. Run it on the base commit and on the change, into two folders, to compare them; page.html stays
 in each folder. --page shoots a page built elsewhere instead; one with the DEV badge still works, and the script warns.
 
@@ -25,7 +25,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
-import { buildReleasePage } from '../build/build.mjs';
+import { buildReleasePage } from '../build/build.ts';
 import { flag, numberOption, option } from '../perf/args.mjs';
 import { VIEWS, openView, prepareContext, viewUrl } from './views.mjs';
 

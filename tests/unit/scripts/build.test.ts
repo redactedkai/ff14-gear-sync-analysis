@@ -1,11 +1,11 @@
-/* The build script (scripts/build/build.mjs): the DEV marks outside main, the page template, and the
+/* The build script (scripts/build/build.ts): the DEV marks outside main, the page template, and the
    licence notices kept in the bundle. */
 import { test } from 'node:test';
 import * as esbuild from 'esbuild';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
-import { readStyles } from '../../../scripts/build/styles.mjs';
-import { buildMarks, esbuildOptions, SRC, startupScript } from '../../../scripts/build/build.mjs';
+import { readStyles } from '../../../scripts/build/styles.ts';
+import { buildMarks, esbuildOptions, SRC, startupScript } from '../../../scripts/build/build.ts';
 import { fakeWorkerScope } from '../helpers/fakes.ts';
 import { outputText } from '../helpers/esbuild-output.ts';
 

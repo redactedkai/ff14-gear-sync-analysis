@@ -1,4 +1,4 @@
-/* The screenshot baseline wrapper (scripts/visual.mjs): it runs only in the pinned image, does nothing with a clear
+/* The screenshot baseline wrapper (scripts/visual.ts): it runs only in the pinned image, does nothing with a clear
    message elsewhere or before baselines exist, and the pinned image is the one the workflow and the lock file name. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -6,7 +6,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { VIEWS } from '../../../scripts/shots/views.mjs';
-import { IMAGE_ENV, PINNED_IMAGE, hasBaselines, pinnedTag, plan } from '../../../scripts/visual.mjs';
+import { IMAGE_ENV, PINNED_IMAGE, hasBaselines, pinnedTag, plan } from '../../../scripts/visual.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..');
 const read = (relative: string): string => readFileSync(join(ROOT, relative), 'utf8');
@@ -59,7 +59,7 @@ test('the pinned image carries the Playwright version of the lock file and is th
 
 test('test:visual is its own script and is not part of check', () => {
   const scripts = JSON.parse(read('package.json')).scripts;
-  assert.equal(scripts['test:visual'], 'node scripts/visual.mjs');
+  assert.equal(scripts['test:visual'], 'node scripts/visual.ts');
   assert.equal(scripts.check.includes('visual'), false);
   assert.equal(scripts['check:all'].includes('visual'), false);
 });

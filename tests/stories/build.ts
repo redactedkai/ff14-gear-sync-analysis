@@ -7,7 +7,7 @@ import * as esbuild from 'esbuild';
 import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BROWSER_TARGETS } from '../../scripts/build/build.mjs';
+import { BROWSER_TARGETS } from '../../scripts/build/build.ts';
 
 // the folder of the stories gallery (tests/stories/)
 const STORIES_DIR = dirname(fileURLToPath(import.meta.url));

@@ -4,7 +4,7 @@
 import * as esbuild from 'esbuild';
 import { watch } from 'node:fs';
 import { join } from 'node:path';
-import { esbuildOptions, writePage, SRC, DIST } from './build.mjs';
+import { esbuildOptions, writePage, SRC, DIST } from './build.ts';
 
 const writeOnEnd = {
   name: 'write-page',

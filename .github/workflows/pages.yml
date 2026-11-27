@@ -75,7 +75,7 @@ jobs:
           path: dist
 
   # Ruff and the data generator tests on the oldest supported Python and on .python-version's; they run on
-  # fixtures, with no network and no data/ folder. Node runs only scripts/py.mjs here, so no npm ci.
+  # fixtures, with no network and no data/ folder. Node runs only scripts/py.ts here, so no npm ci.
   python:
     runs-on: ubuntu-latest
     timeout-minutes: 15

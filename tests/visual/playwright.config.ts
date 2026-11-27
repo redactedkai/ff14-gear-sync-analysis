@@ -1,5 +1,5 @@
 /* Playwright's settings for the screenshot baselines (tests/visual/). Run it through `npm run test:visual`
-   (scripts/visual.mjs), which makes sure it runs only in the pinned image; docs/engineering/testing.md, "Screenshot
+   (scripts/visual.ts), which makes sure it runs only in the pinned image; docs/engineering/testing.md, "Screenshot
    baselines".
 
    - Dark scheme only; the fallback fonts only (fonts-stub.ts); animations off; the UTC time zone and the en-US

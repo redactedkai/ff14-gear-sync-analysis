@@ -1,5 +1,5 @@
 /* The page's CSS: src/styles/entry.css lists the files in cascade order. The build lets esbuild bundle the imports
-   (build.mjs); the tests that read the stylesheet as text get the same text from readStyles() below. */
+   (build.ts); the tests that read the stylesheet as text get the same text from readStyles() below. */
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';

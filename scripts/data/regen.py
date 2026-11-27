@@ -81,7 +81,7 @@ def build_steps(source: Source, patch_source: Source, edited: bool, report_path:
             'Comparing the counts with the last run',
             [*PYTHON, str(DATA / 'summary.py'), str(CSV), report_path, *(['--no-changelog'] if edited else [])],
         ),
-        ('Building the page', ['node', str(ROOT / 'scripts' / 'build' / 'build.mjs')]),
+        ('Building the page', ['node', str(ROOT / 'scripts' / 'build' / 'build.ts')]),
     ]
 
 

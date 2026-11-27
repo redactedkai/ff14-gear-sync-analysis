@@ -1,4 +1,4 @@
-// Run Python with the given arguments: `node scripts/py.mjs -m ruff check .`.
+// Run Python with the given arguments: `node scripts/py.ts -m ruff check .`.
 // The npm scripts go through this because the command name differs by system: stock macOS and many Linux
 // distributions have only `python3`, while Windows usually has only `python` (its `python3` is often the
 // Microsoft Store stub). So try the usual name for this system first, then the other. An active virtual

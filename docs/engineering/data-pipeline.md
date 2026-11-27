@@ -698,7 +698,7 @@ The page bundle takes the page code, the stylesheet and the generated data files
 
 The generated files' sizes were measured 2026-10-19 (after `f87daf6`) on datamining commit `d9582a6`, a `dev` build; the finished page's size is from the current build. The generated files hold one row per line (section 4.14); the bundler minifies them, so the line breaks do not reach the page, which was byte for byte the same before and after them. Without them the item database is 2,402,324 bytes, about 68% of the page; the icons are about 6%.
 
-**What the inlined database costs at page open.** The page's one script carries every data file as a `JSON.parse` call on one string. The build's `jsonParseData` plugin (`scripts/build/build.mjs`) loads each `src/data/*.json` import that way, compacted, instead of as the object literal esbuild writes for a JSON import. So the page loads data as data, as Node and the tests do, and browsers parse JSON faster than the same object as JavaScript (owner's decision).
+**What the inlined database costs at page open.** The page's one script carries every data file as a `JSON.parse` call on one string. The build's `jsonParseData` plugin (`scripts/build/build.ts`) loads each `src/data/*.json` import that way, compacted, instead of as the object literal esbuild writes for a JSON import. So the page loads data as data, as Node and the tests do, and browsers parse JSON faster than the same object as JavaScript (owner's decision).
 
 `scripts/perf/db-parse.mjs` times it in Chromium, from a mark just before the script to one just after (the HTML parser reading the text, then V8 parsing, compiling and running it), on pages of its own. Current timings (median of 7 runs, 2026-10-19, a 12-thread desktop; `npm run build && node scripts/perf/db-parse.mjs`; the object-literal comparison and the earlier runs are in the [performance log, section 3.2](perf-log.md#32-the-inlined-database-at-page-open)):
 
@@ -936,7 +936,7 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Tables, materia table, highest real item level, footer text | `src/core/tables.ts` (`MATERIA`, `MAX_REAL`, `MAX_ILVL`, `dataSourceLabel`) |
 | The patch table and the patch of a data date | `src/core/patches.ts` (`PATCHES`, `PATCHES_SOURCE`, `patchOnDay`) |
 | Page's job, stat and slot tables; slot shares read from the format file | `src/core/constants.ts` |
-| Page bundle | `scripts/build/build.mjs` (`npm run build`) |
+| Page bundle | `scripts/build/build.ts` (`npm run build`) |
 | Generator tests and test CSVs | `tests/data/test_*.py`, `tests/data/common.py`, `tests/data/fixtures/` (food: `fixtures/food/`; run by `npm run test:py`) |
 | Format, level table and provenance tests | `tests/unit/core/item-format.test.ts`, `tests/unit/core/constants.level-tables.test.ts`, `tests/unit/core/tables.provenance.test.ts` |
 | Local CSV clone (gitignored) | `data/ffxiv-datamining/csv/en/` |

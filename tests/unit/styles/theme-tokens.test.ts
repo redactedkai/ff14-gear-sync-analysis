@@ -9,7 +9,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
-import { readStyles } from '../../../scripts/build/styles.mjs';
+import { readStyles } from '../../../scripts/build/styles.ts';
 import { readThemeTokens } from '../../e2e/lib/visual.ts';
 import { findLiteralColors } from '../helpers/css-colors.ts';
 

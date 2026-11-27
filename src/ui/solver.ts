@@ -12,7 +12,7 @@
    when there is one, so the page's thread never builds the job's gear and only one copy of it is held.
 
    Pure module: no DOM and no Worker, so Node can test it. The page's worker is made in main.js (a Blob URL of the
-   worker bundle, scripts/build/build.mjs solverWorker); its entry is ui/solver-worker.ts. */
+   worker bundle, scripts/build/build.ts solverWorker); its entry is ui/solver-worker.ts. */
 import { makeJobContext } from '../core/job-context.ts';
 import { makeSession } from '../core/session.ts';
 import { gearToSearchView, solveView } from './solve.ts';

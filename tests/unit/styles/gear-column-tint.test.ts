@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ITEM_STAT_ORDER } from '../../../src/core/constants.ts';
-import { readStyles } from '../../../scripts/build/styles.mjs';
+import { readStyles } from '../../../scripts/build/styles.ts';
 
 // the columns the table shows: the stats a piece has (not the main or secondary attribute totals, which are not cells)
 const STAT_COLUMNS = ITEM_STAT_ORDER.filter(key => !/Attr$/.test(key));

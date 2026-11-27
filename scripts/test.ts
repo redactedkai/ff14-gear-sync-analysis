@@ -1,4 +1,4 @@
-// Run the tests of one or more domains (tests/domains.ts): `node scripts/test.mjs --domain set-page,auto-fill`.
+// Run the tests of one or more domains (tests/domains.ts): `node scripts/test.ts --domain set-page,auto-fill`.
 // For work in progress. `npm run check` is still the bar for "done": it runs every test, and its smoke test prints the
 // bare 'no errors' (a domain run's smoke test prints 'no errors (partial: ...)').
 //
@@ -185,7 +185,7 @@ async function listSelection(options) {
 
 // Builds the page into a folder of its own, runs the smoke test on it, and removes the folder. Returns the exit code.
 async function runSmoke(options) {
-  const [esbuild, build] = await Promise.all([import('esbuild'), import('./build/build.mjs')]);
+  const [esbuild, build] = await Promise.all([import('esbuild'), import('./build/build.ts')]);
   const privateFolder = mkdtempSync(join(tmpdir(), 'ff14-smoke-'));
   try {
     const result = await esbuild.build(build.esbuildOptions());
@@ -247,7 +247,7 @@ export async function main(args) {
     console.log(`python: ${pythonFiles.length} files (${label})`);
     // every generator test is in `data`, so a run that includes it runs the whole folder, as `npm run test:py` does
     if (pythonFiles.length) {
-      code = run(process.execPath, ['scripts/py.mjs', '-m', 'unittest', 'discover', '-s', 'tests/data', '-p', 'test_*.py']);
+      code = run(process.execPath, ['scripts/py.ts', '-m', 'unittest', 'discover', '-s', 'tests/data', '-p', 'test_*.py']);
     }
   }
 

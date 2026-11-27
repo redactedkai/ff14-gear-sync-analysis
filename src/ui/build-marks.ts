@@ -1,5 +1,5 @@
 /* What a test build shows besides the page: the "DEV" badge by the title and the branch and commit in the footer. The build
-   (scripts/build/build.mjs buildMarks, handed in by esbuildOptions as the constant `__BUILD_MARKS__`) decides; the page's root
+   (scripts/build/build.ts buildMarks, handed in by esbuildOptions as the constant `__BUILD_MARKS__`) decides; the page's root
    element draws them. Null on main, and wherever no build ran (a unit test in Node). */
 
 /* The marks of a test build: the badge's text, and the footer's "branch @ commit". */

@@ -6,7 +6,7 @@ footer {
   flex-direction: column;
   gap: 4px;
 }
-/* dev builds only (scripts/build/build.mjs, buildMarks) */
+/* dev builds only (scripts/build/build.ts, buildMarks) */
 .build-badge {
   display: inline-block;
   margin-left: 10px;
