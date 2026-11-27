@@ -19,7 +19,8 @@ import {
   speedRange,
 } from '../../../../src/ui/views/gcd.ts';
 import { groupMaxSpeed, jobGroups } from '../../../../scripts/data/gen_max_speed.ts';
-import { hasNumber } from '../../helpers/common.ts';
+import type { TruncatedSearch } from '../../../../scripts/data/gen_max_speed.ts';
+import { hasNumber, mustFind } from '../../helpers/common.ts';
 
 const ROWS = 2 * GCD_STEPS_NEAR + 1;
 
@@ -47,7 +48,7 @@ test('the stored most speed: one value per level, at least the base, and level 5
   // level 50: 341 base + 387 gear (level 100 gear synced to the 135 cap, melds) + 72 food
   assert.equal(MAX_SPEED[49], 800);
   const groups = jobGroups();
-  const truncated: unknown[] = [];
+  const truncated: TruncatedSearch[] = [];
   assert.equal(
     Math.max(...groups.map(g => groupMaxSpeed(g, 50, truncated) ?? 0)),
     MAX_SPEED[49],
@@ -58,7 +59,10 @@ test('the stored most speed: one value per level, at least the base, and level 5
   // above a limited job's level cap it has no value
   assert.equal(
     groupMaxSpeed(
-      groups.find(g => g.jobs.includes('BST')),
+      mustFind(
+        groups.find(g => g.jobs.includes('BST')),
+        'the group of BST',
+      ),
       51,
     ),
     null,

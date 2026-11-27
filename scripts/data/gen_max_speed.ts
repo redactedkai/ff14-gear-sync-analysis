@@ -29,6 +29,8 @@ import { statBase } from '../../src/core/base-stats.ts';
 import { allMeals, foodBonus } from '../../src/core/food.ts';
 import { browseItems, equipLevel, poolItemFromRow } from '../../src/core/items.ts';
 import { makeJobContext } from '../../src/core/job-context.ts';
+import type { Meal } from '../../src/core/food.ts';
+import type { JobContext, PoolItem, SolveResult, Sync } from '../../src/core/types.ts';
 import { optimize } from '../../src/core/optimizer/index.ts';
 import { capCeiling } from '../../src/core/sync-target.ts';
 import { MAX_LEVEL } from '../../src/core/tables.ts';
@@ -40,13 +42,13 @@ const NODE_LIMIT = 2e6;
 
 /* Whether a file under src/core is part of what the table is computed from: a JavaScript or TypeScript module, or JSON data
    (a new `.ts` module is hashed too, so a stale table is never missed). */
-export function isCoreInput(path) {
+export function isCoreInput(path: string): boolean {
   return /\.(js|ts|json)$/.test(path);
 }
 
 /* The files the table is computed from, relative to the repo root, sorted: the item, food and item level data, the
    shared format, every module under src/core and this script. */
-export function inputFiles() {
+export function inputFiles(): string[] {
   const root = new URL('../../', import.meta.url);
   const core = readdirSync(new URL('src/core/', root), { recursive: true })
     .map(path => `src/core/${String(path).replaceAll('\\', '/')}`)
@@ -56,7 +58,7 @@ export function inputFiles() {
 }
 
 /* 'sha256:<hex>' over each input file's path and text (line endings as LF, so a Windows checkout hashes the same). */
-export function inputsHash(files = inputFiles()) {
+export function inputsHash(files: string[] = inputFiles()): string {
   const hash = createHash('sha256');
   for (const path of files) {
     const text = readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8').replaceAll('\r\n', '\n');
@@ -65,9 +67,15 @@ export function inputsHash(files = inputFiles()) {
   return `sha256:${hash.digest('hex')}`;
 }
 
+/* Jobs that share an answer: their ids, the first one's JobContext, its gear pool and the meals that add speed. */
+export type JobGroup = { jobs: string[]; job: JobContext; pool: PoolItem[]; meals: Meal[] };
+
+/* A search that stopped at NODE_LIMIT: the jobs, the level and the case ('native', 'level sync' or 'cap'). */
+export type TruncatedSearch = { jobs: string[]; level: number; case: string };
+
 /* Jobs grouped by what decides their answer: [{jobs: [id], job (the first one's JobContext), pool, meals}]. */
-export function jobGroups() {
-  const groups = new Map();
+export function jobGroups(): JobGroup[] {
+  const groups = new Map<string, JobGroup>();
   for (const { id } of JOBS) {
     const job = makeJobContext(id);
     const pool = browseItems(job, {}).map(r => poolItemFromRow(job, r));
@@ -75,8 +83,9 @@ export function jobGroups() {
     const key = createHash('sha1')
       .update(JSON.stringify([job.maxLevel, pool.map(i => [i.name, i.ilvl, i.type, i.stats]), meals.map(m => m.key)]))
       .digest('hex');
-    if (groups.has(key)) {
-      groups.get(key).jobs.push(id);
+    const known = groups.get(key);
+    if (known) {
+      known.jobs.push(id);
     } else {
       groups.set(key, { jobs: [id], job, pool, meals });
     }
@@ -86,16 +95,18 @@ export function jobGroups() {
 
 /* The most total speed a group can have at `level`, or null above its jobs' level cap. Each search that stopped at
    NODE_LIMIT is added to `truncated` as {jobs, level, case} (case: 'native', 'level sync' or 'cap'). */
-export function groupMaxSpeed({ jobs, job, pool, meals }, level, truncated = []) {
+export function groupMaxSpeed({ jobs, job, pool, meals }: JobGroup, level: number, truncated: TruncatedSearch[] = []): number | null {
   if (level > job.maxLevel) {
     return null;
   }
   const native = pool.filter(i => (equipLevel(i) ?? 0) <= level);
-  const cases = [
+  const cases: [string, PoolItem[], Sync][] = [
     ['native', native, { cap: null, sync: false, level }],
     ['level sync', pool, { cap: null, sync: false, level }],
-    ...(level >= CAP_FROM_LEVEL ? [['cap', pool, { cap: capCeiling(level), sync: true, level }]] : []),
   ];
+  if (level >= CAP_FROM_LEVEL) {
+    cases.push(['cap', pool, { cap: capCeiling(level), sync: true, level }]);
+  }
   const runs = cases.map(([name, items, sync]) => {
     const run = optimize(job, items, sync, { target: job.speedKey, melds: true, weaponFirst: false, nodeLimit: NODE_LIMIT });
     if (run.truncated) {
@@ -103,19 +114,19 @@ export function groupMaxSpeed({ jobs, job, pool, meals }, level, truncated = [])
     }
     return run;
   });
-  const best = runs.filter(r => r.ok).reduce((a, r) => (r.totals[job.speedKey] > (a?.totals[job.speedKey] ?? -1) ? r : a), null);
-  const gear = best?.totals[job.speedKey] ?? 0;
-  const food = Math.max(
-    0,
-    ...meals.map(m => foodBonus(job, m, { ...(best?.totals ?? {}), [job.speedKey]: gear }, level)[job.speedKey]?.bonus ?? 0),
-  );
+  const best = runs
+    .filter(r => r.ok)
+    .reduce<SolveResult | null>((a, r) => (r.ok && r.totals[job.speedKey] > (a?.ok ? (a.totals[job.speedKey] ?? -1) : -1) ? r : a), null);
+  const bestTotals = best?.ok ? best.totals : {};
+  const gear = bestTotals[job.speedKey] ?? 0;
+  const food = Math.max(0, ...meals.map(m => foodBonus(job, m, { ...bestTotals, [job.speedKey]: gear }, level)[job.speedKey]?.bonus ?? 0));
   return statBase(job, job.speedKey, level) + gear + food;
 }
 
 /* Every level's most total speed over all groups: [level 1, ..., level `levels`]. Searches that stopped at NODE_LIMIT
    are added to `truncated` (see groupMaxSpeed). */
-export function maxSpeedTable(groups = jobGroups(), levels = MAX_LEVEL, truncated = []) {
-  const out = [];
+export function maxSpeedTable(groups: JobGroup[] = jobGroups(), levels: number = MAX_LEVEL, truncated: TruncatedSearch[] = []): number[] {
+  const out: number[] = [];
   for (let level = 1; level <= levels; level++) {
     out.push(Math.max(...groups.map(g => groupMaxSpeed(g, level, truncated) ?? 0)));
   }
@@ -136,7 +147,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   }
   // the data source the item tables were made from, so the file says which game data it describes
   const levelFile = JSON.parse(readFileSync(new URL('../../src/data/item-level.json', import.meta.url), 'utf8'));
-  const truncated = [];
+  const truncated: TruncatedSearch[] = [];
   const total = maxSpeedTable(jobGroups(), MAX_LEVEL, truncated);
   if (truncated.length) {
     const list = truncated.map(t => `${t.jobs.join('/')} level ${t.level} (${t.case})`).join(', ');
