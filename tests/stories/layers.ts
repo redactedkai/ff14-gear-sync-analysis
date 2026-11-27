@@ -5,37 +5,20 @@
    its button (the key is lost), or a Tab out of the layer does not close it yet. These helpers wait for
    the condition itself, never for a fixed time. */
 import { expect, type Locator, type Page } from 'playwright/test';
+import { afterTwoFramesAndATask, boxStillForFrames } from '../e2e/lib/layer-wait.ts';
 
 /* Waits until the layer has been placed: it is in the window (Zag parks an unplaced layer above it) and its box has not moved
    for three frames (a layer still being moved to its anchor, or one that Zag has placed once and moves again, is not settled). */
 export async function layerPlaced(layer: Locator): Promise<void> {
   await expect(layer, 'the layer is placed in the window').toBeInViewport();
-  await layer.evaluate(
-    element =>
-      new Promise<void>(done => {
-        let last = '';
-        let frames = 0;
-        const check = () => {
-          const box = element.getBoundingClientRect();
-          const now = `${box.x},${box.y},${box.width},${box.height}`;
-          frames = now === last ? frames + 1 : 0;
-          last = now;
-          if (frames >= 3) {
-            done();
-          } else {
-            requestAnimationFrame(check);
-          }
-        };
-        check();
-      }),
-  );
+  await layer.evaluate(boxStillForFrames);
 }
 
 /* Waits for the frames in which Zag sets up what closes a layer by itself: a frame after the layer opens it starts to watch for a press
    or a focus outside it, and the focus moving out is reported a frame after that. A Tab out of the layer, or a press outside it,
    before then closes nothing. (Zag's interact-outside: `trackInteractOutside` starts in `raf`, its press listener in a timeout.) */
 export async function layerArmed(page: Page): Promise<void> {
-  await page.evaluate(() => new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 0)))));
+  await page.evaluate(afterTwoFramesAndATask);
 }
 
 /* Waits until the focus is on the layer or on something inside it: Zag moves it there a frame after the layer opens. A test that

@@ -4,6 +4,7 @@
 import { allExpansions } from '../checks/gear-browser/filters.mjs';
 import { ACTIVITY_KEYS_BY_SECTION, ACTIVITY_LABEL, ACTIVITY_SECTION, NAV_TIMEOUT, STORE_KEY, TIMEOUT } from './constants.mjs';
 import { check, expect, poll, same } from './expect.mjs';
+import { afterTwoFramesAndATask } from './layer-wait.ts';
 import { selectValue } from './select.mjs';
 
 /** A new page of `context` with the smoke test's timeouts: TIMEOUT for any wait, NAV_TIMEOUT for loads and reloads. */
@@ -186,8 +187,7 @@ export async function runFill(pg, button = '#sh-fill') {
 
 /** Resolve after the frames an Auto-fill on the page's thread waits for before it starts (two frames and a task), so a search
  * that was cancelled before them and still ran would have run by now. No fixed delay: the same events the Auto-fill waits for. */
-export const afterFrames = pg =>
-  pg.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done)))));
+export const afterFrames = pg => pg.evaluate(afterTwoFramesAndATask);
 
 /** Wait until the page's own state (the open tab and its Job and sync panel) is saved: a change is saved a moment later,
  * and a reload before that opens the page as it was. */

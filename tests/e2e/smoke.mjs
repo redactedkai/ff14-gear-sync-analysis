@@ -33,6 +33,7 @@ Options: --domain <name,name> (or SMOKE_DOMAIN) runs only the groups with a step
 with a filter that leaves out groups ends with 'no errors (partial: N of M groups)', never the bare 'no errors' of the full run.
 Environment: SMOKE_PAGE (page to test, default dist/index.html), SMOKE_OUT (screenshots, default tests/e2e/out),
 SMOKE_WORKERS (groups at once, default half the cores up to 6),
+SMOKE_FRAME_DELAY_MS (opt-in: every animation frame of the page this many ms late, to reproduce a slow runner; 40 shows what GitHub's Linux runner showed),
 SMOKE_TIMEOUT (ms for any single wait, default 10000; page loads wait 30000 or this, if more), SMOKE_TRACE=1 (time of each step on stderr), SMOKE_ONLY
 (a pattern on step names: run only the groups with a matching step; it combines with --domain: a group must pass both).
 */
@@ -47,6 +48,7 @@ import { OUT, PAGE, PAGE_PATH, WORKERS, shot } from './lib/constants.mjs';
 import { coreWorker, startCore } from './lib/core.mjs';
 import { stepRecord } from './lib/expect.mjs';
 import { NO_UNLOAD_GUARD } from './lib/init-scripts.mjs';
+import { frameDelayFromEnv, lateFramesScript } from './lib/late-frames.ts';
 import { newPage, waitReady } from './lib/nav.mjs';
 import { setUpShared, sharedSetupChanges } from './lib/setup.mjs';
 
@@ -56,6 +58,11 @@ async function runGroup(browser, group) {
   const ctx = await browser.newContext({ viewport: { width: 1000, height: 900 } });
   // every group starts with the reload and close guard off, so its reloads are not held (checkUnloadGuard turns it on)
   await ctx.addInitScript(NO_UNLOAD_GUARD, UNLOAD_GUARD_OFF_KEY);
+  // SMOKE_FRAME_DELAY_MS=40 makes every animation frame of the page 40 ms late, as on a slow runner (off by default)
+  const frameDelayMs = frameDelayFromEnv('SMOKE_FRAME_DELAY_MS');
+  if (frameDelayMs > 0) {
+    await ctx.addInitScript(lateFramesScript, frameDelayMs);
+  }
   if (group.initScript) {
     await ctx.addInitScript(group.initScript);
   }

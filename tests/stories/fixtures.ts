@@ -4,6 +4,7 @@
    - `axe()` runs axe-core on the mounted story, injected the way tests/e2e/lib/axe.mjs does. */
 import { test as base, expect } from 'playwright/test';
 import { readFileSync } from 'node:fs';
+import { frameDelayFromEnv, lateFramesScript } from '../e2e/lib/late-frames.ts';
 import { createRequire } from 'node:module';
 
 const AXE_SOURCE = readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf-8');
@@ -51,17 +52,9 @@ export const test = base.extend<Fixtures>({
   frameDelay: [
     async ({ page }, use) => {
       // STORIES_FRAME_DELAY_MS=40 makes every animation frame of the page 40 ms late, as on a slow runner (see testing.md)
-      const delayMs = Number(process.env.STORIES_FRAME_DELAY_MS || 0);
+      const delayMs = frameDelayFromEnv('STORIES_FRAME_DELAY_MS');
       if (delayMs > 0) {
-        await page.addInitScript(ms => {
-          // a page reused by several tests of a worker has the script once per test: wrap the frame call once
-          if ('frameDelayed' in window) {
-            return;
-          }
-          Object.assign(window, { frameDelayed: true });
-          const nativeFrame = window.requestAnimationFrame.bind(window);
-          window.requestAnimationFrame = callback => window.setTimeout(() => nativeFrame(callback), ms);
-        }, delayMs);
+        await page.addInitScript(lateFramesScript, delayMs);
       }
       await use(undefined);
     },

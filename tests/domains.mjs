@@ -171,6 +171,7 @@ export const DOMAINS = {
       'tests/stories/**',
       'tests/e2e/{smoke,groups}.mjs',
       'tests/e2e/lib/{constants,expect,nav}.mjs',
+      'tests/e2e/lib/{late-frames,layer-wait}.ts',
       'tests/unit/helpers/common.js',
       'tests/unit/scripts/**',
       'tests/unit/smoke-helpers/**',

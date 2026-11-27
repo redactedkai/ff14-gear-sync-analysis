@@ -3,6 +3,7 @@
 import assert from 'node:assert';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { BAD_WORDS, TIMEOUT } from './constants.mjs';
+import { boxStillForFrames } from './layer-wait.ts';
 
 // Each group of steps runs on its own page, in parallel with the others. Its failed checks and the page's JS and
 // console errors go to its own record (found through the async context), so the output is the same in every run.
@@ -55,6 +56,8 @@ export async function placedByZag(pg, selector) {
     }, selector);
     return { ok: offset !== '' && offset !== 'no positioner', got: offset || 'not placed yet' };
   });
+  // placed once is not placed for good: Zag moves a layer again (it sizes, flips and shifts it), so the box must hold still for a few frames
+  await pg.locator(selector).evaluate(boxStillForFrames);
 }
 
 export function expect(loc) {
