@@ -15,7 +15,7 @@ function stubFor(url) {
    aborted, so a shot never depends on the network. */
 export async function stubWebFonts(context) {
   await context.route(/^https?:\/\//, route => {
-    const { url } = route.request();
+    const url = route.request().url();
     return FONT_HOSTS.test(url) ? route.fulfill(stubFor(url)) : route.abort();
   });
 }
