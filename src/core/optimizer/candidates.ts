@@ -14,14 +14,14 @@
      versions every meld version of the piece, this one among them (itemVersions only): a regain cut (regain.ts) may
              swap a ring for any of them, including those pruning dropped
      fixed   true on a pinned piece (fixedCandidate): worn as it is, in a slot the search does not fill */
-import { must } from '../guards.ts';
+import { must, present } from '../guards.ts';
 import { SLOT_TYPES } from '../constants.ts';
 import { WD_KEY, weaponDamage } from '../damage-defense.ts';
 import { meldInfo, slotInfo } from '../items.ts';
 import { applyStones, bestMeld, meldVersions } from '../meld.ts';
 import { effStats, itemSyncIlvl, keepsMelds } from '../piece.ts';
 import { FREE_RING, blockableTypes, typeMask, type SearchSlot } from './slot-index.ts';
-import type { Candidate, DimKey, Eff, JobContext, Meld, PoolItem, SlotType, StatKey, StatMap, Stone, Sync } from '../types.ts';
+import type { Candidate, DimKey, Eff, JobContext, Meld, PoolItem, SlotType, StatMap, Stone, Sync } from '../types.ts';
 
 /* The meld versions built for a piece, by job, sync, keys and speed rule (itemVersions' `versionCache`). */
 export type VersionCache = Map<PoolItem, Map<string, Candidate[]>>;
@@ -35,7 +35,7 @@ export interface BuildOptions {
   prune?: boolean;
   melds?: boolean;
   speed?: 'min' | 'exact' | null;
-  minStats?: readonly StatKey[];
+  minStats?: readonly DimKey[];
   versionKeys?: readonly DimKey[];
   versionCache?: VersionCache | null;
   weaponFirst?: boolean;
@@ -81,7 +81,7 @@ const MAX_KEYS = MAX_GOAL_KEYS + 1;
    Number.MAX_SAFE_INTEGER; that is checked, and a pool too large for it throws instead of ranking wrongly.
    `slotVectors[i]` is the list of stat vectors for slot i of the loadout (the ring list appears twice). */
 export function makeScorer(keys: readonly (string | null | undefined)[], slotVectors: readonly (readonly Eff[])[]): (v: Eff) => number {
-  const ranked = keys.filter(Boolean) as string[];
+  const ranked = present(keys);
   if (ranked.length > MAX_KEYS) {
     throw new Error(`Optimizer: at most ${MAX_KEYS} ranked keys fit one score, got ${ranked.length} (${ranked.join(', ')})`);
   }
@@ -142,7 +142,7 @@ export function rankedKeys(
   tiebreak: readonly (DimKey | '' | null | undefined)[],
   weaponFirst = true,
 ): DimKey[] {
-  return [...new Set([...(weaponFirst && job.damageKey ? [WD_KEY] : []), target, ...(tiebreak.filter(Boolean) as DimKey[])])] as DimKey[];
+  return [...new Set<DimKey>([...(weaponFirst && job.damageKey ? [WD_KEY] : []), target, ...present(tiebreak)])];
 }
 
 /* A pool item's candidate: its effective stat vector and, when `keys` is given (melds on) and the piece is not synced,
@@ -150,7 +150,7 @@ export function rankedKeys(
    the loadout score is a sum of per-piece terms, and copies and blocked slots depend on the item, not on its melds, so
    giving every worn piece its own best melds never lowers a loadout (docs/engineering/optimizer.md, section 6). A synced piece
    keeps no melds (keepsMelds in piece.ts). */
-function itemCandidate(job: JobContext, item: PoolItem, sync: Sync, keys: readonly StatKey[] | null): Candidate {
+function itemCandidate(job: JobContext, item: PoolItem, sync: Sync, keys: readonly DimKey[] | null): Candidate {
   const target = itemSyncIlvl(item, sync);
   const synced = effStats(job, item, sync);
   const meld = keys && keepsMelds(item, sync) ? bestMeld(job, item, keys) : null;
@@ -399,7 +399,7 @@ export function buildCandidates(
   const limitStats = [...new Set([...(speed ? [job.speedKey] : []), ...minStats])];
   // melds are chosen per piece from the objective's keys (meld.ts keeps the substats among them; weapon damage is no
   // meld's), before the score weights are derived from the vectors
-  const keys = melds ? ([target, ...tiebreak.filter(Boolean)] as StatKey[]).slice(0, MAX_GOAL_KEYS) : null;
+  const keys = melds ? [target, ...present(tiebreak)].slice(0, MAX_GOAL_KEYS) : null;
 
   // pinned pieces: the slot types they fill, what they cover, and how many copies of each ring they wear
   const pinned = pinnedSlots(fixed);
@@ -420,7 +420,7 @@ export function buildCandidates(
               job,
               item,
               sync,
-              [...new Set<DimKey>([...versionKeys, ...(keys as StatKey[]), ...limitStats])],
+              [...new Set<DimKey>([...versionKeys, ...(keys ?? []), ...limitStats])],
               speed === 'exact',
               versionCache,
             ),

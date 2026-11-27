@@ -14,6 +14,7 @@
    - With a Target GCD the meal's speed band holds in every search (gearBand, as optimizeGcd).
    - Each stage that finishes proves the most of its key under its limits; every later search of the meal gets that
      proof (solve's `proven`) and cuts by it (optimizer/regain.js). */
+import { isDimKeyOf } from './damage-defense.ts';
 import { must } from './guards.ts';
 import { gearNeeded, mealsFor, mealTotals, pickMeal } from './food.ts';
 import { prepare, solve } from './optimizer/index.ts';
@@ -22,7 +23,7 @@ import { fastestGcd, foodFields, gearBand, goalSettings } from './target-gcd.ts'
 import { rankTierOf, tierStart } from './tiers.ts';
 import type { GcdMode, Haste } from './speed.ts';
 import type { FoodChoice } from './food.ts';
-import type { DimKey, JobContext, PoolItem, Proven, SolveResult, SolveSuccess, StatKey, Sync } from './types.ts';
+import type { DimKey, JobContext, PoolItem, Proven, SolveResult, SolveSuccess, Sync } from './types.ts';
 import type { PrepareOptions, Prepared } from './optimizer/index.ts';
 import type { FoodFields, GoalOptions } from './target-gcd.ts';
 
@@ -155,7 +156,7 @@ export function rankByTier(
   let truncated = false,
     nodes = 0;
   const search = (state: MealState, target: DimKey, tiebreak: readonly DimKey[]): SolveResult => {
-    const minStats = Object.keys(state.mins);
+    const minStats = Object.keys(state.mins).filter(s => isDimKeyOf(job, s));
     const prepKey = `${target}|${tiebreak.join()}|${minStats.join()}|${gcdMode}|${Boolean(opts.melds)}`;
     if (!cache.has(prepKey)) {
       const prepOpts: PrepareOptions = {
@@ -163,7 +164,7 @@ export function rankByTier(
         tiebreak,
         melds: opts.melds,
         speed: gcdMode,
-        minStats: minStats as StatKey[],
+        minStats,
         versionKeys,
         versionCache,
         fixed: opts.fixed,

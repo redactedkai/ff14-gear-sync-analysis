@@ -13,6 +13,7 @@
    found.
    Rows share their spare points: two swaps that are each fine alone can push a tier down together. So every check is
    made against the pieces the other rows show at that moment, never against the optimizer's set alone. */
+import { present } from './guards.ts';
 import { WD_KEY } from './damage-defense.ts';
 import { foodBonus, withFood } from './food.ts';
 import { equipLevel, slotInfo } from './items.ts';
@@ -158,7 +159,7 @@ export function sameResult(
     }
     const fits = fitting(i);
     const own = fits.find(c => c.item === shown[i].item);
-    const best = ([own, ...fits.filter(c => c !== own)].filter(Boolean) as Candidate[]).sort(easiest)[0];
+    const best = present([own, ...fits.filter(c => c !== own)]).sort(easiest)[0];
     if (best && best.item !== shown[i].item) {
       shown[i] = asPick(p.type, best);
     }
@@ -181,7 +182,7 @@ export function sameMeals(
   ctx: Omit<ResultContext, 'food'>,
   keys: readonly (DimKey | '' | null | undefined)[],
 ): FoodChoice[] {
-  const exact = keys.filter(k => k && !rankTierOf(job, k, ctx.level, ctx.haste ?? 0)) as DimKey[];
+  const exact = present(keys).filter(k => !rankTierOf(job, k, ctx.level, ctx.haste ?? 0));
   // the result with meal `m`, and its totals with food on the exact keys
   const resultWith = (m: FoodChoice) => {
     const totals = withFood(gearTotals, foodBonus(job, m, gearTotals, ctx.level));

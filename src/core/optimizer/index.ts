@@ -1,8 +1,9 @@
 /* Gear optimizer: pick one item per slot (two rings) from a pool to maximize a target stat, with up to two tiebreak
    stats, an optional speed range (Target GCD: a speed minimum, or a band for an exact GCD) and optional minimums on
    other stats (tier ranking). */
+import { isDimKeyOf } from '../damage-defense.ts';
 import { makeLimit } from './limit.ts';
-import { must } from '../guards.ts';
+import { isOneOf, must, present } from '../guards.ts';
 import { buildCandidates } from './candidates.ts';
 import { branchAndBound } from './search.ts';
 import { realSlotType } from './slot-index.ts';
@@ -17,7 +18,6 @@ import type {
   Proven,
   SlotPick,
   SpeedKey,
-  StatKey,
   SolveResult,
   SlotType,
   Sync,
@@ -33,7 +33,7 @@ export interface PrepareOptions {
   tiebreak?: readonly (DimKey | '' | null | undefined)[];
   melds?: boolean;
   speed?: SpeedRule;
-  minStats?: readonly (StatKey | '' | null | undefined)[];
+  minStats?: readonly (DimKey | '' | null | undefined)[];
   versionKeys?: readonly DimKey[];
   versionCache?: VersionCache | null;
   weaponFirst?: boolean;
@@ -43,7 +43,7 @@ export interface PrepareOptions {
    minimum and the job's speed stat. */
 export interface Prepared extends BuiltCandidates {
   speed: SpeedRule;
-  minStats: StatKey[];
+  minStats: DimKey[];
   speedKey: SpeedKey;
 }
 /* The options of solve (the fields are explained there). */
@@ -110,9 +110,9 @@ function speedRule(opts: { spdMin?: number | null; spdMax?: number | null }): {
    Returns {slotList, posList, dims, noMeldData, speed, minStats, speedKey (the job's), fixed, fixedBlocked}. */
 export function prepare(job: JobContext, pool: readonly PoolItem[], sync: Sync, opts?: PrepareOptions): Prepared {
   const options: PrepareOptions = opts || {};
-  const target = (options.target || job.mainKey) as DimKey;
-  const tiebreak = (options.tiebreak || []).filter(Boolean);
-  const asked = [...new Set((options.minStats || []).filter(Boolean))] as StatKey[];
+  const target = options.target || job.mainKey;
+  const tiebreak = present(options.tiebreak || []);
+  const asked = [...new Set(present(options.minStats || []))];
   const speed = options.speed || (asked.includes(job.speedKey) ? 'min' : null);
   const minStats = asked.filter(s => s !== job.speedKey);
   const cands = buildCandidates(
@@ -150,7 +150,7 @@ function limitsFor(prep: Prepared, opts: SolveOptions): Limit[] {
     if (!(min > 0)) {
       continue;
     }
-    if (!prep.minStats?.includes(stat as StatKey)) {
+    if (!isOneOf(prep.minStats ?? [], stat)) {
       throw new Error(`Optimizer: candidates prepared without a minimum on ${stat} cannot be searched with one`);
     }
     limits.push(makeLimit(stat, min, null));
@@ -322,7 +322,7 @@ export function optimize(job: JobContext, pool: readonly PoolItem[], sync: Sync,
   const options: OptimizeOptions = opts || {};
   const { spdMin, spdMax, kind } = speedRule(options);
   const mins = options.mins || {};
-  const minStats = Object.keys(mins).filter(s => mins[s] > 0) as StatKey[];
+  const minStats = Object.keys(mins).filter((s): s is DimKey => mins[s] > 0 && isDimKeyOf(job, s));
   const prep = prepare(job, pool, sync, { ...options, speed: kind, minStats });
   return solve(prep, { spdMin, spdMax, mins, nodeLimit: options.nodeLimit });
 }

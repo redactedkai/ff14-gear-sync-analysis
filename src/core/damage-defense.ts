@@ -8,14 +8,20 @@
    842 → 837 and 481 → 478 Defense) and assumed for the rest; weapon damage under sync is a guess (the tools clamp it
    the same way; no in-game measurement was found). */
 import { DB_SLOT_TYPE } from './constants.ts';
+import { isOneOf } from './guards.ts';
 import { capFromBudget, clampIlvl } from './formulas.ts';
 import { damageDefenseFacts } from './items.ts';
 import { levelParams } from './level-params.ts';
 import { IL, MP, SHARES } from './tables.ts';
-import type { DamageDefenseKey, JobContext, PoolItem } from './types.ts';
+import type { DamageDefenseKey, DimKey, JobContext, PoolItem } from './types.ts';
 
 /* The weapon damage key on candidates and totals (optimizer): one of the job's weapon damage, on the weapon only. */
-export const WD_KEY = 'wd';
+export const WD_KEY = 'wd' as const;
+
+/* True when `key` is one of the job's stat keys or weapon damage (WD_KEY): a key the optimizer tracks for the job. */
+export function isDimKeyOf(job: JobContext, key: string): key is DimKey {
+  return key === WD_KEY || isOneOf(job.stats, key);
+}
 
 /* Defense points per percent of damage removed is level-dependent: mitigation % = floor(15 x defense / DIV), DIV the
    level's ParamGrow LevelModifier (2780 at level 100). AkhMorning, Allagan Studies, Defense (community reference). */

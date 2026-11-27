@@ -8,18 +8,18 @@
      (prepare), so only the search repeats.
    - Among meals the winner has the highest totals with food on weapon damage (ranked first, rankedKeys), the target and
      tiebreaks, then the most food points, then the first in the job's food choices (pickMeal in food.ts, as bestFood). */
-import { must } from './guards.ts';
+import { must, present } from './guards.ts';
 import { gearNeeded, mealsFor, mealTotals, pickMeal } from './food.ts';
 import { prepare, rankedKeys, solve } from './optimizer/index.ts';
 import { BASE_GCD_MS, gcdFor, hasteFor, speedForGcd, type GcdMode, type Haste } from './speed.ts';
-import type { Candidate, DimKey, Eff, JobContext, PoolItem, SolveResult, SolveSuccess, Sync, Totals } from './types.ts';
+import type { Candidate, DimKey, Eff, JobContext, PoolItem, SolveResult, SolveSuccess, StatKey, Sync, Totals } from './types.ts';
 import type { FoodBonus, FoodChoice } from './food.ts';
 import type { Prepared } from './optimizer/index.ts';
 
 /* The goal and limits of a Target GCD (optimizeGcd) or tier ranking (rankByTier) search, the `opts` they share. */
 export interface GoalOptions {
-  target?: DimKey | '';
-  tiebreak?: readonly (DimKey | '' | null | undefined)[];
+  target?: StatKey | '';
+  tiebreak?: readonly (StatKey | '' | null | undefined)[];
   melds?: boolean;
   /* pinned pieces (fixedCandidate) */
   fixed?: readonly Candidate[];
@@ -74,8 +74,8 @@ export interface GoalSettings {
   level: number;
   haste: Haste | null;
   hastePct: number;
-  target: DimKey;
-  tiebreak: DimKey[];
+  target: StatKey;
+  tiebreak: StatKey[];
   keys: DimKey[];
 }
 
@@ -171,8 +171,8 @@ export function optimizeGcd(
 export function goalSettings(job: JobContext, sync: Sync, opts: GoalOptions): GoalSettings {
   const level = opts.level ?? sync.level ?? job.maxLevel;
   const haste = hasteFor(job.jobId, level);
-  const target = (opts.target || job.mainKey) as DimKey;
-  const tiebreak = (opts.tiebreak || []).filter(Boolean) as DimKey[];
+  const target = opts.target || job.mainKey;
+  const tiebreak = present(opts.tiebreak || []);
   return { level, haste, hastePct: haste ? haste.pct : 0, target, tiebreak, keys: rankedKeys(job, target, tiebreak) };
 }
 

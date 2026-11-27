@@ -254,7 +254,7 @@ export function evaluateSet(
   });
 
   // 5. defense after sync, and the share of damage it removes at this level (shown, never ranked)
-  const def = setDefense((rows.filter(r => r.item) as WornRow[]).map(r => ({ item: r.item, target: r.target })));
+  const def = setDefense(rows.filter((r): r is WornRow => r.item !== null).map(r => ({ item: r.item, target: r.target })));
   const defense = { phys: def.phys, mag: def.mag, physPct: mitigationPct(def.phys, level), magPct: mitigationPct(def.mag, level) };
 
   // 6. the GCD and DoT/HoT bonus of the speed with food

@@ -16,6 +16,7 @@
    - Each substat on a piece is capped at the piece's own cap (capsFor at its own item level, slot share and stat
      factors); the overflow is lost, and a meld never lowers a stat that is already above the cap.
    - Only combat substats can be melded, never the main stat or Vitality. Every meld succeeds (owner's decision). */
+import { isOneOf } from './guards.ts';
 import { MATERIA } from './tables.ts';
 import type { DimKey, JobContext, Meld, PerStat, PoolItem, StatKey, StatMap, Stone, StoneGroup, Sync } from './types.ts';
 
@@ -78,8 +79,8 @@ function highGrade(grade: number): boolean {
 }
 
 /* True when `stat` (a stat key) can be melded for the job: a combat substat, never the main stat or Vitality. */
-function meldableStat(job: JobContext, stat: DimKey): boolean {
-  return job.substats.includes(stat as StatKey);
+function meldableStat(job: JobContext, stat: DimKey): stat is StatKey {
+  return isOneOf(job.substats, stat);
 }
 
 /* How far melds can raise `stat` on `item`: its room under the piece's own cap (`caps`, meldCaps), 0 when the stat is
@@ -199,7 +200,7 @@ function meldSetup(job: JobContext, item: PoolItem, keys: readonly DimKey[]): Me
   if (!nBig) {
     return null;
   }
-  const meldable = [...new Set(keys)].filter(k => meldableStat(job, k)) as StatKey[];
+  const meldable = [...new Set(keys)].filter((k): k is StatKey => meldableStat(job, k));
   if (!meldable.length) {
     return null;
   }

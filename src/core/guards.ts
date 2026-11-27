@@ -33,3 +33,9 @@ export function present<T>(list: readonly (T | '' | null | undefined | false)[])
 export function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
+
+/* True when `key` is one of `keys`, and then types it as one of them: `includes` alone wants an argument already of the
+   list's type, which is what a cast was for. */
+export function isOneOf<K extends string>(keys: readonly K[], key: string | null | undefined): key is K {
+  return key !== null && key !== undefined && (keys as readonly string[]).includes(key);
+}

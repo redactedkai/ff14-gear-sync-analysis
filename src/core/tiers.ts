@@ -5,6 +5,7 @@
      tick, not per mille); Skill/Spell Speed by its GCD (speed.ts).
    The character's base value of each stat cancels out of these formulas, so the tier depends on the gear points alone.
    Food is not counted: it would move every total. Main stats and Vitality have no tiers here. */
+import { isOneOf } from './guards.ts';
 import { BASE_GCD_MS, gcdFor, gcdTierAt } from './speed.ts';
 import { levelParams } from './level-params.ts';
 import { statBase } from './base-stats.ts';
@@ -80,7 +81,7 @@ const RANK_STEP: Readonly<Partial<Record<StatKey, number>>> = { ten: TEN_MITIGAT
 /* The effects of a stat key of the job ({kind, step} objects), or null for stats without tiers (the main stat,
    Vitality) and for a stat the job lacks (Piety on a job without it). */
 function effectsOf(job: JobContext, stat: DimKey): readonly Effect[] | null {
-  return job.stats.includes(stat as StatKey) ? (EFFECTS[stat as StatKey] ?? null) : null;
+  return isOneOf(job.stats, stat) ? (EFFECTS[stat] ?? null) : null;
 }
 
 /* The kinds of effect a stat key has, in the order the page shows them ([] for a stat without tiers). */
@@ -306,7 +307,7 @@ export function rankTierOf(job: JobContext, stat: DimKey, level: number, haste =
   if (stat === job.speedKey) {
     return total => -Math.round(gcdFor(Math.max(0, total), level, BASE_GCD_MS, haste) * 100);
   }
-  const step = effectsOf(job, stat) ? (RANK_STEP[stat as StatKey] ?? stepOf(job, stat)) : null;
+  const step = effectsOf(job, stat) ? ((isOneOf(job.stats, stat) ? RANK_STEP[stat] : undefined) ?? stepOf(job, stat)) : null;
   if (step == null) {
     return null;
   }

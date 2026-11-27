@@ -7,7 +7,7 @@
    A meal's effect never falls with more gear points and gear + food rises with every gear point, so ranking gear sets by
    gear totals gives the same order as ranking them with food: the optimizer needs no change, and the best food for a goal
    can be picked after the search (bestFood). */
-import { must } from './guards.ts';
+import { isOneOf, must, mustHave, present } from './guards.ts';
 import { statBase } from './base-stats.ts';
 import { FOODS } from './tables.ts';
 import type { DimKey, JobContext, RawStatKey, StatKey, StatMap, Totals } from './types.ts';
@@ -51,7 +51,7 @@ export interface MealEntry {
 /* The stat key of a raw food stat (the game's own) if the job has it, or null when the job has no such stat (Spell Speed food for a
    Skill Speed job, Tenacity food for a job without Tenacity). */
 function statKeyOf(job: JobContext, raw: RawStatKey): StatKey | null {
-  return job.substats.includes(raw as StatKey) ? (raw as StatKey) : null;
+  return isOneOf(job.substats, raw) ? raw : null;
 }
 
 /* Every stat line of a foodChoices entry, Vitality included: [{stat, pct, max}]. */
@@ -114,7 +114,7 @@ export function foodChoices(job: JobContext): readonly FoodChoice[] {
   // drop a choice another one covers; of two that cover each other, the later one goes
   const kept = all.filter((c, i) => !all.some((d, j) => j !== i && covers(d, c) && !(covers(c, d) && j > i)));
   // sort: primary stat in the job's substat order, single-stat meals before pairs, then the second stat
-  const rank = (s: StatKey | undefined) => job.substats.indexOf(s as StatKey);
+  const rank = (s: StatKey | undefined) => (s === undefined ? -1 : job.substats.indexOf(s));
   const out = kept
     .map(f => Object.freeze({ ...f, stats: Object.freeze(f.stats.map(s => Object.freeze(s))) }))
     .sort(
@@ -225,7 +225,7 @@ export function bestFood(
   keys: readonly (DimKey | '' | null | undefined)[],
 ): FoodChoice | null {
   const entries = choices.map(meal => ({ meal, totals }));
-  return pickMeal(job, entries, keys.filter(Boolean) as DimKey[], level)?.entry.meal ?? null;
+  return pickMeal(job, entries, present(keys), level)?.entry.meal ?? null;
 }
 
 /* The fewest gear points of `stat` whose total with `food` (null for none) reaches `total` at `level`. Gear plus food
@@ -238,7 +238,7 @@ export function gearNeeded(job: JobContext, food: FoodLines | null, stat: DimKey
     return Math.max(0, total);
   }
   const reachesTotal = (g: number) =>
-    g + (foodBonus(job, { stats: [line] }, { [stat]: g }, level)[stat as StatKey] as FoodBonusLine).bonus >= total;
+    g + mustHave(foodBonus(job, { stats: [line] }, { [line.stat]: g }, level)[line.stat], 'food bonus line').bonus >= total;
   // binary search for the fewest gear points that reach it (gear alone always does at g = total)
   let lo = 0,
     hi = total;
