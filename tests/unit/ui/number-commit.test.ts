@@ -3,9 +3,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { commit, formatNumber, roundTo } from '../../../src/ui/number-commit.ts';
+import type { CommitOptions } from '../../../src/ui/number-commit.ts';
 
 /* [box, options, text, expected]: expected is null (nothing committed) or [value, shown, clamped]. */
-const TABLE = [
+const TABLE: [string, CommitOptions<string>, string, [number | string, string, boolean] | null][] = [
   // whole-number box with a range: typing holds an out-of-range value back, leaving moves it to the bound
   ['filter, in range', { min: 1, max: 100 }, '80', [80, '80', false]],
   ['filter, fraction rounds', { min: 1, max: 100 }, '80.4', [80, '80', false]],
@@ -45,7 +46,7 @@ for (const [name, options, text, expected] of TABLE) {
 }
 
 test('commit: an emptied box commits `empty` when the box has one', () => {
-  assert.deepEqual(commit('', { empty: null }), { value: null, shown: '', clamped: false });
+  assert.deepEqual(commit('', { empty: 0 }), { value: 0, shown: '', clamped: false });
   assert.equal(commit('', {}), null);
 });
 

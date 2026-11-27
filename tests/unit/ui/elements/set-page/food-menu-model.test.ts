@@ -4,50 +4,84 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import {
-  FOOD_OPEN_EVENT,
-  FoodMenuModel,
-  MEAL_PICK_EVENT,
-  mealKeyOfClick,
-} from '../../../../../src/ui/elements/set-page/food-menu-model.ts';
+import { FOOD_OPEN_EVENT, FoodMenuModel, MEAL_PICK_EVENT, mealKeyOfRow } from '../../../../../src/ui/elements/set-page/food-menu-model.ts';
+import type { MealItem, MealMenuData } from '../../../../../src/ui/elements/set-page/food-menu-model.ts';
+import type { StatKey } from '../../../../../src/core/types.ts';
 
 /* A meal of the hand-made menus: its stats in order, each with the points it adds. */
-const meal = (key, name, adds) => ({
+const meal = (key: string, name: string, adds: [StatKey, number][]): MealItem => ({
   key,
   name,
-  stats: Object.keys(adds),
-  adds: Object.entries(adds).map(([stat, value]) => ({ stat, text: `${stat} +${value}`, value })),
+  ilvl: 0,
+  label: name,
+  ilvlText: 'i0',
+  stats: adds.map(([stat]) => stat),
+  adds: adds.map(([stat, value]) => ({ stat, text: `${stat} +${value}`, value })),
   on: false,
+  onClass: '',
+  best: false,
 });
-const PILLS = ['crit', 'det', 'dh', 'spd'].map(stat => ({ stat, short: stat.toUpperCase(), label: stat }));
+const PILLS = (['crit', 'det', 'dh', 'sps'] as const).map(stat => ({ stat, short: stat.toUpperCase(), label: stat }));
 
 /* A hand-made Food menu: Critical Hit + Spell Speed, Critical Hit + Determination and Critical Hit + Direct Hit in Dawntrail,
    Determination + Critical Hit in Endwalker. */
-const MENU = {
+const MENU: MealMenuData = {
   groups: [
     {
       label: 'Dawntrail',
       items: [
-        meal('p', 'Popoto Potage', { crit: 133, spd: 36 }),
-        meal('a', 'Caramel Popcorn', { det: 125, crit: 91 }),
-        meal('b', 'Rroneek au Gratin', { crit: 91, dh: 36 }),
+        meal('p', 'Popoto Potage', [
+          ['crit', 133],
+          ['sps', 36],
+        ]),
+        meal('a', 'Caramel Popcorn', [
+          ['det', 125],
+          ['crit', 91],
+        ]),
+        meal('b', 'Rroneek au Gratin', [
+          ['crit', 91],
+          ['dh', 36],
+        ]),
       ],
     },
-    { label: 'Endwalker', items: [meal('c', 'Baked Eggplant', { det: 103, crit: 62 })] },
+    {
+      label: 'Endwalker',
+      items: [
+        meal('c', 'Baked Eggplant', [
+          ['det', 103],
+          ['crit', 62],
+        ]),
+      ],
+    },
   ],
   pills: PILLS,
+  hasBest: false,
+  hasMeal: false,
 };
 /* The menu for other gear: nothing has Direct Hit. */
-const MENU_AFTER = { ...MENU, groups: [{ label: 'Dawntrail', items: [meal('a', 'Caramel Popcorn', { det: 125, crit: 91 })] }] };
+const MENU_AFTER: MealMenuData = {
+  ...MENU,
+  groups: [
+    {
+      label: 'Dawntrail' as const,
+      items: [
+        meal('a', 'Caramel Popcorn', [
+          ['det', 125],
+          ['crit', 91],
+        ]),
+      ],
+    },
+  ],
+};
 
 /* A model opened on `menu`. */
-function opened(menu = MENU) {
+function opened(menu: MealMenuData | null = MENU) {
   const model = new FoodMenuModel();
   model.menu = menu;
   model.startOpen();
   return model;
 }
-const shown = model => model.shown.groups.map(group => [group.key, group.items.map(item => item.key)]);
+const shown = (model: FoodMenuModel) => model.shown.groups.map(group => [group.key, group.items.map(item => item.key)]);
 
 test('Food menu: opens with no pill; the pills and search narrow the list', () => {
   const model = opened();
@@ -59,15 +93,17 @@ test('Food menu: opens with no pill; the pills and search narrow the list', () =
   ]);
   // Direct Hit: no meal has it with Spell Speed, so that pill stays off
   model.toggleStat('dh');
-  assert.equal(model.pillOff('spd'), true);
-  model.toggleStat('spd');
+  assert.equal(model.pillOff('sps'), true);
+  model.toggleStat('sps');
   assert.deepEqual(model.stats, ['dh']);
   assert.deepEqual(shown(model), [['Dawntrail', ['b']]]);
   // a search that leaves nothing: Clear search
   model.query = 'potage';
   assert.deepEqual(shown(model), []);
-  assert.equal(model.shown.empty.action, 'query');
-  assert.ok(model.shown.empty.text.includes('potage'), model.shown.empty.text);
+  const { empty } = model.shown;
+  assert.ok(empty);
+  assert.equal(empty.action, 'query');
+  assert.ok(empty.text.includes('potage'), empty.text);
 });
 
 test('Food menu: sorted by a stat while its pill is on; turning that pill off goes back to ILVL', () => {
@@ -108,12 +144,11 @@ test('Food menu: the pills stay while they list a meal, else start over empty; t
 });
 
 test("Food menu: a click on the list reads the clicked row's data-meal; No food is the empty key, other clicks pick nothing", () => {
-  const target = row => ({ closest: selector => (selector === '.same-item' ? row : null) });
-  assert.equal(mealKeyOfClick(target({ dataset: { meal: 'a' } })), 'a');
-  assert.equal(mealKeyOfClick(target({ dataset: { meal: '' } })), null);
+  assert.equal(mealKeyOfRow({ dataset: { meal: 'a' } }), 'a');
+  assert.equal(mealKeyOfRow({ dataset: { meal: '' } }), null);
   // the Clear search button and a click off any row
-  assert.equal(mealKeyOfClick(target({ dataset: {} })), undefined);
-  assert.equal(mealKeyOfClick(target(null)), undefined);
+  assert.equal(mealKeyOfRow({ dataset: {} }), undefined);
+  assert.equal(mealKeyOfRow(null), undefined);
 });
 
 /* The page's wiring reads the events by name (the template cannot import the constants): if this fails, rename them together. */

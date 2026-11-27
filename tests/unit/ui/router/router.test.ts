@@ -4,6 +4,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRouter } from '../../../../src/ui/router/router.ts';
+import type { AppFacade } from '../../../../src/ui/store/app-facade.ts';
+import type { SheetsFacade } from '../../../../src/ui/store/sheets-facade.ts';
+import type { LeaveMove } from '../../../../src/ui/store/sheets-actions.ts';
+import type { HistoryEntry, RouterOptions } from '../../../../src/ui/router/router.ts';
 import { DEFAULT_ROUTE, formatRoute, titleOf } from '../../../../src/ui/router/routes.ts';
 import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
 import { saveSheet } from '../../../../src/ui/sheets/storage.ts';
@@ -14,44 +18,48 @@ import { createStores } from '../../helpers/stores.ts';
    makes (back, forward, type) are delivered to the router's popstate listener when the test calls `deliver()`; a move past
    either end of the history goes nowhere, as in a browser, and a go(0) (which reloads a page) is an error. `start` is the
    state of the first entry (null: a page opened by a link). */
-function fakeHistory(startHash = '', startState = null) {
+interface FakeEntry {
+  hash: string;
+  state: unknown;
+}
+function fakeHistory(startHash = '', startState: unknown = null) {
+  type Move = number | 'typed';
   const history = {
-    entries: [{ hash: startHash, state: startState }],
+    entries: [{ hash: startHash, state: startState }] as FakeEntry[],
     at: 0,
-    queue: [],
-    listener: null,
+    queue: [] as Move[],
+    listener: null as ((move: FakeEntry) => void) | null,
     read: () => history.entries[history.at].hash,
-    state: () => history.entries[history.at].state,
+    state: (): unknown => history.entries[history.at].state,
     length: () => history.entries.length,
-    push(hash, entry) {
+    push(hash: string, entry: HistoryEntry) {
       history.entries.splice(history.at + 1, Infinity, { hash, state: entry });
       history.at += 1;
     },
-    replace(hash, entry) {
+    replace(hash: string, entry: HistoryEntry) {
       history.entries[history.at] = { hash, state: entry };
     },
-    go(distance) {
+    go(distance: number) {
       if (distance === 0) {
         throw new Error('history.go(0) reloads the page');
       }
       history.queue.push(distance);
     },
-    onPop(callback) {
+    onPop(callback: (move: FakeEntry) => void) {
       history.listener = callback;
     },
     // the player's moves: Back and Forward by entries, a typed address as a new entry with no state
-    jump: distance => history.queue.push(distance),
+    jump: (distance: number) => history.queue.push(distance),
     back: () => history.queue.push(-1),
     forward: () => history.queue.push(1),
-    type(hash) {
+    type(hash: string) {
       history.entries.splice(history.at + 1, Infinity, { hash, state: null });
       history.at += 1;
       history.queue.push('typed');
     },
     /* Deliver the moves waiting: each moves `at` (a typed address already did) and tells the router. */
     deliver() {
-      while (history.queue.length) {
-        const move = history.queue.shift();
+      for (let move = history.queue.shift(); move !== undefined; move = history.queue.shift()) {
         if (move !== 'typed') {
           const target = history.at + move;
           if (target < 0 || target >= history.entries.length) {
@@ -60,7 +68,7 @@ function fakeHistory(startHash = '', startState = null) {
           history.at = target;
         }
         const { hash, state } = history.entries[history.at];
-        history.listener({ hash, state });
+        history.listener?.({ hash, state });
       }
     },
   };
@@ -69,7 +77,7 @@ function fakeHistory(startHash = '', startState = null) {
 
 /* The page's real store (the state, the actions and the two facades the router reads) over the defaults, with the tab and math view
    open, the sheets over `storage`, and openTab opening at once (the real one waits for a painted frame). */
-function fakeStores(storage, tab = 'sheets', mathTab = 'piece') {
+function fakeStores(storage: Storage, tab = 'sheets', mathTab = 'piece') {
   const stores = createStores(restoreOpen({ tab, mathTab }), { storage });
   stores.app.openTab = next => stores.app.showTab(next);
   return stores;
@@ -77,18 +85,22 @@ function fakeStores(storage, tab = 'sheets', mathTab = 'piece') {
 
 /* A watch that runs by hand: `fire()` re-reads every getter and calls the callback of those whose value changed. */
 function fakeWatch() {
-  const watches = [];
+  // each watch re-reads its getter and calls its callback when the value changed
+  const watches: (() => void)[] = [];
   return {
-    watch(getter, callback) {
-      watches.push({ getter, callback, last: getter() });
+    watch<Value>(getter: () => Value, callback: (value: Value) => void) {
+      let last = getter();
+      watches.push(() => {
+        const value = getter();
+        if (value !== last) {
+          last = value;
+          callback(value);
+        }
+      });
     },
     fire() {
-      for (const w of watches) {
-        const value = w.getter();
-        if (value !== w.last) {
-          w.last = value;
-          w.callback(value);
-        }
+      for (const check of watches) {
+        check();
       }
     },
   };
@@ -96,14 +108,19 @@ function fakeWatch() {
 
 /* The router started on `startHash`, over a store with the sheet 's_1' holding the gear set 'g_1' (and 'g_2'). `prepare(app)`
    sets the app's settings before the router starts (what the reader had saved). */
-function setup(startHash = '', prepare = () => {}, routerOptions = {}, history = fakeHistory(startHash)) {
+function setup(
+  startHash = '',
+  prepare: (app: AppFacade) => void = () => {},
+  routerOptions: Partial<RouterOptions> = {},
+  history = fakeHistory(startHash),
+) {
   const storage = fakeStorage();
   saveSheet(sheetOf('SGE', [sageSet(), sageSet({ id: 'g_2', name: 'Set 2' })], { name: 'Sage 123' }), storage);
   const { store, app, sheets } = fakeStores(storage);
   const clock = fakeWatch();
   prepare(app);
-  const titles = [];
-  const focused = [];
+  const titles: string[] = [];
+  const focused: number[] = [];
   const router = createRouter({
     app,
     sheets,
@@ -269,9 +286,9 @@ test('a typed #/math is made #/math/piece', () => {
 });
 
 /* The set page's leave guard: holds the move back and keeps it for the answer. */
-function holdingGuard(sheets) {
-  const state = { asked: 0, held: null };
-  sheets.setLeaveGuard(move => {
+function holdingGuard(sheets: SheetsFacade) {
+  const state: { asked: number; held: LeaveMove | null } = { asked: 0, held: null };
+  sheets.setLeaveGuard((move: LeaveMove) => {
     state.asked += 1;
     state.held = move;
     return true;
@@ -294,7 +311,7 @@ test('Back from a set page that holds a draft is undone; "leave" does the move a
   assert.equal(history.at, 2);
   // the player answers "leave": the guard clears and the held move runs
   sheets.setLeaveGuard(null);
-  guard.held();
+  guard.held?.();
   history.deliver();
   assert.equal(sheets.screen, 'sheet');
   assert.equal(hash(), '#/sheets/s_1');
@@ -334,7 +351,7 @@ test('a typed address off a set page that holds a draft is refused: the browser 
   assert.equal(history.at, 2, 'the browser is back on the set page');
   assert.equal(history.entries.length, 4, 'the typed entry is still ahead');
   sheets.setLeaveGuard(null);
-  guard.held();
+  guard.held?.();
   history.deliver();
   assert.equal(hash(), '#/gear');
   assert.equal(history.at, 3);
@@ -355,7 +372,7 @@ test('"keep editing" after a typed address: the next Back is a Back, not a dupli
   history.deliver();
   assert.equal(guard.asked, 2, 'Back asks again');
   sheets.setLeaveGuard(null);
-  guard.held();
+  guard.held?.();
   history.deliver();
   assert.equal(hash(), '#/sheets/s_1', 'and leaves to the sheet page');
   assert.equal(history.at, 1);
@@ -381,7 +398,7 @@ test('a reload keeps the entries: Back from a set page with a draft is undone to
   assert.equal(hash(), '#/sheets/s_1/sets/g_1');
   assert.deepEqual(history.entries[2].state, { id: 'c', pos: 2 }, 'the entry keeps its state');
   sheets.setLeaveGuard(null);
-  guard.held();
+  guard.held?.();
   history.deliver();
   assert.equal(history.at, 1);
   assert.equal(hash(), '#/sheets/s_1');
@@ -408,7 +425,7 @@ test('history that branched: a jump of two entries over a held move is undone by
   assert.equal(history.at, 2, 'the browser went back by the same two');
   assert.equal(hash(), '#/sheets/s_1/sets/g_1');
   sheets.setLeaveGuard(null);
-  guard.held();
+  guard.held?.();
   history.deliver();
   assert.equal(history.at, 0);
   assert.equal(hash(), '#/sheets');
@@ -429,7 +446,7 @@ test('two Backs in one task over a held move end on the entry the page shows', (
   assert.equal(hash(), '#/sheets/s_1/sets/g_1');
   // the player answers "leave": the move the question was about (the first Back) is made
   sheets.setLeaveGuard(null);
-  guard.held();
+  guard.held?.();
   history.deliver();
   assert.equal(sheets.screen, 'sheet');
   assert.equal(history.at, 1);
@@ -458,6 +475,7 @@ test('a link of the same page that is a typed entry becomes an entry of the rout
   history.type('#/sheets/s_1');
   history.deliver();
   const state = history.entries[history.at].state;
+  assert.ok(typeof state === 'object' && state !== null && 'id' in state && 'pos' in state);
   assert.equal(typeof state.id, 'string');
   assert.equal(state.pos, history.at);
 });
@@ -571,10 +589,10 @@ test('a scroll the browser makes because the page got shorter is not remembered 
 
 test('the scroll events of a placement and of the browser clamping a page are not remembered as where an entry was left', () => {
   let placing = false;
-  const placed = [];
+  const placed: number[] = [];
   const { sheets, history, clock, router } = setup('', undefined, {
     isPlacing: () => placing,
-    focusScreen: scrollY => {
+    focusScreen: (scrollY: number) => {
       placed.push(scrollY);
       placing = true; // the page starts to be put at the position
     },
@@ -745,7 +763,7 @@ test('a link with settings that leaves a set page that holds a draft waits for t
   assert.equal(app.browse.sort, 'ilvl', 'not applied yet');
   assert.equal(hash(), '#/sheets/s_1/sets/g_1');
   sheets.setLeaveGuard(null);
-  guard.held();
+  guard.held?.();
   history.deliver();
   assert.equal(app.browse.sort, 'det');
   assert.equal(hash(), '#/gear?sort=det');
@@ -927,7 +945,7 @@ test('the address follows the panel: a job, a level and the item level sync swit
 });
 
 test('a screen the page opens by a click or its own navigation starts at the top; Back and Forward place the saved position instead', () => {
-  const placed = [];
+  const placed: number[] = [];
   const { sheets, app, history, clock, router, focused } = setup('', undefined, {
     readScroll: () => ({ y: 400, maxY: 800 }),
     startAtTop: () => placed.push(0),
@@ -975,7 +993,7 @@ test('sync on with no cap yet is an empty il, and opens as sync on', () => {
 });
 
 test('a reload of an entry scrolled before restores its scroll; the positions are kept for the next reload', () => {
-  const restored = [];
+  const restored: number[] = [];
   const history = fakeHistory('#/sheets/s_1', { id: 'own', pos: 0 });
   const { router } = setup(
     '',
@@ -993,7 +1011,7 @@ test('a reload of an entry scrolled before restores its scroll; the positions ar
 });
 
 test('an entry the router has not seen scrolled, and a first load, restore nothing', () => {
-  const restored = [];
+  const restored: number[] = [];
   setup(
     '',
     undefined,

@@ -3,30 +3,54 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ElementWidthController } from '../../../../../src/ui/elements/shared/element-width.ts';
+import type { WidthHost, WidthLifecycle } from '../../../../../src/ui/elements/shared/element-width.ts';
+import { opaque, resizeEntry } from '../../../helpers/dom-fakes.ts';
 
 /* A fake ResizeObserver that records what it watches; `report(width)` delivers a size to the latest one made. */
-let watchers;
-let frames;
-class FakeObserver {
-  constructor(callback) {
+let watchers: FakeObserver[];
+let frames: FrameRequestCallback[];
+class FakeObserver implements ResizeObserver {
+  readonly callback: ResizeObserverCallback;
+  readonly targets = new Set<Element>();
+  constructor(callback: ResizeObserverCallback) {
     this.callback = callback;
-    this.targets = new Set();
     watchers.push(this);
   }
-  observe(target) {
+  observe(target: Element): void {
     this.targets.add(target);
   }
-  disconnect() {
+  unobserve(target: Element): void {
+    this.targets.delete(target);
+  }
+  disconnect(): void {
     this.targets.clear();
   }
 }
-const report = width => watchers.at(-1).callback([{ contentRect: { width } }]);
+/* The newest observer made. */
+function latest(): FakeObserver {
+  const observer = watchers.at(-1);
+  assert.ok(observer, 'no observer was made');
+  return observer;
+}
+const report = (width: number): void => latest().callback([resizeEntry(opaque<Element>(), width)], latest());
 /* Runs the frames asked for so far. */
-const runFrames = () => {
+const runFrames = (): void => {
   for (const frame of frames.splice(0)) {
-    frame();
+    frame(0);
   }
 };
+
+/* A host that counts its redraws and keeps its controllers. */
+class FakeHost implements WidthHost {
+  redraws = 0;
+  readonly controllers: WidthLifecycle[] = [];
+  addController(added: WidthLifecycle): void {
+    this.controllers.push(added);
+  }
+  requestUpdate(): void {
+    this.redraws += 1;
+  }
+}
 
 /* A controller on a fake host whose box is `box.current`, and the host's count of redraws. */
 function setUp() {
@@ -34,17 +58,8 @@ function setUp() {
   frames = [];
   globalThis.ResizeObserver = FakeObserver;
   globalThis.requestAnimationFrame = frame => frames.push(frame);
-  const box = { current: {} };
-  const host = {
-    redraws: 0,
-    controllers: [],
-    addController(added) {
-      this.controllers.push(added);
-    },
-    requestUpdate() {
-      this.redraws += 1;
-    },
-  };
+  const box: { current: Element | null } = { current: opaque<Element>() };
+  const host = new FakeHost();
   const controller = new ElementWidthController(host, () => box.current);
   return { box, host, controller };
 }
@@ -70,11 +85,11 @@ test('a box that comes and goes is followed again; no box, nothing is watched', 
   box.current = null;
   controller.hostUpdated();
   assert.equal(watchers.length, 0);
-  box.current = {};
+  box.current = opaque<Element>();
   controller.hostUpdated();
   assert.deepEqual([...watchers[0].targets], [box.current]);
   const first = box.current;
-  box.current = {};
+  box.current = opaque<Element>();
   controller.hostUpdated();
   assert.deepEqual([...watchers[0].targets], [box.current], 'the new box replaces the old one');
   assert.notEqual(first, box.current);
@@ -88,5 +103,5 @@ test('a disconnected host stops watching, and a reconnected one draws again to f
   controller.hostConnected();
   assert.equal(host.redraws, 1);
   controller.hostUpdated();
-  assert.equal(watchers.at(-1).targets.size, 1);
+  assert.equal(latest().targets.size, 1);
 });

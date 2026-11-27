@@ -5,13 +5,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { barInput, mathSelection, pieceInput, setMathJob, setMathSync } from '../../../../../src/ui/elements/math-page/math-inputs.ts';
+import type { AppFacade } from '../../../../../src/ui/store/app-facade.ts';
 import { shallowEq } from '../../../../../src/ui/store/select.ts';
 import { overlays } from '../../../../../src/ui/overlays.ts';
 import { restoreOpen } from '../../../helpers/common.ts';
 import { createStores } from '../../../helpers/stores.ts';
 
 /* The page's store of `saved` (the math tab open). */
-function opened(saved = {}) {
+function opened(saved: Record<string, unknown> = {}) {
   overlays.closeAll(); // the page's manager is shared: no layer of an earlier test stays open
   return createStores(restoreOpen({ tab: 'math', piece: { job: 'SGE', cap: 123, sync: true, level: 85 }, ...saved }));
 }
@@ -55,7 +56,7 @@ test("the children's inputs: the Job menu shows the open sub-tab's job, the cont
 });
 
 /* The edits a user can make on the math tab and elsewhere, each as a function of the store's facade. */
-const EDITS = {
+const EDITS: Record<string, (app: AppFacade) => void> = {
   'the example piece slot': app => app.editPiece({ slot: app.piece.slot === 'head' ? 'body' : 'head' }),
   'the example piece item level': app => app.editPiece({ ilvl: 200 }),
   'the example piece substats': app => app.editPiece({ subs: ['crit', 'det'] }),

@@ -1,7 +1,10 @@
 /* The page's menu placement (src/ui/elements/set-page/menus.ts): where the window's line for menus is. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PageMenus } from '../../../../../src/ui/elements/set-page/menus.ts';
+import type { MenuBox } from '../../../../../src/ui/elements/set-page/menus.ts';
+import type { HostElement } from '../../../../../src/ui/elements/set-page/session-types.ts';
+import { bind } from '../../../helpers/set-page-bind.ts';
+import { domRect, stubGlobal } from '../../../helpers/dom-fakes.ts';
 
 /* keepMenuInView: the page scrolls to show an opened table menu and keeps its button below the pinned header and the stuck
    column names. Stand-ins for the window (innerHeight, scrollBy) and the page's boxes, in px of the window. */
@@ -15,17 +18,16 @@ const BUTTON_MARGIN = 8; // the button is kept this far under the column names
 /* A set page's boxes with the button box at `buttonTop` and a menu `menuHeight` tall hanging under it; the scrolls the
    page is asked for are in `scrolls` (a scroll moves the boxes, as the page does). `list.maxHeight` is what the menu's list
    was cut to ('' when not). */
-function pageWith({ buttonTop, menuHeight }) {
+function pageWith({ buttonTop, menuHeight }: { buttonTop: number; menuHeight: number }) {
   let shift = 0; // how far the page has scrolled down
-  const scrolls = [];
-  const list = { style: { maxHeight: '' }, getBoundingClientRect: () => ({ height: menuHeight - 60 }) };
-  const box = (top, height) => ({ top: top - shift, bottom: top - shift + height, height });
+  const scrolls: (number | undefined)[] = [];
+  const list = { style: { maxHeight: '' }, getBoundingClientRect: () => domRect(0, menuHeight - 60) };
+  const box = (top: number, height: number) => domRect(top - shift, height);
   const button = { getBoundingClientRect: () => box(buttonTop, BUTTON_HEIGHT) };
-  const menu = {
+  const menu: MenuBox = {
     offsetParent: button,
-    closest: () => null,
-    querySelector: selector => (selector === '.menu-list' ? list : null),
-    style: {},
+    querySelector: () => list,
+    style: { maxHeight: '' },
     getBoundingClientRect: () =>
       box(
         buttonTop + BUTTON_HEIGHT + MENU_GAP,
@@ -33,26 +35,32 @@ function pageWith({ buttonTop, menuHeight }) {
       ),
   };
   // the page's own boxes, found by selector as the element's `query` does
-  const boxes = {
-    '.shead': { getBoundingClientRect: () => ({ bottom: HEADER_BOTTOM }) },
-    '.settable thead th': { getBoundingClientRect: () => ({ bottom: NAMES_BOTTOM }) },
+  const boxes: Record<string, HostElement> = {
+    '.shead': pageBox(HEADER_BOTTOM),
+    '.settable thead th': pageBox(NAMES_BOTTOM),
   };
-  const menus = new PageMenus({ host: { query: selector => boxes[selector] ?? null }, changed() {} });
-  const saved = { innerHeight: globalThis.innerHeight, scrollBy: globalThis.scrollBy };
-  globalThis.innerHeight = WINDOW_HEIGHT;
-  globalThis.scrollBy = ({ top }) => {
+  const { session, host } = bind();
+  host.query = selector => boxes[selector] ?? null;
+  const restoreHeight = stubGlobal('innerHeight', WINDOW_HEIGHT);
+  const restoreScroll = stubGlobal('scrollBy', ({ top }: ScrollToOptions) => {
     scrolls.push(top);
-    shift += top;
-  };
+    shift += top ?? 0;
+  });
   const run = () => {
     try {
-      menus.keepMenuInView(menu);
+      session.menus.keepMenuInView(menu);
     } finally {
-      Object.assign(globalThis, saved);
+      restoreHeight();
+      restoreScroll();
     }
     return { scrolls, maxHeight: list.style.maxHeight, buttonTop: button.getBoundingClientRect().top };
   };
   return { run };
+}
+
+/* A box of the page whose bottom edge is `bottom` px under the window's top. */
+function pageBox(bottom: number): HostElement {
+  return { focus() {}, scrollIntoView() {}, getBoundingClientRect: () => domRect(bottom, 0) };
 }
 
 test('keepMenuInView: a menu whose button is under the column names scrolls the page up until the button is below them', () => {

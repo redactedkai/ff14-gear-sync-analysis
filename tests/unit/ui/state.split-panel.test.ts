@@ -28,8 +28,8 @@ test('the top-level panel goes into both tabs and opt is dropped', () => {
 
 test('a group that already has its own panel keeps it', () => {
   const split = splitPanelSettings({ ...OLD, browse: { ...OLD.browse, job: 'WAR', cap: 705, sync: false, level: 90 } });
-  assert.deepEqual([split.browse.job, split.browse.cap, split.browse.sync, split.browse.level], ['WAR', 705, false, 90]);
-  assert.equal(split.piece.job, 'SGE');
+  assert.deepEqual(split.browse, { ...OLD.browse, job: 'WAR', cap: 705, sync: false, level: 90 });
+  assert.deepEqual(split.piece, { ...OLD.piece, job: 'SGE', cap: 123, sync: true, level: 100 });
 });
 
 test('a save with no panel or no groups gets empty groups; a non-object comes back as it is', () => {

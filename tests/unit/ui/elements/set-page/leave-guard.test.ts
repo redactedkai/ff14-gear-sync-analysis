@@ -2,6 +2,7 @@
    before leaving for each kind of unsaved or running work. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { LeaveQuestion } from '../../../../../src/ui/elements/set-page/leave-guard.ts';
 import { runningLeaveText } from '../../../../../src/ui/elements/set-page/leave-guard.ts';
 import { FILL_CANCELLED_TEXT, RESULT_DISCARDED_TEXT } from '../../../../../src/ui/views/set-page.ts';
 import { overlays } from '../../../../../src/ui/overlays.ts';
@@ -18,7 +19,7 @@ test('leaving: a draft asks Apply or Discard, Keep stays; a running Auto-fill as
   // a draft
   session.edits.pick(HEAD, SAGE_IDS.head);
   sheets.closeSet();
-  assert.deepEqual([sheets.screen, session.leave.ask.kind], ['set', 'draft']);
+  assert.deepEqual([sheets.screen, asked(session).kind], ['set', 'draft']);
   session.leave.answerLeave('keep');
   assert.deepEqual([sheets.screen, session.leave.ask, Boolean(session.draft)], ['set', null, true]);
   sheets.openManager();
@@ -33,7 +34,7 @@ test('leaving: a draft asks Apply or Discard, Keep stays; a running Auto-fill as
   assert.equal(solver.held.length, 1);
   assert.equal(solver.held[0].request.key, 'g_1');
   sheets.closeSet();
-  assert.equal(session.leave.ask.kind, 'running');
+  assert.equal(asked(session).kind, 'running');
   assert.equal(session.leave.questionText(view()), runningLeaveText('Set 1'));
   session.leave.answerLeave('leave');
   await running;
@@ -44,12 +45,13 @@ test('leaving: a draft asks Apply or Discard, Keep stays; a running Auto-fill as
   // a waiting result: Leave drops it
   sheets.openSet('g_1');
   const answered = session.fill.fill();
-  const { answer } = solver.held.shift();
-  await answer();
+  const heldRequest = solver.held.shift();
+  assert.ok(heldRequest, 'the solve is held');
+  await heldRequest.answer();
   await answered;
   assert.ok(session.suggestion);
   sheets.openManager();
-  assert.equal(session.leave.ask.kind, 'result');
+  assert.equal(asked(session).kind, 'result');
   session.leave.answerLeave('leave');
   assert.deepEqual([session.suggestion, sheets.screen], [null, 'sheets']);
   assert.equal(sheets.note, RESULT_DISCARDED_TEXT);
@@ -69,8 +71,9 @@ test('unsettled: the store asks the open set page, with no side effect, for a dr
   await tick();
   const answered = session.fill.fill();
   assert.equal(sheets.hasUnsettled(), true); // running
-  const { answer } = solver.held.shift();
-  await answer();
+  const heldRequest = solver.held.shift();
+  assert.ok(heldRequest, 'the solve is held');
+  await heldRequest.answer();
   await answered;
   assert.ok(session.suggestion);
   assert.equal(sheets.hasUnsettled(), true); // waiting result
@@ -108,17 +111,30 @@ function waitingResult() {
   return Object.freeze({ suggested: Object.freeze({}), declined: Object.freeze({ rows: Object.freeze([]), meal: false }) });
 }
 
-/* A key event as pageKey reads it. */
-function keyEvent(key, extra = {}) {
+/* A key event as pageKey reads it, and whether the page took it (`prevented`). */
+interface FakeKeyEvent {
+  key: string;
+  target: null;
+  defaultPrevented: boolean;
+  prevented: boolean;
+  preventDefault(): void;
+}
+function keyEvent(key: string, { defaultPrevented = false } = {}): FakeKeyEvent {
   return {
     key,
     target: null,
+    defaultPrevented,
     prevented: false,
     preventDefault() {
       this.prevented = true;
     },
-    ...extra,
   };
+}
+
+/* The question the leave guard is asking; fails the test when there is none. */
+function asked(session: { leave: { ask: LeaveQuestion | null } }): LeaveQuestion {
+  assert.ok(session.leave.ask, 'no question is asked');
+  return session.leave.ask;
 }
 
 test('Escape on the set page: layers of the overlay manager take it first; with none open it discards a waiting result', () => {
@@ -147,7 +163,7 @@ test('Escape that a layer already handled (defaultPrevented) does not also answe
   const { session, sheets } = bind(twoToFill());
   session.edits.pick(HEAD, SAGE_IDS.head);
   sheets.closeSet();
-  assert.equal(session.leave.ask.kind, 'draft');
+  assert.equal(asked(session).kind, 'draft');
   const handled = keyEvent('Escape', { defaultPrevented: true });
   session.leave.pageKey(handled);
   assert.deepEqual([session.leave.ask?.kind, handled.prevented], ['draft', false], 'the question is still asked');

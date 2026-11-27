@@ -4,13 +4,15 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TYPING_DEBOUNCE_MS, numberBox } from '../../../src/ui/number-field.ts';
 import { TARGET_GCD_RANGE } from '../../../src/ui/job-sync-panel.ts';
+import type { NumberBoxOptions } from '../../../src/ui/number-field.ts';
+import { FakeInput, FakeInputEvent, dispatchTo, stubGlobal } from '../helpers/dom-fakes.ts';
 
-/* A box bound to one value: {field, value(), leave(text)}; leave types `text` and leaves the box. */
-function box(start, lo, hi, options) {
+/* A box bound to one value: {value(), leave(text), type(text), step(text)}; leave types `text` and leaves the box. */
+function box(start: number | string, lo: number, hi: number | (() => number), options: NumberBoxOptions<string> = {}) {
   let value = start;
   const field = numberBox(
     () => value,
-    v => {
+    (v: number | string) => {
       value = v;
     },
     lo,
@@ -18,15 +20,15 @@ function box(start, lo, hi, options) {
     options,
   );
   /* types `text` and leaves the box; returns what the box shows afterwards */
-  const leave = text => {
-    const input = { value: text };
-    field.onChange({ target: input });
+  const leave = (text: string): string => {
+    const input = new FakeInput(text);
+    dispatchTo(input, field.onChange, new Event('change'));
     return input.value;
   };
   /* types `text` (a typed edit: an InputEvent with an inputType) */
-  const type = text => field.onInput({ target: { value: text }, inputType: 'insertText' });
+  const type = (text: string): void => dispatchTo(new FakeInput(text), field.onInput, new FakeInputEvent('insertText'));
   /* steps the box to `text` with the mouse wheel or an arrow key (an input event with no inputType) */
-  const step = text => field.onInput({ target: { value: text } });
+  const step = (text: string): void => dispatchTo(new FakeInput(text), field.onInput, new Event('input'));
   return { value: () => value, leave, type, step };
 }
 
@@ -124,7 +126,7 @@ test("number box options: empty commits a filter's '' and decimals keeps the GCD
 });
 
 test('number box options: onEmpty runs when an empty box is left, with the box', () => {
-  const seen = [];
+  const seen: string[] = [];
   const b = box(70, 1, 100, { live: true, onEmpty: input => seen.push(input.value) });
   b.leave('60');
   b.leave('');
@@ -136,14 +138,14 @@ test('number box options: onEmpty runs when an empty box is left, with the box',
    value; a live box (the synced level) commits each valid value at once. */
 test('number box typing: one commit after the keys stop, of the last value; a live box commits each value at once', t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
-  const commits = [];
+  const commits: number[] = [];
   const field = numberBox(
     () => commits.at(-1) ?? 50,
     v => commits.push(v),
     1,
     999,
   );
-  const type = text => field.onInput({ target: { value: text }, inputType: 'insertText' });
+  const type = (text: string): void => dispatchTo(new FakeInput(text), field.onInput, new FakeInputEvent('insertText'));
   type('1');
   type('12');
   t.mock.timers.tick(TYPING_DEBOUNCE_MS - 1);
@@ -154,11 +156,11 @@ test('number box typing: one commit after the keys stop, of the last value; a li
   assert.deepEqual(commits, [123]);
   // Enter or leaving the box before the wait ends commits at once, and the waiting commit is dropped
   type('130');
-  field.onChange({ target: { value: '130' } });
+  dispatchTo(new FakeInput('130'), field.onChange, new Event('change'));
   t.mock.timers.tick(TYPING_DEBOUNCE_MS);
   assert.deepEqual(commits, [123, 130]);
 
-  const live = [];
+  const live: number[] = [];
   const level = numberBox(
     () => live.at(-1) ?? 100,
     v => live.push(v),
@@ -167,7 +169,7 @@ test('number box typing: one commit after the keys stop, of the last value; a li
     { live: true },
   );
   for (const text of ['9', '90', '900']) {
-    level.onInput({ target: { value: text } });
+    dispatchTo(new FakeInput(text), level.onInput, new Event('input'));
   }
   assert.deepEqual(live, [9, 90]); // 900 is out of range
 });
@@ -183,9 +185,9 @@ test('Target GCD box: 0.50 to 2.50 seconds; a value outside moves to the nearest
 /* A draw that runs again because another setting of the same part changed (a Gear categories box changed the Gear
    browser's filters) must leave the text typed in this box alone: only a change of this box's own stored value rewrites it. */
 test('number box: a run of the binding that finds the stored value unchanged keeps the text typed in the box, focused or not', () => {
-  globalThis.document = { activeElement: null };
+  const restoreDocument = stubGlobal('document', { activeElement: null });
   try {
-    let stored = 61;
+    let stored: number | '' = 61;
     const field = numberBox(
       () => stored,
       v => {
@@ -195,7 +197,7 @@ test('number box: a run of the binding that finds the stored value unchanged kee
       Number.POSITIVE_INFINITY,
       { empty: '' },
     );
-    const input = { value: '' };
+    const input = new FakeInput();
     const run = () => field.shownValue(input);
     input.value = String(run()); // the first run shows the stored value
     assert.equal(input.value, '61');
@@ -208,12 +210,12 @@ test('number box: a run of the binding that finds the stored value unchanged kee
     stored = '';
     assert.equal(run(), '');
   } finally {
-    delete globalThis.document;
+    restoreDocument();
   }
 });
 
 test('number box: a typed value the setting lowers back to what it was is shown lowered, not kept as typed', async () => {
-  globalThis.document = { activeElement: null };
+  const restoreDocument = stubGlobal('document', { activeElement: null });
   try {
     let stored = 135; // a cap the level allows; 500 is lowered to it
     const field = numberBox(
@@ -224,29 +226,29 @@ test('number box: a typed value the setting lowers back to what it was is shown 
       1,
       795,
     );
-    const input = { value: '' };
+    const input = new FakeInput();
     const run = () => field.shownValue(input);
     input.value = String(run());
     input.value = '500';
-    field.onChange({ target: input }); // typed and left: the setting ends where it was
+    dispatchTo(input, field.onChange, new Event('change')); // typed and left: the setting ends where it was
     assert.equal(stored, 135);
     assert.equal(run(), 135, 'the page updates the box after the box wrote');
     await Promise.resolve(); // the page has updated
     input.value = '134.6';
     assert.equal(run(), '134.6', 'a later run that finds the setting unchanged keeps the typed text');
   } finally {
-    delete globalThis.document;
+    restoreDocument();
   }
 });
 
 /* A Lit element draws for its own reasons (the flag of the text typed) before the page has stored what the box committed: that draw
    must not put the old value back over the text. */
 test('number box: a draw after a commit and before the page stores it keeps the text typed ("60.7" for the 61 on its way)', async () => {
-  const input = { value: '' };
-  globalThis.document = { activeElement: input };
+  const input = new FakeInput();
+  const restoreDocument = stubGlobal('document', { activeElement: input });
   try {
     let stored = 60;
-    let committed;
+    let committed: number | undefined;
     const field = numberBox(
       () => stored,
       v => {
@@ -259,7 +261,7 @@ test('number box: a draw after a commit and before the page stores it keeps the 
     const run = () => field.shownValue(input);
     input.value = String(run());
     input.value = '60.7';
-    field.onInput({ target: input, inputType: 'insertText' });
+    dispatchTo(input, field.onInput, new FakeInputEvent('insertText'));
     assert.equal(committed, 61);
     assert.equal(run(), '60.7', 'the page still holds 60');
     stored = committed;
@@ -267,6 +269,6 @@ test('number box: a draw after a commit and before the page stores it keeps the 
     await Promise.resolve();
     assert.equal(run(), '60.7', 'a later run finds the stored value unchanged');
   } finally {
-    delete globalThis.document;
+    restoreDocument();
   }
 });

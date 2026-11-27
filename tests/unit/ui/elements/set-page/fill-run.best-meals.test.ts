@@ -5,6 +5,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { FoodMenuModel } from '../../../../../src/ui/elements/set-page/food-menu-model.ts';
+import type { MealMenuData } from '../../../../../src/ui/elements/set-page/food-menu-model.ts';
+import type { PageView } from '../../../../../src/ui/elements/set-page/set-page-types.ts';
+import type { SavedGearSet } from '../../../../../src/ui/sheets/saved-types.ts';
 import { fakeFrames } from '../../../helpers/frames.ts';
 import { bind, twoToFill } from '../../../helpers/set-page-bind.ts';
 import { SAGE_IDS } from '../../../helpers/sheet-fixtures.ts';
@@ -17,7 +20,7 @@ const HANDS = 4;
 const NO_NOTE = { note: '' };
 
 /* A page for the two-rows-to-fill Sage set with Food on and Critical Hit the goal, an Auto-fill run and its result waiting. */
-async function filled(sheetOptions = {}) {
+async function filled(sheetOptions: Parameters<typeof bind>[2] = {}) {
   const page = bind(twoToFill(), undefined, sheetOptions);
   page.session.settings.setGoalField('food', true);
   page.session.settings.setGoal(0, 'crit');
@@ -25,15 +28,41 @@ async function filled(sheetOptions = {}) {
   assert.equal(page.view().mode, 'suggestion');
   return page;
 }
-const mealsOf = menu => menu.groups.flatMap(g => g.items);
+const mealsOf = <Meal>(menu: { groups: { items: Meal[] }[] }): Meal[] => menu.groups.flatMap(group => group.items);
+
+/* The first meal of the menu that is not tagged "best for goal"; fails the test when every meal is. */
+function untaggedMeal(menu: MealMenuData) {
+  const meal = mealsOf(menu).find(item => !item.best);
+  assert.ok(meal, 'every meal is tagged');
+  return meal;
+}
+
+/* How many changes the waiting suggestion makes; fails the test when none waits. */
+function suggestedTotal(view: PageView): number {
+  assert.ok(view.suggest, 'no suggestion is waiting');
+  return view.suggest.total;
+}
+
+/* The saved gear set the page is open on; fails the test when none is. */
+function savedSet(sheets: { currentSet: SavedGearSet | null }): SavedGearSet {
+  assert.ok(sheets.currentSet, 'no gear set is open');
+  return sheets.currentSet;
+}
+/* The meals tagged "best for goal" in the saved set; fails the test when the set has no list. */
+function tiedMeals(sheets: { currentSet: SavedGearSet | null }): string[] {
+  const { bestMeals } = savedSet(sheets);
+  assert.ok(bestMeals, 'the set has no tie list');
+  return bestMeals;
+}
 
 test('Auto-fill then Apply whole: the tie list is saved, the Food row says "best for goal", the menu offers the switch', async () => {
   for (const sheetOptions of [{}, { level: 50, sync: { on: true, cap: 123 } }]) {
     const { session, sheets, storage, view, mealMenu } = await filled(sheetOptions);
     session.fill.applySuggestion();
-    const saved = sheets.currentSet;
-    assert.ok(saved.bestMeals.length > 1, 'several meals tie');
-    assert.ok(saved.bestMeals.includes(saved.meal), 'the set holds one of them');
+    const saved = savedSet(sheets);
+    const tied = tiedMeals(sheets);
+    assert.ok(tied.length > 1, 'several meals tie');
+    assert.ok(saved.meal !== null && tied.includes(saved.meal), 'the set holds one of them');
     assert.ok(view().rows.food.best.note.length > 0, 'the meal is tagged');
     // the Food menu: the switch is offered, the tagged meals are marked
     const menu = mealMenu();
@@ -43,10 +72,10 @@ test('Auto-fill then Apply whole: the tie list is saved, the Food row says "best
         .filter(x => x.best)
         .map(x => x.key)
         .sort(),
-      [...saved.bestMeals].sort(),
+      [...tied].sort(),
     );
     // a reload reads it back
-    assert.deepEqual(createSheetsFacade({ storage }).sheet('s_1').sets[0].bestMeals, saved.bestMeals);
+    assert.deepEqual(createSheetsFacade({ storage }).sheet('s_1')?.sets[0].bestMeals, tied);
   }
 });
 
@@ -58,7 +87,7 @@ test('a suggestion is not "best for goal" yet; a draft of the meal alone keeps t
   assert.equal(mealMenu().hasBest, true);
   const tied = mealsOf(mealMenu()).filter(x => x.best).length;
   // a meal picked by hand: a draft that still offers the switch and the tagged meals; the note leaves the row
-  const other = mealsOf(mealMenu()).find(x => !x.best);
+  const other = untaggedMeal(mealMenu());
   session.edits.setMeal(other.key);
   assert.equal(view().mode, 'draft');
   assert.deepEqual(view().rows.food.best, NO_NOTE, 'the picked meal is not tagged: no note');
@@ -78,21 +107,21 @@ test('a suggestion is not "best for goal" yet; a draft of the meal alone keeps t
 test('a piece applied by hand drops the tags; a meal picked by hand and applied, or a pin, keeps them', async () => {
   const { session, sheets, view } = await filled();
   session.fill.applySuggestion();
-  const tied = sheets.currentSet.bestMeals;
+  const tied = tiedMeals(sheets);
   session.edits.togglePin(HANDS);
-  assert.deepEqual(sheets.currentSet.bestMeals, tied, 'a pin changes no piece');
+  assert.deepEqual(savedSet(sheets).bestMeals, tied, 'a pin changes no piece');
   session.edits.pick(FEET, SAGE_IDS.feet);
   session.edits.applyDraft();
-  assert.equal(sheets.currentSet.bestMeals, null);
+  assert.equal(savedSet(sheets).bestMeals, null);
   assert.deepEqual(view().rows.food.best, NO_NOTE);
 
   const second = await filled();
   second.session.fill.applySuggestion();
-  const other = mealsOf(second.mealMenu()).find(x => !x.best);
+  const other = untaggedMeal(second.mealMenu());
   second.session.edits.setMeal(other.key);
   second.session.edits.applyDraft();
-  assert.ok(second.sheets.currentSet.bestMeals.length > 1, 'the list stays');
-  assert.equal(second.sheets.currentSet.meal, other.key);
+  assert.ok(tiedMeals(second.sheets).length > 1, 'the list stays');
+  assert.equal(savedSet(second.sheets).meal, other.key);
   assert.deepEqual(second.view().rows.food.best, NO_NOTE, 'no note beside a meal that is not tagged');
   assert.equal(second.mealMenu().hasBest, true, 'the switch stays after Apply');
 });
@@ -100,9 +129,9 @@ test('a piece applied by hand drops the tags; a meal picked by hand and applied,
 test('a change of the Auto-fill settings drops it, as it drops a waiting result', async () => {
   const { session, sheets, view } = await filled();
   session.fill.applySuggestion();
-  assert.ok(sheets.currentSet.bestMeals);
+  assert.ok(savedSet(sheets).bestMeals);
   session.settings.setGoal(1, 'det');
-  assert.equal(sheets.currentSet.bestMeals, null);
+  assert.equal(savedSet(sheets).bestMeals, null);
   assert.deepEqual(view().rows.food.best, NO_NOTE);
 });
 
@@ -110,19 +139,19 @@ test('a declined Take box (a piece, or the meal) and an Auto-fill with Food off 
   const declined = await filled();
   declined.session.fill.setTake(FEET, false);
   declined.session.fill.applySuggestion();
-  assert.equal(declined.sheets.currentSet.bestMeals, null);
+  assert.equal(savedSet(declined.sheets).bestMeals, null);
 
   const noMeal = await filled();
   noMeal.session.fill.setTake(null, false);
   noMeal.session.fill.applySuggestion();
-  assert.equal(noMeal.sheets.currentSet.bestMeals, null);
+  assert.equal(savedSet(noMeal.sheets).bestMeals, null);
 
   const off = bind(twoToFill());
   off.session.settings.setGoal(0, 'crit');
   off.session.settings.setGoalField('food', false);
   await off.session.fill.fill();
   off.session.fill.applySuggestion();
-  assert.deepEqual([off.sheets.currentSet.bestMeals, off.sheets.currentSet.meal], [null, null]);
+  assert.deepEqual([savedSet(off.sheets).bestMeals, savedSet(off.sheets).meal], [null, null]);
   assert.deepEqual(off.view().rows.food.best, NO_NOTE);
 });
 
@@ -131,29 +160,29 @@ test('Auto-fill again after a hand edit (the piece unpinned) saves a new list; a
   session.fill.applySuggestion();
   session.edits.pick(FEET, SAGE_IDS.feet);
   session.edits.applyDraft();
-  assert.equal(sheets.currentSet.bestMeals, null);
+  assert.equal(savedSet(sheets).bestMeals, null);
   session.edits.togglePin(FEET);
   await session.fill.fill();
-  assert.ok(view().suggest.total > 0);
+  assert.ok(suggestedTotal(view()) > 0);
   session.fill.applySuggestion();
-  const kept = sheets.currentSet.bestMeals;
+  const kept = tiedMeals(sheets);
   assert.ok(kept.length > 1);
   await session.fill.fill();
-  assert.equal(view().suggest.total, 0, 'nothing to change: Apply is off');
-  assert.deepEqual(sheets.currentSet.bestMeals, kept, 'the list is saved without Apply');
+  assert.equal(suggestedTotal(view()), 0, 'nothing to change: Apply is off');
+  assert.deepEqual(savedSet(sheets).bestMeals, kept, 'the list is saved without Apply');
   session.fill.discardSuggestion();
-  assert.deepEqual(sheets.currentSet.bestMeals, kept);
+  assert.deepEqual(savedSet(sheets).bestMeals, kept);
 });
 
 test('a set that is already what Auto-fill makes gets its list from an Auto-fill with nothing to change, with Apply off', async () => {
   const { session, sheets, view } = await filled();
   session.fill.applySuggestion();
-  const tied = sheets.currentSet.bestMeals;
-  sheets.updateSet(sheets.currentSet.id, { bestMeals: null });
+  const tied = tiedMeals(sheets);
+  sheets.updateSet(savedSet(sheets).id, { bestMeals: null });
   assert.deepEqual(view().rows.food.best, NO_NOTE);
   await session.fill.fill();
-  assert.equal(view().suggest.total, 0, 'nothing to change');
-  assert.deepEqual(sheets.currentSet.bestMeals, tied, 'the Auto-fill itself saved the list');
+  assert.equal(suggestedTotal(view()), 0, 'nothing to change');
+  assert.deepEqual(savedSet(sheets).bestMeals, tied, 'the Auto-fill itself saved the list');
   session.fill.discardSuggestion();
   assert.ok(view().rows.food.best.note.length > 0, 'the meal is tagged again');
 });

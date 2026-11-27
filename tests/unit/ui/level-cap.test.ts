@@ -16,7 +16,7 @@ import { MAX_REAL } from '../../../src/core/tables.ts';
 /* The cap follows the synced level (owner's decision, 2026-10-18): a cap above the best gear made for the level
    (capCeiling) is lowered to it, never raised, and only while item level sync is on and level sync can apply. */
 test('limitCapToLevel: lowers a cap above what the level allows, and leaves every other cap', () => {
-  const app = s => Object.assign(defaultState(), { sync: true }, s);
+  const app = (s: { cap: number | null; level: number; sync?: boolean }) => Object.assign(defaultState(), { sync: true }, s);
   for (const [cap, level, want] of [
     [500, 50, 135], // level 50's weapons
     [500, 55, 136], // between level caps: the level's own item level

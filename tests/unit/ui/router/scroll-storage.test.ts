@@ -6,7 +6,7 @@ import { SCROLL_KEY, readScrollPositions, tabStorage, writeScrollPositions } fro
 import { fakeStorage } from '../../helpers/sheet-fixtures.ts';
 
 /* A storage that holds `text` under the scroll key. */
-function storageWith(text) {
+function storageWith(text: string) {
   const storage = fakeStorage();
   storage.setItem(SCROLL_KEY, text);
   return storage;
@@ -55,7 +55,7 @@ test('scroll positions: a refusing or missing storage is ignored on write; a ses
     if (original) {
       Object.defineProperty(globalThis, 'sessionStorage', original);
     } else {
-      delete globalThis.sessionStorage;
+      Reflect.deleteProperty(globalThis, 'sessionStorage');
     }
   }
 });

@@ -13,9 +13,11 @@ import {
   loadSaved,
   save,
 } from '../../../src/ui/state.ts';
+import type { SavedState } from '../../../src/ui/state.ts';
 import { limitCapToLevel } from '../../../src/ui/level-cap.ts';
 import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.ts';
 import { STORE_KEY } from '../../../src/ui/store-key.ts';
+import { fakeStorage } from '../helpers/fakes.ts';
 import { browseFiltered } from '../../../src/ui/views/gear.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { DEFAULT_JOB, JOBS } from '../../../src/core/constants.ts';
@@ -23,9 +25,23 @@ import { MAX_REAL } from '../../../src/core/tables.ts';
 import { capCeiling } from '../../../src/core/sync-target.ts';
 
 const D = defaultState();
-const clone = o => JSON.parse(JSON.stringify(o));
+/* A JSON object: what a save holds before restoreState checks it. */
+type Tree = Record<string, unknown>;
+const isTree = (value: unknown): value is Tree => typeof value === 'object' && value !== null && !Array.isArray(value);
+/* The object at `keys` below `root`; fails the test where the path leaves the objects. */
+function treeAt(root: Tree, keys: readonly string[]): Tree {
+  return keys.reduce<Tree>((node, key) => {
+    const next = node[key];
+    assert.ok(isTree(next), key);
+    return next;
+  }, root);
+}
+/* A deep copy through JSON, the way a save is stored and read back. */
+const clone = (value: object): Tree => JSON.parse(JSON.stringify(value));
+/* The state's top-level fields as a JSON object (a shallow copy: the objects inside are the state's own). */
+const toTree = (state: SavedState): Tree => Object.fromEntries(Object.entries(state));
 /* Defaults for `job`, or for the default job (null; DEFAULT_JOB, Paladin). */
-const fresh = job => {
+const fresh = (job: string | null) => {
   const s = defaultState();
   for (const target of [s, s.piece, s.browse]) {
     target.job = job ?? DEFAULT_JOB;
@@ -34,15 +50,15 @@ const fresh = job => {
   return s;
 };
 /* The Job and sync panel's fields: the open tab's copy at the top and each tab's own in its group. */
-const PANEL_KEYS = ['job', 'cap', 'sync', 'level'];
-const PANEL_FIELDS = [null, 'piece', 'browse'];
-const withoutPanel = o => Object.fromEntries(Object.entries(o).filter(([k]) => !PANEL_KEYS.includes(k)));
+const PANEL_KEYS = ['job', 'cap', 'sync', 'level'] as const;
+const PANEL_FIELDS = [null, 'piece', 'browse'] as const;
+const withoutPanel = (o: object) => Object.fromEntries(Object.entries(o).filter(([k]) => !(PANEL_KEYS as readonly string[]).includes(k)));
 /* The state as the page saves it (store.persisted): without the open tab's top-level copy of its panel. */
-const savedForm = s => withoutPanel(s);
+const savedForm = (s: SavedState) => withoutPanel(s);
 /* The screen a restore opens on (the address names it; it is not saved): the math tab on its GCD view. */
 const OPEN = { tab: 'math', mathTab: 'gcd' };
 /* A full, valid healer save that differs from the defaults in every field. */
-function validSave() {
+function validSave(): Tree {
   return {
     job: 'WHM',
     cap: 290,
@@ -67,25 +83,25 @@ function validSave() {
 }
 
 /* Restore a valid save with one field replaced; the result must equal the valid restore with only that field reset. */
-function corrupt(path, value) {
+function corrupt(path: string, value: unknown): SavedState {
   const raw = validSave();
   const keys = path.split('.');
-  const last = keys.pop();
-  keys.reduce((o, k) => o[k], raw)[last] = value;
+  const last = keys.pop() as string;
+  treeAt(raw, keys)[last] = value;
   return restoreState(raw);
 }
-function expectFieldDefault(path, value, expected) {
+function expectFieldDefault(path: string, value: unknown, expected: unknown): void {
   const got = corrupt(path, value);
   const want = restoreState(validSave());
   const keys = path.split('.');
-  const last = keys.pop();
-  if (keys.length === 0 && PANEL_KEYS.includes(last)) {
+  const last = keys.pop() as string;
+  if (keys.length === 0 && (PANEL_KEYS as readonly string[]).includes(last)) {
     // the save is the older one panel: a panel field is every tab's
     for (const group of PANEL_FIELDS) {
-      (group ? want[group] : want)[last] = expected;
+      Object.assign(group ? treeAt(toTree(want), [group]) : want, { [last]: expected });
     }
   }
-  keys.reduce((o, k) => o[k], want)[last] = expected;
+  Object.assign(keys.length ? treeAt(toTree(want), keys) : want, { [last]: expected });
   assert.deepEqual(got, want, `${path} = ${JSON.stringify(value)}`);
 }
 
@@ -102,7 +118,12 @@ test('a valid full saved state keeps every field, and the restored state survive
   // an older save has one panel, which every tab takes; the open tab (math) shows its copy
   const { job, cap, sync, level, ...rest } = raw;
   const panel = { job, cap, sync, level };
-  assert.deepEqual(withoutPanel(s), { ...rest, ...OPEN, piece: { ...rest.piece, ...panel }, browse: { ...rest.browse, ...panel } });
+  assert.deepEqual(withoutPanel(s), {
+    ...rest,
+    ...OPEN,
+    piece: { ...treeAt(raw, ['piece']), ...panel },
+    browse: { ...treeAt(raw, ['browse']), ...panel },
+  });
   assert.deepEqual(
     PANEL_KEYS.map(k => s[k]),
     PANEL_KEYS.map(k => panel[k]),
@@ -155,7 +176,7 @@ test('the open tab and math view are not saved: the screen the restore is given 
   const s = restoreState(validSave(), { tab: 'browse', mathTab: 'tiers' });
   assert.deepEqual([s.tab, s.mathTab], ['browse', 'tiers']);
   // an unknown tab or view, or none, opens the first
-  for (const open of [{ tab: 42, mathTab: 'nope' }, { tab: 'opt', mathTab: 'sync' }, { tab: 'pool' }, {}, undefined]) {
+  for (const open of [{ tab: '42', mathTab: 'nope' }, { tab: 'opt', mathTab: 'sync' }, { tab: 'pool' }, {}, undefined]) {
     const opened = restoreState(validSave(), open);
     assert.deepEqual([opened.tab, opened.mathTab], ['sheets', 'piece'], JSON.stringify(open));
   }
@@ -171,7 +192,9 @@ test('nested objects that are not objects fall back to their defaults', () => {
   for (const k of ['piece', 'gen', 'browse']) {
     for (const bad of [null, 'x', 5, []]) {
       const s = corrupt(k, bad);
-      assert.deepEqual(withoutPanel(s[k] ?? {}), withoutPanel(def[k] ?? {}), `${k} = ${JSON.stringify(bad)}`);
+      const restored = toTree(s);
+      const defaults = toTree(def);
+      assert.deepEqual(withoutPanel(restored[k] ?? {}), withoutPanel(defaults[k] ?? {}), `${k} = ${JSON.stringify(bad)}`);
       assert.equal(s.cap, 290);
     }
   }
@@ -266,14 +289,14 @@ test("the gear browser's Gear categories boxes and market board each fall back o
   expectFieldDefault(`${part}.market`, 'yes', true); // not a boolean: the default
   expectFieldDefault('browse.exclude', null, DEFAULT_EXCLUDE);
   const older = validSave();
-  delete older.browse.exclude; // a save from before the field existed
+  delete treeAt(older, ['browse']).exclude; // a save from before the field existed
   assert.deepEqual(restoreState(older).browse.exclude, DEFAULT_EXCLUDE);
 });
 
 test("a save from the gear pool days: the pool and the browser's list switch are dropped, the rest kept", () => {
   const raw = validSave();
   raw.pool = [{ id: 'i1', name: 'Ring A', type: 'ring', ilvl: 130, stats: { main: 20 }, copies: 2, src: 'game' }];
-  raw.browse.show = 'pool';
+  treeAt(raw, ['browse']).show = 'pool';
   const s = restoreState(raw);
   assert.equal('pool' in s, false);
   assert.equal('show' in s.browse, false);
@@ -284,12 +307,13 @@ test('a save from another role is repaired as before', () => {
   // tank: no Piety; DH is not a tank's default third substat
   const raw = validSave();
   raw.job = 'WAR';
-  raw.piece.subs = ['crit', 'ten'];
+  const rawPiece = treeAt(raw, ['piece']);
+  rawPiece.subs = ['crit', 'ten'];
   const s = restoreState(raw);
   assert.equal(s.job, 'WAR');
   assert.deepEqual(s.piece.subs, ['crit', 'ten']); // WAR has Tenacity as its special substat
   // Piety is no stat of a Warrior: the second substat is dropped
-  raw.piece.subs = ['crit', 'piety'];
+  rawPiece.subs = ['crit', 'piety'];
   assert.deepEqual(restoreState(raw).piece.subs, ['crit', null]);
   // melee: no spec stat at all
   raw.job = 'MNK';
@@ -298,7 +322,7 @@ test('a save from another role is repaired as before', () => {
   assert.deepEqual(m.piece.subs, ['crit', null]);
   // PLD keeps an off-hand piece slot, two-handed jobs do not
   raw.job = 'PLD';
-  raw.piece.slot = 'offhand';
+  rawPiece.slot = 'offhand';
   assert.equal(restoreState(raw).piece.slot, 'offhand');
   raw.job = 'WAR';
   const w = restoreState(raw);
@@ -319,7 +343,7 @@ test("a saved level above the job's level cap is clamped to it", () => {
 });
 
 test('resetForJob: a job switch keeps the substats the new job can use (audit 11 #2)', () => {
-  const switched = (fromId, toId, subs) => {
+  const switched = (fromId: string, toId: string, subs: SavedState['piece']['subs']) => {
     const s = fresh(fromId);
     s.piece.subs = subs;
     resetForJob(s, makeJobContext(toId), makeJobContext(fromId));
@@ -349,10 +373,11 @@ test('restoreState: a saved cap above what the saved level allows is lowered', (
 /* The level limits the cap whatever the job: a Blue Mage at 80 or a Beastmaster at 50 (their own level caps) get the
    level's ceiling, the same on restore as on the live page. */
 test("restoreState: a job at its own level cap gets the level's ceiling, as the live page does", () => {
-  for (const [job, level] of [
+  const atLevelCap: [string, number][] = [
     ['BLU', 80],
     ['BST', 50],
-  ]) {
+  ];
+  for (const [job, level] of atLevelCap) {
     const restored = restoreState({ job, sync: true, cap: 700, level });
     assert.equal(restored.cap, capCeiling(level), job);
     const live = { ...restored, jobCtx: makeJobContext(job) };
@@ -391,16 +416,26 @@ test('loadSaved and save: a throwing localStorage is ignored; a working one roun
   // Node may have a localStorage of its own: put back exactly what was there
   const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
   t.after(() => {
-    delete globalThis.localStorage;
+    Reflect.deleteProperty(globalThis, 'localStorage');
     if (original) {
       Object.defineProperty(globalThis, 'localStorage', original);
     }
   });
-  delete globalThis.localStorage;
-  const blocked = () => {
+  Reflect.deleteProperty(globalThis, 'localStorage');
+  const blocked = (): never => {
     throw new Error('SecurityError: storage is blocked');
   };
-  globalThis.localStorage = { getItem: blocked, setItem: blocked };
+  const blockedStorage: Storage = {
+    get length() {
+      return blocked();
+    },
+    clear: blocked,
+    key: blocked,
+    getItem: blocked,
+    setItem: blocked,
+    removeItem: blocked,
+  };
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, writable: true, value: blockedStorage });
   assert.equal(loadSaved(), null);
   assert.doesNotThrow(() => save('{"job":"SGE"}'));
   assert.equal(save('{}'), false, 'a write that did not happen says so');
@@ -411,14 +446,14 @@ test('loadSaved and save: a throwing localStorage is ignored; a working one roun
   assert.equal(loadSaved(), null);
   assert.doesNotThrow(() => save('{}'));
 
-  const kept = new Map();
+  const kept = fakeStorage();
   Object.defineProperty(globalThis, 'localStorage', {
     configurable: true,
     writable: true,
-    value: { getItem: key => kept.get(key) ?? null, setItem: (key, value) => kept.set(key, value) },
+    value: kept,
   });
   assert.equal(save(JSON.stringify({ job: 'WAR' })), true);
-  assert.deepEqual([...kept.keys()], [STORE_KEY]);
+  assert.deepEqual([...kept.data.keys()], [STORE_KEY]);
   assert.equal(restoreState(loadSaved()).job, 'WAR');
 });
 

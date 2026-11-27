@@ -4,21 +4,18 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createOverlayBridge } from '../../../../../src/ui/elements/shared/overlay-bridge.ts';
 import { createOverlays } from '../../../../../src/ui/overlays.ts';
-
-/* A fake document that keeps the manager's listeners and sends them an event. */
-function fakeDocument() {
-  const listeners = {};
-  return {
-    addEventListener: (type, fn) => {
-      listeners[type] = fn;
-    },
-    send: (type, event) => listeners[type]?.({ defaultPrevented: false, ...event }),
-  };
-}
+import type { OverlayLayer } from '../../../../../src/ui/overlays.ts';
+import type { OverlayBridgeOptions } from '../../../../../src/ui/elements/shared/overlay-bridge.ts';
+import { FakeDocument, element } from '../../../helpers/dom-fakes.ts';
 
 /* A Zag layer's api: it is open or not, and `quietCloses` counts the closes the bridge asked for without the focus moving. */
-function fakeLayerApi() {
-  const api = {
+interface FakeLayerApi {
+  open: boolean;
+  quietCloses: number;
+  closeWithoutFocus: () => void;
+}
+function fakeLayerApi(): FakeLayerApi {
+  const api: FakeLayerApi = {
     open: false,
     quietCloses: 0,
     closeWithoutFocus: () => {
@@ -30,8 +27,8 @@ function fakeLayerApi() {
 }
 
 /* A bridge over a fake api and a manager on a fake document. */
-function setup(options = {}) {
-  const doc = fakeDocument();
+function setup(options: Partial<OverlayBridgeOptions> = {}) {
+  const doc = new FakeDocument();
   const manager = createOverlays(() => doc);
   const api = fakeLayerApi();
   const bridge = createOverlayBridge({
@@ -47,15 +44,16 @@ function setup(options = {}) {
 }
 
 /* An app layer (one the manager closes itself) with a counter of its closes. */
-function appLayer(id, extra = {}) {
-  const layer = { id, root: () => null, opener: () => null, closed: 0, close: () => (layer.closed += 1), ...extra };
+type CountedLayer = OverlayLayer & { closed: number };
+function appLayer(id: string, extra: Partial<OverlayLayer> = {}): CountedLayer {
+  const layer: CountedLayer = { id, root: () => null, opener: () => null, closed: 0, close: () => (layer.closed += 1), ...extra };
   return layer;
 }
 
 /* What a Zag layer does on an Escape: its capturing listener runs first, calls the guard, and closes the layer unless the
    guard prevented the event; then the page's manager listener sees the same event. */
-function pressEscape({ doc, api, bridge }) {
-  const event = { key: 'Escape', defaultPrevented: false, preventDefault: () => (event.defaultPrevented = true) };
+function pressEscape({ doc, api, bridge }: ReturnType<typeof setup>): void {
+  const event = { key: 'Escape', defaultPrevented: false, target: null, preventDefault: () => (event.defaultPrevented = true) };
   bridge.guardEscape(event);
   if (!event.defaultPrevented && api.open) {
     event.preventDefault();
@@ -80,7 +78,7 @@ test('overlay bridge: an open Zag layer is registered with the manager, and a cl
 });
 
 test('overlay bridge: a draw queued before the element left the page does not register its open layer again', () => {
-  const left = { isConnected: true };
+  const left = element('page');
   const { manager, api, bridge } = setup({ root: () => left });
   api.open = true;
   bridge.sync();

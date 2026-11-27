@@ -4,21 +4,29 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../../src/core/tables.ts';
 import { AppRootModel, appRootSelection } from '../../../../../src/ui/elements/app/app-root-model.ts';
+import { inProcessSolver } from '../../../../../src/ui/solver.ts';
+import type { SetPagePorts } from '../../../../../src/ui/elements/set-page/session-types.ts';
+import type { SheetsFacade } from '../../../../../src/ui/store/sheets-facade.ts';
+import type { LeaveMove } from '../../../../../src/ui/store/sheets-actions.ts';
+import type { LinkClick } from '../../../../../src/ui/router/plain-click.ts';
 import { shallowEq } from '../../../../../src/ui/store/select.ts';
 import { restoreOpen } from '../../../helpers/common.ts';
 import { createStores } from '../../../helpers/stores.ts';
 
 /* The root's model over a real store of `saved`; `sheets` replaces the Sheets facade (a stand-in for the leave question). A tab opens
    on the next macrotask, as the page opens it one frame later. */
-function opened(saved = {}, sheets = undefined) {
+function opened(saved: Record<string, unknown> = {}, askLeave?: (move: LeaveMove) => boolean) {
   const stores = createStores(restoreOpen({ tab: 'sheets', ...saved }), { frame: callback => callback() });
-  const model = new AppRootModel({ ...stores, sheets: sheets ?? stores.sheets, setPagePorts: {} });
-  return { ...stores, model };
+  const sheets: SheetsFacade = askLeave ? { ...stores.sheets, askLeave } : stores.sheets;
+  const setPagePorts: SetPagePorts = { store: stores.store, sheets, solver: inProcessSolver(), maxReal: MAX_REAL };
+  const model = new AppRootModel({ ...stores, sheets, setPagePorts });
+  return { ...stores, sheets, model };
 }
+type Opened = ReturnType<typeof opened>;
 const settled = () => new Promise(resolve => setTimeout(resolve, 5));
 
 /* A plain click on a tab link (plain-click.ts). */
-const plain = { button: 0, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, preventDefault() {} };
+const plain: LinkClick = { button: 0, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, preventDefault() {} };
 
 test("the Job and sync strip is given the Gear browser's own panel, whichever tab is open", () => {
   const { app, model } = opened({
@@ -64,17 +72,15 @@ test('tab links: the math link names the open sub-tab; the tab being opened show
 /* A tab link (goTab): leaving the Sheets tab asks the set page first (ui/store/sheets-actions.ts askLeave); the answer opens the tab.
    Other tabs switch at once. */
 test('goTab: leaving the Sheets tab with something to settle asks first; the answer opens the tab', async () => {
-  let pending = null;
-  const sheets = {
-    askLeave: move => {
-      pending = move;
-      return true;
-    },
-  };
-  const { app, model } = opened({}, sheets);
+  let pending: LeaveMove | null = null;
+  const { app, model } = opened({}, move => {
+    pending = move;
+    return true;
+  });
   model.goTab('browse', plain);
   assert.equal(app.tab, 'sheets', 'the question is open: the tab stays');
-  pending();
+  assert.ok(pending, 'the question was asked');
+  (pending as LeaveMove)();
   assert.equal(app.pendingTab, 'browse', 'the tab is marked while it opens');
   await settled();
   assert.deepEqual([app.tab, app.pendingTab], ['browse', null], 'the answer opens the tab and clears the mark');
@@ -108,7 +114,7 @@ test("a note's end clears the note", () => {
 });
 
 /* The edits a user can make, each as a function of the stores. */
-const EDITS = {
+const EDITS: Record<string, (stores: Opened) => void> = {
   'the open tab': ({ app }) => app.showTab('math'),
   'the math sub-tab (the math link)': ({ app }) => app.showSub('gcd'),
   "the Gear browser's job": ({ app }) => app.setJob('BLM', 'browse'),
@@ -120,7 +126,7 @@ const EDITS = {
 };
 
 /* What the root draws, as text: every value the model reads. */
-const drawn = ({ app, sheets, model }) =>
+const drawn = ({ app, sheets, model }: Opened) =>
   JSON.stringify([
     app.tab,
     app.pendingTab,

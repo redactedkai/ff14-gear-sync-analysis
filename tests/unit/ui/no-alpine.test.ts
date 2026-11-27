@@ -23,9 +23,9 @@ const SCRIPT_USE = /\$store|\$watch|\$refs|\bAlpine\.\w|alpinejs/;
 
 /* The files under `dir` that hold Alpine code, as 'relative/path:line: text' strings (empty when there are none). `dir` is the
    src folder, or a stand-in for the self-test; a folder named `data` at the top is generated game data and is left out. */
-function alpineUses(dir) {
-  const found = [];
-  const files = readdirSync(dir, { recursive: true })
+function alpineUses(dir: string): string[] {
+  const found: string[] = [];
+  const files = readdirSync(dir, { recursive: true, encoding: 'utf8' })
     .map(file => file.replaceAll('\\', '/'))
     .filter(file => /\.(?:html|js|ts)$/.test(file) && !file.startsWith('data/'));
   for (const file of files) {

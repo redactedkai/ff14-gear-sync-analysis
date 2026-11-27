@@ -2,17 +2,22 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { UNLOAD_GUARD_OFF_KEY, installUnloadGuard, unloadGuardDisabled } from '../../../../src/ui/router/unload-guard.ts';
+import type { UnloadEvent } from '../../../../src/ui/router/unload-guard.ts';
 import { fakeStorage } from '../../helpers/sheet-fixtures.ts';
 
 /* A window stand-in that keeps the listener, and an unload event as the browser hands it. */
 function fakeWindow() {
-  const listeners = [];
+  const listeners: ((event: UnloadEvent) => void)[] = [];
   return {
-    addEventListener: (type, fn) => type === 'beforeunload' && listeners.push(fn),
+    addEventListener: (type: 'beforeunload', fn: (event: UnloadEvent) => void) => {
+      if (type === 'beforeunload') {
+        listeners.push(fn);
+      }
+    },
     unload() {
       const event = {
         prevented: false,
-        returnValue: undefined,
+        returnValue: '' as string,
         preventDefault() {
           this.prevented = true;
         },

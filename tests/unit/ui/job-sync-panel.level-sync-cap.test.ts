@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { holdLevelSyncCap, levelSyncCap, mathJobOwner, panelOf } from '../../../src/ui/job-sync-panel.ts';
+import type { PanelSource } from '../../../src/ui/job-sync-panel.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { restoreOpen } from '../helpers/common.ts';
 import { createAppFacade } from '../helpers/stores.ts';
@@ -55,7 +56,14 @@ test("panelOf('tiers'): the tiers job, no cap, IL Sync off, the job's level cap 
     const panel = store.panel('tiers');
     assert.deepEqual([panel.job, panel.cap, panel.sync, panel.level, panel.jobCtx.jobId], ['BLU', null, false, 80, 'BLU'], tab);
   }
-  assert.deepEqual(panelOf(store, 'tiers'), store.panel('tiers'));
+  const source: PanelSource = {
+    tab: 'browse',
+    ...store.panel('browse'),
+    browse: store.panel('browse'),
+    piece: store.panel('math'),
+    tiers: { job: 'BLU' },
+  };
+  assert.deepEqual(panelOf(source, 'tiers'), store.panel('tiers'));
   // the other panels are as they were
   assert.deepEqual([store.panel('math').job, store.panel('browse').job], ['BLM', 'WAR']);
 });

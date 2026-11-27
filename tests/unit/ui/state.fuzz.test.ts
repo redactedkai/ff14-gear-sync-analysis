@@ -6,15 +6,16 @@ import assert from 'node:assert/strict';
 import { JOBS } from '../../../src/core/constants.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { MATH_TABS, TABS, defaultState, restoreState } from '../../../src/ui/state.ts';
+import type { SavedState } from '../../../src/ui/state.ts';
 import { rng } from '../helpers/common.ts';
 import { WRONG, clone, damage } from '../helpers/fuzz.ts';
 
 const CASES = 40000;
-const isNumber = value => typeof value === 'number' && Number.isFinite(value);
+const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 
 test('restoreState never throws, always returns a state in range and restores its own result to itself', () => {
   const rand = rng(20261113);
-  const pick = list => list[Math.floor(rand() * list.length)];
+  const pick = <T>(list: readonly T[]): T => list[Math.floor(rand() * list.length)];
   const good = [
     clone(defaultState()),
     clone(
@@ -33,7 +34,7 @@ test('restoreState never throws, always returns a state in range and restores it
     // every tenth input is not a saved object at all
     const raw = n % 10 === 0 ? pick(WRONG) : damage(pick(good), 1 + Math.floor(rand() * 4), rand);
     const label = JSON.stringify(raw).slice(0, 400);
-    let state;
+    let state: SavedState = defaultState();
     assert.doesNotThrow(() => {
       state = restoreState(raw);
     }, label);
@@ -49,9 +50,12 @@ test('restoreState never throws, always returns a state in range and restores it
     assert.ok(TABS.includes(state.tab), `tab ${state.tab}: ${label}`);
     assert.ok(MATH_TABS.includes(state.mathTab), `mathTab ${state.mathTab}: ${label}`);
     const pieceJob = makeJobContext(state.piece.job);
-    assert.ok(pieceJob.activeSlotTypes.includes(state.piece.slot), `piece.slot ${state.piece.slot}: ${label}`);
     assert.ok(
-      state.piece.subs.every(sub => sub === null || pieceJob.stats.includes(sub)),
+      pieceJob.activeSlotTypes.some(type => type === state.piece.slot),
+      `piece.slot ${state.piece.slot}: ${label}`,
+    );
+    assert.ok(
+      state.piece.subs.every(sub => sub === null || pieceJob.stats.some(stat => stat === sub)),
       `piece.subs ${JSON.stringify(state.piece.subs)}: ${label}`,
     );
     assert.ok(typeof state.browse.q === 'string' && state.browse.q.length <= 100, `browse.q: ${label}`);

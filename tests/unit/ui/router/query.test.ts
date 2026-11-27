@@ -18,6 +18,7 @@ import { capCeiling } from '../../../../src/core/sync-target.ts';
 import { MAX_SPEED } from '../../../../src/core/tables.ts';
 import { DEFAULT_EXCLUDE } from '../../../../src/ui/job-sync-panel.ts';
 import { defaultBrowse, defaultSubs } from '../../../../src/ui/state.ts';
+import type { RouteParams } from '../../../../src/ui/router/routes.ts';
 import { GCD_LEVELS } from '../../../../src/ui/views/gcd.ts';
 
 const SGE = makeJobContext('SGE');
@@ -31,7 +32,7 @@ test('queryViewOf: the Gear browser and the math views have a query, the Sheets 
   assert.equal(queryViewOf({ tab: 'math', mathTab: 'tiers' }), 'tiers');
   assert.equal(queryViewOf({ tab: 'sheets', screen: 'sheets' }), null);
   assert.equal(readQuery(null, { sort: 'det' }, SGE, 100), null);
-  assert.deepEqual(writeQuery(null, {}, SGE), {});
+  assert.deepEqual(writeQuery(null, defaultBrowse(SGE), SGE), {});
 });
 
 test('the names of each view, in the order they are written: the panel names, then the view names', () => {
@@ -168,7 +169,7 @@ test('Gear browser: the categories are the defaults whatever order they are held
 });
 
 test('Gear browser: a query read and written again is the same query', () => {
-  const queries = [
+  const queries: RouteParams[] = [
     { q: 'Moon Staff', slot: 'ring', sort: 'mind' },
     { min: '700', max: '790', equip: '90', noexp: 'ARR,SB', dir: 'asc' },
     { skip: '', market: '0' },

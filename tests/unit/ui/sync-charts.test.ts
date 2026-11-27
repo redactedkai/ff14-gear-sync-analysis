@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { OVERGEAR_BANDS, escapeXml, overgearChartSvg, speedStepChartSvg } from '../../../src/ui/sync-charts.ts';
+import type { OvergearChartInput } from '../../../src/ui/sync-charts.ts';
 import { labelled } from '../helpers/common.ts';
 
 /* Audit 12, finding 2: the charts said they were "built only from numbers", but they take a slot name and stat names.
@@ -30,7 +31,7 @@ const CURVE = [120, 130, 140, 150, 160, 170].map(il => {
   const melds = il <= 130 ? 6 : 0;
   return { il, parts, melds, points: parts[0] + parts[1] + melds };
 });
-const overgear = patch =>
+const overgear = (patch: Partial<OvergearChartInput>) =>
   overgearChartSvg({
     curve: CURVE,
     cap: 130,

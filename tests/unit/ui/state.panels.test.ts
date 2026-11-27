@@ -6,9 +6,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { restoreOpen } from '../helpers/common.ts';
 import { capCeiling } from '../../../src/core/sync-target.ts';
+import type { SavedState } from '../../../src/ui/state.ts';
 
 /* [job, cap, sync, level] of the open tab's panel (no group) or of a tab's group */
-const panelOf = (s, group) => {
+const panelOf = (s: SavedState, group?: 'browse' | 'piece' | null) => {
   const o = group ? s[group] : s;
   return [o.job, o.cap, o.sync, o.level];
 };
@@ -26,7 +27,7 @@ test('an older save with one panel gives both tabs that panel, and loses no othe
     opt: { target: 'crit', food: true, min: 100 },
   };
   const s = restoreOpen(old);
-  for (const group of [null, 'piece', 'browse']) {
+  for (const group of [null, 'piece', 'browse'] as const) {
     assert.deepEqual(panelOf(s, group), ['SGE', 123, true, 100], String(group));
   }
   assert.deepEqual([s.piece.ilvl, s.piece.slot, s.piece.subs], [150, 'ring', ['crit', 'det']]);
@@ -87,7 +88,7 @@ test("each panel is repaired on its own: an unknown job, a level over the job's 
 test('no saved state, or none usable, gives every tab the default job and the defaults', () => {
   for (const raw of [null, undefined, 'x', 7, [], {}]) {
     const s = restoreOpen(raw);
-    for (const group of [null, 'piece', 'browse']) {
+    for (const group of [null, 'piece', 'browse'] as const) {
       assert.deepEqual(panelOf(s, group), ['PLD', null, false, 100], String(group));
     }
   }

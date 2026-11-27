@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { LEVEL_TEXT, capFlag, levelTextBad, rangeOnly, rangeText } from '../../../src/ui/level-cap.ts';
 
-const maxLevelOf = jobId => makeJobContext(jobId).maxLevel;
+const maxLevelOf = (jobId: string) => makeJobContext(jobId).maxLevel;
 
 test("levelTextBad: a whole number from 1 to the job's level cap is a level, anything else is not", () => {
   for (const jobId of ['PLD', 'BLU', 'BST']) {

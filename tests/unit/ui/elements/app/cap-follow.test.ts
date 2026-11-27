@@ -5,9 +5,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { followPlan } from '../../../../../src/ui/elements/app/cap-follow.ts';
+import type { FollowInput } from '../../../../../src/ui/elements/app/cap-follow.ts';
 
 const NOTHING = { reset: false, dropTyped: false, lowerNow: false, lowerWhenLevelSettles: false };
-const plan = (changed, { active = true, loweredTo = null, cap = 300 } = {}) => followPlan(new Set(changed), active, loweredTo, cap);
+const plan = (
+  changed: FollowInput[],
+  { active = true, loweredTo = null, cap = 300 }: { active?: boolean; loweredTo?: number | null; cap?: number | null } = {},
+) => followPlan(new Set(changed), active, loweredTo, cap);
 
 test('a hidden panel only resets when its tab changes; it never lowers or drops text', () => {
   assert.deepEqual(plan(['value', 'syncOn', 'level'], { active: false }), NOTHING);

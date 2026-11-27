@@ -3,12 +3,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { focusScreenHeading, isPlacingScroll } from '../../../../src/ui/router/focus.ts';
+import type { FocusScreenOptions, ScreenDocument, ScreenHeading, ScreenPanel, ScreenRoot } from '../../../../src/ui/router/focus.ts';
 
-const shown = { getClientRects: () => [{}] };
-const hidden = { getClientRects: () => [] };
+/* What a heading or a panel reports of being drawn: a box when visible, none when hidden. */
+const shown = { getClientRects: (): unknown[] => [{}] };
+const hidden = { getClientRects: (): unknown[] => [] };
 
 /* A heading that records its focus. */
-const heading = visible => ({
+interface FakeHeading extends ScreenHeading {
+  focused: { preventScroll: boolean } | null;
+}
+const heading = (visible: boolean): FakeHeading => ({
   ...(visible ? shown : hidden),
   tabIndex: 0,
   focused: null,
@@ -17,36 +22,47 @@ const heading = visible => ({
   },
 });
 /* A tab panel holding `headings`. */
-const panel = (visible, headings) => ({ ...(visible ? shown : hidden), querySelectorAll: () => headings });
+const panel = (visible: boolean, headings: ScreenHeading[]): ScreenPanel => ({
+  ...(visible ? shown : hidden),
+  querySelectorAll: () => headings,
+});
 /* The root element as the page has it: setting any style property adds a style attribute, and an empty one stays until it is
    removed (as in the browsers). */
-function rootElement() {
-  const root = { hasStyleAttribute: false };
+interface FakeRoot extends ScreenRoot {
+  hasStyleAttribute: boolean;
+}
+function rootElement(): FakeRoot {
   let minHeight = '';
-  root.style = {
-    get minHeight() {
-      return minHeight;
+  const root: FakeRoot = {
+    hasStyleAttribute: false,
+    style: {
+      get minHeight() {
+        return minHeight;
+      },
+      set minHeight(value) {
+        minHeight = value;
+        root.hasStyleAttribute = true;
+      },
     },
-    set minHeight(value) {
-      minHeight = value;
-      root.hasStyleAttribute = true;
+    getAttribute: name => {
+      if (name !== 'style' || !root.hasStyleAttribute) {
+        return null;
+      }
+      return minHeight ? `min-height: ${minHeight};` : '';
     },
-  };
-  root.getAttribute = name => {
-    if (name !== 'style' || !root.hasStyleAttribute) {
-      return null;
-    }
-    return minHeight ? `min-height: ${minHeight};` : '';
-  };
-  root.removeAttribute = name => {
-    if (name === 'style') {
-      root.hasStyleAttribute = false;
-    }
+    removeAttribute: name => {
+      if (name === 'style') {
+        root.hasStyleAttribute = false;
+      }
+    },
   };
   return root;
 }
 /* A document with `panels`, a window 900 px high and a screen `bodyHeight` px tall (what the page's own content needs). */
-const docOf = (panels, bodyHeight = 900) => ({
+interface FakeDocument extends ScreenDocument {
+  readonly documentElement: FakeRoot;
+}
+const docOf = (panels: ScreenPanel[], bodyHeight = 900): FakeDocument => ({
   querySelectorAll: () => panels,
   documentElement: rootElement(),
   body: { scrollHeight: bodyHeight },
@@ -54,12 +70,12 @@ const docOf = (panels, bodyHeight = 900) => ({
 });
 /* Frames that run when the test says so. */
 function frames() {
-  const queue = [];
+  const queue: (() => void)[] = [];
   return {
-    raf: callback => queue.push(callback),
+    raf: (callback: () => void) => queue.push(callback),
     run: () => {
-      while (queue.length) {
-        queue.shift()();
+      for (let callback = queue.shift(); callback; callback = queue.shift()) {
+        callback();
       }
     },
     step: () => {
@@ -74,8 +90,8 @@ test('the first visible heading of the visible panel is focused and the page scr
   const [hiddenHeading, first, second] = [heading(false), heading(true), heading(true)];
   const doc = docOf([panel(false, [heading(true)]), panel(true, [hiddenHeading, first, second])]);
   const clock = frames();
-  const scrolled = [];
-  focusScreenHeading({ scrollY: 250, doc, raf: clock.raf, scrollTo: y => scrolled.push(y), scrolledTo: () => scrolled.at(-1) });
+  const scrolled: number[] = [];
+  focusScreenHeading({ scrollY: 250, doc, raf: clock.raf, scrollTo: y => scrolled.push(y), scrolledTo: () => scrolled.at(-1) ?? 0 });
   clock.run();
   assert.deepEqual(first.focused, { preventScroll: true });
   assert.equal(first.tabIndex, -1);
@@ -86,13 +102,13 @@ test('the first visible heading of the visible panel is focused and the page scr
 
 test('a screen with no heading still scrolls', () => {
   const clock = frames();
-  const scrolled = [];
+  const scrolled: number[] = [];
   focusScreenHeading({
     scrollY: 80,
     doc: docOf([panel(true, [])]),
     raf: clock.raf,
     scrollTo: y => scrolled.push(y),
-    scrolledTo: () => scrolled.at(-1),
+    scrolledTo: () => scrolled.at(-1) ?? 0,
   });
   clock.run();
   assert.deepEqual(scrolled, [80]);
@@ -101,20 +117,20 @@ test('a screen with no heading still scrolls', () => {
 test('it waits for a tab that is still opening, then focuses; a tab that never opens is not waited for forever', () => {
   const h = heading(true);
   let pending = true;
-  const queue = [];
-  const raf = callback => queue.push(callback);
+  const queue: (() => void)[] = [];
+  const raf = (callback: () => void) => queue.push(callback);
   const step = () =>
     queue.splice(0).forEach(callback => {
       callback();
     });
-  const scrolled = [];
+  const scrolled: number[] = [];
   focusScreenHeading({
     scrollY: 5,
     isPending: () => pending,
     doc: docOf([panel(true, [h])]),
     raf,
     scrollTo: y => scrolled.push(y),
-    scrolledTo: () => scrolled.at(-1),
+    scrolledTo: () => scrolled.at(-1) ?? 0,
   });
   for (let frame = 0; frame < 10; frame += 1) {
     step();
@@ -129,7 +145,7 @@ test('it waits for a tab that is still opening, then focuses; a tab that never o
 
   // pending for good: after the frames it waits (the limit), it goes ahead
   const stuck = heading(true);
-  const stuckQueue = [];
+  const stuckQueue: (() => void)[] = [];
   focusScreenHeading({
     isPending: () => true,
     doc: docOf([panel(true, [stuck])]),
@@ -146,8 +162,8 @@ test('it waits for a tab that is still opening, then focuses; a tab that never o
 });
 
 test('a screen still too short to scroll to the position is tried again on the next frames', () => {
-  const queue = [];
-  const raf = callback => queue.push(callback);
+  const queue: (() => void)[] = [];
+  const raf = (callback: () => void) => queue.push(callback);
   const step = () => {
     for (const callback of queue.splice(0)) {
       callback();
@@ -155,7 +171,7 @@ test('a screen still too short to scroll to the position is tried again on the n
   };
   let reachable = 0; // the page is still being drawn: it can scroll only this far
   let at = 0;
-  const wanted = [];
+  const wanted: number[] = [];
   focusScreenHeading({
     scrollY: 600,
     doc: docOf([panel(true, [])]),
@@ -179,11 +195,11 @@ test('a screen still too short to scroll to the position is tried again on the n
 });
 
 test('a scroll the browser clamps a frame later is scrolled again once the page is tall enough', () => {
-  const queue = [];
+  const queue: (() => void)[] = [];
   let reachable = 300; // how far the page can scroll when it is drawn
   let position = 0;
   let undrawn = false; // a scrollTo the page has not drawn yet: its position is reported as asked, and clamped at the next frame
-  const wanted = [];
+  const wanted: number[] = [];
   focusScreenHeading({
     scrollY: 400,
     doc: docOf([panel(true, [])]),
@@ -218,14 +234,14 @@ test('a scroll the browser clamps a frame later is scrolled again once the page 
 test('focus: false only scrolls', () => {
   const only = heading(true);
   const clock = frames();
-  const scrolled = [];
+  const scrolled: number[] = [];
   focusScreenHeading({
     scrollY: 120,
     focus: false,
     doc: docOf([panel(true, [only])]),
     raf: clock.raf,
     scrollTo: y => scrolled.push(y),
-    scrolledTo: () => scrolled.at(-1),
+    scrolledTo: () => scrolled.at(-1) ?? 0,
   });
   clock.run();
   assert.equal(only.focused, null);
@@ -234,21 +250,33 @@ test('focus: false only scrolls', () => {
 
 /* A page stand-in for the early scroll: a held height lets it scroll as deep as the position (a screen being swapped in is shorter
    until it is drawn), and it records what was held and released, in order. */
-function heldPage({ reachableWhenDrawn }) {
-  const page = { position: 0, held: 0, log: [], drawn: false };
-  page.options = {
-    scrollTo: y => {
-      page.log.push(`scroll ${y}`);
-      page.position = Math.min(y, page.drawn ? reachableWhenDrawn : Math.max(page.held, 0));
-    },
-    scrolledTo: () => page.position,
-    holdHeight: y => {
-      page.held = y;
-      page.log.push(`hold ${y}`);
-    },
-    releaseHeight: () => {
-      page.held = 0;
-      page.log.push('release');
+interface HeldPage {
+  position: number;
+  held: number;
+  log: string[];
+  drawn: boolean;
+  options: Required<Pick<FocusScreenOptions, 'scrollTo' | 'scrolledTo' | 'holdHeight' | 'releaseHeight'>>;
+}
+function heldPage({ reachableWhenDrawn }: { reachableWhenDrawn: number }): HeldPage {
+  const page: HeldPage = {
+    position: 0,
+    held: 0,
+    log: [],
+    drawn: false,
+    options: {
+      scrollTo: y => {
+        page.log.push(`scroll ${y}`);
+        page.position = Math.min(y, page.drawn ? reachableWhenDrawn : Math.max(page.held, 0));
+      },
+      scrolledTo: () => page.position,
+      holdHeight: y => {
+        page.held = y;
+        page.log.push(`hold ${y}`);
+      },
+      releaseHeight: () => {
+        page.held = 0;
+        page.log.push('release');
+      },
     },
   };
   return page;
@@ -347,11 +375,12 @@ test('a screen that is still growing keeps its height held until it reaches the 
 });
 
 test('the height is held at most a few windows more than the page is tall, however far the saved position is', () => {
-  for (const [saved, want] of [
+  const cases: [number, string][] = [
     [1e12, '4500px'], // 4 windows of 900 px, and the window
     [5000, '4500px'],
     [700, '1600px'],
-  ]) {
+  ];
+  for (const [saved, want] of cases) {
     const doc = docOf([panel(true, [])], 1300); // a page 400 px longer than the window
     focusScreenHeading({ scrollY: saved, doc, raf: () => {}, scrollTo: () => {}, scrolledTo: () => 0 });
     assert.equal(doc.documentElement.style.minHeight, want, `saved ${saved}`);
@@ -438,7 +467,7 @@ test('a screen opened at the top is put there once, the player scrolling next is
   const doc = docOf([panel(true, [first])]);
   const clock = frames();
   let at = 400; // the screen before it was scrolled to 400
-  const scrolled = [];
+  const scrolled: number[] = [];
   focusScreenHeading({
     focus: false,
     once: true,
@@ -463,8 +492,8 @@ test('a screen opened at the top does not watch the page size: a layout change t
   const doc = docOf([panel(true, [heading(true)])]);
   const clock = frames();
   let at = 400;
-  const scrolled = [];
-  const watchers = [];
+  const scrolled: number[] = [];
+  const watchers: (() => void)[] = [];
   focusScreenHeading({
     focus: false,
     once: true,
@@ -492,7 +521,7 @@ test('a screen opened at the top while a tab is still opening waits for the tab,
   const doc = docOf([panel(true, [heading(true)])]);
   const clock = frames();
   let pending = true;
-  const scrolled = [];
+  const scrolled: number[] = [];
   focusScreenHeading({
     focus: false,
     once: true,

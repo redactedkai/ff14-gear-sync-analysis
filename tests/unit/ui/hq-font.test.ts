@@ -4,16 +4,16 @@ import assert from 'node:assert/strict';
 import { enableHqFont, HQ_FONT_CLASS, HQ_GLYPH } from '../../../src/ui/hq-font.ts';
 
 const rootWithClasses = () => {
-  const added = [];
-  return { added, classList: { add: name => added.push(name) } };
+  const added: string[] = [];
+  return { added, classList: { add: (name: string) => added.push(name) } };
 };
 
 test('a loaded face adds the class, asking for the HQ glyph', async () => {
-  const asked = [];
+  const asked: string[][] = [];
   const root = rootWithClasses();
-  const load = (font, text) => {
+  const load = (font: string, text: string) => {
     asked.push([font, text]);
-    return Promise.resolve([{}]);
+    return Promise.resolve([1]);
   };
   await enableHqFont({ load }, root);
   assert.deepEqual(root.added, [HQ_FONT_CLASS]);

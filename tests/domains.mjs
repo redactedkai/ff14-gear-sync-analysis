@@ -145,7 +145,7 @@ export const DOMAINS = {
       'tests/unit/ui/views/level-sync.test.js',
       'tests/unit/startup-failure.test.ts',
       'tests/unit/helpers/{fuzz,views}.ts',
-      'tests/unit/helpers/{stores,revision-reads}.ts',
+      'tests/unit/helpers/{stores,revision-reads,dom-fakes}.ts',
       'tests/unit/ui/store/no-direct-writes.test.js',
     ],
   },

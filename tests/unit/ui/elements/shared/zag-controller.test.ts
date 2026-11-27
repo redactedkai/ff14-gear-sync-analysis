@@ -4,14 +4,28 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { HOST_ATTRIBUTE, PART_ATTRIBUTE, ZAG_ID_PREFIX, ZagController } from '../../../../../src/ui/elements/shared/zag-controller.ts';
+import type { ZagLifecycle } from '../../../../../src/ui/elements/shared/zag-controller.ts';
+import { createMachine } from '@zag-js/core';
+import type { VanillaMachine } from '@zag-js/vanilla';
+import type { MachineSchema, Service } from '@zag-js/core';
+import { standsFor } from '../../../helpers/dom-fakes.ts';
 
 // how many effects of the tiny machine are running
 let liveEffects = 0;
 // the `restoreFocus` of the last CLOSE event the tiny machine took
-let lastCloseRestoresFocus;
+let lastCloseRestoresFocus: boolean | undefined;
+
+/* The schema of the tiny machine: two states, an OPEN and a CLOSE event, one action and one effect. */
+interface TinySchema extends MachineSchema {
+  props: { id?: string; label?: string };
+  state: 'closed' | 'open';
+  event: { type: 'OPEN' } | { type: 'CLOSE'; restoreFocus?: boolean };
+  action: 'noteClose';
+  effect: 'live';
+}
 
 /* A machine with two states; its machine-level effect runs from start to stop. */
-const tinyMachine = {
+const tinyMachine = createMachine<TinySchema>({
   props: ({ props }) => props,
   initialState: () => 'closed',
   effects: ['live'],
@@ -19,7 +33,7 @@ const tinyMachine = {
   implementations: {
     actions: {
       noteClose: ({ event }) => {
-        lastCloseRestoresFocus = event.restoreFocus;
+        lastCloseRestoresFocus = event.type === 'CLOSE' ? event.restoreFocus : undefined;
       },
     },
     effects: {
@@ -31,34 +45,80 @@ const tinyMachine = {
       },
     },
   },
-};
+});
 
 /* The api of the tiny machine: whether it is open, and the attributes of the parts "trigger" and "item". */
-function connect(service) {
+function connect(service: Service<TinySchema>) {
   const open = service.state.matches('open');
   return {
     open,
-    send: event => service.send(event),
+    send: (event: TinySchema['event']) => service.send(event),
     triggerProps: { 'data-state': open ? 'open' : 'closed', onclick: () => service.send({ type: open ? 'CLOSE' : 'OPEN' }) },
-    itemProps: index => ({ 'data-item': String(index) }),
+    itemProps: (index: number) => ({ 'data-item': String(index) }),
+  };
+}
+type TinyApi = ReturnType<typeof connect>;
+
+/* The attributes of the parts: one trigger, and one entry per item. */
+const parts = (api: TinyApi) => ({ trigger: api.triggerProps, item: [api.itemProps(0), api.itemProps(1)] });
+
+/* The attribute a selector like "[data-zag-part]" asks for. */
+const attributeOf = (selector: string): string => {
+  const match = /^\[(.+)\]$/.exec(selector);
+  assert.ok(match, selector);
+  return match[1];
+};
+
+/* A fake style object that keeps the properties set on it, like an element's `style`. */
+interface FakeStyle {
+  readonly properties: Map<string, string>;
+  setProperty(name: string, value: string): void;
+  removeProperty(name: string): string;
+}
+function fakeStyle(): FakeStyle {
+  const properties = new Map<string, string>();
+  return {
+    properties,
+    setProperty: (name, value) => void properties.set(name, value),
+    removeProperty: name => {
+      properties.delete(name);
+      return '';
+    },
   };
 }
 
-/* The attributes of the parts: one trigger, and one entry per item. */
-const parts = api => ({ trigger: api.triggerProps, item: [api.itemProps(0), api.itemProps(1)] });
+/* A fake DOM element: attributes, a parent (for `closest`), the listeners it was given, and the part of an Element the controller
+   and Zag's spreadProps read. It stands for an Element (dom-fakes.ts standsFor): the controller and the library take it as one. */
+interface FakeNode {
+  parent: FakeNode | null;
+  attributes: Record<string, string>;
+  listeners: Map<string, () => void>;
+  children: FakeNode[];
+  className: string;
+  style: FakeStyle;
+  setAttribute(name: string, value: string): void;
+  getAttribute(name: string): string | null;
+  removeAttribute(name: string): void;
+  toggleAttribute(name: string, on: boolean): void;
+  addEventListener(type: string, listener: () => void): void;
+  removeEventListener(type: string): void;
+  closest(selector: string): FakeNode | null;
+  querySelectorAll(selector: string): Element[];
+}
 
-/* The attribute a selector like "[data-zag-part]" asks for. */
-const attributeOf = selector => /^\[(.+)\]$/.exec(selector)[1];
-
-/* A fake DOM element: attributes, a parent (for `closest`) and the listeners it was given. */
-function fakeElement(parent = null, attributes = {}) {
-  const element = {
+/* `node` as the Element the controller and Zag's spreadProps take (dom-fakes.ts standsFor). */
+function domOf(node: FakeNode): Element {
+  standsFor<Element>(node);
+  return node;
+}
+function fakeElement(parent: FakeNode | null = null, attributes: Record<string, string> = {}): FakeNode {
+  const element: FakeNode = {
     parent,
     attributes: { ...attributes },
     listeners: new Map(),
     children: [],
     className: '',
-    style: {},
+    style: fakeStyle(),
     setAttribute: (name, value) => {
       element.attributes[name] = String(value);
     },
@@ -67,10 +127,10 @@ function fakeElement(parent = null, attributes = {}) {
       delete element.attributes[name];
     },
     toggleAttribute: (name, on) => (on ? element.setAttribute(name, '') : element.removeAttribute(name)),
-    addEventListener: (type, fn) => element.listeners.set(type, fn),
-    removeEventListener: type => element.listeners.delete(type),
+    addEventListener: (type, fn) => void element.listeners.set(type, fn),
+    removeEventListener: type => void element.listeners.delete(type),
     closest: selector => {
-      for (let node = element; node; node = node.parent) {
+      for (let node: FakeNode | null = element; node; node = node.parent) {
         if (attributeOf(selector) in node.attributes) {
           return node;
         }
@@ -79,8 +139,8 @@ function fakeElement(parent = null, attributes = {}) {
     },
     // every descendant that has the attribute, which is what a real querySelectorAll finds
     querySelectorAll: selector => {
-      const all = element.children.flatMap(child => [child, ...child.querySelectorAll(selector)]);
-      return all.filter(node => attributeOf(selector) in node.attributes);
+      const all = element.children.flatMap(child => [domOf(child), ...child.querySelectorAll(selector)]);
+      return all.filter(node => node.getAttribute(attributeOf(selector)) !== null);
     },
   };
   parent?.children.push(element);
@@ -88,41 +148,56 @@ function fakeElement(parent = null, attributes = {}) {
 }
 
 /* A fake element that also plays the Lit side: it keeps the controllers and runs their update hooks on `update()`. */
-function fakeHost(parent = null) {
-  const host = fakeElement(parent);
-  const controllers = [];
-  host.updateRequests = 0;
-  host.addController = controller => {
-    controllers.push(controller);
-  };
-  host.requestUpdate = () => {
-    host.updateRequests += 1;
-  };
-  host.connect = () => {
-    for (const controller of controllers) {
-      controller.hostConnected?.();
-    }
-  };
-  host.disconnect = () => {
-    for (const controller of controllers) {
-      controller.hostDisconnected?.();
-    }
-  };
-  host.update = () => {
-    for (const controller of controllers) {
-      controller.hostUpdate?.();
-    }
-    for (const controller of controllers) {
-      controller.hostUpdated?.();
-    }
-  };
+type FakeHost = FakeNode & {
+  updateRequests: number;
+  addController(controller: ZagLifecycle): void;
+  requestUpdate(): void;
+  connect(): void;
+  disconnect(): void;
+  update(): void;
+};
+function fakeHost(parent: FakeNode | null = null): FakeHost {
+  const controllers: ZagLifecycle[] = [];
+  const host: FakeHost = Object.assign(fakeElement(parent), {
+    updateRequests: 0,
+    addController: (controller: ZagLifecycle) => {
+      controllers.push(controller);
+    },
+    requestUpdate: () => {
+      host.updateRequests += 1;
+    },
+    connect: () => {
+      for (const controller of controllers) {
+        controller.hostConnected?.();
+      }
+    },
+    disconnect: () => {
+      for (const controller of controllers) {
+        controller.hostDisconnected?.();
+      }
+    },
+    update: () => {
+      for (const controller of controllers) {
+        controller.hostUpdate?.();
+      }
+      for (const controller of controllers) {
+        controller.hostUpdated?.();
+      }
+    },
+  });
   return host;
 }
 
 /* A controller of the tiny machine on a new fake host (or the given one). */
-function makeController(host = fakeHost(), getProps = undefined) {
-  const controller = new ZagController(host, { name: 'tiny', machine: tinyMachine, connect, parts, getProps });
+function makeController(host: FakeHost = fakeHost(), getProps?: () => Partial<TinySchema['props']>) {
+  const controller = new ZagController<TinySchema, TinyApi>(host, { name: 'tiny', machine: tinyMachine, connect, parts, getProps });
   return { host, controller };
+}
+
+/* The machine a connected controller runs; fails the test when there is none. */
+function running(controller: ZagController<TinySchema, TinyApi>): VanillaMachine<TinySchema> {
+  assert.ok(controller.machine, 'no machine runs');
+  return controller.machine;
 }
 
 /* Lets the machine's queued events run. */
@@ -170,10 +245,10 @@ test('zag controller: closeWithoutFocus closes the machine with restoreFocus fal
 
 test('zag controller: 1,000 connect and disconnect cycles leave no machine running', () => {
   const { host, controller } = makeController();
-  const machines = [];
+  const machines: VanillaMachine<TinySchema>[] = [];
   for (let cycle = 0; cycle < 1000; cycle++) {
     host.connect();
-    machines.push(controller.machine);
+    machines.push(running(controller));
     host.disconnect();
   }
   assert.equal(liveEffects, 0, 'every effect was cleaned up');
@@ -195,7 +270,7 @@ test('zag controller: a machine change asks the element to draw, and drawing doe
   controller.api.send({ type: 'OPEN' });
   await settle();
   assert.ok(host.updateRequests > requestsAfterConnect, 'a state change asks for a draw');
-  const stoppedMachine = controller.machine;
+  const stoppedMachine = running(controller);
   host.disconnect();
   const requestsAfterDisconnect = host.updateRequests;
   stoppedMachine.send({ type: 'CLOSE' });
@@ -215,11 +290,11 @@ test('zag controller: the props of the element reach the machine, and the id is 
   let label = 'one';
   const { host, controller } = makeController(fakeHost(), () => ({ label, id: 'not-this-one' }));
   host.connect();
-  assert.equal(controller.machine.prop('label'), 'one');
+  assert.equal(running(controller).prop('label'), 'one');
   label = 'two';
   host.update();
-  assert.equal(controller.machine.prop('label'), 'two', 'read again at each draw');
-  assert.equal(controller.machine.scope.id, controller.id);
+  assert.equal(running(controller).prop('label'), 'two', 'read again at each draw');
+  assert.equal(running(controller).scope.id, controller.id);
   host.disconnect();
 });
 
@@ -244,7 +319,7 @@ test('zag controller: attributes and handlers land on the parts of its own eleme
   assert.equal(nestedItem.attributes['data-item'], '0', 'the outer machine did not take the nested item');
 
   // pressing the nested trigger opens the nested machine only, and only the nested trigger shows it
-  nestedTrigger.listeners.get('click')();
+  nestedTrigger.listeners.get('click')?.();
   await settle();
   nested.update();
   outer.update();
@@ -290,16 +365,6 @@ test('zag controller: reading the api before the first connection is an error', 
   const { controller } = makeController();
   assert.throws(() => controller.api, /before the element connected/);
 });
-
-/* A fake style object that keeps the properties set on it, like an element's `style`. */
-function fakeStyle() {
-  const properties = new Map();
-  return {
-    properties,
-    setProperty: (name, value) => properties.set(name, value),
-    removeProperty: name => properties.delete(name),
-  };
-}
 
 // Why this test exists: Zag's vanilla spreadProps removes the style property of a key whose value is undefined, and the style
 // Zag gives a positioner names zIndex as undefined (the popper writes the z-index itself after placing the layer). Without the

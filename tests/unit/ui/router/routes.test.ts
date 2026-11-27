@@ -14,6 +14,16 @@ import {
   samePath,
   titleOf,
 } from '../../../../src/ui/router/routes.ts';
+import type { Route, RouteParams } from '../../../../src/ui/router/routes.ts';
+
+/* The route an address names; fails the test when it names none. */
+function parsed(hash: string): Route {
+  const route = parseRoute(hash);
+  assert.ok(route, hash);
+  return route;
+}
+/* The params of the route an address names (none: an empty object). */
+const paramsOf = (hash: string): RouteParams => parsed(hash).params ?? {};
 
 const SHEET_ID = 's_mh3k2x9a1b2c3d';
 const SET_ID = 'g_mh3k4p0q9r8s7t';
@@ -82,9 +92,9 @@ test('a query after the route is the params of the Gear browser and the math vie
 });
 
 test('a query is decoded: percent codes and + are text, an empty value is kept, an empty query names nothing', () => {
-  assert.deepEqual(parseRoute('#/gear?q=Moon%20Staff&noexp=ARR,HW&skip=').params, { q: 'Moon Staff', noexp: 'ARR,HW', skip: '' });
-  assert.equal(parseRoute('#/gear?q=a+b').params.q, 'a b');
-  assert.equal(parseRoute('#/gear?q=100%25%ZZ').params.q, '100%%ZZ');
+  assert.deepEqual(paramsOf('#/gear?q=Moon%20Staff&noexp=ARR,HW&skip='), { q: 'Moon Staff', noexp: 'ARR,HW', skip: '' });
+  assert.equal(paramsOf('#/gear?q=a+b').q, 'a b');
+  assert.equal(paramsOf('#/gear?q=100%25%ZZ').q, '100%%ZZ');
   assert.deepEqual(parseRoute('#/gear?'), { tab: 'browse' });
   assert.deepEqual(parseRoute('#/gear?=x&&'), { tab: 'browse' });
 });
@@ -95,9 +105,9 @@ test('the Sheets screens ignore a query', () => {
 });
 
 test('a name that is also an Object property is a plain name', () => {
-  const route = parseRoute('#/gear?__proto__=x&constructor=y&toString=z');
-  assert.deepEqual(Object.keys(route.params), ['__proto__', 'constructor', 'toString']);
-  assert.equal(Object.getPrototypeOf(route.params), Object.prototype);
+  const params = paramsOf('#/gear?__proto__=x&constructor=y&toString=z');
+  assert.deepEqual(Object.keys(params), ['__proto__', 'constructor', 'toString']);
+  assert.equal(Object.getPrototypeOf(params), Object.prototype);
 });
 
 test('formatRoute writes the params after the path, in order; commas of a list stay, other characters are encoded', () => {
@@ -113,9 +123,9 @@ test('formatRoute writes the params after the path, in order; commas of a list s
 test('a query survives parse and format, whatever the text holds', () => {
   for (const q of ['', 'Moon Staff', 'a&b=c', '100%', 'é ü', '#/x?y', 'a,b', '+']) {
     const route = { tab: 'browse', params: { q, sort: 'det' } };
-    const back = parseRoute(formatRoute(route));
-    assert.equal(back.params.q ?? '', q, JSON.stringify(q));
-    assert.equal(back.params.sort, 'det');
+    const back = paramsOf(formatRoute(route));
+    assert.equal(back.q ?? '', q, JSON.stringify(q));
+    assert.equal(back.sort, 'det');
   }
 });
 
@@ -155,7 +165,7 @@ test('ids are percent-encoded and decoded', () => {
 });
 
 test('a route that is not a screen formats as the Sheets list', () => {
-  for (const route of [null, undefined, {}, { tab: 'nope' }, { tab: 'sheets', screen: 'sheet' }]) {
+  for (const route of [null, undefined, { tab: '' }, { tab: 'nope' }, { tab: 'sheets', screen: 'sheet' }]) {
     assert.equal(formatRoute(route), '#/sheets');
   }
 });
@@ -185,14 +195,13 @@ test('half of a character never stops an address from being built: a lone surrog
   const lone = 'x'.repeat(99) + '\uD83D';
   const hash = formatRoute({ tab: 'browse', params: { q: lone } });
   assert.equal(hash, `#/gear?q=${'x'.repeat(99)}%EF%BF%BD`);
-  assert.equal(parseRoute(hash).params.q, 'x'.repeat(99) + '\uFFFD');
+  assert.equal(paramsOf(hash).q, 'x'.repeat(99) + '\uFFFD');
   assert.equal(formatRoute({ tab: 'sheets', screen: 'sheet', sheetId: 's_\uDE00a' }), '#/sheets/s_%EF%BF%BDa');
   // a whole emoji is kept
-  assert.equal(parseRoute(formatRoute({ tab: 'browse', params: { q: '\u{1F600}' } })).params.q, '\u{1F600}');
+  assert.equal(paramsOf(formatRoute({ tab: 'browse', params: { q: '\u{1F600}' } })).q, '\u{1F600}');
 });
 
 test('a query of 20,000 names parses, each name once', () => {
   const names = Array.from({ length: 20000 }, (_, i) => `n${i}=${i}`).join('&');
-  const route = parseRoute(`#/gear?${names}`);
-  assert.equal(Object.keys(route.params).length, 20000);
+  assert.equal(Object.keys(paramsOf(`#/gear?${names}`)).length, 20000);
 });
