@@ -65,7 +65,7 @@ def main(csv_dir, out, source: provenance.SourceArg = 'detect'):
     food_rows = {r['#']: r for r in read_csv(csv_path / 'ItemFood.csv', ['#', *food_columns()])}
     check_bools(items, ['CanBeHq'], 'Item.csv')
     check_bools(food_rows.values(), [f'IsRelative[{i}]' for i in range(N_FOOD_PARAMS)], 'ItemFood.csv')
-    foods = []
+    foods = []  # (Item.csv row id, meal) pairs, the id only for the sort below
     for item in items:
         if item[food['uiCategoryColumn']] != str(food['uiCategory']) or item['CanBeHq'] != 'True':
             continue
@@ -78,8 +78,11 @@ def main(csv_dir, out, source: provenance.SourceArg = 'detect'):
             raise SchemaError(f'meal {item["#"]} ({item["Name"]}) points at ItemFood row {missing}, which does not exist')
         kept = meal_stats(row, stat_of, food['carried'], food['vitality'])
         if kept is not None:
-            foods.append([item['Name'], int(item['LevelItem']), *kept])
-    foods.sort(key=lambda f: (f[1], f[0]))
+            foods.append((int(item['#']), [item['Name'], int(item['LevelItem']), *kept]))
+    foods.sort(
+        key=lambda entry: (entry[1][1], entry[1][0], entry[0])
+    )  # item level, name, then the row id so a tie never depends on file order
+    foods = [meal for _, meal in foods]
     doc = {'_generated': provenance.note(source), 'source': source, 'formatVersion': fmt['formatVersion'], 'foods': foods}
     provenance.write_generated(out, provenance.json_lines(doc, expand=('foods',)))  # one meal per line
 

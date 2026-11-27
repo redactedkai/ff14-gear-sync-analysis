@@ -19,6 +19,7 @@ from pathlib import Path
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import gen_food
 from common import FIXTURES as SHEET_FIXTURES
+from common import edit_csv
 from item_format import SchemaError
 
 FIXTURES = SHEET_FIXTURES / 'food'
@@ -55,6 +56,36 @@ class GenFoodTest(unittest.TestCase):
     def test_provenance_unknown_for_fixtures(self):
         self.assertIsNone(self.doc['source'])
         self.assertIn('commit unknown', self.doc['_generated'])
+
+
+class FoodSortTiesTest(unittest.TestCase):
+    """Two meals that tie on item level and name come out in item id order, whatever order Item.csv lists them."""
+
+    def stats_of_royal_toasts(self, copy_id, put_copy_first):
+        """The substat lists of every Royal Toast made from a copy of the fixtures where the meal also appears as `copy_id`,
+        with the action (so the stats) of Prune Ponzecake, listed before the original or after it."""
+        with tempfile.TemporaryDirectory() as tmp:
+            shutil.copytree(FIXTURES, tmp, dirs_exist_ok=True)
+
+            def add_copy(rows):
+                header = rows[0]
+                by_name = {row[header.index('Name')]: row for row in rows[1:]}
+                original = by_name['Royal Toast']
+                copy = list(original)
+                copy[0] = str(copy_id)
+                copy[header.index('ItemAction')] = by_name['Prune Ponzecake'][header.index('ItemAction')]
+                rows.insert(rows.index(original) + (0 if put_copy_first else 1), copy)
+
+            edit_csv(Path(tmp) / 'Item.csv', add_copy)
+            foods = generate(tmp)['foods']
+            return [(food[2][0][0]) for food in foods if food[0] == 'Royal Toast']
+
+    def test_a_tie_is_ordered_by_item_id_not_by_file_order(self):
+        # the original (44082) has one substat, crit; the copy has Prune Ponzecake's, led by piety
+        for copy_id, put_copy_first in ((1, False), (1, True), (99999, False), (99999, True)):
+            with self.subTest(copy_id=copy_id, put_copy_first=put_copy_first):
+                expected = ['piety', 'crit'] if copy_id < 44082 else ['crit', 'piety']
+                self.assertEqual(self.stats_of_royal_toasts(copy_id, put_copy_first), expected)
 
 
 class FoodSchemaTest(unittest.TestCase):

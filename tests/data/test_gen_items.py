@@ -9,6 +9,7 @@ Run: npm run test:py (npm run check:all runs them too)
 
 import csv
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -21,6 +22,7 @@ from common import (
     HEAL,
     STAT_ORDER,
     TANK,
+    edit_csv,
     run_quiet,
     stats,
 )
@@ -372,3 +374,33 @@ class GenItemsTest(unittest.TestCase):
             'Test Min Ilvl',
         ]
         self.assertEqual([r[0] for r in self.rows], expect)
+
+
+class ItemSortTiesTest(unittest.TestCase):
+    """Two pieces that tie on item level, slot code and name come out in game id order, whatever order Item.csv lists them."""
+
+    def pieces_after_copying_the_first_piece(self, copy_id, put_copy_first):
+        """The rows of the items.json made from a copy of the fixtures where Test Greataxe (id 1001) also appears as `copy_id`
+        with one more point of Strength, listed before the original or after it."""
+        with tempfile.TemporaryDirectory() as tmp:
+            shutil.copytree(FIXTURES, tmp, dirs_exist_ok=True)
+
+            def add_copy(rows):
+                header = rows[0]
+                at = next(i for i, row in enumerate(rows) if row[0] == '1001')
+                copy = list(rows[at])
+                copy[0] = str(copy_id)
+                copy[header.index('BaseParamValue[0]')] = str(int(copy[header.index('BaseParamValue[0]')]) + 1)
+                rows.insert(at if put_copy_first else at + 1, copy)
+
+            edit_csv(Path(tmp) / 'Item.csv', add_copy)
+            out = Path(tmp) / 'items.json'
+            run_quiet(gen_items.main, tmp, str(out))
+            fields = row_fields(load_format())
+            rows = [r for r in json.loads(out.read_text(encoding='utf-8'))['items'] if r[fields['name']] == 'Test Greataxe']
+            return [r[fields['gameId']] for r in rows]
+
+    def test_a_tie_is_ordered_by_game_id_not_by_file_order(self):
+        for copy_id, put_copy_first in ((1, False), (1, True), (9999, False), (9999, True)):
+            with self.subTest(copy_id=copy_id, put_copy_first=put_copy_first):
+                self.assertEqual(self.pieces_after_copying_the_first_piece(copy_id, put_copy_first), sorted([1001, copy_id]))

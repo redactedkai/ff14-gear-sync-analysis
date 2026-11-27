@@ -526,7 +526,7 @@ def main(csv_dir, out, source: provenance.SourceArg = 'detect', report=None):
     absent = [j for i, j in enumerate(fmt['jobs']) if not seen >> i & 1]
     if absent:
         raise SchemaError(f'ClassJobCategory.csv: no item is wearable by {", ".join(absent)}. Did the job columns change?')
-    pieces.sort(key=lambda p: (-p['ilvl'], p['slotCode'], p['name']))
+    pieces.sort(key=lambda p: (-p['ilvl'], p['slotCode'], p['name'], p['gameId']))  # the game id last, so a tie never depends on file order
     rows = [[value_of(piece, f) for f in fields] for piece in pieces]
     # {"_generated": notice, "source": provenance, "formatVersion": n, "materia": table, "currentTomes": names, "items": [rows]}, one item
     # row per line so a patch's diff lists the rows that changed
