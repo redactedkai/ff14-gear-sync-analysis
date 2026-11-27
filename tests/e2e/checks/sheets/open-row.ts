@@ -1,16 +1,18 @@
 // The Sheets tab: a click on a row of the sheet list or of a sheet's gear sets opens it.
 
 import { NARROW } from '../../lib/constants.ts';
-import { check, expect, same } from '../../lib/expect.ts';
+import { check, expect, mustFind, same } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { seedSheets, sheetNames } from '../../lib/sheets.ts';
-import type { Page } from 'playwright';
+import type { SavedGearSet, SavedRow } from '../../../../src/ui/sheets/saved-types.ts';
+import type { Locator, Page } from 'playwright';
 
 /* A saved Sage sheet of three gear sets saved in this order: "Alpha" (all 12 rows, with a note), "Beta" (no pieces) and
    "Gamma" (3 pieces). Sorted by main stat, best first, the order is Alpha, Gamma, Beta: not the saved one. */
 const [FULL_SET] = SET_SHEET.sets;
-const keepOnly = slots => FULL_SET.pieces.map(piece => (slots.includes(piece.gameId) ? piece : { slot: piece.slot }));
-const setOf = (id: string, name: string, description, pieces) => ({
+const keepOnly = (slots: number[]) =>
+  FULL_SET.pieces.map(piece => (typeof piece.gameId === 'number' && slots.includes(piece.gameId) ? piece : { slot: piece.slot }));
+const setOf = (id: string, name: string, description: string, pieces: SavedRow[]): SavedGearSet => ({
   ...FULL_SET,
   id,
   name,
@@ -32,7 +34,7 @@ const ROW_SHEET = {
 const OTHER_SHEET = { ...SET_SHEET, id: 's_other', name: 'Other sheet', sets: [] };
 
 /* A point inside the row's cell: `row` a locator of the row, `cell` the cell's place (0 is the first). */
-const inCell = (row, cell) => row.locator('td').nth(cell);
+const inCell = (row: Locator, cell: number) => row.locator('td').nth(cell);
 
 /** A click on a row of a sheet's gear set list opens the set on the real page, and after sorting by main stat a figure cell opens
  * the set of its own row, not the one at that place in the saved order (the one test that joins the sort and the open). Which parts
@@ -49,7 +51,7 @@ export async function checkOpenRow(pg: Page) {
   const setRow = (name: string) => pg.locator('#sh-sets tbody tr', { has: pg.locator('a.sname', { hasText: name }) });
   const expectSetPage = async (where: string, name: string) => {
     await expect(pg.locator('#sh-gear')).toBeVisible();
-    const open = (await pg.locator('.setcrumb .crumbhere').textContent()).trim();
+    const open = mustFind(await pg.locator('.setcrumb .crumbhere').textContent(), 'the open page in the breadcrumb').trim();
     check(open === name, `${where}: the set page of "${open}" opened, expected "${name}"`);
     await pg.locator('.setcrumb a.clipname').click(); // back to the sheet's list
     await expect(pg.locator('#sh-sets')).toBeVisible();
@@ -74,6 +76,6 @@ export async function checkOpenSheetRow(pg: Page) {
   const sheetRow = (name: string) => pg.locator('#sh-list tbody tr', { has: pg.locator('a.sname', { hasText: name }) });
   await inCell(sheetRow('Row sheet'), 1).click();
   await expect(pg.locator('#sh-sheet')).toBeVisible();
-  const open = (await pg.locator('.setcrumb .crumbhere').textContent()).trim();
+  const open = mustFind(await pg.locator('.setcrumb .crumbhere').textContent(), 'the open page in the breadcrumb').trim();
   check(open === 'Row sheet', `the job cell: the sheet "${open}" opened, expected "Row sheet"`);
 }

@@ -24,11 +24,12 @@ async function toManager(page: Page) {
 /** The sheets' record keys and index, as another browser tab would find them in the shared storage. */
 const storedSheets = (page: Page) =>
   page.evaluate((key: string) => {
-    const records = {};
+    const records: Record<string, string> = {};
     for (let i = 0; i < localStorage.length; i++) {
       const name = localStorage.key(i);
-      if (name.startsWith(`${key}:sheet:`)) {
-        records[name.slice(`${key}:sheet:`.length)] = localStorage.getItem(name);
+      const text = name === null ? null : localStorage.getItem(name);
+      if (name?.startsWith(`${key}:sheet:`) && text !== null) {
+        records[name.slice(`${key}:sheet:`.length)] = text;
       }
     }
     return { index: JSON.parse(localStorage.getItem(`${key}:sheets`) ?? 'null'), records };
@@ -58,7 +59,7 @@ export async function checkTwoTabs(pg: Page) {
     await page.click('[data-tab=sheets]');
     await expect(page.locator('#tab-sheets')).toBeVisible();
   };
-  const renameSheet = async (page: Page, name: string, description) => {
+  const renameSheet = async (page: Page, name: string | null, description: string | null) => {
     await page.click('#sh-edit');
     // Zag gives the focus to the name box a frame after the dialog shows; a fill before that would be moved by it
     await page.waitForFunction(() => document.activeElement?.id === 'sh-dlg-name', null, { timeout: 3000 });
@@ -133,7 +134,7 @@ export async function checkTwoTabs(pg: Page) {
   for (const [which, page] of [
     ['first', pg],
     ['second', other],
-  ]) {
+  ] as const) {
     check(same(await names(page), ['Beta', 'Alpha B']), `two tabs: the ${which} tab lists ${await names(page)} after the two edits`);
     check(
       (await page.locator('#sh-unreadable').count()) === 0,
@@ -156,10 +157,10 @@ export async function checkTwoTabs(pg: Page) {
   const moved = await storedSheets(pg);
   check(
     same(
-      moved.index.order.map((id: string) => JSON.parse(moved.records[id]).name),
+      moved.index.order.map((id: string) => JSON.parse(moved.records[id] ?? 'null')?.name),
       ['Alpha B', 'Beta'],
     ),
-    `two tabs: the stored order is ${moved.index.order.map((id: string) => JSON.parse(moved.records[id]).name)}, not Alpha B, Beta`,
+    `two tabs: the stored order is ${moved.index.order.map((id: string) => JSON.parse(moved.records[id] ?? 'null')?.name)}, not Alpha B, Beta`,
   );
 
   // 6. A deletes Beta while B's switch menu (read before) still lists it: choosing it sends B to the manager, without Beta
@@ -194,7 +195,7 @@ export async function checkTwoTabs(pg: Page) {
   // 8. a record the index lacks comes last; an index naming a record that is not there is ignored; a record this build cannot
   // read is listed with its cause and kept, the sheets around it unharmed
   const state = await storedSheets(pg);
-  const backId = state.index.order.find((id: string) => JSON.parse(state.records[id]).name === 'Back from B');
+  const backId = state.index.order.find((id: string) => JSON.parse(state.records[id] ?? 'null')?.name === 'Back from B');
   await pg.evaluate(
     ([key, kept]) => {
       localStorage.setItem(`${key}:sheets`, JSON.stringify({ v: 1, order: ['s_ghost', kept] })); // no record s_ghost; Gamma not listed

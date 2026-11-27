@@ -22,7 +22,7 @@ const twoSetSheet = (id: string, name: string, job: string) => {
  * The numbers are written into the page's cells, so each round reloads the page. */
 export async function checkSetListColumns(pg: Page) {
   await seedSheets(pg, [twoSetSheet('s_mnk', 'Monk list', 'MNK'), twoSetSheet('s_sge', 'Sage list', 'SGE')]);
-  const open = async (name: string, width, height, figures) => {
+  const open = async (name: string, width: number, height: number, figures: string) => {
     await pg.setViewportSize({ width, height });
     await reloadAtSheets(pg);
     await waitReady(pg);
@@ -46,7 +46,7 @@ export async function checkSetListColumns(pg: Page) {
         // the widest figures: four digits for a stat, 9999 for the main stat, an effect with its sign and unit
         await pg.locator('#sh-sets tbody td.n').evaluateAll(cells => {
           for (const cell of cells) {
-            cell.textContent = cell.cellIndex === 1 ? '9999' : '+99.9%';
+            cell.textContent = cell instanceof HTMLTableCellElement && cell.cellIndex === 1 ? '9999' : '+99.9%';
           }
         });
         const why = columnsDiffer(real, await measureColumns(pg, '#sh-sets'));

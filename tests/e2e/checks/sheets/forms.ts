@@ -98,12 +98,12 @@ export async function checkSheetForms(pg: Page) {
   await expect(pg.locator('#sh-set-settings')).toHaveTextParts(['White Mage', 100]);
   check(!(await hasHScroll(pg)), `Sheets: a new set's page scrolls sideways at ${NARROW.width} px`);
   // another set gets a page of its own: the element is made again, so nothing of the first set's page stays
-  await pg.evaluate(() => document.querySelector('gsa-set-page').setAttribute('data-first-set', ''));
+  await pg.evaluate(() => document.querySelector('gsa-set-page')?.setAttribute('data-first-set', ''));
   await pg.click('#sh-set-switch');
   await pg.locator('#sh-set-menu .setnew').click();
   await expect(pg.locator('#sh-set .crumbhere')).toHaveText('Set 2');
   check(
-    await pg.evaluate(() => !document.querySelector('gsa-set-page').hasAttribute('data-first-set')),
+    await pg.evaluate(() => document.querySelector('gsa-set-page')?.hasAttribute('data-first-set') === false),
     "the second set reuses the first set's page",
   );
   // the set switcher's rows are real links: the first goes to the sheet's page
@@ -141,7 +141,7 @@ export async function checkSheetCap(pg: Page) {
   await expect(pg.locator('#sh-cap-lowered')).toHaveTextParts([135, 50]);
   await waitSaved(pg, 's => true');
   check(
-    await pg.evaluate((key: string) => JSON.parse(localStorage.getItem(`${key}:sheet:s_cap`)).sync.cap === 135, STORE_KEY),
+    await pg.evaluate((key: string) => JSON.parse(localStorage.getItem(`${key}:sheet:s_cap`) ?? 'null')?.sync.cap === 135, STORE_KEY),
     'Sheets: the lowered cap was not saved',
   );
   await pg.click('[data-tab=browse]');

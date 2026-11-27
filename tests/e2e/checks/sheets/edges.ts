@@ -5,10 +5,11 @@ import { check, expect, same } from '../../lib/expect.ts';
 import { FILL_SHEET } from '../../lib/fixtures.ts';
 import { hasHScroll, setNumber } from '../../lib/nav.ts';
 import { seedSheets, sheetNames } from '../../lib/sheets.ts';
+import type { SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 import type { Page } from 'playwright';
 
 /* A saved sheet of one empty set, named "Mine", for `job` at `level` (the sheet tests that need only a sheet of a job). */
-export const edgeSheet = (id: string, name: string, job: string, level, sync) => ({
+export const edgeSheet = (id: string, name: string, job: string, level: number, sync: SavedSheet['sync']): SavedSheet => ({
   ...FILL_SHEET,
   id,
   name,
@@ -36,7 +37,7 @@ export async function checkSheetEdges(pg: Page) {
   );
   await pg.setViewportSize(NARROW);
   await pg.click('[data-tab=sheets]');
-  const stored = (id: string) => pg.evaluate(([key, sheetId]) => localStorage.getItem(`${key}:sheet:${sheetId}`), [STORE_KEY, id]);
+  const stored = (id: string) => pg.evaluate(([key, sheetId]) => localStorage.getItem(`${key}:sheet:${sheetId}`), [STORE_KEY, id] as const);
 
   // 1. a record that could not be read: listed with its cause; Delete asks, Cancel keeps it, Delete removes it
   await expect(pg.locator('#sh-unreadable')).toBeVisible();

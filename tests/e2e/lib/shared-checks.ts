@@ -60,7 +60,7 @@ export function capLineShape(pg: Page, { line, cap, level, others }: { line: str
         capHeight: capBox.height,
         capWidth: capBox.width,
         dy: capBox.top - box(levelSelector).top,
-        others: otherSelectors.map(selector => [box(selector).left, box(selector).top]),
+        others: otherSelectors.map((selector): [number, number] => [box(selector).left, box(selector).top]),
       };
     },
     { line, cap, level, others },

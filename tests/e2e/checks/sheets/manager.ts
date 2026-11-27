@@ -166,7 +166,10 @@ export async function checkSheets(pg: Page) {
   await checkNoBadText(pg, 'the sheet manager');
 
   // a reload keeps the sheets, their order, settings and sets; a record not in the order (the seeded one) comes last
-  await pg.evaluate(([key, sheet]) => localStorage.setItem(`${key}:sheet:${sheet.id}`, JSON.stringify(sheet)), [STORE_KEY, CANE_SHEET]);
+  await pg.evaluate(([key, sheet]) => localStorage.setItem(`${key}:sheet:${sheet.id}`, JSON.stringify(sheet)), [
+    STORE_KEY,
+    CANE_SHEET,
+  ] as const);
   await waitSaved(pg, "s => s.tab === 'sheets'");
   await pg.reload();
   await waitReady(pg);
