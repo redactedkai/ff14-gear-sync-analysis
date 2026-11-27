@@ -39,7 +39,7 @@ const inCell = (row: Locator, cell: number) => row.locator('td').nth(cell);
 /** A click on a row of a sheet's gear set list opens the set on the real page, and after sorting by main stat a figure cell opens
  * the set of its own row, not the one at that place in the saved order (the one test that joins the sort and the open). Which parts
  * of a row open it, what must not (the Edit button, the drag handle, a drag that selects text) and Enter on the name link are
- * `sheet-page.spec.ts`'s and `open-row.test.js`'s. At 960 px. */
+ * `sheet-page.spec.ts`'s and `open-row.test.ts`'s. At 960 px. */
 export async function checkOpenRow(pg: Page) {
   await pg.setViewportSize(NARROW);
   await seedSheets(pg, [ROW_SHEET, OTHER_SHEET]);
@@ -68,7 +68,7 @@ export async function checkOpenRow(pg: Page) {
 }
 
 /** A click on a row of the sheet list opens the sheet on the real page (the job cell). Which parts of a row open it, what must not
- * and Enter on the name link are `sheet-manager.spec.ts`'s and `open-row.test.js`'s. At 960 px. */
+ * and Enter on the name link are `sheet-manager.spec.ts`'s and `open-row.test.ts`'s. At 960 px. */
 export async function checkOpenSheetRow(pg: Page) {
   await pg.setViewportSize(NARROW);
   await seedSheets(pg, [ROW_SHEET, OTHER_SHEET]);

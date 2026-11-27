@@ -1,5 +1,5 @@
 /* Stories of <gsa-sheets-screen>: another gear set is a new set page (nothing of the first one stays), a Back or Forward of the browser
-   closes an open dialog; axe. What the screen shows for each address is the model's unit test (sheets-screen-model.test.js). */
+   closes an open dialog; axe. What the screen shows for each address is the model's unit test (sheets-screen-model.test.ts). */
 import { expect, test } from '../fixtures.ts';
 import { FIRST_SET, OPEN_SECOND_LABEL, SECOND_SET, type Default } from './sheets-screen.story.ts';
 

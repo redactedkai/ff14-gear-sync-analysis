@@ -1,6 +1,6 @@
 /* The Sheets screen's model (src/ui/elements/sheets/sheets-screen-model.ts) over the page's real store on stand-in storage: the screen
    to draw, the properties of the three screen elements, the answers to their events, the dialog closing when the page moves away, and
-   which store parts the screen follows (the dialogs' own logic is tested in sheet-dialogs-model.test.js). */
+   which store parts the screen follows (the dialogs' own logic is tested in sheet-dialogs-model.test.ts). */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { SheetsScreenModel, sheetsSelection } from '../../../../../src/ui/elements/sheets/sheets-screen-model.ts';
