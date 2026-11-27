@@ -23,7 +23,7 @@ async function openDraftSet(pg: Page) {
 }
 
 /** Pick the first piece of row `row`'s menu. */
-async function pickFirstPiece(pg: Page, row) {
+async function pickFirstPiece(pg: Page, row: number) {
   await pg.click(`#sh-gear tr[data-row="${row}"] [data-pick]`);
   await pg.locator('.pick-menu .same-item[data-game-id]').first().click();
   await expect(pg.locator('.pick-menu')).toBeHidden(); // the one menu element stays, hidden
@@ -34,11 +34,18 @@ async function pickFirstPiece(pg: Page, row) {
  * of the menu that lies under that part is the menu's). */
 function pinnedPartsUnderMenu(pg: Page, menuSel: string) {
   return pg.evaluate(menuSelector => {
-    const menu = document.querySelector(menuSelector).getBoundingClientRect();
+    const boxOf = (selector: string) => {
+      const element = document.querySelector(selector);
+      if (!element) {
+        throw new Error(`no ${selector}`);
+      }
+      return element.getBoundingClientRect();
+    };
+    const menu = boxOf(menuSelector);
     const parts = { 'pinned header': '#sh-set .shead', 'column names': '#sh-gear thead th' };
-    const over = [];
+    const over: string[] = [];
     for (const [name, sel] of Object.entries(parts)) {
-      const part = document.querySelector(sel).getBoundingClientRect();
+      const part = boxOf(sel);
       const left = Math.max(menu.left, part.left);
       const right = Math.min(menu.right, part.right);
       const top = Math.max(menu.top, part.top, 0);
@@ -57,14 +64,18 @@ function pinnedPartsUnderMenu(pg: Page, menuSel: string) {
 
 /** Scroll the page until the box `buttonSel` (a menu's button) sits `depth` px under the window's top, so the pinned heading
  * covers it and the open menu under it reaches up under the heading; returns the scroll made. */
-function scrollButtonUnderHeading(pg: Page, buttonSel: string, depth) {
+function scrollButtonUnderHeading(pg: Page, buttonSel: string, depth: number) {
   return pg.evaluate(
     ([selector, scrollDepth]) => {
+      const button = document.querySelector(selector);
+      if (!button) {
+        throw new Error(`no ${selector}`);
+      }
       const before = scrollY;
-      scrollBy(0, document.querySelector(selector).getBoundingClientRect().top - scrollDepth);
+      scrollBy(0, button.getBoundingClientRect().top - scrollDepth);
       return scrollY - before;
     },
-    [buttonSel, depth],
+    [buttonSel, depth] as const,
   );
 }
 
@@ -104,9 +115,16 @@ export async function checkPieceMenuKeepsButtonInSight(pg: Page) {
   await poll('the Weapon button to stay below the column names with the menu under it, inside the window', async () => {
     const got = await pg.evaluate(buttonSelector => {
       const round = Math.round;
-      const button = document.querySelector(buttonSelector).getBoundingClientRect();
-      const menu = document.querySelector('.pick-menu').getBoundingClientRect();
-      const names = document.querySelector('#sh-gear thead th').getBoundingClientRect();
+      const boxOf = (selector: string) => {
+        const element = document.querySelector(selector);
+        if (!element) {
+          throw new Error(`no ${selector}`);
+        }
+        return element.getBoundingClientRect();
+      };
+      const button = boxOf(buttonSelector);
+      const menu = boxOf('.pick-menu');
+      const names = boxOf('#sh-gear thead th');
       return {
         buttonTop: round(button.top),
         namesBottom: round(names.bottom),

@@ -38,7 +38,10 @@ export async function checkQuickClicks(pg: Page) {
   await expectApplyCount(pg, 1);
   // the click and the key arrive in one task, before the page has drawn the question
   await pg.evaluate(() => {
-    const crumb = document.querySelector('#sh-set .setcrumb a:nth-of-type(2)');
+    const crumb = document.querySelector<HTMLElement>('#sh-set .setcrumb a:nth-of-type(2)');
+    if (!crumb) {
+      throw new Error('no breadcrumb link to the sheet');
+    }
     crumb.click();
     crumb.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
   });

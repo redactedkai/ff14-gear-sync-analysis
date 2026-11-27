@@ -13,7 +13,7 @@ import type { Page } from 'playwright';
 export async function checkSetPageColumns(pg: Page) {
   const emptySheet = { ...FILL_SHEET, id: 's_empty_page', name: 'Empty page', level: 100, sync: { on: false, cap: 795 } };
   await seedSheets(pg, [SET_SHEET, emptySheet]);
-  const open = async (sheetName: string, setName: string, width, height) => {
+  const open = async (sheetName: string, setName: string, width: number, height: number) => {
     await pg.setViewportSize({ width, height });
     await reloadAtSheets(pg);
     await waitReady(pg);

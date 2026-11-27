@@ -5,6 +5,8 @@ import { check, checkNoBadText, expect, same } from '../../lib/expect.ts';
 import { pieceSheet } from '../../lib/fixtures.ts';
 import { hasHScroll } from '../../lib/nav.ts';
 import { openSet, seedSheets } from '../../lib/sheets.ts';
+import type { StatKey } from '../../../../src/core/constants.ts';
+import type { Stone } from '../../../../src/core/types.ts';
 import type { Page } from 'playwright';
 
 /** The overmeld odds in a set page's materia menu (docs/mechanics/materia.md): an overmeld slot's menu has an "odds" row with
@@ -15,7 +17,7 @@ import type { Page } from 'playwright';
  * Overmeld chips stay locked until the slots before them hold a stone, so those are seeded. */
 export async function checkOvermeldOdds(pg: Page) {
   await pg.setViewportSize(NARROW);
-  const stone = (stat, grade) => ({ stat, grade });
+  const stone = (stat: StatKey, grade: number): Stone => ({ stat, grade });
   await seedSheets(pg, [
     pieceSheet('s_odds_sge', 'Odds Sage', 'SGE', 7, 49309, [stone('crit', 12), stone('crit', 12)]),
     pieceSheet('s_odds_war', 'Odds Warrior', 'WAR', 0, 14756, [stone('crit', 7), stone('crit', 7)]),

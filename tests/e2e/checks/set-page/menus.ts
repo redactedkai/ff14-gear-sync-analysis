@@ -2,11 +2,11 @@
 
 import assert from 'node:assert';
 import { shot } from '../../lib/constants.ts';
-import { check, checkNoBadText, expect, poll } from '../../lib/expect.ts';
+import { check, checkNoBadText, expect, mustFind, poll } from '../../lib/expect.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { hasHScroll } from '../../lib/nav.ts';
 import { expectApplyCount, expectMealEmpty, expectPieceEmpty, openSageSet, seedSheet } from '../../lib/sheets.ts';
-import type { Page } from 'playwright';
+import type { Locator, Page } from 'playwright';
 
 /** Longest main-thread task allowed while a set page's piece menu or Food menu opens and draws its rows, at 4x slower CPU
  * (ms), on a machine as fast as the one it was measured on (CALIBRATION_REFERENCE_MS); a slower or busier machine gets a
@@ -31,7 +31,20 @@ const CALIBRATION_REFERENCE_MS = 75;
 /** The longest task allowed for a menu (ms) when the calibration task took `calibrationMs`: MENU_LONG_TASK_MS on a machine as fast
  * as the reference (or faster), and that much times how many times slower than the reference the machine is now. A menu that
  * draws its rows with more work than before takes longer by the same factor whatever the machine's speed, so it still fails. */
-const menuLimit = calibrationMs => MENU_LONG_TASK_MS * Math.max(1, calibrationMs / CALIBRATION_REFERENCE_MS);
+const menuLimit = (calibrationMs: number) => MENU_LONG_TASK_MS * Math.max(1, calibrationMs / CALIBRATION_REFERENCE_MS);
+
+/** What one opening of a menu showed: its row count at the first frame and when the rows stopped growing, and the longest task (ms). */
+interface MenuRun {
+  first: number;
+  last: number;
+  longest: number;
+}
+
+/** The piece count a menu's footer states (the footer starts with it: "356 pieces"). */
+async function piecesInMenu(menu: Locator) {
+  const footer = mustFind((await menu.locator('.same-foot').innerText()).match(/^(\d+) pieces/), 'the menu footer with its piece count');
+  return Number(footer[1]);
+}
 
 /** The menus of a set page draw a long list in steps (ui/views/limit-rows.ts): on open the menu shows a window of rows and
  * the later ones follow, so no task is long at 4x slower CPU; every piece is still there at the end (the footer's count),
@@ -46,7 +59,7 @@ export async function checkMenuSteps(pg: Page) {
   const open = (buttonSel: string, menuSel: string) =>
     pg.evaluate(
       async ([buttonSelector, menuSelector]) => {
-        const frame = () => new Promise(done => requestAnimationFrame(done));
+        const frame = () => new Promise<void>(done => requestAnimationFrame(() => done()));
         const rows = () => document.querySelectorAll(`${menuSelector} .same-item`).length;
         let longest = 0;
         const observer = new PerformanceObserver(list => {
@@ -55,7 +68,11 @@ export async function checkMenuSteps(pg: Page) {
           }
         });
         observer.observe({ type: 'longtask' });
-        document.querySelector(buttonSelector).click();
+        const button = document.querySelector<HTMLElement>(buttonSelector);
+        if (!button) {
+          throw new Error(`no ${buttonSelector}`);
+        }
+        button.click();
         while (!document.querySelector(`${menuSelector} .same-item`)) {
           await frame();
         }
@@ -67,11 +84,11 @@ export async function checkMenuSteps(pg: Page) {
           still = rows() === last ? still + 1 : 0;
           last = rows();
         }
-        await new Promise(done => setTimeout(done, 100)); // long-task entries arrive after the task
+        await new Promise<void>(done => setTimeout(done, 100)); // long-task entries arrive after the task
         observer.disconnect();
         return { first, last, longest };
       },
-      [buttonSel, menuSel],
+      [buttonSel, menuSel] as const,
     );
   // The shortest of CALIBRATION_RUNS runs of the calibration task (ms), at the page's current slowdown
   const calibrate = () =>
@@ -88,13 +105,13 @@ export async function checkMenuSteps(pg: Page) {
         }
         return sink >= 0 ? shortest : 0;
       },
-      [CALIBRATION_PASSES, CALIBRATION_RUNS],
+      [CALIBRATION_PASSES, CALIBRATION_RUNS] as const,
     );
   // Open the menu MENU_RUNS times (shut between); the rows are checked on every run, the longest task is the best of the runs.
   // `limit` is what the longest task may be (ms): the calibration task is timed before and after, and the shorter of the two
   // sets it (menuLimit), so a machine that is busy for the whole step is allowed what it is slower by
   const openBest = async (buttonSel: string, menuSel: string) => {
-    let best;
+    let best: MenuRun | null = null;
     let calibrationMs = await calibrate();
     for (let run = 0; run < MENU_RUNS; run++) {
       if (run) {
@@ -107,7 +124,7 @@ export async function checkMenuSteps(pg: Page) {
       }
     }
     calibrationMs = Math.min(calibrationMs, await calibrate());
-    return { ...best, limit: menuLimit(calibrationMs), calibrationMs };
+    return { ...mustFind(best, 'a run of the menu'), limit: menuLimit(calibrationMs), calibrationMs };
   };
   const close = async () => {
     await pg.keyboard.press('Escape');
@@ -117,7 +134,7 @@ export async function checkMenuSteps(pg: Page) {
 
   // the head piece menu (a long list): a window first, then every piece
   const head = await openBest('#sh-gear tr[data-row="2"] [data-pick]', '.pick-menu');
-  const total = Number((await pg.locator('.pick-menu .same-foot').innerText()).match(/^(\d+) pieces/)[1]);
+  const total = await piecesInMenu(pg.locator('.pick-menu'));
   assert.ok(total > 200, `a long list to test with (${total} pieces)`);
   assert.ok(head.first < total / 2, `the head menu opens with a window of rows, not all ${total}: ${head.first}`);
   assert.equal(
@@ -204,7 +221,7 @@ export async function checkMenuClicks(pg: Page) {
   const mealMenu = pg.locator('#sh-meal-menu');
   await food.click();
   const meal = mealMenu.locator('.same-item[data-meal]:not([data-meal=""])').first();
-  const mealKey = await meal.getAttribute('data-meal');
+  const mealKey = mustFind(await meal.getAttribute('data-meal'), 'the first meal key');
   await meal.click();
   await expect(mealMenu).toBeHidden();
   await expect(food).toContainText(mealKey);
@@ -235,8 +252,15 @@ export async function checkPickMenu(pg: Page) {
   check(!(await hasHScroll(pg)), `the piece menu scrolls the page sideways at 960 px`);
   await poll('the menu to sit between the pinned header and the window bottom, inside the right edge', async () => {
     const got = await pg.evaluate(() => {
-      const box = document.querySelector('.pick-menu').getBoundingClientRect();
-      const head = document.querySelector('#sh-set .shead').getBoundingClientRect();
+      const boxOf = (selector: string) => {
+        const element = document.querySelector(selector);
+        if (!element) {
+          throw new Error(`no ${selector}`);
+        }
+        return element.getBoundingClientRect();
+      };
+      const box = boxOf('.pick-menu');
+      const head = boxOf('#sh-set .shead');
       const round = Math.round;
       return {
         menuTop: round(box.top),
@@ -255,12 +279,19 @@ export async function checkPickMenu(pg: Page) {
 
   // scrolled under the sticky headings, the row's menu button stays below the pinned header and the column names
   const covered = await pg.evaluate(() => {
-    const row = document.querySelector('#sh-gear tr[data-row="6"] [data-pick]');
+    const boxOf = (selector: string) => {
+      const element = document.querySelector(selector);
+      if (!element) {
+        throw new Error(`no ${selector}`);
+      }
+      return element;
+    };
+    const row = boxOf('#sh-gear tr[data-row="6"] [data-pick]');
     scrollBy(0, row.getBoundingClientRect().top - 4); // the row to the window's top, where the headings stick
-    const head = document.querySelector('#sh-set .shead').getBoundingClientRect();
-    const names = document.querySelector('#sh-gear thead th').getBoundingClientRect();
+    const head = boxOf('#sh-set .shead').getBoundingClientRect();
+    const names = boxOf('#sh-gear thead th').getBoundingClientRect();
     const box = row.getBoundingClientRect();
-    const hit = y => document.elementFromPoint(box.left + 10, y);
+    const hit = (y: number) => document.elementFromPoint(box.left + 10, y);
     const bad = [];
     if (!hit((head.top + head.bottom) / 2)?.closest('.shead')) {
       bad.push('pinned header');
@@ -278,7 +309,7 @@ export async function checkPickMenu(pg: Page) {
   await pg.waitForFunction(() => document.activeElement?.matches('.pick-menu input[type="text"]'));
   const pieces = menu.locator('.same-item[data-game-id]');
   // the menu draws its rows in steps (checkMenuSteps): wait for all of them, as many as the footer counts
-  const count = Number((await menu.locator('.same-foot').innerText()).match(/^(\d+) pieces/)[1]);
+  const count = await piecesInMenu(menu);
   await expect(pieces).toHaveCount(count);
   check(count > 1, `the feet menu lists ${count} pieces`);
   await menu.locator('input[type="text"]').fill('zzzz');

@@ -40,7 +40,7 @@ export async function checkSetPage(pg: Page) {
       localStorage.setItem(`${key}:sheet:${sheet.id}`, JSON.stringify(sheet));
       localStorage.setItem(`${key}:sheets`, JSON.stringify({ v: 1, order: [sheet.id] }));
     },
-    [STORE_KEY, SET_SHEET],
+    [STORE_KEY, SET_SHEET] as const,
   );
   await reloadAtSheets(pg);
   await waitReady(pg);

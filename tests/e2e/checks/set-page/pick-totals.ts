@@ -2,11 +2,14 @@
 // finds for the same set. The stories prove the menus send their pick (materia-menu.spec, food-menu.spec) and the unit tests prove
 // the stones and the totals; this proves the page wires one to the other.
 
-import { check, expect, poll } from '../../lib/expect.ts';
+import { check, expect, mustFind, poll } from '../../lib/expect.ts';
 import { coreSet } from '../../lib/core.ts';
 import { SET_SHEET } from '../../lib/fixtures.ts';
 import { checkTotals } from '../../lib/shared-checks.ts';
 import { expectApplyCount, expectMealEmpty, openSageSet, seedSheet } from '../../lib/sheets.ts';
+import { STAT_LABEL } from '../../../../src/core/constants.ts';
+import { isOneOf, keysOf } from '../../../../src/core/guards.ts';
+import type { Stone } from '../../../../src/core/types.ts';
 import type { Page } from 'playwright';
 
 /** The seeded Sage sheet's item level sync, as the core takes it (the sheet's own: level 100, item level sync 123). */
@@ -16,7 +19,7 @@ const HEAD_ROW = 2;
 const HEAD_CHIP = `[data-chip="${HEAD_ROW}:0"]`;
 
 /** The seeded set's pieces, as saved, with `stones` on its head piece. */
-function setWithHeadStones(stones, meal = null) {
+function setWithHeadStones(stones: Stone[], meal: string | null = null) {
   const [saved] = SET_SHEET.sets;
   return { pieces: saved.pieces.map((piece, row) => (row === HEAD_ROW ? { ...piece, stones } : piece)), meal };
 }
@@ -38,31 +41,37 @@ export async function checkMateriaPick(pg: Page) {
   await expect(menu).toBeVisible();
   const offered = await menu
     .locator('button[data-stone]:not([disabled])')
-    .evaluateAll(buttons => buttons.map(button => button.dataset.stone));
+    .evaluateAll(buttons =>
+      buttons.flatMap(button => (button instanceof HTMLElement && button.dataset.stone ? [button.dataset.stone] : [])),
+    );
   check(offered.length > 0, 'the head piece materia menu offers no stone');
-  let picked = null;
+  let picked: { stone: string; totals: Record<string, number> } | null = null;
   for (const stone of offered) {
-    const [stat, grade] = stone.split(':');
-    const totals = await coreSet('SGE', SAGE_SYNC, setWithHeadStones([{ stat, grade: Number(grade) }]));
+    const [statText, grade] = stone.split(':');
+    if (!isOneOf(keysOf(STAT_LABEL), statText)) {
+      throw new Error(`the head menu offers a stone of the unknown stat ${statText}`);
+    }
+    const totals = await coreSet('SGE', SAGE_SYNC, setWithHeadStones([{ stat: statText, grade: Number(grade) }]));
     if (Object.keys(totals).some(key => totals[key] !== baseline[key])) {
       picked = { stone, totals };
       break;
     }
   }
   check(picked !== null, `none of the ${offered.length} stones of the head menu changes the Total; pick another piece`);
+  const pick = mustFind(picked, 'a stone of the head menu that changes the Total');
 
-  await menu.locator(`button[data-stone="${picked.stone}"]`).click();
+  await menu.locator(`button[data-stone="${pick.stone}"]`).click();
   await expect(menu).toBeHidden();
   await poll('the focus to go back to the head chip', async () => ({
     ok: await chip.evaluate(element => element === document.activeElement),
     got: 'elsewhere',
   }));
   await expectApplyCount(pg, 1);
-  await checkTotals(pg, `the head piece with ${picked.stone}`, picked.totals);
+  await checkTotals(pg, `the head piece with ${pick.stone}`, pick.totals);
 
   // the stone is the head chip's: its menu opens on it, and Discard puts the piece and the Total back
   await chip.click();
-  await expect(menu.locator(`button[data-stone="${picked.stone}"].on`)).toHaveCount(1);
+  await expect(menu.locator(`button[data-stone="${pick.stone}"].on`)).toHaveCount(1);
   await pg.keyboard.press('Escape');
   await expect(menu).toBeHidden();
   await pg.click('#sh-discard');
@@ -84,7 +93,7 @@ export async function checkMealPick(pg: Page) {
   const menu = pg.locator('#sh-meal-menu');
   await food.click();
   const meal = menu.locator('.same-item[data-meal]:not([data-meal=""])').first();
-  const mealKey = await meal.getAttribute('data-meal');
+  const mealKey = mustFind(await meal.getAttribute('data-meal'), 'the first meal key');
   const withMeal = await coreSet('SGE', SAGE_SYNC, setWithHeadStones([], mealKey));
   check(
     Object.keys(withMeal).some(key => withMeal[key] !== baseline[key]),
