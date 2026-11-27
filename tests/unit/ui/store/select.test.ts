@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Select, shallowEq } from '../../../../src/ui/store/select.ts';
 import { Store } from '../../../../src/ui/store/store.ts';
-import { fakeLitHost } from '../../helpers/fakes.ts';
+import { fakeLitHost } from '../../helpers/fakes/fakes.ts';
 
 interface DemoState extends Record<string, object> {
   settings: { count: number; other: number; pair: { a: number; b: number } };

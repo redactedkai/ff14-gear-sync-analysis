@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createOverlays } from '../../../src/ui/overlays.ts';
 import type { OverlayElement, OverlayKeyEvent, OverlayLayer, OverlayOpener } from '../../../src/ui/overlays.ts';
-import { FakeDocument, element } from '../helpers/dom-fakes.ts';
+import { FakeDocument, element } from '../helpers/fakes/dom-fakes.ts';
 
 /* A layer over `root` and `opener`, counting how often it closed. */
 type CountedLayer = OverlayLayer & { closed: number };

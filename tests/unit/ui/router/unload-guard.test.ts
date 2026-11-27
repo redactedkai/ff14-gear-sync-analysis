@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { UNLOAD_GUARD_OFF_KEY, installUnloadGuard, unloadGuardDisabled } from '../../../../src/ui/router/unload-guard.ts';
 import type { UnloadEvent } from '../../../../src/ui/router/unload-guard.ts';
-import { fakeStorage, fakeWindow } from '../../helpers/fakes.ts';
+import { fakeStorage, fakeWindow } from '../../helpers/fakes/fakes.ts';
 
 /* A window stand-in (fakes.ts fakeWindow) with `unload()`: it fires a `beforeunload` event as the browser hands it, and returns that event. */
 function fakeUnloadWindow() {

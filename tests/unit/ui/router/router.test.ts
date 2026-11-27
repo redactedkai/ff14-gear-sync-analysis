@@ -9,10 +9,10 @@ import type { SheetsFacade } from '../../../../src/ui/store/sheets-facade.ts';
 import type { LeaveMove } from '../../../../src/ui/store/sheets-actions.ts';
 import type { HistoryEntry, RouterOptions } from '../../../../src/ui/router/router.ts';
 import { DEFAULT_ROUTE, formatRoute, titleOf } from '../../../../src/ui/router/routes.ts';
-import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { fakeStorage, sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
 import { saveSheet } from '../../../../src/ui/sheets/storage.ts';
-import { restoreOpen } from '../../helpers/common.ts';
-import { createStores } from '../../helpers/stores.ts';
+import { restoreOpen } from '../../helpers/fixtures/common.ts';
+import { createStores } from '../../helpers/fixtures/stores.ts';
 
 /* A browser history: `entries` ({hash, state}), `at` (the current one). A move the page asks for (go) and one the player
    makes (back, forward, type) are delivered to the router's popstate listener when the test calls `deliver()`; a move past

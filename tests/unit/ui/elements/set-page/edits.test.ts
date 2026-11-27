@@ -4,12 +4,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { placePiece } from '../../../../../src/ui/sheets/set-edits.ts';
 import { makeJobContext } from '../../../../../src/core/job-context.ts';
-import { bind } from '../../../helpers/set-page-bind.ts';
-import { hasNumber } from '../../../helpers/common.ts';
-import { SAGE_IDS, sageSet } from '../../../helpers/sheet-fixtures.ts';
+import { bind } from '../../../helpers/fixtures/set-page-bind.ts';
+import { hasNumber } from '../../../helpers/fixtures/common.ts';
+import { SAGE_IDS, sageSet } from '../../../helpers/fixtures/sheet-fixtures.ts';
 import type { PageView } from '../../../../../src/ui/elements/set-page/set-page-types.ts';
 import type { SavedGearSet } from '../../../../../src/ui/sheets/saved-types.ts';
-import { createSheetsFacade } from '../../../helpers/stores.ts';
+import { createSheetsFacade } from '../../../helpers/fixtures/stores.ts';
 
 const SGE = makeJobContext('SGE');
 

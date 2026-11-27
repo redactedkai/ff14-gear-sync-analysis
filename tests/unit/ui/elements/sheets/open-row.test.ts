@@ -4,7 +4,7 @@
 import { afterEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { opensRow } from '../../../../../src/ui/elements/sheets/open-row.ts';
-import { standsFor, stubGlobal } from '../../../helpers/dom-fakes.ts';
+import { standsFor, stubGlobal } from '../../../helpers/fakes/dom-fakes.ts';
 
 /* A click on a row: `controlInRow` is the control the click landed in (null for plain cell content), `controlOutside`
    one found above the row (the page around a table). */

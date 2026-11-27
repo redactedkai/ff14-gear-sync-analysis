@@ -14,12 +14,12 @@ import {
   SHEET_GONE_TEXT,
   copiedNote,
 } from '../../../../src/ui/sheets/store-shared.ts';
-import { createSheetsFacade, idOf, openSetOf, openSheetOf, savedSheet } from '../../helpers/stores.ts';
+import { createSheetsFacade, idOf, openSetOf, openSheetOf, savedSheet } from '../../helpers/fixtures/stores.ts';
 import { FORM_FIELD, NEW_SHEET_CAP } from '../../../../src/ui/sheets/ops.ts';
 import type { LeaveMove } from '../../../../src/ui/store/sheets-actions.ts';
-import { mustFind } from '../../helpers/common.ts';
-import type { FakeStorage } from '../../helpers/fakes.ts';
-import { WHM_CANE, fakeStorage, piece, quotaError, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { mustFind } from '../../helpers/fixtures/common.ts';
+import type { FakeStorage } from '../../helpers/fakes/fakes.ts';
+import { WHM_CANE, fakeStorage, piece, quotaError, sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 /* A store over `storage` with a clock that ticks 1 s per call and numbered ids. */
 function makeStore(storage: FakeStorage | null = fakeStorage()) {

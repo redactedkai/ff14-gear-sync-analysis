@@ -11,7 +11,7 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { syncSettings } from '../../../src/ui/job-sync-panel.ts';
 import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.ts';
 import { inProcessSolver, solverRequest } from '../../../src/ui/solver.ts';
-import { fakeWorkerScope } from '../helpers/fakes.ts';
+import { fakeWorkerScope } from '../helpers/fakes/fakes.ts';
 import type { Recipe } from '../../../src/core/recipe.ts';
 import type { HandlerAnswer, SolverRequest } from '../../../src/ui/solver.ts';
 

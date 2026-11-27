@@ -7,7 +7,7 @@ import { JOBS } from '../../../src/core/constants.ts';
 import type { SetPiece, SlotType, Sync } from '../../../src/core/types.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { averageItemLevel, evaluateSet, makeSet } from '../../../src/core/set.ts';
-import { SAGE_IDS } from '../helpers/sheet-fixtures.ts';
+import { SAGE_IDS } from '../helpers/fixtures/sheet-fixtures.ts';
 
 const NO_SYNC: Sync = { cap: 795, sync: false, level: 100 };
 const SLOTS: SlotType[] = ['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring', 'ring'];

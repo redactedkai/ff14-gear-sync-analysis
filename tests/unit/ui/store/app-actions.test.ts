@@ -2,9 +2,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { fakeFrames } from '../../helpers/frames.ts';
-import { createAppFacade, createStores } from '../../helpers/stores.ts';
-import { restoreOpen } from '../../helpers/common.ts';
+import { fakeFrames } from '../../helpers/fakes/frames.ts';
+import { createAppFacade, createStores } from '../../helpers/fixtures/stores.ts';
+import { restoreOpen } from '../../helpers/fixtures/common.ts';
 
 /* A store for `job` with the Gear browser open. */
 const storeFor = (job: string) => createAppFacade(restoreOpen({ job, tab: 'browse' }));

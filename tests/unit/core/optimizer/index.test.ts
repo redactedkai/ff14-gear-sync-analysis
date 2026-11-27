@@ -14,8 +14,8 @@ import type { GcdFailure, GcdSuccess, GoalOptions } from '../../../../src/core/t
 import { rankByTier } from '../../../../src/core/tier-rank.ts';
 import type { TierRankFailure, TierRankSuccess } from '../../../../src/core/tier-rank.ts';
 import type { Candidate, SolveResult, StatKey, Sync } from '../../../../src/core/types.ts';
-import { exhaustive, gamePool, loadoutCount } from '../../helpers/exhaustive.ts';
-import { syntheticCandidate } from '../../helpers/synthetic-candidates.ts';
+import { exhaustive, gamePool, loadoutCount } from '../../helpers/fixtures/exhaustive.ts';
+import { syntheticCandidate } from '../../helpers/fixtures/synthetic-candidates.ts';
 
 const sge = makeJobContext('SGE');
 const SYNC: Sync = { cap: 123, sync: true };

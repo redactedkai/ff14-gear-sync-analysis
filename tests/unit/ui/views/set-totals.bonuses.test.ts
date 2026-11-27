@@ -8,8 +8,8 @@ import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { sheetPageView } from '../../../../src/ui/views/sheet-sets.ts';
 import { bonusNote, evaluateInSheet, setFigures, setTotalsView } from '../../../../src/ui/views/set-totals.ts';
-import { mustFind } from '../../helpers/common.ts';
-import { rawGear, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.ts';
+import { mustFind } from '../../helpers/fixtures/common.ts';
+import { rawGear, sageSet, sheetOf, warSet } from '../../helpers/fixtures/sheet-fixtures.ts';
 import type { SavedGearSet, SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 
 const NO_SYNC = { on: false, cap: 795 };

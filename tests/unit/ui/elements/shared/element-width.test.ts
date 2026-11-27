@@ -3,8 +3,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ElementWidthController } from '../../../../../src/ui/elements/shared/element-width.ts';
-import { opaque, resizeEntry } from '../../../helpers/dom-fakes.ts';
-import { fakeLitHost } from '../../../helpers/fakes.ts';
+import { opaque, resizeEntry } from '../../../helpers/fakes/dom-fakes.ts';
+import { fakeLitHost } from '../../../helpers/fakes/fakes.ts';
 
 /* A fake ResizeObserver that records what it watches; `report(width)` delivers a size to the latest one made. */
 let watchers: FakeObserver[];

@@ -22,10 +22,10 @@ import { makeSolverHandler, solverRequest } from '../../../../src/ui/solver.ts';
 import { applyFill } from '../../../../src/ui/sheets/fill.ts';
 import { defaultFillSettings, fillRecipe } from '../../../../src/ui/sheets/fill-settings.ts';
 import { localDate } from '../../../../src/ui/views/sheet-text.ts';
-import { mustFind } from '../../helpers/common.ts';
-import { fakeStorage, quotaError } from '../../helpers/sheet-fixtures.ts';
-import { okResult } from '../../helpers/solver-answers.ts';
-import { createSheetsFacade } from '../../helpers/stores.ts';
+import { mustFind } from '../../helpers/fixtures/common.ts';
+import { fakeStorage, quotaError } from '../../helpers/fixtures/sheet-fixtures.ts';
+import { okResult } from '../../helpers/fixtures/solver-answers.ts';
+import { createSheetsFacade } from '../../helpers/fixtures/stores.ts';
 import type { SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 import type { SaveResult } from '../../../../src/ui/sheets/storage.ts';
 

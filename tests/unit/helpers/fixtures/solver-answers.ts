@@ -1,6 +1,6 @@
 /* Reading what the solver's handler answers (src/ui/solver.ts makeSolverHandler) in a test: the answer that is not an error, and
    a `solve` result of one kind. Each throws, saying what the answer was, when it is another. */
-import type { HandlerAnswer } from '../../../src/ui/solver.ts';
+import type { HandlerAnswer } from '../../../../src/ui/solver.ts';
 
 /* A handler's answer that is not an error: {result, ms}. */
 export function answered(answer: HandlerAnswer) {

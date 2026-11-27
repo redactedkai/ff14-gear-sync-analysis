@@ -9,7 +9,7 @@ import { predictRaw } from '../../../src/core/formulas.ts';
 import { rowStats } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { ITEMS } from '../../../src/core/tables.ts';
-import { rowItem } from '../helpers/model-validation.ts';
+import { rowItem } from '../helpers/fixtures/model-validation.ts';
 
 const SLOT_1H = 1,
   SLOT_SHIELD = 2;

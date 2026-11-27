@@ -8,7 +8,7 @@ import { createAppStore } from '../../../../src/ui/store/app-state.ts';
 import type { RestoredState } from '../../../../src/ui/store/app-state.ts';
 import { AUTOSAVE_DEBOUNCE_MS, startAutosave } from '../../../../src/ui/store/autosave.ts';
 import type { AutosaveTimers } from '../../../../src/ui/store/autosave.ts';
-import { fakeWindow } from '../../helpers/fakes.ts';
+import { fakeWindow } from '../../helpers/fakes/fakes.ts';
 
 const NO_SHEETS = { available: false, sheets: [], unreadable: [], indexProblem: null };
 const tick = () => new Promise<void>(resolve => setTimeout(resolve, 0));

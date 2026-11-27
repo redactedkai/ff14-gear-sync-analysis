@@ -6,11 +6,11 @@ import assert from 'node:assert/strict';
 import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { evaluateInSheet, figureChange, figuresAgainst, setFigures, setTotalsView } from '../../../../src/ui/views/set-totals.ts';
-import { hasNumber, mustFind } from '../../helpers/common.ts';
+import { hasNumber, mustFind } from '../../helpers/fixtures/common.ts';
 import type { SlotType, StatKey } from '../../../../src/core/types.ts';
 import type { Figure } from '../../../../src/ui/views/set-totals.ts';
 import type { SavedGearSet, SavedRow } from '../../../../src/ui/sheets/saved-types.ts';
-import { piece, rawGear, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.ts';
+import { piece, rawGear, sageSet, sheetOf, warSet } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 /* Level 100: the character's own points before any gear (Sage: the main stat base 440 x the job's modifier (115%) and Vitality (100%),
    420 for the speed-based substats and 440 for Determination and Piety; the level's divisor. */

@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 import { copySheet } from '../../../../src/ui/sheets/ops.ts';
 import { fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { mustFind } from '../../helpers/common.ts';
-import { sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { mustFind } from '../../helpers/fixtures/common.ts';
+import { sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
 import type { SavedGearSet, SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 
 const AT = 1762800000000;

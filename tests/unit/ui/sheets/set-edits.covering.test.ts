@@ -7,9 +7,9 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { poolItemById } from '../../../../src/core/items.ts';
 import { evaluateSet, makeSet } from '../../../../src/core/set.ts';
 import { placePiece, removedNote } from '../../../../src/ui/sheets/set-edits.ts';
-import { mustFind } from '../../helpers/common.ts';
+import { mustFind } from '../../helpers/fixtures/common.ts';
 import type { SavedGearSet } from '../../../../src/ui/sheets/saved-types.ts';
-import { SAGE_IDS, sageSet, placedOk } from '../../helpers/sheet-fixtures.ts';
+import { SAGE_IDS, sageSet, placedOk } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 const HEAD = 2;

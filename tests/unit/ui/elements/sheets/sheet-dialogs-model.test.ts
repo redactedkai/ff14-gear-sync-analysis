@@ -5,9 +5,9 @@ import { test } from 'node:test';
 import type { DeleteView, FormView } from '../../../../../src/ui/elements/sheets/sheet-dialogs-model.ts';
 import { SheetDialogs } from '../../../../../src/ui/elements/sheets/sheet-dialogs-model.ts';
 import { EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT } from '../../../../../src/ui/sheets/store-shared.ts';
-import { WHM_CANE, fakeStorage, piece, sageSet } from '../../../helpers/sheet-fixtures.ts';
-import { mustFind } from '../../../helpers/common.ts';
-import { createSheetsFacade, idOf, openSheetOf } from '../../../helpers/stores.ts';
+import { WHM_CANE, fakeStorage, piece, sageSet } from '../../../helpers/fixtures/sheet-fixtures.ts';
+import { mustFind } from '../../../helpers/fixtures/common.ts';
+import { createSheetsFacade, idOf, openSheetOf } from '../../../helpers/fixtures/stores.ts';
 
 /* The dialogs over a fresh store; `changes` counts the calls of the page's draw-again callback. */
 function bind() {

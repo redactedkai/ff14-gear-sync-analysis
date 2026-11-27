@@ -7,8 +7,8 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { numberBox } from '../../../../src/ui/number-field.ts';
 import { fillRecipe, fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.ts';
 import { parseSheet } from '../../../../src/ui/sheets/storage.ts';
-import { FakeInput, dispatchTo } from '../../helpers/dom-fakes.ts';
-import { readable, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { FakeInput, dispatchTo } from '../../helpers/fakes/dom-fakes.ts';
+import { readable, sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 

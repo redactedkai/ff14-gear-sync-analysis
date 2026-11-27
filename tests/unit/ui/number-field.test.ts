@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { TYPING_DEBOUNCE_MS, numberBox } from '../../../src/ui/number-field.ts';
 import { TARGET_GCD_RANGE } from '../../../src/ui/job-sync-panel.ts';
 import type { NumberBoxOptions } from '../../../src/ui/number-field.ts';
-import { FakeInput, FakeInputEvent, dispatchTo, stubGlobal } from '../helpers/dom-fakes.ts';
+import { FakeInput, FakeInputEvent, dispatchTo, stubGlobal } from '../helpers/fakes/dom-fakes.ts';
 
 /* A box bound to one value: {value(), leave(text), type(text), step(text)}; leave types `text` and leaves the box. */
 function box(start: number | string, lo: number, hi: number | (() => number), options: NumberBoxOptions<string> = {}) {

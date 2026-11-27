@@ -7,7 +7,7 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { OFF_TEXT, explainerItemLevel, explainerView } from '../../../../src/ui/views/sync-explainer.ts';
 import { pieceView } from '../../../../src/ui/views/piece.ts';
-import { mustFind } from '../../helpers/common.ts';
+import { mustFind } from '../../helpers/fixtures/common.ts';
 import { KEEP_LINE, pieceStatsView } from '../../../../src/ui/views/piece-stats.ts';
 
 const sage = makeJobContext('SGE');

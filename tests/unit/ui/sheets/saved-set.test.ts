@@ -6,8 +6,8 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { holdsPiece, isUsed, rowLabel, sameRow, usedRows } from '../../../../src/ui/sheets/saved-set.ts';
 import { draftChanges } from '../../../../src/ui/views/set-draft.ts';
 import { suggestionView } from '../../../../src/ui/views/set-suggestion.ts';
-import { mustFind } from '../../helpers/common.ts';
-import { THREE_CRIT_IV, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { mustFind } from '../../helpers/fixtures/common.ts';
+import { THREE_CRIT_IV, sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
 import type { SavedGearSet, SavedRow } from '../../../../src/ui/sheets/saved-types.ts';
 
 const SGE = makeJobContext('SGE');

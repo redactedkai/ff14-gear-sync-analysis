@@ -8,8 +8,8 @@ import assert from 'node:assert/strict';
 import { holdLevelSyncCap, levelSyncCap, mathJobOwner, panelOf } from '../../../src/ui/job-sync-panel.ts';
 import type { PanelSource } from '../../../src/ui/job-sync-panel.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import { restoreOpen } from '../helpers/common.ts';
-import { createAppFacade } from '../helpers/stores.ts';
+import { restoreOpen } from '../helpers/fixtures/common.ts';
+import { createAppFacade } from '../helpers/fixtures/stores.ts';
 
 test("levelSyncCap: the item level level sync gives, none at the job's level cap", () => {
   const sage = makeJobContext('SGE');

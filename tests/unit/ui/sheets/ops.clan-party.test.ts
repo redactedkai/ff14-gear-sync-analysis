@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { copySheet, newSheet } from '../../../../src/ui/sheets/ops.ts';
-import { sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 const FIELDS = { name: 'Bahamut', job: 'SGE', level: 100, sync: { on: true, cap: 123 } };
 

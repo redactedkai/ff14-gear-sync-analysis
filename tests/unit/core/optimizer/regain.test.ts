@@ -1,7 +1,7 @@
 /* Regain cuts (src/core/optimizer/regain.ts), as tier ranking uses them: a first search proves the most of one key
    under a speed rule; a second search holds that key a few points below its most and maximizes another, with the
    proof. On small real pools, with melds (where the cuts work: a stone moved off the held key is a regain), against the
-   exhaustive reference (helpers/exhaustive.ts), which shares no code with the cuts. */
+   exhaustive reference (helpers/fixtures/exhaustive.ts), which shares no code with the cuts. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
@@ -9,9 +9,9 @@ import { optimize, prepare, solve } from '../../../../src/core/optimizer/index.t
 import { addRegainCuts } from '../../../../src/core/optimizer/regain.ts';
 import { makeLimit } from '../../../../src/core/optimizer/limit.ts';
 import type { Proven, Sync } from '../../../../src/core/types.ts';
-import { exhaustive, smallPool } from '../../helpers/exhaustive.ts';
-import { rng, mustFind } from '../../helpers/common.ts';
-import { syntheticCandidate } from '../../helpers/synthetic-candidates.ts';
+import { exhaustive, smallPool } from '../../helpers/fixtures/exhaustive.ts';
+import { rng, mustFind } from '../../helpers/fixtures/common.ts';
+import { syntheticCandidate } from '../../helpers/fixtures/synthetic-candidates.ts';
 
 const NO_SYNC: Sync = { cap: null, sync: false, level: 100 };
 

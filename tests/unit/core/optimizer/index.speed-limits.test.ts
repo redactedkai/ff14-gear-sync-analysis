@@ -6,8 +6,8 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { browseItems, poolItemFromRow } from '../../../../src/core/items.ts';
 import { optimize } from '../../../../src/core/optimizer/index.ts';
 import type { DimKey, SlotType, Sync } from '../../../../src/core/types.ts';
-import { mustSolve } from '../../helpers/common.ts';
-import { exhaustive, gamePool, loadoutCount } from '../../helpers/exhaustive.ts';
+import { mustSolve } from '../../helpers/fixtures/common.ts';
+import { exhaustive, gamePool, loadoutCount } from '../../helpers/fixtures/exhaustive.ts';
 
 const war = makeJobContext('WAR');
 const sge = makeJobContext('SGE');

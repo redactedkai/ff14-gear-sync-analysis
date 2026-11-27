@@ -8,7 +8,7 @@ import { GEAR_GROUPS, gearGroupName, piecesJobCannotWear } from '../../../src/co
 import { JOB_LEVEL_CAPS } from '../../../src/core/constants.ts';
 import type { ItemRow, PoolItem, SetPiece, SlotType } from '../../../src/core/types.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
-import { itemRow } from '../helpers/common.ts';
+import { itemRow } from '../helpers/fixtures/common.ts';
 import { ROW } from '../../../src/core/constants.ts';
 
 test('the groups are the nine measured ones and hold every job once', () => {

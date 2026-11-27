@@ -12,8 +12,8 @@ import { optimize } from '../../../../src/core/optimizer/index.ts';
 import { must } from '../../../../src/core/guards.ts';
 import type { OptimizeOptions } from '../../../../src/core/optimizer/index.ts';
 import type { JobContext, PoolItem, SolveResult, SolveSuccess, StatKey, Sync } from '../../../../src/core/types.ts';
-import { mustFind, mustSolve, rng } from '../../helpers/common.ts';
-import { lexCompare } from '../../helpers/exact-solver.ts';
+import { mustFind, mustSolve, rng } from '../../helpers/fixtures/common.ts';
+import { lexCompare } from '../../helpers/fixtures/exact-solver.ts';
 
 const SYNCS: Sync[] = [
   { cap: 123, sync: true, level: 100 },

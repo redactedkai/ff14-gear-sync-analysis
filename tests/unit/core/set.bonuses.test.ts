@@ -9,7 +9,7 @@ import type { JobContext, Sync } from '../../../src/core/types.ts';
 import type { SavedGearSet } from '../../../src/ui/sheets/saved-types.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { evaluateSet, makeSet } from '../../../src/core/set.ts';
-import { rawGear, sageSet, warSet } from '../helpers/sheet-fixtures.ts';
+import { rawGear, sageSet, warSet } from '../helpers/fixtures/sheet-fixtures.ts';
 
 const NO_SYNC: Sync = { cap: 795, sync: false, level: 100 };
 

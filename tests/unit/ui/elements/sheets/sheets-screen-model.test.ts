@@ -8,10 +8,10 @@ import { shallowEq } from '../../../../../src/ui/store/select.ts';
 import type { SheetAction } from '../../../../../src/ui/elements/sheets/sheet-action.ts';
 import { inProcessSolver } from '../../../../../src/ui/solver.ts';
 import { MAX_REAL } from '../../../../../src/core/tables.ts';
-import { mustFind } from '../../../helpers/common.ts';
-import { standsFor } from '../../../helpers/dom-fakes.ts';
-import { fakeStorage } from '../../../helpers/sheet-fixtures.ts';
-import { createStores, openSetOf, openSheetOf } from '../../../helpers/stores.ts';
+import { mustFind } from '../../../helpers/fixtures/common.ts';
+import { standsFor } from '../../../helpers/fakes/dom-fakes.ts';
+import { fakeStorage } from '../../../helpers/fixtures/sheet-fixtures.ts';
+import { createStores, openSetOf, openSheetOf } from '../../../helpers/fixtures/stores.ts';
 import type { PageStore } from '../../../../../src/ui/store/page-store.ts';
 
 /* The model over a fresh store. */

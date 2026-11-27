@@ -18,7 +18,7 @@ import {
 } from '../../../../src/ui/views/sheet-sets.ts';
 import { plural } from '../../../../src/ui/text.ts';
 import { localDate, settingsLine, syncShort } from '../../../../src/ui/views/sheet-text.ts';
-import { sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.ts';
+import { sageSet, sheetOf, warSet } from '../../helpers/fixtures/sheet-fixtures.ts';
 import type { SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 import type { FigureId } from '../../../../src/ui/views/set-totals.ts';
 import type { ListSort, SetListRow } from '../../../../src/ui/views/sheet-sets.ts';

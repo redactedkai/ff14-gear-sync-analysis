@@ -1,4 +1,4 @@
-/* Saved sheet records damaged in several fields at once (helpers/fuzz.ts), from a fixed seed, through every reader: parseSheet
+/* Saved sheet records damaged in several fields at once (helpers/fixtures/fuzz.ts), from a fixed seed, through every reader: parseSheet
    and loadSheets with the sheet manager's view never throw; a record that is still readable goes through repairSheet and then
    evaluateInSheet, fillPlan and fillRecipe without throwing, and no total is NaN or negative. */
 import { test } from 'node:test';
@@ -9,11 +9,11 @@ import { repairSheet } from '../../../../src/ui/sheets/ops.ts';
 import { loadSheets, parseSheet } from '../../../../src/ui/sheets/storage.ts';
 import { sheetManagerView } from '../../../../src/ui/views/sheet-manager.ts';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
-import { mustFind, rng } from '../../helpers/common.ts';
+import { mustFind, rng } from '../../helpers/fixtures/common.ts';
 import type { ParsedSheet } from '../../../../src/ui/sheets/storage.ts';
 import type { SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
-import { damage } from '../../helpers/fuzz.ts';
-import { fakeStorage, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.ts';
+import { damage } from '../../helpers/fixtures/fuzz.ts';
+import { fakeStorage, sageSet, sheetOf, warSet } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 const CASES = 20000;
 const isTotal = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0;

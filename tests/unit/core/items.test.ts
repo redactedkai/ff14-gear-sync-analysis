@@ -21,7 +21,7 @@ import type { BrowseFilter, ParsedRow } from '../../../src/core/items.ts';
 import { ACTIVITIES, ACTIVITY_MARKET_BIT, DB_SLOT_TYPE, EXPANSIONS, ROW } from '../../../src/core/constants.ts';
 import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.ts';
 import { ITEMS, MATERIA } from '../../../src/core/tables.ts';
-import { itemRow } from '../helpers/common.ts';
+import { itemRow } from '../helpers/fixtures/common.ts';
 
 const pld = makeJobContext('PLD');
 const war = makeJobContext('WAR');

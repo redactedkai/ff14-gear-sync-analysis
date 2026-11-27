@@ -1,5 +1,5 @@
 /* Stand-ins for a DOM element and for the browser's frame callback, so a unit test runs the same code path as the page. */
-import type { HostElement } from '../../../src/ui/elements/set-page/session-types.ts';
+import type { HostElement } from '../../../../src/ui/elements/set-page/session-types.ts';
 
 /* A call an element stand-in recorded: the element's name, the method and the argument it got. */
 export type ElementCall = [name: string, method: string, argument: unknown];

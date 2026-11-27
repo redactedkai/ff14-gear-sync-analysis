@@ -14,8 +14,8 @@ import {
   newSheetFormView,
   copyHelpView,
 } from '../../../../src/ui/views/sheet-forms.ts';
-import { hasNumber, hasParts } from '../../helpers/common.ts';
-import { WHM_CANE, piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { hasNumber, hasParts } from '../../helpers/fixtures/common.ts';
+import { WHM_CANE, piece, sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 const form = (patch = {}) => ({
   name: '',

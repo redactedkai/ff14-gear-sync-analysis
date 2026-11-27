@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 import { parseSheet } from '../../../../src/ui/sheets/storage.ts';
 import { fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { mustFind } from '../../helpers/common.ts';
-import { readable, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { mustFind } from '../../helpers/fixtures/common.ts';
+import { readable, sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
 import type { SavedGearSet, SavedRow, SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 
 /* One job per profile, with the game's own main, speed and special stat written out (the game's names, not read from the

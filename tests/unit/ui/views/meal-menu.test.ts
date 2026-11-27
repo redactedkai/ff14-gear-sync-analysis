@@ -19,9 +19,9 @@ import {
 } from '../../../../src/ui/views/meal-menu.ts';
 import { setMealMenuView } from '../../../../src/ui/views/set-meal-menu.ts';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
-import { mustFind } from '../../helpers/common.ts';
-import { sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
-import { makeApp, okOf, solveOf } from '../../helpers/views.ts';
+import { mustFind } from '../../helpers/fixtures/common.ts';
+import { sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
+import { makeApp, okOf, solveOf } from '../../helpers/fixtures/views.ts';
 import type { MealAdd, MealItem, MealMenu } from '../../../../src/ui/views/meal-menu.ts';
 import type { StatKey } from '../../../../src/core/types.ts';
 

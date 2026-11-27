@@ -3,8 +3,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { MenuBox } from '../../../../../src/ui/elements/set-page/menus.ts';
 import type { HostElement } from '../../../../../src/ui/elements/set-page/session-types.ts';
-import { bind } from '../../../helpers/set-page-bind.ts';
-import { domRect, stubGlobal } from '../../../helpers/dom-fakes.ts';
+import { bind } from '../../../helpers/fixtures/set-page-bind.ts';
+import { domRect, stubGlobal } from '../../../helpers/fakes/dom-fakes.ts';
 
 /* keepMenuInView: the page scrolls to show an opened table menu and keeps its button below the pinned header and the stuck
    column names. Stand-ins for the window (innerHeight, scrollBy) and the page's boxes, in px of the window. */

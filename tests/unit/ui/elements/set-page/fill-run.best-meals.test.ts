@@ -8,10 +8,10 @@ import { FoodMenuModel } from '../../../../../src/ui/elements/set-page/food-menu
 import type { MealMenuData } from '../../../../../src/ui/elements/set-page/food-menu-model.ts';
 import type { PageView } from '../../../../../src/ui/elements/set-page/set-page-types.ts';
 import type { SavedGearSet } from '../../../../../src/ui/sheets/saved-types.ts';
-import { fakeFrames } from '../../../helpers/frames.ts';
-import { bind, twoToFill } from '../../../helpers/set-page-bind.ts';
-import { SAGE_IDS } from '../../../helpers/sheet-fixtures.ts';
-import { createSheetsFacade } from '../../../helpers/stores.ts';
+import { fakeFrames } from '../../../helpers/fakes/frames.ts';
+import { bind, twoToFill } from '../../../helpers/fixtures/set-page-bind.ts';
+import { SAGE_IDS } from '../../../helpers/fixtures/sheet-fixtures.ts';
+import { createSheetsFacade } from '../../../helpers/fixtures/stores.ts';
 
 fakeFrames({ immediate: true });
 

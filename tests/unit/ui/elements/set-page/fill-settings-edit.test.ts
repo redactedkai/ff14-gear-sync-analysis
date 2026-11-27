@@ -8,10 +8,10 @@ import { evaluateInSheet } from '../../../../../src/ui/views/set-totals.ts';
 import { makeSession } from '../../../../../src/core/session.ts';
 import { gearToSearchView } from '../../../../../src/ui/solve.ts';
 import { makeJobContext } from '../../../../../src/core/job-context.ts';
-import { bind, lateSolver, refusingSolver, tick, twoToFill } from '../../../helpers/set-page-bind.ts';
-import { mustFind } from '../../../helpers/common.ts';
-import { FakeInput, dispatchTo } from '../../../helpers/dom-fakes.ts';
-import { sageSet } from '../../../helpers/sheet-fixtures.ts';
+import { bind, lateSolver, refusingSolver, tick, twoToFill } from '../../../helpers/fixtures/set-page-bind.ts';
+import { mustFind } from '../../../helpers/fixtures/common.ts';
+import { FakeInput, dispatchTo } from '../../../helpers/fakes/dom-fakes.ts';
+import { sageSet } from '../../../helpers/fixtures/sheet-fixtures.ts';
 import type { FillSearchCriteria } from '../../../../../src/ui/sheets/saved-types.ts';
 
 const SGE = makeJobContext('SGE');

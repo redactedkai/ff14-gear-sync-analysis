@@ -3,7 +3,7 @@
    (docs/mechanics/validation.md). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MODEL_MIN_ILVL, bandAccuracy, rowItem, wikiChecks } from '../helpers/model-validation.ts';
+import { MODEL_MIN_ILVL, bandAccuracy, rowItem, wikiChecks } from '../helpers/fixtures/model-validation.ts';
 import { ITEMS } from '../../../src/core/tables.ts';
 import {
   DB_SLOT_TYPE,
@@ -17,7 +17,7 @@ import {
 import { predictRaw } from '../../../src/core/formulas.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { rowStats } from '../../../src/core/items.ts';
-import { itemRow } from '../helpers/common.ts';
+import { itemRow } from '../helpers/fixtures/common.ts';
 
 test('formula reproduces the Wiki sync caps at item level 475', () => {
   for (const c of wikiChecks()) {

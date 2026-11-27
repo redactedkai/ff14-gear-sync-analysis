@@ -17,7 +17,7 @@ import { capValue, capsFor, pieceValue, syncStats } from '../../../src/core/form
 import { browseItems, kindFactors, poolItemFromRow, rowStats } from '../../../src/core/items.ts';
 import { ITEM_STAT_ORDER, ROW } from '../../../src/core/constants.ts';
 import { IL, ITEMS, MAX_REAL } from '../../../src/core/tables.ts';
-import { itemRow } from '../helpers/common.ts';
+import { itemRow } from '../helpers/fixtures/common.ts';
 
 /* A database piece as the job sees it, synced to `cap` at its own slot share and item kind. */
 function synced(job: JobContext, name: string, cap: number) {

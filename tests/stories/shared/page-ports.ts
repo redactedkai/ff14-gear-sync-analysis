@@ -5,7 +5,7 @@ import { restoreState } from '../../../src/ui/state.ts';
 import { saveSheet } from '../../../src/ui/sheets/storage.ts';
 import { createPageStore } from '../../../src/ui/store/page-store.ts';
 import type { SavedSheet } from '../../../src/ui/sheets/saved-types.ts';
-import { fakeStorage } from '../../unit/helpers/sheet-fixtures.ts';
+import { fakeStorage } from '../../unit/helpers/fixtures/sheet-fixtures.ts';
 import { solver } from '../set-page/set-page.story.ts';
 
 /* The highest real item level the stand-in solver and the set page are given (the page's own is read from the game data). */

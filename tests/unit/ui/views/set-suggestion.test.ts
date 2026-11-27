@@ -21,11 +21,11 @@ import {
   suggestionView,
   takenSet,
 } from '../../../../src/ui/views/set-suggestion.ts';
-import { hasNumber, mustFind } from '../../helpers/common.ts';
+import { hasNumber, mustFind } from '../../helpers/fixtures/common.ts';
 import type { GearSet } from '../../../../src/core/types.ts';
 import type { SavedGearSet, SavedRow, SavedStone } from '../../../../src/ui/sheets/saved-types.ts';
 import type { FillAnswer } from '../../../../src/ui/views/set-suggestion.ts';
-import { SAGE_IDS, piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { SAGE_IDS, piece, sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 const sage = makeJobContext('SGE');
 const sheet = sheetOf('SGE', []);

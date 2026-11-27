@@ -11,8 +11,8 @@ import { ROW } from '../../../src/core/constants.ts';
 import { predictRaw, syncStats } from '../../../src/core/formulas.ts';
 import { optimize } from '../../../src/core/optimizer/index.ts';
 import { effStats } from '../../../src/core/piece.ts';
-import { exhaustive, gamePool, loadoutCount } from '../helpers/exhaustive.ts';
-import { itemRow } from '../helpers/common.ts';
+import { exhaustive, gamePool, loadoutCount } from '../helpers/fixtures/exhaustive.ts';
+import { itemRow } from '../helpers/fixtures/common.ts';
 
 /* Gear that takes more than its own slot: a two-handed weapon leaves the off-hand empty, and the Vermilion Cloaks
    (Eureka, item level 300, slot code 12) leave the head empty. White Mage keeps one A Realm Reborn wand and shield

@@ -424,4 +424,4 @@ The remaining time is mostly building the candidate lists (meld versions and dom
 | Regain cuts | `src/core/optimizer/regain.ts` (`addRegainCuts`) |
 | Pareto fronts, the staircase dominance | `src/core/optimizer/front.ts` (`frontSearch`, `paretoFilter`, `beatenOnStairs`) |
 | The page: switch, Solving… and Cancel | `src/core/recipe.ts` (`runRecipe`), `src/ui/sheets/fill-settings.ts` (`fillRecipe`), `src/ui/solve.ts` (`solveView`), `src/ui/elements/set-page/fill-run.ts` (`fill`), `src/ui/elements/set-page/set-page.ts` (`#s-by-tier`, `#sh-cancel`) |
-| Tests | `tests/unit/core/tier-rank.test.ts` (reference in `tests/unit/helpers/tier-reference.ts`; 360 more cases in `tests/sweep/`, `npm run test:full`), `tests/unit/core/optimizer/index.stat-minimums.test.ts`, `tests/unit/core/optimizer/regain.test.ts` |
+| Tests | `tests/unit/core/tier-rank.test.ts` (reference in `tests/unit/helpers/fixtures/tier-reference.ts`; 360 more cases in `tests/sweep/`, `npm run test:full`), `tests/unit/core/optimizer/index.stat-minimums.test.ts`, `tests/unit/core/optimizer/regain.test.ts` |

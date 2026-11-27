@@ -2,15 +2,15 @@
    crafted item level 110 to 115 pieces (high quality, five materia slots on the armor), a Warrior set of item level 120
    pieces, and the raw (database) stat sums the tests compare the views' totals with, so the expected numbers do not come
    from the code under test. */
-import { poolItemById } from '../../../src/core/items.ts';
-import { makeJobContext } from '../../../src/core/job-context.ts';
-import { placePiece } from '../../../src/ui/sheets/set-edits.ts';
-import type { ParsedSheet } from '../../../src/ui/sheets/storage.ts';
-import type { PlaceResult } from '../../../src/ui/sheets/set-edits.ts';
-import type { JobContext, SlotType, StatKey } from '../../../src/core/types.ts';
-import type { GearPins, SavedFillSettings, SavedGearSet, SavedRow, SavedSheet, SavedStone } from '../../../src/ui/sheets/saved-types.ts';
+import { poolItemById } from '../../../../src/core/items.ts';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
+import { placePiece } from '../../../../src/ui/sheets/set-edits.ts';
+import type { ParsedSheet } from '../../../../src/ui/sheets/storage.ts';
+import type { PlaceResult } from '../../../../src/ui/sheets/set-edits.ts';
+import type { JobContext, SlotType, StatKey } from '../../../../src/core/types.ts';
+import type { GearPins, SavedFillSettings, SavedGearSet, SavedRow, SavedSheet, SavedStone } from '../../../../src/ui/sheets/saved-types.ts';
 
-export { fakeStorage, quotaError } from './fakes.ts';
+export { fakeStorage, quotaError } from '../fakes/fakes.ts';
 
 /* Real game ids. Sage: Rainbow Cap, Robe, Slops, Archaeoskin Gloves and Shoes of Healing, Mythrite Earrings, Rainbow
    Ribbon, Mythrite Bangle, Agate Ring (all crafted, item level 115). Warrior: Ironworks Magitek Axe and the Demon

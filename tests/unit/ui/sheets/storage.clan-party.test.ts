@@ -4,8 +4,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadSheets, parseSheet, saveSheet } from '../../../../src/ui/sheets/storage.ts';
-import { mustFind } from '../../helpers/common.ts';
-import { causeOf, fakeStorage, readable, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { mustFind } from '../../helpers/fixtures/common.ts';
+import { causeOf, fakeStorage, readable, sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 /* The text of a saved record of a Sage sheet with `extra` fields added (or replaced). */
 const record = (extra: object) => JSON.stringify({ ...sheetOf('SGE', [sageSet()]), ...extra });

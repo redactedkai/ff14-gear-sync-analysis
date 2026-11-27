@@ -1,7 +1,7 @@
 /* Hand-made optimizer candidates for the tests of the search's building blocks (search.test.ts and its neighbours): a complete
    Candidate (types.ts) with a made-up piece, so a test states only the score, stats and blocked slots it is about. */
-import { mkItem } from '../../../src/core/items.ts';
-import type { Candidate, Eff, SlotType } from '../../../src/core/types.ts';
+import { mkItem } from '../../../../src/core/items.ts';
+import type { Candidate, Eff, SlotType } from '../../../../src/core/types.ts';
 
 let nextId = 0;
 

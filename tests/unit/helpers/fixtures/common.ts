@@ -2,15 +2,15 @@
    typed in from outside sources (slot shares, AkhMorning's level table), so tests stay independent of the code under
    test. The brute-force reference and real-gear pools are in exhaustive.ts. */
 import assert from 'node:assert/strict';
-import { ROW } from '../../../src/core/constants.ts';
-import { browseItems, poolItemFromRow } from '../../../src/core/items.ts';
-import { makeJobContext } from '../../../src/core/job-context.ts';
-import { ITEMS, MAX_REAL } from '../../../src/core/tables.ts';
-import { restoreState } from '../../../src/ui/state.ts';
-import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.ts';
-import type { ItemRow, JobContext, PoolItem, SolveResult, SolveSuccess } from '../../../src/core/types.ts';
-import type { Recipe } from '../../../src/core/recipe.ts';
-import type { SavedState } from '../../../src/ui/state.ts';
+import { ROW } from '../../../../src/core/constants.ts';
+import { browseItems, poolItemFromRow } from '../../../../src/core/items.ts';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
+import { ITEMS, MAX_REAL } from '../../../../src/core/tables.ts';
+import { restoreState } from '../../../../src/ui/state.ts';
+import { defaultFillSettings, fillRecipe } from '../../../../src/ui/sheets/fill-settings.ts';
+import type { ItemRow, JobContext, PoolItem, SolveResult, SolveSuccess } from '../../../../src/core/types.ts';
+import type { Recipe } from '../../../../src/core/recipe.ts';
+import type { SavedState } from '../../../../src/ui/state.ts';
 
 /* A seeded random number generator returning floats in [0, 1): the same seed gives the same sequence, so a failure
    names a case that can be reproduced. */

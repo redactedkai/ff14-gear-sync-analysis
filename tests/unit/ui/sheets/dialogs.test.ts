@@ -5,9 +5,9 @@ import { test } from 'node:test';
 import { ACK_REQUIRED_TEXT, EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT, SHEET_GONE_TEXT } from '../../../../src/ui/sheets/store-shared.ts';
 import { FORM_FIELD } from '../../../../src/ui/sheets/ops.ts';
 import { shownName, submitDialog } from '../../../../src/ui/sheets/dialogs.ts';
-import { WHM_CANE, fakeStorage, piece, sageSet } from '../../helpers/sheet-fixtures.ts';
-import { mustFind } from '../../helpers/common.ts';
-import { createSheetsFacade, idOf, openSetOf, savedSheet } from '../../helpers/stores.ts';
+import { WHM_CANE, fakeStorage, piece, sageSet } from '../../helpers/fixtures/sheet-fixtures.ts';
+import { mustFind } from '../../helpers/fixtures/common.ts';
+import { createSheetsFacade, idOf, openSetOf, savedSheet } from '../../helpers/fixtures/stores.ts';
 import type { DialogForm } from '../../../../src/ui/elements/sheets/sheet-dialogs-model.ts';
 
 /* The forms the dialogs hold, whole: every field of the kind, `fields` over the defaults. */

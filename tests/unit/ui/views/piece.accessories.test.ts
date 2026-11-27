@@ -7,8 +7,8 @@ import { ACCESSORY_SLOTS, SLOT_LABEL } from '../../../../src/core/constants.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { capsFor } from '../../../../src/core/formulas.ts';
 import { slotGroups } from '../../../../src/ui/views/piece.ts';
-import { mustFind } from '../../helpers/common.ts';
-import { gearOf, explainerViewOf, makeApp, pieceViewOf } from '../../helpers/views.ts';
+import { mustFind } from '../../helpers/fixtures/common.ts';
+import { gearOf, explainerViewOf, makeApp, pieceViewOf } from '../../helpers/fixtures/views.ts';
 
 // one job per role: tank, healer, melee, physical ranged, caster
 const JOBS = ['PLD', 'SGE', 'MNK', 'BRD', 'BLM'];

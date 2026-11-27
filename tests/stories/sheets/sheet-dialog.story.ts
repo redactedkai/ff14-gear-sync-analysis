@@ -9,7 +9,7 @@ import { saveSheet } from '../../../src/ui/sheets/storage.ts';
 import type { SavedSheet } from '../../../src/ui/sheets/saved-types.ts';
 import { restoreState } from '../../../src/ui/state.ts';
 import { createPageStore } from '../../../src/ui/store/page-store.ts';
-import { fakeStorage } from '../../unit/helpers/sheet-fixtures.ts';
+import { fakeStorage } from '../../unit/helpers/fixtures/sheet-fixtures.ts';
 
 /* The words the specs look for. */
 export const TITLE = 'New sheet';

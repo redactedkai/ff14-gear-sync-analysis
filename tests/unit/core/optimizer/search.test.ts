@@ -15,8 +15,8 @@ import {
 import type { Lagrange, LimitTable } from '../../../../src/core/optimizer/search.ts';
 import type { SearchSlot } from '../../../../src/core/optimizer/slot-index.ts';
 import type { Candidate, Limit } from '../../../../src/core/types.ts';
-import { rng, mustFind } from '../../helpers/common.ts';
-import { syntheticCandidate as cand } from '../../helpers/synthetic-candidates.ts';
+import { rng, mustFind } from '../../helpers/fixtures/common.ts';
+import { syntheticCandidate as cand } from '../../helpers/fixtures/synthetic-candidates.ts';
 
 /* One brute-force completion: the picks' score, speed and Determination totals, and the picks. */
 type Completion = { score: number; sks: number; det: number; picks: Candidate[] };

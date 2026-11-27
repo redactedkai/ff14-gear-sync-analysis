@@ -1,5 +1,5 @@
 /* Substat tiers (src/core/tiers.ts). Expected values worked by hand from AkhMorning's formulas with ParamGrow's
-   LevelModifier (2780 at level 100, 341 at level 50; AKH_LEVEL in helpers/common.ts), not from the code under test:
+   LevelModifier (2780 at level 100, 341 at level 50; AKH_LEVEL in helpers/fixtures/common.ts), not from the code under test:
    Critical Hit rate floor(200 g / div + 50) / 10 %, Direct Hit floor(550 g / div) / 10 %, Determination
    floor(140 g / div) per mille, Tenacity floor(112 g / div), Piety floor(150 g / div) MP per tick. */
 import { test } from 'node:test';
@@ -9,7 +9,7 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { JOBS } from '../../../src/core/constants.ts';
 import { statEffectKinds, statTier, tierLadder, tierSizes } from '../../../src/core/tiers.ts';
 import type { TierLadder, TierRow } from '../../../src/core/tiers.ts';
-import { AKH_LEVEL } from '../helpers/common.ts';
+import { AKH_LEVEL } from '../helpers/fixtures/common.ts';
 
 /* The tier functions for a stat that has tiers: the result, never null (a null result fails the test). */
 function tierAt(job: JobContext, stat: StatKey, points: number, level: number) {

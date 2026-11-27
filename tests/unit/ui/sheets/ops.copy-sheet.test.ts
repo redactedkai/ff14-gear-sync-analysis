@@ -13,7 +13,7 @@ import { copySheet, piecesToClear } from '../../../../src/ui/sheets/ops.ts';
 import { SET_ROW_SLOTS, parseSheet } from '../../../../src/ui/sheets/storage.ts';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
 import { must } from '../../../../src/core/guards.ts';
-import { mustFind, rng } from '../../helpers/common.ts';
+import { mustFind, rng } from '../../helpers/fixtures/common.ts';
 import type { SavedGearSet, SavedRow, SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 
 const SHEETS = 900;

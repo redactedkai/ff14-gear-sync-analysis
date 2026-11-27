@@ -1,10 +1,10 @@
 /* Test helper: checks the stat model against external truth (real items, the Wiki's item level 475 caps). Used only by
    the unit tests; nothing in src/ imports it. */
-import { RAW_SUBSTAT_IDX, ROW } from '../../../src/core/constants.ts';
-import { IL, ITEMS } from '../../../src/core/tables.ts';
-import { offhandParts, predictRaw, statLine } from '../../../src/core/formulas.ts';
-import { rowStats } from '../../../src/core/items.ts';
-import type { ItemRow } from '../../../src/core/types.ts';
+import { RAW_SUBSTAT_IDX, ROW } from '../../../../src/core/constants.ts';
+import { IL, ITEMS } from '../../../../src/core/tables.ts';
+import { offhandParts, predictRaw, statLine } from '../../../../src/core/formulas.ts';
+import { rowStats } from '../../../../src/core/items.ts';
+import type { ItemRow } from '../../../../src/core/types.ts';
 
 /* The item level range the stat model's patterns were measured on (substat shares, stat factors, the Direct Hit line).
    The database starts lower (item level 1, gen_items.py MIN_ILVL) for gear worn in low-level duties; below this its

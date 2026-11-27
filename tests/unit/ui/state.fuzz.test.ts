@@ -1,4 +1,4 @@
-/* restoreState over saved settings damaged in several fields at once (helpers/fuzz.ts), from a fixed seed: it never throws,
+/* restoreState over saved settings damaged in several fields at once (helpers/fixtures/fuzz.ts), from a fixed seed: it never throws,
    every field of the result is in range (job, level up to the job's cap, cap, sync, tabs, the piece's slot and substats,
    the search text), and restoring the result's own JSON gives the same state. */
 import { test } from 'node:test';
@@ -7,8 +7,8 @@ import { JOBS } from '../../../src/core/constants.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { MATH_TABS, TABS, defaultState, restoreState } from '../../../src/ui/state.ts';
 import type { SavedState } from '../../../src/ui/state.ts';
-import { rng } from '../helpers/common.ts';
-import { WRONG, clone, damage } from '../helpers/fuzz.ts';
+import { rng } from '../helpers/fixtures/common.ts';
+import { WRONG, clone, damage } from '../helpers/fixtures/fuzz.ts';
 
 const CASES = 40000;
 const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);

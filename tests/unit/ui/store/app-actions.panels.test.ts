@@ -4,8 +4,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createAppFacade } from '../../helpers/stores.ts';
-import { restoreOpen } from '../../helpers/common.ts';
+import { createAppFacade } from '../../helpers/fixtures/stores.ts';
+import { restoreOpen } from '../../helpers/fixtures/common.ts';
 
 /* A save in the new shape: a different job, level and sync on each tab (a Warrior at item level 705 for the browser, a
    Black Mage at level 70 for the math). */

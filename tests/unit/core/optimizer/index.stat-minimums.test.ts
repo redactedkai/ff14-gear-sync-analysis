@@ -1,5 +1,5 @@
 /* Minimums on any stat (the engine side of tier ranking, roadmap A7) against the exhaustive reference
-   (helpers/exhaustive.ts), on small real pools: the reference enumerates every legal loadout and, with melds, every
+   (helpers/fixtures/exhaustive.ts), on small real pools: the reference enumerates every legal loadout and, with melds, every
    stone placement itself, so it shares no code with the meld versions, pruning, limit tables or memo. Each minimum is
    set between the stat's total in the free result (the best set with no minimum) and the most the pool can reach, so
    it changes the answer; one past that most checks that nothing is found. */
@@ -15,9 +15,9 @@ import { gcdTierAt } from '../../../../src/core/speed.ts';
 import { makeLimit } from '../../../../src/core/optimizer/limit.ts';
 import type { SearchSlot } from '../../../../src/core/optimizer/slot-index.ts';
 import type { Candidate, JobContext, Limit, PoolItem, SlotType, SolveSuccess, StatKey, Sync } from '../../../../src/core/types.ts';
-import { exhaustive, smallPool } from '../../helpers/exhaustive.ts';
-import { mustSolve, rng } from '../../helpers/common.ts';
-import { syntheticCandidate } from '../../helpers/synthetic-candidates.ts';
+import { exhaustive, smallPool } from '../../helpers/fixtures/exhaustive.ts';
+import { mustSolve, rng } from '../../helpers/fixtures/common.ts';
+import { syntheticCandidate } from '../../helpers/fixtures/synthetic-candidates.ts';
 
 const NO_SYNC: Sync = { cap: null, sync: false, level: 100 };
 

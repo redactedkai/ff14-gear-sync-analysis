@@ -4,7 +4,7 @@
    `optPanel`) are dropped. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { restoreOpen } from '../helpers/common.ts';
+import { restoreOpen } from '../helpers/fixtures/common.ts';
 import { capCeiling } from '../../../src/core/sync-target.ts';
 import type { SavedState } from '../../../src/ui/state.ts';
 

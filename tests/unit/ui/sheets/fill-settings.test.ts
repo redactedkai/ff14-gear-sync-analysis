@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { defaultFillSettings, fillRecipe, fillSettingsOf, goalText } from '../../../../src/ui/sheets/fill-settings.ts';
-import { sageSet } from '../../helpers/sheet-fixtures.ts';
+import { sageSet } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 

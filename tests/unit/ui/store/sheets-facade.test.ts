@@ -7,8 +7,8 @@ import { createPageStore } from '../../../../src/ui/store/page-store.ts';
 import type { RestoredState } from '../../../../src/ui/store/app-state.ts';
 import { restoreState } from '../../../../src/ui/state.ts';
 import { saveSheet, sheetKey } from '../../../../src/ui/sheets/storage.ts';
-import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
-import { withRecordedReads } from '../../helpers/revision-reads.ts';
+import { fakeStorage, sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
+import { withRecordedReads } from '../../helpers/fixtures/revision-reads.ts';
 
 /* The state a page starts with when nothing is saved. */
 const DEFAULTS = restoreState(null) as unknown as RestoredState;

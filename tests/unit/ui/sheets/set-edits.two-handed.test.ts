@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { draftView } from '../../../../src/ui/views/set-draft.ts';
 import { editableCopy, placePiece, removedNote } from '../../../../src/ui/sheets/set-edits.ts';
-import { hasParts } from '../../helpers/common.ts';
-import { SAGE_IDS, sheetOf, sageSet, placedOk } from '../../helpers/sheet-fixtures.ts';
+import { hasParts } from '../../helpers/fixtures/common.ts';
+import { SAGE_IDS, sheetOf, sageSet, placedOk } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 const WHM = makeJobContext('WHM');
 const SGE = makeJobContext('SGE');

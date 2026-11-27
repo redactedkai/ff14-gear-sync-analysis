@@ -20,10 +20,10 @@ import {
 } from '../../../../src/ui/store/app-state.ts';
 import type { RestoredState } from '../../../../src/ui/store/app-state.ts';
 import { createSheetsActions } from '../../../../src/ui/store/sheets-actions.ts';
-import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { fakeStorage, sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
 import { readSheets } from '../../../../src/ui/sheets/store-shared.ts';
 import { saveSheet } from '../../../../src/ui/sheets/storage.ts';
-import { restoreOpen } from '../../helpers/common.ts';
+import { restoreOpen } from '../../helpers/fixtures/common.ts';
 
 const NO_SHEETS = { available: false, sheets: [], unreadable: [], indexProblem: null };
 const start = (saved: unknown = null) => createAppStore(restoreOpen(saved) as RestoredState, NO_SHEETS);

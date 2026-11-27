@@ -10,9 +10,9 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { predictRaw, syncStats, capsFor, jobFactor } from '../../../src/core/formulas.ts';
 import { kindFactors, browseItems, poolItemFromRow, rowStats } from '../../../src/core/items.ts';
 import { effStats } from '../../../src/core/piece.ts';
-import { MODEL_MIN_ILVL } from '../helpers/model-validation.ts';
-import { appState, itemRow, roundHalfUp } from '../helpers/common.ts';
-import { gearViewOf } from '../helpers/views.ts';
+import { MODEL_MIN_ILVL } from '../helpers/fixtures/model-validation.ts';
+import { appState, itemRow, roundHalfUp } from '../helpers/fixtures/common.ts';
+import { gearViewOf } from '../helpers/fixtures/views.ts';
 
 const at = (r: ItemRow, key: RawStatKey) => rowStats(r)[ITEM_STAT_ORDER.indexOf(key)];
 

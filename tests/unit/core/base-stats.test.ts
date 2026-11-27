@@ -7,7 +7,7 @@ import type { StatKey } from '../../../src/core/types.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { levelParams } from '../../../src/core/level-params.ts';
 import { PG } from '../../../src/core/tables.ts';
-import { AKH_LEVEL } from '../helpers/common.ts';
+import { AKH_LEVEL } from '../helpers/fixtures/common.ts';
 
 const SGE = makeJobContext('SGE');
 const WAR = makeJobContext('WAR');
@@ -32,7 +32,7 @@ test('base: Determination and Piety from the main stat base, the other substats 
   assert.equal(statBase(SGE, 'crit', 100), PG[99][0]);
 });
 
-/* Character panel numbers against AkhMorning's Level Modifiers table (AKH_LEVEL, helpers/common.ts). */
+/* Character panel numbers against AkhMorning's Level Modifiers table (AKH_LEVEL, helpers/fixtures/common.ts). */
 /* The main stat and Vitality: MAIN x the job's modifier (ClassJob.csv: Sage Mind 115, Vitality 100; Warrior Strength
    105, Vitality 110; Black Mage Intelligence 115, Vitality 100), floored, as AkhMorning and xivgear count it, without
    the clan's bonus. */

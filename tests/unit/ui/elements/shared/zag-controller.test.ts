@@ -7,9 +7,9 @@ import { HOST_ATTRIBUTE, PART_ATTRIBUTE, ZAG_ID_PREFIX, ZagController } from '..
 import { createMachine } from '@zag-js/core';
 import type { VanillaMachine } from '@zag-js/vanilla';
 import type { MachineSchema, Service } from '@zag-js/core';
-import { standsFor } from '../../../helpers/dom-fakes.ts';
-import { withLitHost } from '../../../helpers/fakes.ts';
-import type { FakeLitHost } from '../../../helpers/fakes.ts';
+import { standsFor } from '../../../helpers/fakes/dom-fakes.ts';
+import { withLitHost } from '../../../helpers/fakes/fakes.ts';
+import type { FakeLitHost } from '../../../helpers/fakes/fakes.ts';
 
 // how many effects of the tiny machine are running
 let liveEffects = 0;

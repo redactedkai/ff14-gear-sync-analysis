@@ -17,7 +17,7 @@ import type { SavedState } from '../../../src/ui/state.ts';
 import { limitCapToLevel } from '../../../src/ui/level-cap.ts';
 import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.ts';
 import { STORE_KEY } from '../../../src/ui/store-key.ts';
-import { fakeStorage } from '../helpers/fakes.ts';
+import { fakeStorage } from '../helpers/fakes/fakes.ts';
 import { browseFiltered } from '../../../src/ui/views/gear.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { DEFAULT_JOB, JOBS } from '../../../src/core/constants.ts';

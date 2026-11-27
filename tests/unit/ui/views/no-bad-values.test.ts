@@ -9,7 +9,7 @@ import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { gcdView } from '../../../../src/ui/views/gcd.ts';
 import { explainerItemLevel, explainerView } from '../../../../src/ui/views/sync-explainer.ts';
 import { tierValues, tiersView } from '../../../../src/ui/views/tiers.ts';
-import { rng } from '../../helpers/common.ts';
+import { rng } from '../../helpers/fixtures/common.ts';
 import type { JobContext } from '../../../../src/core/types.ts';
 
 const BAD_TEXT = /NaN|Infinity|undefined|\[object|\bnull\b/;

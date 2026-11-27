@@ -7,7 +7,7 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { poolItemById, slotInfo } from '../../../../src/core/items.ts';
 import { appliedFields, suggestionOf, suggestionView } from '../../../../src/ui/views/set-suggestion.ts';
 import { SET_ROW_SLOTS } from '../../../../src/ui/sheets/storage.ts';
-import { piece, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { piece, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
 import type { SavedGearSet, SavedRow } from '../../../../src/ui/sheets/saved-types.ts';
 
 const WAND = 7818; // Tidal Wave Wand, White Mage, one-handed

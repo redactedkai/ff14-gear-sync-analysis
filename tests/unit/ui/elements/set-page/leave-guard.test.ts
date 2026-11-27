@@ -7,8 +7,8 @@ import { runningLeaveText } from '../../../../../src/ui/elements/set-page/leave-
 import { FILL_CANCELLED_TEXT, RESULT_DISCARDED_TEXT } from '../../../../../src/ui/views/set-page.ts';
 import { overlays } from '../../../../../src/ui/overlays.ts';
 import { unsettledKind } from '../../../../../src/ui/store/app-state.ts';
-import { bind, heldSolver, tick, twoToFill } from '../../../helpers/set-page-bind.ts';
-import { SAGE_IDS } from '../../../helpers/sheet-fixtures.ts';
+import { bind, heldSolver, tick, twoToFill } from '../../../helpers/fixtures/set-page-bind.ts';
+import { SAGE_IDS } from '../../../helpers/fixtures/sheet-fixtures.ts';
 
 const HEAD = 2;
 

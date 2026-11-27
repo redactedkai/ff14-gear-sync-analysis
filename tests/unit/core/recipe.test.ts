@@ -11,7 +11,7 @@ import { gearFromCounts, recipePool, runRecipe } from '../../../src/core/recipe.
 import { makeSession } from '../../../src/core/session.ts';
 import { syncSettings } from '../../../src/ui/job-sync-panel.ts';
 import { itemRoutes } from '../../../src/core/items.ts';
-import { appState } from '../helpers/common.ts';
+import { appState } from '../helpers/fixtures/common.ts';
 
 const sge = makeJobContext('SGE');
 const SYNC: Sync = { cap: 123, sync: true, level: 100 };

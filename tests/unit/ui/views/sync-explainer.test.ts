@@ -10,9 +10,9 @@ import { meldSlotChoices, meldSlotsOf } from '../../../../src/ui/job-sync-panel.
 import type { RawStatKey, SlotType } from '../../../../src/core/types.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { explainerOffText } from '../../../../src/ui/views/sync-explainer.ts';
-import { SLOT_PERMILLE, appState, hasNumber, hasParts, labelled, roundHalfUp } from '../../helpers/common.ts';
-import { explainerItemLevelOf, explainerViewOf as maybeExplainerViewOf, meldKeysOf } from '../../helpers/views.ts';
-import { mustFind } from '../../helpers/common.ts';
+import { SLOT_PERMILLE, appState, hasNumber, hasParts, labelled, roundHalfUp } from '../../helpers/fixtures/common.ts';
+import { explainerItemLevelOf, explainerViewOf as maybeExplainerViewOf, meldKeysOf } from '../../helpers/fixtures/views.ts';
+import { mustFind } from '../../helpers/fixtures/common.ts';
 
 /* The explainer view of a state that shows one (a synced state), never null. */
 const explainerViewOf = (...args: Parameters<typeof maybeExplainerViewOf>) => mustFind(maybeExplainerViewOf(...args), 'the explainer view');

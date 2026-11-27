@@ -1,5 +1,5 @@
 /* Pinned pieces in the optimizer (fixedCandidate, buildCandidates' `fixed`, solve): a search with pins equals a brute-force
-   search over the same restricted loadouts (helpers/exhaustive.ts, whose `fixed` option is written independently), on
+   search over the same restricted loadouts (helpers/fixtures/exhaustive.ts, whose `fixed` option is written independently), on
    hand-made pools, real pools with pieces that cover other slots and with melds, a Target GCD and stat minimums, and
    rank by tier. Also the cases the random pools cannot name: a pinned Unique ring, every slot pinned, and the picks'
    shape. */
@@ -9,11 +9,11 @@ import { present } from '../../../../src/core/guards.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { mkItem, slotInfo, meldInfo } from '../../../../src/core/items.ts';
 import { fixedCandidate, optimize, prepare, solve } from '../../../../src/core/optimizer/index.ts';
-import { exhaustive, gamePool, loadoutCount, smallPool } from '../../helpers/exhaustive.ts';
-import { pickPins, pinsCoexist, pinsOf } from '../../helpers/pins.ts';
-import { checkPinned } from '../../helpers/tier-reference.ts';
+import { exhaustive, gamePool, loadoutCount, smallPool } from '../../helpers/fixtures/exhaustive.ts';
+import { pickPins, pinsCoexist, pinsOf } from '../../helpers/fixtures/pins.ts';
+import { checkPinned } from '../../helpers/fixtures/tier-reference.ts';
 import type { PoolItem, SlotType, StatKey, StatMap, Stone, Sync, Totals } from '../../../../src/core/types.ts';
-import { mustFind, mustSolve, rng } from '../../helpers/common.ts';
+import { mustFind, mustSolve, rng } from '../../helpers/fixtures/common.ts';
 
 /* The goal and limits of a run, in the form both optimize() and the reference take. */
 type Goal = {

@@ -6,10 +6,10 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { MAX_REAL } from '../../../../src/core/tables.ts';
 import { shownSync, syncSettings } from '../../../../src/ui/job-sync-panel.ts';
-import { appState, mustFind } from '../../helpers/common.ts';
-import type { TestAppState } from '../../helpers/common.ts';
-import { exhaustive, gamePool } from '../../helpers/exhaustive.ts';
-import { explainerViewOf, gearViewOf, makeApp, okOf, pieceViewOf, solveOf } from '../../helpers/views.ts';
+import { appState, mustFind } from '../../helpers/fixtures/common.ts';
+import type { TestAppState } from '../../helpers/fixtures/common.ts';
+import { exhaustive, gamePool } from '../../helpers/fixtures/exhaustive.ts';
+import { explainerViewOf, gearViewOf, makeApp, okOf, pieceViewOf, solveOf } from '../../helpers/fixtures/views.ts';
 
 /* Level sync (synced level 90, item level sync off) in the views. Real gear at item level 663 to 666: the equip level
    94 and 95 pieces are synced to 660 at level 90, the level 90 ones are not (core/sync-target.test.ts). */

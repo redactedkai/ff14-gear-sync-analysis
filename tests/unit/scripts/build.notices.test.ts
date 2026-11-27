@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as esbuild from 'esbuild';
 import { NOTICE_PACKAGES, ROOT, esbuildOptions } from '../../../scripts/build/build.ts';
-import { outputText } from '../helpers/esbuild-output.ts';
+import { outputText } from '../helpers/fixtures/esbuild-output.ts';
 
 /* The bundled packages whose code holds the notice that esbuild keeps, with the text that shows it in the output. */
 const CARRIES_OWN_NOTICE = [{ bundles: /^(lit|lit-html|lit-element|@lit\/.*)$/, shows: 'SPDX-License-Identifier: BSD-3-Clause' }];

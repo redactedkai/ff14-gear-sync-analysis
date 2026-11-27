@@ -10,10 +10,10 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { runRecipe } from '../../../../src/core/recipe.ts';
 import { makeSession } from '../../../../src/core/session.ts';
 import { applyFill, fillPlan } from '../../../../src/ui/sheets/fill.ts';
-import { appState } from '../../helpers/common.ts';
-import { okRunOf } from '../../helpers/views.ts';
+import { appState } from '../../helpers/fixtures/common.ts';
+import { okRunOf } from '../../helpers/fixtures/views.ts';
 import type { Recipe } from '../../../../src/core/recipe.ts';
-import { setOfRows } from '../../helpers/sheet-fixtures.ts';
+import { setOfRows } from '../../helpers/fixtures/sheet-fixtures.ts';
 import type { SavedGearSet } from '../../../../src/ui/sheets/saved-types.ts';
 
 const emptySet = (): SavedGearSet => setOfRows();

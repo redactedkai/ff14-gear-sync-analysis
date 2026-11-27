@@ -5,7 +5,7 @@
    1. real pieces at 120 and 125, in every slot, carry round(ItemLevel row x slot percent) as their main stat and
       their largest substat (the rule the caps come from, checked on both sides of 123);
    2. the 123 caps derived from the raw ItemLevel row 123 and the BaseParam slot percents typed into the tests
-      (SLOT_PERMILLE in helpers/common.ts, not read from item-format.json) equal what the page uses (capsFor), for a
+      (SLOT_PERMILLE in helpers/fixtures/common.ts, not read from item-format.json) equal what the page uses (capsFor), for a
       healer, a Strength job and Paladin;
    3. the ten armor and accessory substat caps sum to 296, a 2.22 s GCD at level 50 (AkhMorning's table, see
       core/speed.test.ts), and the generic-piece optimizer reaches exactly that sum.
@@ -20,7 +20,7 @@ import { ROW } from '../../../src/core/constants.ts';
 import { optimize } from '../../../src/core/optimizer/index.ts';
 import { gcdFor } from '../../../src/core/speed.ts';
 import { IL, ITEMS } from '../../../src/core/tables.ts';
-import { SLOT_PERMILLE, roundHalfUp } from '../helpers/common.ts';
+import { SLOT_PERMILLE, roundHalfUp } from '../helpers/fixtures/common.ts';
 
 // Raw row layout (src/core/item-format.json): [name, slot code, item level, equip level, job mask, "12 stats", unique];
 // stats are str, dex, int, mind, vit, then seven substats.

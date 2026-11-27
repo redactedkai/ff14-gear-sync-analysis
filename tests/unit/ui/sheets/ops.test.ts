@@ -3,7 +3,7 @@
    wear cleared (a real White Mage cane), and moving a list's rows. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mustFind } from '../../helpers/common.ts';
+import { mustFind } from '../../helpers/fixtures/common.ts';
 import { MAX_REAL } from '../../../../src/core/tables.ts';
 import { capCeiling } from '../../../../src/core/sync-target.ts';
 import { SET_ROW_SLOTS, parseSheet } from '../../../../src/ui/sheets/storage.ts';
@@ -27,7 +27,7 @@ import {
   ranges,
   sheetSettings,
 } from '../../../../src/ui/sheets/ops.ts';
-import { WHM_CANE, piece, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { WHM_CANE, piece, sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 const AT = Date.UTC(2026, 10, 9, 12);
 

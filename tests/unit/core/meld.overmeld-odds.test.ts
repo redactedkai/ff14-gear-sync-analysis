@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { MATERIA } from '../../../src/core/tables.ts';
 import { overmeldChance, overmeldNumber, usesNqOvermeldRates } from '../../../src/core/meld.ts';
-import { piece } from '../helpers/common.ts';
+import { piece } from '../helpers/fixtures/common.ts';
 
 const earrings = piece(makeJobContext('SGE'), "Courtly Lover's Earrings of Healing");
 const axe = piece(makeJobContext('WAR'), 'Axe of the Fury');

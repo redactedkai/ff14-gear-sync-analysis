@@ -1,10 +1,10 @@
 /* The page's store for the unit tests of the components, the router and the sheets: the real state, actions and facades
    (src/ui/store/page-store.ts). The facades are what the screens read on the page. */
-import { restoreState } from '../../../src/ui/state.ts';
-import { createPageStore } from '../../../src/ui/store/page-store.ts';
+import { restoreState } from '../../../../src/ui/state.ts';
+import { createPageStore } from '../../../../src/ui/store/page-store.ts';
 import { mustFind } from './common.ts';
-import type { PageStore, PageStoreOptions } from '../../../src/ui/store/page-store.ts';
-import type { SavedState } from '../../../src/ui/state.ts';
+import type { PageStore, PageStoreOptions } from '../../../../src/ui/store/page-store.ts';
+import type { SavedState } from '../../../../src/ui/state.ts';
 
 /* What a test passes besides the restored state: the page store's options without `restored`. */
 export type StoreOptions = Omit<PageStoreOptions, 'restored'>;

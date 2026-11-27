@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseSheet } from '../../../../src/ui/sheets/storage.ts';
-import { causeOf, readable, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
+import { causeOf, readable, sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 const read = (fields: object) => parseSheet(JSON.stringify(sheetOf('SGE', [{ ...sageSet(), ...fields }])), 's_1');
 

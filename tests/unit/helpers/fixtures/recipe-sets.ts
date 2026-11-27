@@ -1,9 +1,9 @@
 /* Helpers for the tests that compare the sets Auto-fill (runRecipe) returns: a set as text, what the search ranks as text,
    and a seeded shuffle of a pool. Shared by core/recipe.round-trip and core/recipe.pool-order. */
-import { evaluateSet } from '../../../src/core/set.ts';
+import { evaluateSet } from '../../../../src/core/set.ts';
 import { rng } from './common.ts';
-import type { Recipe } from '../../../src/core/recipe.ts';
-import type { GearSet, JobContext, StatKey, Sync } from '../../../src/core/types.ts';
+import type { Recipe } from '../../../../src/core/recipe.ts';
+import type { GearSet, JobContext, StatKey, Sync } from '../../../../src/core/types.ts';
 
 /* A set's pieces (slot, game id, stones) and meal as text: two equal texts are the same set. */
 export const setKey = (set: GearSet): string =>

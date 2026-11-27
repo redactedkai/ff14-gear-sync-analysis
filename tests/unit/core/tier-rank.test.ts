@@ -1,4 +1,4 @@
-/* Rank by tier (core/tier-rank.ts) against the reference in helpers/tier-reference.ts: every legal loadout and meal,
+/* Rank by tier (core/tier-rank.ts) against the reference in helpers/fixtures/tier-reference.ts: every legal loadout and meal,
    the stage rule of the spec applied to the whole list. A longer random sweep for the search's speed-ups is in
    tests/sweep/ (npm run test:full). */
 import { test } from 'node:test';
@@ -10,9 +10,9 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { optimize } from '../../../src/core/optimizer/index.ts';
 import { rankByTier } from '../../../src/core/tier-rank.ts';
 import { rankTierOf, tierStart } from '../../../src/core/tiers.ts';
-import { rng } from '../helpers/common.ts';
-import { smallPool } from '../helpers/exhaustive.ts';
-import { asVector, checkGcd, checkNoGcd, tierLex } from '../helpers/tier-reference.ts';
+import { rng } from '../helpers/fixtures/common.ts';
+import { smallPool } from '../helpers/fixtures/exhaustive.ts';
+import { asVector, checkGcd, checkNoGcd, tierLex } from '../helpers/fixtures/tier-reference.ts';
 
 test('rank by tier matches the reference: two and three keys, main stat, food off / one meal / every meal, levels 50 and 100', () => {
   // The seed fixes which pools and keys are drawn from the item data, so a change in the data or the job tables moves

@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { readStyles } from '../../../scripts/build/styles.ts';
 import { buildMarks, esbuildOptions, SRC, startupScript } from '../../../scripts/build/build.ts';
-import { fakeWorkerScope } from '../helpers/fakes.ts';
-import { outputText } from '../helpers/esbuild-output.ts';
+import { fakeWorkerScope } from '../helpers/fakes/fakes.ts';
+import { outputText } from '../helpers/fixtures/esbuild-output.ts';
 
 /* esbuild reads a .ts module imported with its .ts extension (which Node's type stripping needs too), strips the types
    and bundles it; the page's own text.ts and view-cache.ts are built this way. */
@@ -204,7 +204,7 @@ test('build: the solver worker loads from the posted data texts and answers like
   worker.send({ data: structuredClone(WORKER_DATA) });
   assert.equal(worker.scope.__solverData, undefined, 'the texts are let go once loaded');
   const { inProcessSolver, solverRequest } = await import('../../../src/ui/solver.ts');
-  const { inputsOf, makeApp } = await import('../helpers/views.ts');
+  const { inputsOf, makeApp } = await import('../helpers/fixtures/views.ts');
   const app = makeApp('WHM', { cap: 200, level: 100 });
   app.recipe.food = true;
   const inputs = inputsOf(app);

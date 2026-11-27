@@ -4,9 +4,9 @@
 import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { RowReorder } from '../../../../../src/ui/elements/sheets/row-reorder.ts';
-import { standsFor, stubGlobal } from '../../../helpers/dom-fakes.ts';
-import { fakeStorage } from '../../../helpers/sheet-fixtures.ts';
-import { createSheetsFacade } from '../../../helpers/stores.ts';
+import { standsFor, stubGlobal } from '../../../helpers/fakes/dom-fakes.ts';
+import { fakeStorage } from '../../../helpers/fixtures/sheet-fixtures.ts';
+import { createSheetsFacade } from '../../../helpers/fixtures/stores.ts';
 
 // the controller moves the focus a frame after a step: run those frames at once
 let restoreFrames = () => {};

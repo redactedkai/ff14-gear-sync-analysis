@@ -8,8 +8,8 @@ import { barInput, mathSelection, pieceInput, setMathJob, setMathSync } from '..
 import type { AppFacade } from '../../../../../src/ui/store/app-facade.ts';
 import { shallowEq } from '../../../../../src/ui/store/select.ts';
 import { overlays } from '../../../../../src/ui/overlays.ts';
-import { restoreOpen } from '../../../helpers/common.ts';
-import { createStores } from '../../../helpers/stores.ts';
+import { restoreOpen } from '../../../helpers/fixtures/common.ts';
+import { createStores } from '../../../helpers/fixtures/stores.ts';
 
 /* The page's store of `saved` (the math tab open). */
 function opened(saved: Record<string, unknown> = {}) {

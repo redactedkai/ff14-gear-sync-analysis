@@ -10,8 +10,8 @@ import type { PageStore } from '../../../../src/ui/store/page-store.ts';
 import { STATE_PARTS } from '../../../../src/ui/store/app-state.ts';
 import type { AppState, RestoredState } from '../../../../src/ui/store/app-state.ts';
 import { partKey } from '../../../../src/ui/store/store.ts';
-import { restoreOpen } from '../../helpers/common.ts';
-import { withRecordedReads } from '../../helpers/revision-reads.ts';
+import { restoreOpen } from '../../helpers/fixtures/common.ts';
+import { withRecordedReads } from '../../helpers/fixtures/revision-reads.ts';
 
 const tick = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 

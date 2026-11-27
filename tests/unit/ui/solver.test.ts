@@ -8,11 +8,11 @@ import { makeSession } from '../../../src/core/session.ts';
 import { evaluateSet } from '../../../src/core/set.ts';
 import { inProcessSolver, isCancelled, makeSolverHandler, solverRequest, workerSolver } from '../../../src/ui/solver.ts';
 import { gearToSearchView, solveView } from '../../../src/ui/solve.ts';
-import { mustFind } from '../helpers/common.ts';
-import { errorEvent } from '../helpers/fakes.ts';
-import { solverReply } from '../helpers/set-page-bind.ts';
-import { answered, badPinResult, okResult } from '../helpers/solver-answers.ts';
-import { inputsOf, makeApp } from '../helpers/views.ts';
+import { mustFind } from '../helpers/fixtures/common.ts';
+import { errorEvent } from '../helpers/fakes/fakes.ts';
+import { solverReply } from '../helpers/fixtures/set-page-bind.ts';
+import { answered, badPinResult, okResult } from '../helpers/fixtures/solver-answers.ts';
+import { inputsOf, makeApp } from '../helpers/fixtures/views.ts';
 import type { Solver, SolverKind, SolverRequest, SolverWorker } from '../../../src/ui/solver.ts';
 
 /* Sage at item level 123, a set's Auto-fill settings with Food on. */

@@ -283,12 +283,12 @@ Notes:
 - **The long sweep** in `tests/sweep/` is flat, with no folders: `core-tier-rank.gcd-1` to `.gcd-4`, `core-tier-rank.no-gcd` and `core-tier-rank.pinned`. The helpers in `tests/unit/helpers/` are not tests and are named for what they hold.
 - **The elements' logic** is unit tested in Node (the files in `tests/unit/ui/elements/`, one folder per domain): each screen's logic is a plain model class (`sheets-screen-model.ts`, `app-root-model.ts`, ...) bound to a plain store, and a set page's logic is a plain session (`src/ui/elements/set-page/session.ts`) tested the same way in `tests/unit/ui/elements/set-page/`. The smoke test checks how they are wired into the page.
 - **What each file checks** is in its header comment and test names, and where each expected value comes from is in a comment next to it. They are not repeated here, so they cannot drift apart.
-- **Shared helpers** are in `tests/unit/helpers/`:
+- **Shared helpers** are in `tests/unit/helpers/`: `fakes/` holds stand-ins for browser objects, `fixtures/` everything else (real-data pools, reference solvers, store and sheet setup):
   - the brute-force reference and real-gear pools (`exhaustive.ts`, section 2.1);
   - seeded random numbers, item lookup by name, store-shaped state, and values typed in from outside sources such as the `BaseParam` slot shares and AkhMorning's level table (`common.ts`);
   - the tier ranking reference with its random cases, shared with the long sweep in `tests/sweep/` (`tier-reference.ts`);
   - the view tests' store-shaped state with sync at 123 and a set's recipe, their small real-gear pools and an Auto-fill's solve (`views.ts`);
-  - the fake kit: complete typed stand-ins for browser objects, built without a cast (`fakes.ts`: `fakeStorage`, `quotaError`);
+  - the fake kit (`fakes/`): complete typed stand-ins for browser objects, built without a cast (`fakes.ts`: `fakeStorage`, `quotaError`, `FakeWorker`, `fakeLitHost`, `fakeWindow`; `dom-fakes.ts`: fake documents, elements and inputs, `stubGlobal`, `standsFor`; `frames.ts`: frame callbacks);
   - saved sheets of real items for the Sheets tests (`sheet-fixtures.ts`);
   - a set page's session bound to a real store with a stand-in for its element and solver stand-ins (`set-page-bind.ts`);
   - pin lists for the pinned search tests (`pins.ts`);
@@ -639,7 +639,7 @@ Where does a new test go?
 Notes:
 
 - **Unit test file.** Named for the module under the naming rule (section 2): add to the module's file, or start one under that name, with a header comment on line 1 saying what it covers. A test name says the behaviour checked, not a roadmap code (keep the code in the comment). Use `node:test` and strict assertions, and import from the core directly. For the optimizer, compare with the shared brute force.
-- **Views.** Labels, totals, colouring, empty and error states, on a plain state object (`makeApp` in `tests/unit/helpers/views.ts`).
+- **Views.** Labels, totals, colouring, empty and error states, on a plain state object (`makeApp` in `tests/unit/helpers/fixtures/views.ts`).
 - **State.** Add both a valid round-trip and a damaged value that must be repaired.
 - **Generator.** Add a row to the fixture CSVs if needed, using the real header, and assert on the generated output.
 - **Component story.** `<name>.story.ts` (a function from props to a Lit template, imports the element) and `<name>.spec.ts` (imports `test` and `expect` from `tests/stories/fixtures.ts`, mounts with `mount<typeof Story>('<domain>/<file>/<Export>', props)`) side by side in `tests/stories/<domain>/`. No registration: the generator finds `*.story.*` files, and `tests/stories/**` is `tooling`. An element goes in `src/ui/elements/<domain>/`, which `tests/domains.ts` lists in that domain's `src`.
@@ -698,15 +698,15 @@ The rule behind the table: a value that depends on what gear exists may move; a 
 | Concept | File |
 | --- | --- |
 | Unit tests | `tests/unit/<src folder>/<module>.test.ts`, named by the rule in section 2 |
-| Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.ts` (`exhaustive`, `gamePool`, `loadoutCount`) |
-| Shared test helpers and typed-in outside values | `tests/unit/helpers/common.ts` (`rng`, `itemRow`, `appState`, `SLOT_PERMILLE`, `AKH_LEVEL`) |
-| Tier ranking reference and its random cases | `tests/unit/helpers/tier-reference.ts` (`tierLex`, `checkNoGcd`, `checkGcd`); the long sweep in `tests/sweep/` |
-| View test state, small real-gear pools and an Auto-fill's solve | `tests/unit/helpers/views.ts` (`makeApp`, `solveOf`, `windowPool`) |
-| Saved sheets of real items | `tests/unit/helpers/sheet-fixtures.ts` (`sageSet`, `warSet`, `sheetOf`, `fakeStorage`) |
+| Brute-force reference and real-gear pools | `tests/unit/helpers/fixtures/exhaustive.ts` (`exhaustive`, `gamePool`, `loadoutCount`) |
+| Shared test helpers and typed-in outside values | `tests/unit/helpers/fixtures/common.ts` (`rng`, `itemRow`, `appState`, `SLOT_PERMILLE`, `AKH_LEVEL`) |
+| Tier ranking reference and its random cases | `tests/unit/helpers/fixtures/tier-reference.ts` (`tierLex`, `checkNoGcd`, `checkGcd`); the long sweep in `tests/sweep/` |
+| View test state, small real-gear pools and an Auto-fill's solve | `tests/unit/helpers/fixtures/views.ts` (`makeApp`, `solveOf`, `windowPool`) |
+| Saved sheets of real items | `tests/unit/helpers/fixtures/sheet-fixtures.ts` (`sageSet`, `warSet`, `sheetOf`, `fakeStorage`) |
 | View builders tested without the browser | `src/ui/views/` |
-| Accuracy check against real items and the Wiki | `tests/unit/helpers/model-validation.ts` (`bandAccuracy`, `wikiChecks`) |
+| Accuracy check against real items and the Wiki | `tests/unit/helpers/fixtures/model-validation.ts` (`bandAccuracy`, `wikiChecks`) |
 | Generator tests and fixtures | `tests/data/test_*.py`, `tests/data/common.py`, `tests/data/fixtures/` |
-| View test setup | `tests/unit/helpers/views.ts` (`makeApp`, `WINDOW`, `windowPool`, `uniqueRingPool`) |
+| View test setup | `tests/unit/helpers/fixtures/views.ts` (`makeApp`, `WINDOW`, `windowPool`, `uniqueRingPool`) |
 | Smoke test, its steps and its screenshots | `tests/e2e/smoke.ts` (`runGroup`, `main`), `tests/e2e/groups.ts` (`GROUPS`), `tests/e2e/checks/<folder>/` (the checks), `tests/e2e/lib/` (the helpers, `SHARED_SETUP`), `tests/e2e/out/` (gitignored) |
 | The smoke test's look checks | `tests/e2e/lib/visual.ts` (the contrast arithmetic, the token reader and the in-page probes; the unit tests import it from there), `tests/e2e/lib/axe.ts` (running axe-core and splitting its findings into new and known) |
 | Before-and-after screenshots | `scripts/shots/shots.ts`, `scripts/shots/views.ts` (`VIEWS`, `openView`), `scripts/shots/compare.ts` |

@@ -20,7 +20,7 @@ import {
 } from '../../../../src/ui/views/gcd.ts';
 import { groupMaxSpeed, jobGroups } from '../../../../scripts/data/gen_max_speed.ts';
 import type { TruncatedSearch } from '../../../../scripts/data/gen_max_speed.ts';
-import { hasNumber, mustFind } from '../../helpers/common.ts';
+import { hasNumber, mustFind } from '../../helpers/fixtures/common.ts';
 
 const ROWS = 2 * GCD_STEPS_NEAR + 1;
 

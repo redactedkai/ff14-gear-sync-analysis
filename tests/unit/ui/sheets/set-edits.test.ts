@@ -7,9 +7,9 @@ import { jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { placePiece, withMeal, withPin, withStone, withoutStone } from '../../../../src/ui/sheets/set-edits.ts';
 import { rowLabel } from '../../../../src/ui/sheets/saved-set.ts';
-import { hasParts, mustFind } from '../../helpers/common.ts';
+import { hasParts, mustFind } from '../../helpers/fixtures/common.ts';
 import type { SavedGearSet } from '../../../../src/ui/sheets/saved-types.ts';
-import { SAGE_IDS, THREE_CRIT_IV, sageSet, placedOk } from '../../helpers/sheet-fixtures.ts';
+import { SAGE_IDS, THREE_CRIT_IV, sageSet, placedOk } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 /* Row `index` of a saved set that has it. */

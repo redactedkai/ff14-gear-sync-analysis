@@ -11,8 +11,8 @@ import { itemSyncIlvl } from '../../../src/core/piece.ts';
 import { mitigationPct, setDefense, syncedValue, weaponDamage } from '../../../src/core/damage-defense.ts';
 import { resultOf } from '../../../src/core/same-result.ts';
 import { IL } from '../../../src/core/tables.ts';
-import { gamePool } from '../helpers/exhaustive.ts';
-import { piece } from '../helpers/common.ts';
+import { gamePool } from '../helpers/fixtures/exhaustive.ts';
+import { piece } from '../helpers/fixtures/common.ts';
 
 const sge = makeJobContext('SGE');
 const NO_SYNC: Sync = { cap: null, sync: false, level: 100 };

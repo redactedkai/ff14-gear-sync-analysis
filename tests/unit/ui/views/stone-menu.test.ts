@@ -5,8 +5,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { materiaMenuView } from '../../../../src/ui/views/stone-menu.ts';
-import { hasNumber, hasParts, mustFind, piece } from '../../helpers/common.ts';
-import { placed, sageSet } from '../../helpers/sheet-fixtures.ts';
+import { hasNumber, hasParts, mustFind, piece } from '../../helpers/fixtures/common.ts';
+import { placed, sageSet } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 const HEAD = 2;

@@ -1,5 +1,5 @@
 /* DOM stand-ins for the overlay manager's tests, each complete for the part of the DOM the manager reads (a typed fake, no cast). */
-import type { OverlayDocument, OverlayKeyEvent, OverlayOpener, OverlayTargetEvent } from '../../../src/ui/overlays.ts';
+import type { OverlayDocument, OverlayKeyEvent, OverlayOpener, OverlayTargetEvent } from '../../../../src/ui/overlays.ts';
 
 /* What a test says of an event it sends: a key, whether another handler took it, and the target. */
 export interface SentEvent {

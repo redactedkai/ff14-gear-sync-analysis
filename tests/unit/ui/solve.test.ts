@@ -9,9 +9,9 @@ import { gearToSearchView, searchCount, solveView } from '../../../src/ui/solve.
 import type { SolveAnswer } from '../../../src/ui/solve.ts';
 import type { SlotType } from '../../../src/core/types.ts';
 import type { Pins } from '../../../src/core/recipe.ts';
-import type { TestAppState } from '../helpers/common.ts';
-import { hasParts, mustFind } from '../helpers/common.ts';
-import { gearOf, inputsOf, makeApp, okOf, solveOf, testSession, windowPool } from '../helpers/views.ts';
+import type { TestAppState } from '../helpers/fixtures/common.ts';
+import { hasParts, mustFind } from '../helpers/fixtures/common.ts';
+import { gearOf, inputsOf, makeApp, okOf, solveOf, testSession, windowPool } from '../helpers/fixtures/views.ts';
 
 const solveOfApp = (app: TestAppState, session = testSession, pins: Pins | null = null): SolveAnswer => {
   const { job, sync, level, recipe } = inputsOf(app);

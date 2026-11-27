@@ -11,7 +11,7 @@ import type { StatKey, Sync } from '../../../src/core/types.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { applyStones, bestMeld, meldStones, meldText, meldVersions } from '../../../src/core/meld.ts';
 import { effStats } from '../../../src/core/piece.ts';
-import { piece, rngInt } from '../helpers/common.ts';
+import { piece, rngInt } from '../helpers/fixtures/common.ts';
 
 const war = makeJobContext('WAR');
 const sge = makeJobContext('SGE');

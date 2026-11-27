@@ -9,7 +9,7 @@ import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { solverRequest } from '../../../../src/ui/solver.ts';
 import { defaultFillSettings, fillRecipe, fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.ts';
 import type { FillSettings } from '../../../../src/ui/sheets/saved-types.ts';
-import { sageSet } from '../../helpers/sheet-fixtures.ts';
+import { sageSet } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 const SYNC = syncSettings({ cap: 123, sync: true, level: 100 });

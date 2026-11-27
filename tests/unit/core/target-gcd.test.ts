@@ -12,7 +12,7 @@ import { mkItem } from '../../../src/core/items.ts';
 import { prepare, solve } from '../../../src/core/optimizer/index.ts';
 import { gcdFor } from '../../../src/core/speed.ts';
 import { optimizeGcd } from '../../../src/core/target-gcd.ts';
-import { gamePool } from '../helpers/exhaustive.ts';
+import { gamePool } from '../helpers/fixtures/exhaustive.ts';
 
 const sge = makeJobContext('SGE');
 const sam = makeJobContext('SAM');

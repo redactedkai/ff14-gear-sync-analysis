@@ -7,9 +7,9 @@ import { allMeals } from '../../../../src/core/food.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { copyGearSet, copySheet, newGearSet, repairSheet } from '../../../../src/ui/sheets/ops.ts';
 import { parseSheet } from '../../../../src/ui/sheets/storage.ts';
-import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
-import { mustFind } from '../../helpers/common.ts';
-import { createSheetsFacade, idOf, openSetOf, openSheetOf, savedSheet } from '../../helpers/stores.ts';
+import { fakeStorage, sageSet, sheetOf } from '../../helpers/fixtures/sheet-fixtures.ts';
+import { mustFind } from '../../helpers/fixtures/common.ts';
+import { createSheetsFacade, idOf, openSetOf, openSheetOf, savedSheet } from '../../helpers/fixtures/stores.ts';
 import type { SavedGearSet } from '../../../../src/ui/sheets/saved-types.ts';
 
 const AT = Date.UTC(2026, 10, 10, 12);

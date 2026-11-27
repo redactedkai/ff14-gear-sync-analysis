@@ -4,10 +4,10 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { mkItem } from '../../../../src/core/items.ts';
 import { optimize } from '../../../../src/core/optimizer/index.ts';
-import { exhaustive, gamePool } from '../../helpers/exhaustive.ts';
+import { exhaustive, gamePool } from '../../helpers/fixtures/exhaustive.ts';
 import { present } from '../../../../src/core/guards.ts';
 import type { PoolItem, SlotType, StatKey, StatMap, Sync } from '../../../../src/core/types.ts';
-import { mustSolve, rng } from '../../helpers/common.ts';
+import { mustSolve, rng } from '../../helpers/fixtures/common.ts';
 
 /* The goal of a run, in the form both optimize() and the reference take. */
 type Goal = { target: StatKey; tiebreak: (StatKey | '')[]; spdMin?: number | null; spdMax?: number | null; melds?: boolean };
@@ -17,7 +17,7 @@ const NO_SYNC: Sync = { cap: 999, sync: false };
 
 const ring = (name: string, sps: number, copies: number): PoolItem => mkItem(name, 'ring', 100, { sps }, { copies });
 
-/* The two policies the brute-force reference copies from the engine (helpers/exhaustive.ts). Stated directly on
+/* The two policies the brute-force reference copies from the engine (helpers/fixtures/exhaustive.ts). Stated directly on
    hand-made pools, so changing one is a deliberate decision, not a side effect of editing the reference. */
 test('policy: a single ring is worn only when no pair exists, even if a pair breaks a maximum', () => {
   const pool = [ring('A', 10, 1), ring('B', 5, 1)];
@@ -161,7 +161,7 @@ test('a pool too large to score exactly throws instead of ranking wrongly', () =
 });
 
 /* With melds: random small pools of real pieces (some meldable, some not, some synced), against the reference's own
-   enumeration of every stone placement (meldVectors in helpers/exhaustive.ts), not bestMeld. Item level windows where
+   enumeration of every stone placement (meldVectors in helpers/fixtures/exhaustive.ts), not bestMeld. Item level windows where
    the stones differ: grade VI/V (290+), X/IX (560+), XII/XI (690+). */
 test('with melds, the optimizer matches exhaustive search on random real pools', () => {
   const rand = rng(20261012),

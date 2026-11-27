@@ -3,7 +3,7 @@
    a failing solver and replies that arrive late. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fakeFrames } from '../../../helpers/frames.ts';
+import { fakeFrames } from '../../../helpers/fakes/frames.ts';
 import {
   FILL_CANCELLED_TEXT,
   LOCKED_TABLE_TEXT,
@@ -14,9 +14,9 @@ import {
 import { LOCKED_TEXT } from '../../../../../src/ui/sheets/store-shared.ts';
 import { inProcessSolver } from '../../../../../src/ui/solver.ts';
 import { makeSession } from '../../../../../src/core/session.ts';
-import { bind, heldSolver, lateSolver, refusingSolver, scriptedSolver, tick, twoToFill } from '../../../helpers/set-page-bind.ts';
-import { hasNumber, mustFind } from '../../../helpers/common.ts';
-import { sageSet } from '../../../helpers/sheet-fixtures.ts';
+import { bind, heldSolver, lateSolver, refusingSolver, scriptedSolver, tick, twoToFill } from '../../../helpers/fixtures/set-page-bind.ts';
+import { hasNumber, mustFind } from '../../../helpers/fixtures/common.ts';
+import { sageSet } from '../../../helpers/fixtures/sheet-fixtures.ts';
 import { MEAL_ROW_LABEL } from '../../../../../src/ui/sheets/saved-set.ts';
 import { makeJobContext } from '../../../../../src/core/job-context.ts';
 import { defaultFillSettings } from '../../../../../src/ui/sheets/fill-settings.ts';

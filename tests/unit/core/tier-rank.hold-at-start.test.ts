@@ -4,7 +4,7 @@
    Strength (Critical Hit 3,143, Skill Speed 18, Strength 5,910 against 3,147, 0, 5,930 with the plain ranking). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeApp, solveOf } from '../helpers/views.ts';
+import { makeApp, solveOf } from '../helpers/fixtures/views.ts';
 
 test('a speed tier that starts at 0 points is held at 0: tier ranking loses no Strength to the plain ranking', () => {
   const gearTotals = (byTier: boolean) => {

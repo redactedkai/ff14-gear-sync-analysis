@@ -6,8 +6,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createAppFacade } from '../../helpers/stores.ts';
-import { restoreOpen } from '../../helpers/common.ts';
+import { createAppFacade } from '../../helpers/fixtures/stores.ts';
+import { restoreOpen } from '../../helpers/fixtures/common.ts';
 
 const SAVE = {
   tab: 'math',

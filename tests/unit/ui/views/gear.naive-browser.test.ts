@@ -10,7 +10,7 @@ import { ITEMS } from '../../../../src/core/tables.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { defaultBrowse } from '../../../../src/ui/state.ts';
 import { gearView } from '../../../../src/ui/views/gear.ts';
-import { rng } from '../../helpers/common.ts';
+import { rng } from '../../helpers/fixtures/common.ts';
 import type { JobContext } from '../../../../src/core/types.ts';
 import type { BrowseFields } from '../../../../src/ui/store/app-state.ts';
 

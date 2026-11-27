@@ -10,8 +10,8 @@ import type { SheetsFacade } from '../../../../../src/ui/store/sheets-facade.ts'
 import type { LeaveMove } from '../../../../../src/ui/store/sheets-actions.ts';
 import type { LinkClick } from '../../../../../src/ui/router/plain-click.ts';
 import { shallowEq } from '../../../../../src/ui/store/select.ts';
-import { restoreOpen } from '../../../helpers/common.ts';
-import { createStores } from '../../../helpers/stores.ts';
+import { restoreOpen } from '../../../helpers/fixtures/common.ts';
+import { createStores } from '../../../helpers/fixtures/stores.ts';
 
 /* The root's model over a real store of `saved`; `sheets` replaces the Sheets facade (a stand-in for the leave question). A tab opens
    on the next macrotask, as the page opens it one frame later. */

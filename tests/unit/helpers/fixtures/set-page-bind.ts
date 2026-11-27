@@ -1,21 +1,21 @@
 /* Shared by the tests of a set page's logic (tests/unit/ui/elements/set-page/*.test.ts): its session (elements/set-page/session.ts) bound to
    a real sheet store over a stand-in storage, with a stand-in for the element it serves, and solver stand-ins (held, refused, late
    replies). */
-import { saveSheet } from '../../../src/ui/sheets/storage.ts';
-import { PageSession } from '../../../src/ui/elements/set-page/session.ts';
-import { inProcessSolver } from '../../../src/ui/solver.ts';
-import { makeJobContext } from '../../../src/core/job-context.ts';
-import { fillButtonView, noPiecesFlag, setPageViews } from '../../../src/ui/views/set-page.ts';
-import { standsFor } from './dom-fakes.ts';
+import { saveSheet } from '../../../../src/ui/sheets/storage.ts';
+import { PageSession } from '../../../../src/ui/elements/set-page/session.ts';
+import { inProcessSolver } from '../../../../src/ui/solver.ts';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
+import { fillButtonView, noPiecesFlag, setPageViews } from '../../../../src/ui/views/set-page.ts';
+import { standsFor } from '../fakes/dom-fakes.ts';
 import { mustFind } from './common.ts';
 import { fakeStorage, placed, sageSet, sheetOf } from './sheet-fixtures.ts';
-import { fakeFrames, stubElement } from './frames.ts';
-import type { ElementCall } from './frames.ts';
+import { fakeFrames, stubElement } from '../fakes/frames.ts';
+import type { ElementCall } from '../fakes/frames.ts';
 import { createStores } from './stores.ts';
-import type { SolveAnswer } from '../../../src/ui/solve.ts';
-import type { Solver, SolverKind, SolverReply, SolverRequest } from '../../../src/ui/solver.ts';
-import type { SessionHost } from '../../../src/ui/elements/set-page/session-types.ts';
-import type { SavedGearSet } from '../../../src/ui/sheets/saved-types.ts';
+import type { SolveAnswer } from '../../../../src/ui/solve.ts';
+import type { Solver, SolverKind, SolverReply, SolverRequest } from '../../../../src/ui/solver.ts';
+import type { SessionHost } from '../../../../src/ui/elements/set-page/session-types.ts';
+import type { SavedGearSet } from '../../../../src/ui/sheets/saved-types.ts';
 
 /* The elements of the page the logic reaches by selector, by the name `calls` records them under; the frame callback runs at once in Node */
 const PAGE_ELEMENTS: Record<string, string> = {

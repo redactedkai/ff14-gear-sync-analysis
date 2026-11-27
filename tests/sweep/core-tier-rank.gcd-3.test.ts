@@ -1,10 +1,10 @@
-/* Rank by tier against the reference (tests/unit/helpers/tier-reference.ts): cases 61 to 90 of 120 with a
+/* Rank by tier against the reference (tests/unit/helpers/fixtures/tier-reference.ts): cases 61 to 90 of 120 with a
    Target GCD and three keys, seed 33818 (one of the seeds Perplexity's review ran on its prototype). The 120 cases take
    about 80 s in one file, so they are split in four files that node --test runs at the same time. Run by
    npm run test:full, not npm test. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkGcd } from '../unit/helpers/tier-reference.ts';
+import { checkGcd } from '../unit/helpers/fixtures/tier-reference.ts';
 
 test('rank by tier, three keys with a Target GCD: cases 61 to 90, seed 33818', () => {
   const { runs, infeasible } = checkGcd(33818, 90, true, 60);

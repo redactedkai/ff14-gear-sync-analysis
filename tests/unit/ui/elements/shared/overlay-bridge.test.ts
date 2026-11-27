@@ -6,7 +6,7 @@ import { createOverlayBridge } from '../../../../../src/ui/elements/shared/overl
 import { createOverlays } from '../../../../../src/ui/overlays.ts';
 import type { OverlayLayer } from '../../../../../src/ui/overlays.ts';
 import type { OverlayBridgeOptions } from '../../../../../src/ui/elements/shared/overlay-bridge.ts';
-import { FakeDocument, element } from '../../../helpers/dom-fakes.ts';
+import { FakeDocument, element } from '../../../helpers/fakes/dom-fakes.ts';
 
 /* A Zag layer's api: it is open or not, and `quietCloses` counts the closes the bridge asked for without the focus moving. */
 interface FakeLayerApi {

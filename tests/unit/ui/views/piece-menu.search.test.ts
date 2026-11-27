@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { categoryOf, jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { piecePickerView } from '../../../../src/ui/views/piece-menu.ts';
-import { sageSet } from '../../helpers/sheet-fixtures.ts';
+import { sageSet } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 const SGE = makeJobContext('SGE');
 const RING_1 = 10;

@@ -9,7 +9,7 @@ import { equipLevel, mkItem } from '../../../src/core/items.ts';
 import { resultOf, sameOutcome, sameResult } from '../../../src/core/same-result.ts';
 import { dotMult, gcdFor } from '../../../src/core/speed.ts';
 import { rankTierOf, statTier } from '../../../src/core/tiers.ts';
-import { makeApp, solveOf } from '../helpers/views.ts';
+import { makeApp, solveOf } from '../helpers/fixtures/views.ts';
 
 /* The first points of the tier of `stat` at `points` (statTier's start); the stat must have tiers. */
 function tierStart(job: JobContext, stat: StatKey, points: number, level: number): number {

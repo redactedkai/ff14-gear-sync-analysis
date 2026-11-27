@@ -13,8 +13,8 @@ import { makeSession } from '../../../src/core/session.ts';
 import { evaluateSet } from '../../../src/core/set.ts';
 import { syncSettings } from '../../../src/ui/job-sync-panel.ts';
 import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.ts';
-import { rng } from '../helpers/common.ts';
-import { rankedOf, setKey } from '../helpers/recipe-sets.ts';
+import { rng } from '../helpers/fixtures/common.ts';
+import { rankedOf, setKey } from '../helpers/fixtures/recipe-sets.ts';
 
 const CASES = 22;
 const SYNCS: Sync[] = [

@@ -4,7 +4,7 @@
    AkhMorning's formulas at level 100 (DIV 2780, SUB 420), as in core/tiers.test.ts. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { AKH_LEVEL, hasNumber, hasParts, mustFind } from '../../helpers/common.ts';
+import { AKH_LEVEL, hasNumber, hasParts, mustFind } from '../../helpers/fixtures/common.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { MAX_SPEED } from '../../../../src/core/tables.ts';
 import {

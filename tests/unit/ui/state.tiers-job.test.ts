@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 
 import { defaultState, restoreState } from '../../../src/ui/state.ts';
 import { DEFAULT_JOB } from '../../../src/core/constants.ts';
-import { restoreOpen } from '../helpers/common.ts';
+import { restoreOpen } from '../helpers/fixtures/common.ts';
 
 test('the default state has Substat tiers on the default job', () => {
   assert.deepEqual(defaultState().tiers, { job: DEFAULT_JOB });
