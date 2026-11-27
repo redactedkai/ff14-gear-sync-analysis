@@ -37,7 +37,7 @@ declare global {
     /* The Gear browser rows check (checks/gear-browser/rows.ts): describes the first way the table differs from the element's
        rows (an empty string when none), and starts or stops a per-frame watch that returns what it saw. */
     __rowsMismatch?: () => string;
-    __rowsWatch?: (on: boolean) => string;
+    __rowsWatch?: (on: boolean) => { frames: number; bad: string } | null;
     /* The saved-data failure check keeps the real Storage setItem here while a failing one is installed (checks/tabs/overlays.ts). */
     realSetItem?: Storage['setItem'];
     /* The startup checks (checks/startup/failure.ts). */

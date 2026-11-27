@@ -1,9 +1,10 @@
 // Gear browser: the table's rows always show the page's own rows (the rows are kept between a sort, a page, a slot, a
 // filter or a job change, and only their bindings change).
 
-import { check, expect } from '../../lib/expect.ts';
+import { check, expect, mustFind } from '../../lib/expect.ts';
 import { browserRows, chooseSlot, fillBrowser, setJob, showTab } from '../../lib/nav.ts';
 import { SHARED_SETUP } from '../../lib/setup.ts';
+import type { GsaGearBrowser } from '../../../../src/ui/elements/gear-browser/gear-browser.ts';
 import type { Page } from 'playwright';
 
 /* Installed in the page: window.__rowsMismatch() describes the first way the table's rows differ from the Gear browser element's
@@ -14,26 +15,39 @@ import type { Page } from 'playwright';
    stops it and returns {frames, bad: the first mismatch seen in any frame, or ''}. */
 function installRowsCheck() {
   window.__rowsMismatch = () => {
-    const shown = document.querySelector('gsa-gear-browser').view?.shown ?? [];
-    const rows = [...document.querySelectorAll('#gear-table tbody tr[data-key]')];
+    const browser = document.querySelector<GsaGearBrowser>('gsa-gear-browser');
+    if (!browser) {
+      throw new Error('no Gear browser element');
+    }
+    const shown = browser.view?.shown ?? [];
+    const rows = [...document.querySelectorAll<HTMLElement>('#gear-table tbody tr[data-key]')];
     if (rows.length !== shown.length) {
       return `${rows.length} rows in the table, ${shown.length} in the view`;
     }
     for (const [place, row] of rows.entries()) {
       const item = shown[place];
       const where = `row ${place} (${item.name})`;
-      const [slotCell, nameCell, lvlCell, ilvlCell, ...statCells] = [...row.children].filter(cell => cell.tagName === 'TD');
+      const [slotCell, nameCell, lvlCell, ilvlCell, ...statCells] = [...row.querySelectorAll<HTMLElement>(':scope > td')];
+      if (!slotCell || !nameCell || !lvlCell || !ilvlCell) {
+        return `${where}: the row has fewer than four cells`;
+      }
+      const slotName = slotCell.querySelector('.slotname');
+      const twiceMark = slotCell.querySelector<HTMLElement>('.x2');
+      const hqMark = nameCell.querySelector<HTMLElement>('.hqg');
+      if (!slotName || !twiceMark || !hqMark) {
+        return `${where}: the slot or name cell lacks its slot name, x2 mark or HQ mark`;
+      }
       const nameSpans = [...nameCell.querySelectorAll(':scope > span:not(.hqg)')];
-      const stats = [
+      const stats: [unknown, unknown, string][] = [
         [row.dataset.key, item.key, 'key'],
         [row.className, item.rowCls, 'row class'],
         [slotCell.title, item.slot, 'slot title'],
-        [slotCell.querySelector('.slotname').textContent, item.slotText, 'slot text'],
-        [slotCell.querySelector('.x2').hidden, !item.twice, 'x2 mark hidden'],
+        [slotName.textContent, item.slotText, 'slot text'],
+        [twiceMark.hidden, !item.twice, 'x2 mark hidden'],
         [nameCell.title, item.name, 'name title'],
-        [nameSpans.map(span => span.textContent).join('|'), item.nameParts.map((part: string) => part.text).join('|'), 'name parts'],
-        [nameSpans.map(span => span.className).join('|'), item.nameParts.map((part: string) => part.cls).join('|'), 'name part classes'],
-        [nameCell.querySelector('.hqg').hidden, !item.hq, 'HQ mark hidden'],
+        [nameSpans.map(span => span.textContent).join('|'), item.nameParts.map(part => part.text).join('|'), 'name parts'],
+        [nameSpans.map(span => span.className).join('|'), item.nameParts.map(part => part.cls).join('|'), 'name part classes'],
+        [hqMark.hidden, !item.hq, 'HQ mark hidden'],
         [lvlCell.textContent, String(item.lvl), 'equip level'],
         [ilvlCell.textContent, String(item.ilvl), 'item level'],
         [statCells.length, item.cells.length, 'stat cell count'],
@@ -58,16 +72,17 @@ function installRowsCheck() {
     }
     return '';
   };
-  let watching = null;
-  window.__rowsWatch = on => {
+  let watching: { frames: number; bad: string } | null = null;
+  window.__rowsWatch = (on: boolean) => {
     if (on) {
-      watching = { frames: 0, bad: '' };
+      const watch = { frames: 0, bad: '' };
+      watching = watch;
       const frame = () => {
-        if (!watching) {
+        if (watching !== watch) {
           return;
         }
-        watching.frames++;
-        watching.bad ||= window.__rowsMismatch();
+        watch.frames++;
+        watch.bad ||= window.__rowsMismatch?.() ?? '';
         requestAnimationFrame(frame);
       };
       requestAnimationFrame(frame);
@@ -89,12 +104,12 @@ export async function checkBrowserRowsMatchView(pg: Page) {
   await pg.evaluate(installRowsCheck);
   const rowCount = () => browserRows(pg).count();
   // one action, watched from the click to the settled page
-  const watched = async (label, action) => {
-    await pg.evaluate(() => window.__rowsWatch(true));
+  const watched = async (label: string, action: () => Promise<unknown>) => {
+    await pg.evaluate(() => window.__rowsWatch?.(true));
     await action();
-    await pg.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 0)))));
-    const seen = await pg.evaluate(() => window.__rowsWatch(false));
-    const now = await pg.evaluate(() => window.__rowsMismatch());
+    await pg.evaluate(() => new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 0)))));
+    const seen = mustFind(await pg.evaluate(() => window.__rowsWatch?.(false)), 'the watch result');
+    const now = await pg.evaluate(() => window.__rowsMismatch?.());
     check(!seen.bad, `${label}: a drawn frame showed a row that differs from the view: ${seen.bad}`);
     check(!now, `${label}: the settled table differs from the view: ${now}`);
     check((await rowCount()) > 0 || label.includes('no match'), `${label}: no rows`);

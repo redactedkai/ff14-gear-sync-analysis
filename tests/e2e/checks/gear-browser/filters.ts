@@ -8,7 +8,7 @@ import { setUpShared } from '../../lib/setup.ts';
 import type { Page } from 'playwright';
 
 // Gear browser rings window: [job, item level from, item level to, equip level up to].
-const RINGS_WINDOW = ['SGE', 140, 150, 60];
+const RINGS_WINDOW = ['SGE', 140, 150, 60] as const;
 
 /** The gear browser marks every non-Unique ring x2 (it can be worn on both hands) and no Unique one. */
 export async function checkRingCopies(pg: Page) {

@@ -20,7 +20,11 @@ export async function checkSlotMenu(pg: Page) {
   await pg.hover('#b-slots [data-slot="head"]');
   await expect(pg.locator('#b-slots [data-slot="head"]')).toHaveAttribute('data-highlighted', ''); // the menu has been drawn again
   const covered = await pg.evaluate(() => {
-    const header = document.querySelector('#gear-table thead').getBoundingClientRect();
+    const headerElement = document.querySelector('#gear-table thead');
+    if (!headerElement) {
+      throw new Error('no table heading');
+    }
+    const header = headerElement.getBoundingClientRect();
     const rows = [...document.querySelectorAll('#b-slots .multi-opt')].map(row => row.getBoundingClientRect());
     return {
       overHeader: rows.filter(
@@ -45,7 +49,9 @@ export async function checkSlotMenuPicksAndLayers(pg: Page) {
 
   // every slot the menu lists sets its own key (a row greyed out for lack of a match cannot be picked, so the step runs with
   // the filters cleared; the job's own slots are the ones listed: Sage has no off-hand, which the stories cover)
-  const keys = await pg.evaluate(() => [...document.querySelectorAll('#b-slots [data-slot]')].map(row => row.dataset.slot));
+  const keys = await pg.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('#b-slots [data-slot]')].flatMap(row => (row.dataset.slot ? [row.dataset.slot] : [])),
+  );
   check(keys.includes('weapon') && keys.length > 5, `the Slot menu lists ${keys.join(', ')}`);
   for (const key of keys) {
     await chooseSlot(pg, key);

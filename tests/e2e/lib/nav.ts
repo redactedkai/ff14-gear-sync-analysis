@@ -636,7 +636,7 @@ export const clickTabFromPage = (pg: Page, tab: string) =>
 export const focusedId = (pg: Page) => pg.evaluate(() => document.activeElement?.id ?? '');
 
 /** Set the gear browser's filters to an item level window (name filter cleared). */
-export async function fillBrowser(pg: Page, lo: number | string, hi: number | string, lvl: number, slot = 'any') {
+export async function fillBrowser(pg: Page, lo: number | string, hi: number | string, lvl: number | string, slot = 'any') {
   await showTab(pg, 'browse');
   await pg.fill('#b-q', '');
   await allExpansions(pg);

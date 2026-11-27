@@ -66,21 +66,25 @@ export async function checkBrowserColumnsStay(pg: Page) {
   const state = () =>
     pg.evaluate(() => {
       const table = document.querySelector('#gear-table');
-      const edges = [...table.querySelectorAll('thead th')].map(th => {
+      const head = table?.querySelector('thead');
+      if (!table || !head) {
+        throw new Error('no table or heading in the Gear browser');
+      }
+      const edges = [...table.querySelectorAll('thead th')].map((th): [number, number] => {
         const box = th.getBoundingClientRect();
         return [box.left, box.right];
       });
-      const rowHeights = { plain: new Set(), cut: new Set() };
+      const rowHeights: Record<'plain' | 'cut', Set<number>> = { plain: new Set(), cut: new Set() };
       for (const row of table.querySelectorAll('tbody tr[data-key]')) {
         rowHeights[row.querySelector('td.cut') ? 'cut' : 'plain'].add(row.getBoundingClientRect().height);
       }
       return {
         edges,
-        headHeight: table.querySelector('thead').getBoundingClientRect().height,
+        headHeight: head.getBoundingClientRect().height,
         rowHeights: Object.fromEntries(Object.entries(rowHeights).map(([kind, set]) => [kind, [...set]])),
       };
     });
-  const near = (a, b) => a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) <= 0.5);
+  const near = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => Math.abs(v - (b[i] ?? Number.NaN)) <= 0.5);
   for (const job of ['PLD', SHARED_SETUP.job]) {
     await setJob(pg, job);
     for (const [width, height] of [
@@ -89,8 +93,10 @@ export async function checkBrowserColumnsStay(pg: Page) {
     ]) {
       await pg.setViewportSize({ width, height });
       await expect(browserRows(pg).first()).toBeVisible();
-      const keys = await pg.locator('#gear-table thead [data-sort]').evaluateAll(buttons => buttons.map(b => b.dataset.sort));
-      let first = null;
+      const keys = await pg
+        .locator('#gear-table thead [data-sort]')
+        .evaluateAll(buttons => buttons.flatMap(b => (b instanceof HTMLElement && b.dataset.sort ? [b.dataset.sort] : [])));
+      let first: Awaited<ReturnType<typeof state>> | null = null;
       for (const key of keys) {
         await pg.click(`#gear-table [data-sort="${key}"]`);
         await expect(pg.locator(`#gear-table th:not([aria-sort="none"]) [data-sort="${key}"]`)).toHaveCount(1);
@@ -105,7 +111,7 @@ export async function checkBrowserColumnsStay(pg: Page) {
           Math.abs(now.headHeight - first.headHeight) <= 0.5,
           `${where}: the heading row's height changed (${now.headHeight} vs ${first.headHeight})`,
         );
-        for (const kind of ['plain', 'cut']) {
+        for (const kind of ['plain', 'cut'] as const) {
           for (const h of now.rowHeights[kind]) {
             check(
               first.rowHeights[kind].length === 0 || first.rowHeights[kind].some(f => Math.abs(f - h) <= 0.5),
@@ -116,7 +122,7 @@ export async function checkBrowserColumnsStay(pg: Page) {
         check(
           await pg.evaluate(() => {
             const box = document.querySelector('#tab-browse .tablewrap');
-            return box.scrollWidth <= box.clientWidth;
+            return box !== null && box.scrollWidth <= box.clientWidth;
           }),
           `${where}: the table scrolls sideways`,
         );
@@ -134,9 +140,9 @@ export async function checkBrowserColumnsStay(pg: Page) {
  * substat (PLD) and one without (SGE, the shared setup). The numbers are written into the page's cells, so the step
  * reloads the page to leave it as it found it. */
 export async function checkBrowserFourDigits(pg: Page) {
-  const fill = withSecondLine =>
+  const fill = (withSecondLine: boolean) =>
     pg.evaluate(second => {
-      for (const cell of document.querySelectorAll('#gear-table tbody td.n')) {
+      for (const cell of document.querySelectorAll<HTMLElement>('#gear-table tbody td.n')) {
         (cell.querySelector('span') ?? cell).textContent = '9999';
         if (second && cell.dataset.col !== 'lvl' && cell.dataset.col !== 'ilvl') {
           cell.dataset.was = '9999';

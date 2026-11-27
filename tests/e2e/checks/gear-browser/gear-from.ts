@@ -2,7 +2,7 @@
 
 import { ACTIVITY_KEYS } from '../../lib/constants.ts';
 import { DEFAULT_EXCLUDE } from '../../lib/core-worker.ts';
-import { check, expect, same } from '../../lib/expect.ts';
+import { check, expect, mustFind, same } from '../../lib/expect.ts';
 import { checkFromMenu, fromMenuFit, openFrom, setFrom, showTab, ticked, waitSaved } from '../../lib/nav.ts';
 import type { Page } from 'playwright';
 
@@ -17,8 +17,8 @@ export async function checkGearFrom(pg: Page) {
   await expect(pg.locator('#b-from')).toHaveText(`${searchedDefault.length} of ${ACTIVITY_KEYS.length}`);
 
   // the menu at the narrowest supported window, then at the wide ones: the same width (436 px at the least) and the same height at every width
-  const normal = pg.viewportSize();
-  const sizes = [];
+  const normal = mustFind(pg.viewportSize(), 'the window size');
+  const sizes: [number, number][] = [];
   for (const [width, height] of [
     [960, 900],
     [1280, 900],
@@ -35,10 +35,14 @@ export async function checkGearFrom(pg: Page) {
     );
     // the menu stays over the page's card: its right edge is not past the card's (the card is 1,280 px wide at most, so on a wide
     // window the card's edge is well inside the window's)
-    const edges = await pg.evaluate(() => ({
-      menuRight: document.querySelector('#b-from-menu').getBoundingClientRect().right,
-      cardRight: document.querySelector('#tab-browse .panel').getBoundingClientRect().right,
-    }));
+    const edges = await pg.evaluate(() => {
+      const menu = document.querySelector('#b-from-menu');
+      const card = document.querySelector('#tab-browse .panel');
+      if (!menu || !card) {
+        throw new Error('the Gear categories menu or the browser card is missing');
+      }
+      return { menuRight: menu.getBoundingClientRect().right, cardRight: card.getBoundingClientRect().right };
+    });
     check(
       edges.menuRight <= edges.cardRight + 1,
       `the browser's Gear categories menu passes the card's right edge at ${width} px: ${JSON.stringify(edges)}`,
@@ -46,7 +50,7 @@ export async function checkGearFrom(pg: Page) {
     await pg.keyboard.press('Escape');
   }
   check(
-    sizes.every(size => size[0] === sizes[0][0] && size[1] === sizes[0][1]) && sizes[0][0] >= 436,
+    sizes.every(size => size[0] === sizes[0]?.[0] && size[1] === sizes[0]?.[1]) && (sizes[0]?.[0] ?? 0) >= 436,
     `the Gear categories menu changes size with the window: ${JSON.stringify(sizes)}`,
   );
   await pg.setViewportSize(normal);
@@ -88,7 +92,7 @@ async function tokenColor(pg: Page, token: string) {
  * gear on it is gold with no slash ("included"); with it off it is the delete button's red with the slash ("not included").
  * Leaves the switch on. */
 export async function checkFromField(pg: Page, pre: string) {
-  const normal = pg.viewportSize();
+  const normal = mustFind(pg.viewportSize(), 'the window size');
   const count = `${ACTIVITY_KEYS.length - DEFAULT_EXCLUDE.length} of ${ACTIVITY_KEYS.length}`;
   const glyph = pg.locator(`#${pre}-from svg.from-market`);
   for (const [width, height] of [
@@ -121,7 +125,7 @@ export async function checkFromField(pg: Page, pre: string) {
     check(named === 1, `${where}: the button's accessible name lacks the market board words`);
     const text = await pg.locator(`#${pre}-from .from-text`).evaluate(el => [el.scrollWidth, el.clientWidth]);
     check(text[0] <= text[1], `${where}: the count is clipped (${text[0]} px of ${text[1]} px)`);
-    const box = await glyph.boundingBox();
+    const box = mustFind(await glyph.boundingBox(), 'the excluded glyph');
     check(box.width >= 16 && box.width <= 18, `${where}: glyph ${box.width} px wide`);
     await setFrom(pg, pre, 'market', true);
   }

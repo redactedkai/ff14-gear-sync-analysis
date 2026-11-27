@@ -20,16 +20,21 @@ const TOP_GEAR = { savage_current: 20, tomes_current: 10, hunts: 9, ultimate: 1 
  * shown have layout too): the number at the end of its title line. */
 function readBoxes(pg: Page, pre: string) {
   return pg.evaluate((menuSel: string) => {
-    const result = {};
-    for (const input of document.querySelectorAll(`${menuSel} input[data-activity]`)) {
-      result[input.dataset.activity] = { text: input.closest('label').querySelector('.from-count').textContent.trim() };
+    const result: Record<string, { text: string }> = {};
+    for (const input of document.querySelectorAll<HTMLElement>(`${menuSel} input[data-activity]`)) {
+      const count = input.closest('label')?.querySelector('.from-count');
+      if (!input.dataset.activity || !count) {
+        throw new Error('a Gear categories box lacks its key or its count');
+      }
+      result[input.dataset.activity] = { text: (count.textContent ?? '').trim() };
     }
     return result;
   }, `#${pre}-from-menu`);
 }
 
 /** The numbers of the boxes as the menu prints them, as {key: text}. */
-const printed = boxes => Object.fromEntries(Object.entries(boxes).map(([key, box]) => [key, box.text]));
+const printed = (boxes: Record<string, { text: string }>): Record<string, string> =>
+  Object.fromEntries(Object.entries(boxes).map(([key, box]) => [key, box.text]));
 
 /** Wait until every box of the menu of `pre` shows a number (the count has landed). */
 async function waitForCounts(pg: Page, pre: string) {
@@ -44,7 +49,7 @@ const numberOf = (text: string) => Number(text.replace(/,/g, ''));
 
 /** What the menu of `pre` shows for its numbers: a number on every box, written with thousands separators; `zeroKey` is a box that
  * must be 0. Returns the boxes read. */
-async function checkNumbers(pg: Page, pre: string, zeroKey) {
+async function checkNumbers(pg: Page, pre: string, zeroKey: string) {
   await waitForCounts(pg, pre);
   const boxes = await readBoxes(pg, pre);
   check(same(Object.keys(boxes).sort(), [...ACTIVITY_KEYS].sort()), `${pre} menu: the boxes are ${Object.keys(boxes)}`);
@@ -54,17 +59,18 @@ async function checkNumbers(pg: Page, pre: string, zeroKey) {
       `${pre} menu, ${key}: the number reads "${box.text}", expected digits with thousands separators`,
     );
   }
-  check(numberOf(boxes[zeroKey].text) === 0, `${pre} menu: ${zeroKey} holds ${boxes[zeroKey].text} pieces, expected 0`);
+  const zeroText = boxes[zeroKey]?.text ?? '';
+  check(numberOf(zeroText) === 0, `${pre} menu: ${zeroKey} holds ${zeroText} pieces, expected 0`);
   return boxes;
 }
 
 /** The menu of `pre` (open, at the Everyday tab) through the whole story: numbers on every box; Item level min 790 (`minId`) changes
  * the numbers to Sage's top gear (the boxes with none show 0); a box ticked and the market board switch change no number. */
-async function checkCounts(pg: Page, pre: string, minId, wait, relicsAtTop) {
+async function checkCounts(pg: Page, pre: string, minId: string, wait: () => Promise<unknown>, relicsAtTop: number) {
   const before = await checkNumbers(pg, pre, 'gold_saucer');
   check(
-    numberOf(before.crafted.text) > 0 && numberOf(before.quests.text) > 0,
-    `${pre} menu: crafted ${before.crafted.text}, quests ${before.quests.text}: expected pieces`,
+    numberOf(before.crafted?.text ?? '') > 0 && numberOf(before.quests?.text ?? '') > 0,
+    `${pre} menu: crafted ${before.crafted?.text}, quests ${before.quests?.text}: expected pieces`,
   );
 
   // a tick (and the market board switch) changes the list or the pool, not the numbers
@@ -90,12 +96,16 @@ async function checkCounts(pg: Page, pre: string, minId, wait, relicsAtTop) {
     return { ok: got.quests === '0', got };
   });
   const top = await checkNumbers(pg, pre, 'quests');
-  const expected = Object.fromEntries(ACTIVITY_KEYS.map(key => [key, { ...TOP_GEAR, relics: relicsAtTop }[key] ?? 0]));
+  const topGear: Record<string, number> = { ...TOP_GEAR, relics: relicsAtTop };
+  const expected = Object.fromEntries(ACTIVITY_KEYS.map(key => [key, topGear[key] ?? 0]));
   check(
-    ACTIVITY_KEYS.every(key => numberOf(top[key].text) === expected[key]),
+    ACTIVITY_KEYS.every(key => numberOf(top[key]?.text ?? '') === expected[key]),
     `${pre} menu at item level 790 and up: ${JSON.stringify(printed(top))}, expected ${JSON.stringify(expected)}`,
   );
-  check(top.crafted.text === '0' && before.crafted.text !== '0', `${pre} menu: crafted ${before.crafted.text} then ${top.crafted.text}`);
+  check(
+    top.crafted?.text === '0' && before.crafted?.text !== '0',
+    `${pre} menu: crafted ${before.crafted?.text} then ${top.crafted?.text}`,
+  );
 
   // put the filter back
   await pg.keyboard.press('Escape');
