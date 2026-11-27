@@ -11,6 +11,12 @@ import tseslint from 'typescript-eslint';
    elements folder, so the fixture never fails the lint). */
 export const LIT_FILES = ['src/ui/elements/**/*.{js,ts}', 'tests/unit/scripts/fixtures/lit-lint/**/*.{js,ts}'];
 
+/* eslint-plugin-lit's recommended flat config; stops the lint if the plugin stops offering it. */
+const litRecommended = lit.configs?.['flat/recommended'];
+if (!litRecommended) {
+  throw new Error("eslint-plugin-lit has no configs['flat/recommended']");
+}
+
 export default [
   {
     files: LIT_FILES,
@@ -19,7 +25,7 @@ export default [
     // an inline `// eslint-disable` of a rule that is not on would hide nothing; report it
     linterOptions: { reportUnusedDisableDirectives: 'error' },
   },
-  { ...lit.configs['flat/recommended'], files: LIT_FILES },
+  { ...litRecommended, files: LIT_FILES },
   { ...litA11y.configs.recommended, files: LIT_FILES },
   {
     files: LIT_FILES,

@@ -43,7 +43,7 @@
     "shots:compare": "node scripts/shots/compare.ts",
     "stress:layout": "node scripts/layout-stress/index.ts",
     "typecheck": "tsc --noEmit",
-    "lint:lit": "eslint --max-warnings 0 --no-error-on-unmatched-pattern src/ui/elements",
+    "lint:lit": "eslint --flag unstable_native_nodejs_ts_config --max-warnings 0 --no-error-on-unmatched-pattern src/ui/elements",
     "test:stories": "node tests/stories/build.ts && playwright test --config tests/stories/playwright.config.ts --project chromium",
     "test:stories:all": "node tests/stories/build.ts && playwright test --config tests/stories/playwright.config.ts",
     "test:visual": "node scripts/visual.ts"

@@ -19,7 +19,7 @@
     "resolveJsonModule": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts", "scripts/**/*.ts"],
+  "include": ["src/**/*.ts", "tests/**/*.ts", "scripts/**/*.ts", "eslint.config.ts", "eslint-plugins.d.ts"],
   // xg_sync_test.ts runs inside xivgear's own checkout against their types, so it is left out; the rest is build output
   "exclude": [
     "**/node_modules/**",

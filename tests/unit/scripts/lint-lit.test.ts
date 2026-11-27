@@ -1,4 +1,4 @@
-/* The ESLint config for Lit templates (eslint.config.js): linting the fixture must report a class field that shadows a
+/* The ESLint config for Lit templates (eslint.config.ts): linting the fixture must report a class field that shadows a
    reactive property and an <img> without alt, so the test fails when the config stops loading either plugin. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,7 +8,7 @@ const FIXTURE_DIR = 'tests/unit/scripts/fixtures/lit-lint';
 
 /* The rule ids ESLint reports for one fixture file. */
 async function ruleIdsOf(fileName: string): Promise<(string | null)[]> {
-  const eslint = new ESLint();
+  const eslint = new ESLint({ flags: ['unstable_native_nodejs_ts_config'] });
   const [result] = await eslint.lintFiles([`${FIXTURE_DIR}/${fileName}`]);
   return result.messages.map(message => message.ruleId);
 }
