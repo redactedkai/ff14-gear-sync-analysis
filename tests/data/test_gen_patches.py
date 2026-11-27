@@ -14,6 +14,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import gen_patches
@@ -24,7 +25,7 @@ from item_format import SchemaError
 UTC_MIDNIGHT_0908 = 1788825600  # 2026-09-08 00:00:00 UTC
 
 
-def entry(patch_id, version, stamp, name=None):
+def entry(patch_id: int, version: str, stamp: int | str, name: str | None = None) -> dict[str, Any]:
     """One entry of patchlist.json with the fields the generator reads."""
     return {'ID': patch_id, 'Version': version, 'Name_en': name or f'Patch {version}', 'ReleaseDate': stamp}
 
@@ -39,18 +40,18 @@ REAL_START = [
 
 
 class PatchTableTest(unittest.TestCase):
-    def test_release_day_is_the_utc_day(self):
+    def test_release_day_is_the_utc_day(self) -> None:
         self.assertEqual(gen_patches.release_day(1788852416), '2026-09-08')  # Patch 7.56
         self.assertEqual(gen_patches.release_day(UTC_MIDNIGHT_0908), '2026-09-08')
         self.assertEqual(gen_patches.release_day(UTC_MIDNIGHT_0908 - 1), '2026-09-07')
 
-    def test_a_repeated_entry_is_kept_once_and_the_order_is_the_lists(self):
+    def test_a_repeated_entry_is_kept_once_and_the_order_is_the_lists(self) -> None:
         table = gen_patches.patch_table(REAL_START)
         self.assertEqual(table, [['2.0', '2013-08-16'], ['2.05', '2013-10-17'], ['2.1', '2013-12-17'], ['2.1b', '2013-12-17']])
 
-    def test_stops_on_anything_unexpected(self):
+    def test_stops_on_anything_unexpected(self) -> None:
         later = entry(10, '7.56', 1788852416)
-        bad = {
+        bad: dict[str, Any] = {
             'not a list': {'a': 1},
             'empty': [],
             'a missing field': [{'ID': 1, 'Version': '7.0', 'Name_en': 'Patch 7.0'}],
@@ -67,22 +68,22 @@ class PatchTableTest(unittest.TestCase):
             with self.subTest(what), self.assertRaises(SchemaError):
                 gen_patches.patch_table(entries)
 
-    def test_a_version_with_a_letter_is_a_patch(self):
+    def test_a_version_with_a_letter_is_a_patch(self) -> None:
         self.assertEqual(gen_patches.patch_table([entry(1, '2.1b', 1387238400, 'Patch 2.1b: A Realm Awoken')]), [['2.1b', '2013-12-17']])
 
 
 class GenPatchesTest(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         self.dir = Path(self.tmp.name)
         self.patchlist = self.dir / 'patchlist.json'
         self.patchlist.write_text(json.dumps(REAL_START), encoding='utf-8')
         self.out = self.dir / 'patches.json'
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.tmp.cleanup()
 
-    def test_provenance_fields_and_one_patch_per_line(self):
+    def test_provenance_fields_and_one_patch_per_line(self) -> None:
         run_quiet(gen_patches.main, str(self.patchlist), str(self.out), None)
         doc = json.loads(self.out.read_text(encoding='utf-8'))
         self.assertEqual(list(doc), ['_generated', 'source', 'formatVersion', 'PATCHES'])
@@ -99,7 +100,7 @@ class GenPatchesTest(unittest.TestCase):
         self.assertEqual([json.loads(line.rstrip(',')) for line in lines[start + 1 : start + 5]], doc['PATCHES'])
         self.assertEqual(lines[start + 5], ']')
 
-    def test_command_line_stamps_the_source_and_stops_on_a_bad_list(self):
+    def test_command_line_stamps_the_source_and_stops_on_a_bad_list(self) -> None:
         script = ROOT / 'scripts' / 'data' / 'gen_patches.py'
         run = subprocess.run(
             [
@@ -124,7 +125,7 @@ class GenPatchesTest(unittest.TestCase):
         self.assertEqual(run.returncode, 1)
         self.assertIn('ReleaseDate', run.stderr)
 
-    def test_the_committed_table_is_in_the_generators_shape(self):
+    def test_the_committed_table_is_in_the_generators_shape(self) -> None:
         doc = json.loads((ROOT / 'src' / 'data' / 'patches.json').read_text(encoding='utf-8'))
         self.assertEqual(doc['source']['repo'], 'xivapi/ffxiv-datamining-patches')
         self.assertIn(doc['source']['commit'], doc['_generated'])

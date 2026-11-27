@@ -18,7 +18,9 @@ import csv
 import io
 import json
 import sys
+from collections.abc import Callable, Iterable
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).resolve().parent / 'fixtures'
@@ -29,7 +31,7 @@ STAT_ORDER = ['str', 'dex', 'int', 'mind', 'vit', 'piety', 'ten', 'dh', 'crit', 
 ALL_JOBS_MASK = (1 << 23) - 1
 
 
-def stats(**kw):
+def stats(**kw: int) -> str:
     """The raw stat columns of a generated row (in STAT_ORDER) as a comma-separated string; stats not given are 0."""
     return ','.join(str(kw.get(k, 0)) for k in STAT_ORDER)
 
@@ -38,7 +40,7 @@ TANK = stats(str=55, vit=59, ten=54, det=38)
 HEAL = stats(mind=33, vit=32, piety=22, dh=6, sps=31)
 
 
-def read_export(path, name):
+def read_export(path: str | Path, name: str) -> Any:
     """The JSON value of `export const <name>=...;` in a generated JS file (other lines are ignored)."""
     prefix = f'export const {name}='
     for line in Path(path).read_text(encoding='utf-8').splitlines():
@@ -47,7 +49,7 @@ def read_export(path, name):
     raise AssertionError(f'{name} not found in {path}')
 
 
-def run_quiet(fn, *args):
+def run_quiet(fn: Callable[..., object], *args: object) -> None:
     """Call fn(*args) with its printed output discarded."""
     with contextlib.redirect_stdout(io.StringIO()):
         fn(*args)
@@ -73,13 +75,13 @@ PARAM_GROW_HEADER = [
 ]
 
 
-def write_param_grow(path, levels):
+def write_param_grow(path: str | Path, levels: Iterable[int]) -> None:
     """ParamGrow rows for the given levels: BaseSpeed 1000+l, LevelModifier 2000+l, ItemLevelSync 3000+l."""
     with Path(path).open('w', encoding='utf-8', newline='') as f:
         w = csv.writer(f, lineterminator='\n')
         w.writerow(PARAM_GROW_HEADER)
         for lv in levels:
-            row = dict.fromkeys(PARAM_GROW_HEADER, '0')
+            row: dict[str, str | int] = dict.fromkeys(PARAM_GROW_HEADER, '0')
             row.update({'#': lv, 'BaseSpeed': 1000 + lv, 'LevelModifier': 2000 + lv, 'ItemLevelSync': 3000 + lv})
             w.writerow([row[k] for k in PARAM_GROW_HEADER])
 
@@ -87,7 +89,7 @@ def write_param_grow(path, levels):
 JOBS = json.loads((ROOT / 'src' / 'core' / 'item-format.json').read_text(encoding='utf-8'))['jobs']
 
 
-def add_shop(rows, shop_id, listings):
+def add_shop(rows: list[list[str]], shop_id: str, listings: Iterable[tuple[str, str]]) -> None:
     """Append a SpecialShop row selling each (item, cost item) pair; rows is the CSV as lists, header first."""
     h = rows[0]
     row = ['0'] * len(h)
@@ -98,7 +100,7 @@ def add_shop(rows, shop_id, listings):
     rows.append(row)
 
 
-def edit_csv(path, fn):
+def edit_csv(path: str | Path, fn: Callable[[list[list[str]]], object]) -> None:
     """Rewrite a CSV in place: fn(rows) gets the rows as lists (header first) and changes them."""
     with Path(path).open(encoding='utf-8', newline='') as f:
         rows = list(csv.reader(f))
@@ -107,10 +109,10 @@ def edit_csv(path, fn):
         csv.writer(f, lineterminator='\n').writerows(rows)
 
 
-def rename_column(path, old, new):
+def rename_column(path: str | Path, old: str, new: str) -> None:
     """Rename a column of a CSV in place (the header cell `old` becomes `new`)."""
 
-    def fn(rows):
+    def fn(rows: list[list[str]]) -> None:
         rows[0][rows[0].index(old)] = new
 
     edit_csv(path, fn)

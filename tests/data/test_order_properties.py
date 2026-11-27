@@ -9,6 +9,7 @@ Run: npm run test:py (npm run check:all runs them too)
 """
 
 import csv
+import random
 import shutil
 import tempfile
 import unittest
@@ -27,17 +28,17 @@ FOOD_FIXTURES = FIXTURES / 'food'
 COPY_ID = '900001'  # the id of the copied row; no fixture item has it
 
 
-def read_rows(path):
+def read_rows(path: Path) -> list[list[str]]:
     with Path(path).open(encoding='utf-8', newline='') as f:
         return list(csv.reader(f))
 
 
-def write_rows(path, rows):
+def write_rows(path: Path, rows: list[list[str]]) -> None:
     with Path(path).open('w', encoding='utf-8', newline='') as f:
         csv.writer(f, lineterminator='\n').writerows(rows)
 
 
-def copy_with_tie(source_dir, target_dir, original_name):
+def copy_with_tie(source_dir: Path, target_dir: Path, original_name: str) -> None:
     """Copy every CSV of source_dir into target_dir, adding to Item.csv a copy (id COPY_ID) of the row named
     `original_name` (a tie on every sort key but the id)."""
     for path in Path(source_dir).glob('*.csv'):
@@ -49,7 +50,7 @@ def copy_with_tie(source_dir, target_dir, original_name):
     write_rows(Path(target_dir) / 'Item.csv', rows)
 
 
-def shuffle_all(csv_dir, rng):
+def shuffle_all(csv_dir: str, rng: random.Random) -> None:
     """Shuffle the data rows of every CSV in csv_dir, in place, with the Hypothesis-provided random generator."""
     for path in sorted(Path(csv_dir).glob('*.csv')):
         rows = read_rows(path)
@@ -62,7 +63,7 @@ class ItemDatabaseOrderTest(unittest.TestCase):
     """gen_items.main gives the same items.json whatever order the rows of the sheets are in."""
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.tmp = tempfile.TemporaryDirectory()
         cls.base = Path(cls.tmp.name) / 'base'
         cls.base.mkdir()
@@ -70,23 +71,23 @@ class ItemDatabaseOrderTest(unittest.TestCase):
         cls.expected = cls.generate(cls.base)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         cls.tmp.cleanup()
 
     @staticmethod
-    def generate(csv_dir):
+    def generate(csv_dir: Path | str) -> bytes:
         out = Path(csv_dir) / 'items.json.out'
         run_quiet(gen_items.main, str(csv_dir), str(out), None)
         return out.read_bytes()
 
-    def test_the_tie_is_in_the_output(self):
+    def test_the_tie_is_in_the_output(self) -> None:
         # the property is only worth something if the copied row is kept and ties with its original
         names = [line for line in self.expected.decode('utf-8').splitlines() if line.startswith('["Test Tank Helm"')]
         self.assertEqual(len(names), 2)
 
     @settings(max_examples=6)  # one run of the item generator takes about a second
     @given(rng=st.randoms(use_true_random=False))
-    def test_shuffled_sheets_give_the_same_file(self, rng):
+    def test_shuffled_sheets_give_the_same_file(self, rng: random.Random) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             for path in self.base.glob('*.csv'):
                 shutil.copy(path, Path(tmp) / path.name)
@@ -98,7 +99,7 @@ class FoodOrderTest(unittest.TestCase):
     """gen_food.main gives the same food.json whatever order the rows of Item, ItemAction and ItemFood are in."""
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.tmp = tempfile.TemporaryDirectory()
         cls.base = Path(cls.tmp.name) / 'base'
         cls.base.mkdir()
@@ -106,20 +107,20 @@ class FoodOrderTest(unittest.TestCase):
         cls.expected = cls.generate(cls.base)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         cls.tmp.cleanup()
 
     @staticmethod
-    def generate(csv_dir):
+    def generate(csv_dir: Path | str) -> bytes:
         out = Path(csv_dir) / 'food.json.out'
         gen_food.main(str(csv_dir), str(out), None)
         return out.read_bytes()
 
-    def test_the_tie_is_in_the_output(self):
+    def test_the_tie_is_in_the_output(self) -> None:
         self.assertEqual(self.expected.decode('utf-8').count('["Royal Toast"'), 2)
 
     @given(rng=st.randoms(use_true_random=False))
-    def test_shuffled_sheets_give_the_same_file(self, rng):
+    def test_shuffled_sheets_give_the_same_file(self, rng: random.Random) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             for path in self.base.glob('*.csv'):
                 shutil.copy(path, Path(tmp) / path.name)
@@ -133,7 +134,7 @@ JOB_COUNT = len(FMT['jobs'])
 GROUP_SLOT_CODES = sorted(s['code'] for s in FMT['slots'] if s['type'] in FMT['gearGroups']['slotTypes'])
 
 
-def item_row(slot_code, job_mask):
+def item_row(slot_code: int, job_mask: int) -> list[int]:
     """An item row with only the two fields gear_groups reads set."""
     row = [0] * len(FMT['itemRow']['fields'])
     row[FIELDS['slotCode']] = slot_code
@@ -141,7 +142,7 @@ def item_row(slot_code, job_mask):
     return row
 
 
-def outcome(rows):
+def outcome(rows: list[list[int]]):
     """The groups of `rows`, or the SchemaError message when the data is not clean (both must not depend on order)."""
     try:
         return gen_gear_groups.gear_groups(rows, FMT)
@@ -159,7 +160,7 @@ class GearGroupsOrderTest(unittest.TestCase):
         ),
         rng=st.randoms(use_true_random=False),
     )
-    def test_shuffled_rows_give_the_same_groups(self, extra_rows, rng):
+    def test_shuffled_rows_give_the_same_groups(self, extra_rows: list[tuple[int, int]], rng: random.Random) -> None:
         # one piece every job wears in each slot, so no job is left without a piece, plus the random pieces
         rows = [item_row(slot, (1 << JOB_COUNT) - 1) for slot in GROUP_SLOT_CODES] + [item_row(*r) for r in extra_rows]
         shuffled = list(rows)

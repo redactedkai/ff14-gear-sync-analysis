@@ -13,7 +13,7 @@ GENERATED = sorted((ROOT / 'src' / 'data').iterdir())
 
 
 class LineEndingsTest(unittest.TestCase):
-    def test_there_are_generated_files_to_check(self):
+    def test_there_are_generated_files_to_check(self) -> None:
         self.assertEqual(
             {path.name for path in GENERATED},
             {
@@ -28,14 +28,14 @@ class LineEndingsTest(unittest.TestCase):
             },
         )
 
-    def test_committed_generated_files_have_lf_endings_and_a_final_newline(self):
+    def test_committed_generated_files_have_lf_endings_and_a_final_newline(self) -> None:
         for path in GENERATED:
             with self.subTest(file=path.name):
                 data = path.read_bytes()
                 self.assertNotIn(b'\r', data)
                 self.assertTrue(data.endswith(b'\n'))
 
-    def test_write_generated_writes_lf_on_every_platform(self):
+    def test_write_generated_writes_lf_on_every_platform(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / 'out.txt'
             provenance.write_generated(out, 'one\ntwo \u2605\n')

@@ -23,11 +23,11 @@ class GenGearGroupsTest(unittest.TestCase):
     """gen_gear_groups.py: the gear groups (jobs sharing 80 percent of their head, body, hands, legs and feet pieces, with
     the same level cap) from item rows, and from the shipped item database."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.fmt = load_format()
         self.fields = row_fields(self.fmt)
 
-    def row(self, slot_code, jobs):
+    def row(self, slot_code: int, jobs: list[str]):
         """An item row (name, slot code and job mask only; the generator reads nothing else) wearable by `jobs`."""
         row: list[Any] = [0] * len(self.fmt['itemRow']['fields'])
         row[self.fields['name']] = 'x'
@@ -35,7 +35,7 @@ class GenGearGroupsTest(unittest.TestCase):
         row[self.fields['jobMask']] = sum(1 << self.fmt['jobs'].index(j) for j in jobs)
         return row
 
-    def rows(self, shares):
+    def rows(self, shares: list[tuple[list[str], int]]):
         """Rows for `shares`, [(jobs, how many body pieces only those jobs wear)]: a body piece (slot code 4) per entry
         copy, plus one weapon (code 0) for every job, which is left out of the count."""
         every_job = self.fmt['jobs']
@@ -44,7 +44,7 @@ class GenGearGroupsTest(unittest.TestCase):
             out += [self.row(4, jobs) for _ in range(count)]
         return out
 
-    def test_groups_are_jobs_linked_pairwise_with_the_same_level_cap(self):
+    def test_groups_are_jobs_linked_pairwise_with_the_same_level_cap(self) -> None:
         # PLD and WAR share 100 of 101 pieces; BLM, RDM and BLU share all theirs, but BLU has another level cap
         every_other = [j for j in self.fmt['jobs'] if j not in ('PLD', 'WAR', 'BLM', 'RDM', 'BLU')]
         rows = self.rows([(['PLD', 'WAR'], 100), (['PLD'], 1), (['BLM', 'RDM', 'BLU'], 100)] + [([j], 100) for j in every_other])
@@ -54,7 +54,7 @@ class GenGearGroupsTest(unittest.TestCase):
         self.assertIn(['BLU'], groups)  # same gear, but level cap 80
         self.assertEqual(sorted(j for g in groups for j in g), sorted(self.fmt['jobs']))
 
-    def test_threshold_is_shared_over_either(self):
+    def test_threshold_is_shared_over_either(self) -> None:
         # PLD wears 100 pieces, WAR wears 80 of them: 80 / 100 shared, exactly the link percent
         rest = [([j], 100) for j in self.fmt['jobs'] if j not in ('PLD', 'WAR')]
         groups = gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 80), (['PLD'], 20), *rest]), self.fmt)
@@ -66,7 +66,7 @@ class GenGearGroupsTest(unittest.TestCase):
         groups = gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 40), (['PLD'], 60), (['WAR'], 60), *rest]), self.fmt)
         self.assertIn(['PLD'], groups)
 
-    def test_unclear_data_stops_the_generator(self):
+    def test_unclear_data_stops_the_generator(self) -> None:
         rest = [([j], 100) for j in self.fmt['jobs'] if j not in ('PLD', 'WAR')]
         # 70 shared of 130 pieces either wears (54 percent) is neither linked nor clearly apart
         with self.assertRaisesRegex(SchemaError, 'not clear'):
@@ -75,7 +75,7 @@ class GenGearGroupsTest(unittest.TestCase):
         with self.assertRaisesRegex(SchemaError, 'can wear no piece'):
             gen_gear_groups.gear_groups([self.row(0, self.fmt['jobs'])], self.fmt)
 
-    def test_shipped_groups_follow_the_shipped_items(self):
+    def test_shipped_groups_follow_the_shipped_items(self) -> None:
         items = json.loads((ROOT / 'src' / 'data' / 'items.json').read_text(encoding='utf-8'))
         shipped = json.loads((ROOT / 'src' / 'data' / 'gear-groups.json').read_text(encoding='utf-8'))
         groups = gen_gear_groups.gear_groups(items['items'], self.fmt)
@@ -88,7 +88,7 @@ class GenGearGroupsTest(unittest.TestCase):
              ['BRD', 'MCH', 'DNC'], ['BLM', 'SMN', 'RDM', 'PCT'], ['BLU'], ['BST']],
         )  # fmt: skip
 
-    def test_output_is_reproducible(self):
+    def test_output_is_reproducible(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             first, second = Path(tmp) / 'a.json', Path(tmp) / 'b.json'
             run_quiet(gen_gear_groups.main, str(ROOT / 'src' / 'data' / 'items.json'), str(first))

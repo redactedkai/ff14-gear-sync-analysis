@@ -14,6 +14,7 @@ import json
 import shutil
 import tempfile
 import unittest
+from collections.abc import Callable
 from pathlib import Path
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
@@ -25,7 +26,7 @@ from item_format import SchemaError
 FIXTURES = SHEET_FIXTURES / 'food'
 
 
-def generate(csv_dir):
+def generate(csv_dir: Path | str):
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp) / 'food.json'
         gen_food.main(str(csv_dir), str(out), None)
@@ -34,10 +35,10 @@ def generate(csv_dir):
 
 class GenFoodTest(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.doc = generate(FIXTURES)
 
-    def test_kept_meals_with_their_hq_substats(self):
+    def test_kept_meals_with_their_hq_substats(self) -> None:
         # HQ values of the real ItemFood rows; Vitality carried apart, as [percent, max]
         self.assertEqual(
             self.doc['foods'],
@@ -48,12 +49,12 @@ class GenFoodTest(unittest.TestCase):
             ],
         )
 
-    def test_left_out(self):
+    def test_left_out(self) -> None:
         names = {f[0] for f in self.doc['foods']}
         for name in ['Grade 4 Gemdraught of Mind', 'Popoto', 'Battered Fish', 'Honey Bun', 'Princess Pudding', 'Salt Cod']:
             self.assertNotIn(name, names)
 
-    def test_provenance_unknown_for_fixtures(self):
+    def test_provenance_unknown_for_fixtures(self) -> None:
         self.assertIsNone(self.doc['source'])
         self.assertIn('commit unknown', self.doc['_generated'])
 
@@ -61,13 +62,13 @@ class GenFoodTest(unittest.TestCase):
 class FoodSortTiesTest(unittest.TestCase):
     """Two meals that tie on item level and name come out in item id order, whatever order Item.csv lists them."""
 
-    def stats_of_royal_toasts(self, copy_id, put_copy_first):
+    def stats_of_royal_toasts(self, copy_id: int, put_copy_first: bool):
         """The substat lists of every Royal Toast made from a copy of the fixtures where the meal also appears as `copy_id`,
         with the action (so the stats) of Prune Ponzecake, listed before the original or after it."""
         with tempfile.TemporaryDirectory() as tmp:
             shutil.copytree(FIXTURES, tmp, dirs_exist_ok=True)
 
-            def add_copy(rows):
+            def add_copy(rows: list[list[str]]) -> None:
                 header = rows[0]
                 by_name = {row[header.index('Name')]: row for row in rows[1:]}
                 original = by_name['Royal Toast']
@@ -80,7 +81,7 @@ class FoodSortTiesTest(unittest.TestCase):
             foods = generate(tmp)['foods']
             return [(food[2][0][0]) for food in foods if food[0] == 'Royal Toast']
 
-    def test_a_tie_is_ordered_by_item_id_not_by_file_order(self):
+    def test_a_tie_is_ordered_by_item_id_not_by_file_order(self) -> None:
         # the original (44082) has one substat, crit; the copy has Prune Ponzecake's, led by piety
         for copy_id, put_copy_first in ((1, False), (1, True), (99999, False), (99999, True)):
             with self.subTest(copy_id=copy_id, put_copy_first=put_copy_first):
@@ -91,16 +92,16 @@ class FoodSortTiesTest(unittest.TestCase):
 class FoodSchemaTest(unittest.TestCase):
     """Edited copies of the fixtures stop the generator."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         self.dir = Path(self.tmp.name)
         for f in FIXTURES.iterdir():
             shutil.copy(f, self.dir / f.name)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.tmp.cleanup()
 
-    def edit(self, sheet, fn):
+    def edit(self, sheet: str, fn: Callable[[list[list[str]]], list[list[str]]]) -> None:
         path = self.dir / f'{sheet}.csv'
         with path.open(encoding='utf-8', newline='') as f:
             rows = list(csv.reader(f))
@@ -108,21 +109,21 @@ class FoodSchemaTest(unittest.TestCase):
         with path.open('w', encoding='utf-8', newline='') as f:
             csv.writer(f, lineterminator='\n').writerows(rows)
 
-    def test_renamed_column(self):
+    def test_renamed_column(self) -> None:
         self.edit('ItemFood', lambda rows: [[c.replace('MaxHQ[0]', 'MaxHq[0]') for c in rows[0]], *rows[1:]])
         with self.assertRaisesRegex(SchemaError, r'ItemFood.csv is missing column\(s\): MaxHQ\[0\]'):
             generate(self.dir)
 
-    def test_missing_food_row(self):
+    def test_missing_food_row(self) -> None:
         # drop Rroneek au Gratin's ItemFood row (705)
         self.edit('ItemFood', lambda rows: [r for r in rows if r[0] != '705'])
         with self.assertRaisesRegex(SchemaError, r'Rroneek au Gratin.*ItemFood row 705'):
             generate(self.dir)
 
-    def test_boolean_columns_other_than_true_false(self):
+    def test_boolean_columns_other_than_true_false(self) -> None:
         # the exporter writing 1/0 for CanBeHq or IsRelative must stop the generator, not leave out every meal
-        def to_digits(column):
-            def fn(rows):
+        def to_digits(column: str):
+            def fn(rows: list[list[str]]) -> list[list[str]]:
                 cols = [i for i, c in enumerate(rows[0]) if c.startswith(column)]
                 return [rows[0], *[[{'True': '1', 'False': '0'}.get(v, v) if i in cols else v for i, v in enumerate(r)] for r in rows[1:]]]
 
@@ -136,8 +137,8 @@ class FoodSchemaTest(unittest.TestCase):
                 with self.assertRaisesRegex(SchemaError, rf"{sheet}.csv: expected True or False: {column}.*'1'"):
                     generate(self.dir)
 
-    def test_bad_percent(self):
-        def zero(rows):
+    def test_bad_percent(self) -> None:
+        def zero(rows: list[list[str]]):
             i = rows[0].index('ValueHQ[0]')
             return [rows[0], *[[*r[:i], '0', *r[i + 1 :]] if r[0] == '705' else r for r in rows[1:]]]
 

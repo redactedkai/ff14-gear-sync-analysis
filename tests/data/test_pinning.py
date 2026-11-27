@@ -21,7 +21,7 @@ class PinningTest(unittest.TestCase):
     """fetch.py --commit takes a full commit id only; provenance.local_edits finds edits in the data clone, which
     regen.py refuses to run on."""
 
-    def test_fetch_commit_option(self):
+    def test_fetch_commit_option(self) -> None:
         self.assertIsNone(fetch.parse_args([]).commit)
         sha = 'd9582a624eaec69d45649366dee801c2f3a6e9b3'
         self.assertEqual(fetch.parse_args(['--commit', sha]).commit, sha)
@@ -29,7 +29,7 @@ class PinningTest(unittest.TestCase):
             with self.subTest(bad=bad), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
                 fetch.parse_args(['--commit', bad])
 
-    def test_fetch_patches_commit_option(self):
+    def test_fetch_patches_commit_option(self) -> None:
         self.assertIsNone(fetch.parse_args([]).patches_commit)
         sha = 'd6397410fa051a8a35827c6b7f97fc59dd00d5e5'
         args = fetch.parse_args(['--commit', 'a' * 40, '--patches-commit', sha])
@@ -38,12 +38,12 @@ class PinningTest(unittest.TestCase):
             with self.subTest(bad=bad), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
                 fetch.parse_args(['--patches-commit', bad])
 
-    def test_detect_tells_the_two_source_repositories_apart(self):
+    def test_detect_tells_the_two_source_repositories_apart(self) -> None:
         """ffxiv-datamining-patches is not ffxiv-datamining: a clone is only the repository its origin names, exactly."""
         with tempfile.TemporaryDirectory() as tmp:
             clone = Path(tmp)
 
-            def run(*args):
+            def run(*args: str) -> None:
                 cmd = ['git', '-c', 'user.name=test', '-c', 'user.email=test@example.com', '-C', str(clone), *args]
                 subprocess.run(cmd, check=True, capture_output=True)
 
@@ -71,12 +71,12 @@ class PinningTest(unittest.TestCase):
                         self.assertEqual(found['repo'], provenance.REPO if expect_data else provenance.PATCHES_REPO)
                         self.assertRegex(found['commit'], r'^[0-9a-f]{40}$')
 
-    def test_local_edits(self):
+    def test_local_edits(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             clone = Path(tmp)
             self.assertIsNone(provenance.local_edits(clone / 'missing'))
 
-            def run(*args):
+            def run(*args: str) -> None:
                 cmd = ['git', '-c', 'user.name=test', '-c', 'user.email=test@example.com', '-C', str(clone), *args]
                 subprocess.run(cmd, check=True, capture_output=True)
 

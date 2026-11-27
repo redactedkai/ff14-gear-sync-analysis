@@ -4,13 +4,14 @@ the same keys with the same kinds of value, so a key added to either side withou
 import json
 import typing
 import unittest
+from typing import Any
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import item_format
 from item_format import FORMAT_PATH, ItemFormat, load_format
 
 
-def problems_of(value, expected, where):
+def problems_of(value: Any, expected: Any, where: str) -> list[str]:
     """What differs between a parsed JSON `value` and the type `expected` (a TypedDict class, list[...], dict[str, ...]
     or a scalar type), as a list of messages that name the path `where`."""
     if typing.is_typeddict(expected):
@@ -41,17 +42,17 @@ def problems_of(value, expected, where):
 
 
 class ItemFormatTypesTest(unittest.TestCase):
-    def test_the_types_match_the_file(self):
+    def test_the_types_match_the_file(self) -> None:
         with FORMAT_PATH.open(encoding='utf-8') as f:
             raw = json.load(f)
         self.assertEqual(problems_of(raw, ItemFormat, 'item-format'), [])
 
-    def test_load_format_reads_that_file(self):
+    def test_load_format_reads_that_file(self) -> None:
         self.assertEqual(set(load_format()), set(ItemFormat.__annotations__))
 
-    def test_only_comments_and_two_slot_keys_are_optional(self):
+    def test_only_comments_and_two_slot_keys_are_optional(self) -> None:
         """A missing key breaks a reader, so NotRequired is for the `_` comment keys and the two optional slot keys."""
-        classes = [
+        classes: list[Any] = [
             c for c in vars(item_format).values() if typing.is_typeddict(c) and c is not item_format.Piece
         ]  # Piece is not in the file
         self.assertIn(ItemFormat, classes)
@@ -61,7 +62,7 @@ class ItemFormatTypesTest(unittest.TestCase):
                     key.startswith('_') or (cls is item_format.Slot and key in ('twoHanded', 'blocks')), f'{cls.__name__}.{key}'
                 )
 
-    def test_a_wrong_type_is_reported(self):
+    def test_a_wrong_type_is_reported(self) -> None:
         """The checker itself: a missing key, an extra key and a wrong kind of value each show up."""
         raw = load_format()
         broken = {**raw, 'extra': 1, 'formatVersion': '1'}

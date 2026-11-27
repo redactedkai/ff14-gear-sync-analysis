@@ -51,7 +51,7 @@ ITEM_LEVEL_COLUMNS = {
 
 
 class GenItemLevelTest(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         self.dir = Path(self.tmp.name)
         shutil.copy(FIXTURES / 'ItemLevel.csv', self.dir / 'ItemLevel.csv')
@@ -63,7 +63,7 @@ class GenItemLevelTest(unittest.TestCase):
         with (FIXTURES / 'ItemLevel.csv').open(encoding='utf-8', newline='') as f:
             self.header = next(csv.reader(f))
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.tmp.cleanup()
 
     def generate(self):
@@ -72,7 +72,7 @@ class GenItemLevelTest(unittest.TestCase):
         doc = json.loads(out.read_text(encoding='utf-8'))
         return doc['IL'], doc['PG']
 
-    def test_provenance_fields(self):
+    def test_provenance_fields(self) -> None:
         out = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out), None)
         doc = json.loads(out.read_text(encoding='utf-8'))
@@ -85,7 +85,7 @@ class GenItemLevelTest(unittest.TestCase):
         self.assertEqual(doc['source'], src)
         self.assertIn('a' * 40, doc['_generated'])
 
-    def test_one_entry_per_line(self):
+    def test_one_entry_per_line(self) -> None:
         """IL, MP, SHARES and JOBS hold one key per line, PG one level and CLANS one clan per line, so a patch's diff names them."""
         out = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
@@ -101,7 +101,7 @@ class GenItemLevelTest(unittest.TestCase):
         start = lines.index('"CLANS":[')
         self.assertEqual(json.loads(lines[start + 1].rstrip(',')), doc['CLANS'][0])
 
-    def test_stat_factor_table(self):
+    def test_stat_factor_table(self) -> None:
         """MP: each stat's BaseParam MeldParam[0..12] row (the fixture holds the real rows), keyed by stat."""
         out = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
@@ -115,7 +115,7 @@ class GenItemLevelTest(unittest.TestCase):
         self.assertEqual(mp['str'][0], 90)  # kind 0: all four main stats at 90
         self.assertEqual(mp['crit'], [100] * 13)
 
-    def test_damage_defense_slot_shares(self):
+    def test_damage_defense_slot_shares(self) -> None:
         """SHARES: the real BaseParam slot shares per slot code for weapon damage (weapons only) and defense (armor only)."""
         out = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
@@ -124,7 +124,7 @@ class GenItemLevelTest(unittest.TestCase):
         defense = [0, 0, 0, 176, 236, 176, 236, 176, 0, 0, 0, 0, 412, 412, 824]
         self.assertEqual(shares, {'damagePhys': damage, 'damageMag': damage, 'defensePhys': defense, 'defenseMag': defense})
 
-    def test_job_modifiers(self):
+    def test_job_modifiers(self) -> None:
         """JOBS: each combat job's attribute modifiers from the real ClassJob rows; base classes left out."""
         out = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
@@ -135,7 +135,7 @@ class GenItemLevelTest(unittest.TestCase):
         self.assertEqual(jobs['WAR'], {'str': 105, 'dex': 95, 'int': 40, 'mind': 55, 'vit': 110})
         self.assertEqual(jobs['DRG']['vit'], 105)
 
-    def test_clans(self):
+    def test_clans(self) -> None:
         """CLANS: the 16 real Tribe rows in order, each with its race (Race row ceil(Tribe row / 2)) and the five attribute
         offsets; the values are the ones the Wiki's Starting Attributes page lists (22 Strength for a Midlander is a base 20 plus 2)."""
         out = self.dir / 'item-level.json'
@@ -153,34 +153,34 @@ class GenItemLevelTest(unittest.TestCase):
             for key in ('str', 'dex', 'int', 'mind', 'vit'):
                 self.assertTrue(17 <= 20 + c[key] <= 23, (c['clan'], key))
 
-    def test_clan_with_a_non_integer_offset_fails(self):
+    def test_clan_with_a_non_integer_offset_fails(self) -> None:
         text = (self.dir / 'Tribe.csv').read_text(encoding='utf-8')
         text = text.replace('1,Midlander,Midlander,0,0,2,', '1,Midlander,Midlander,0,0,two,', 1)
         (self.dir / 'Tribe.csv').write_text(text, encoding='utf-8')
         with self.assertRaisesRegex(SchemaError, 'Midlander'):
             self.generate()
 
-    def test_missing_clan_row_fails(self):
+    def test_missing_clan_row_fails(self) -> None:
         lines = [row for row in (self.dir / 'Tribe.csv').read_text(encoding='utf-8').splitlines() if not row.startswith('16,')]
         (self.dir / 'Tribe.csv').write_text('\n'.join(lines) + '\n', encoding='utf-8')
         with self.assertRaisesRegex(SchemaError, 'Tribe 16'):
             self.generate()
 
-    def test_item_level_columns(self):
+    def test_item_level_columns(self) -> None:
         il, _ = self.generate()
         self.assertEqual(set(il), set(ITEM_LEVEL_COLUMNS))
         for key, column in ITEM_LEVEL_COLUMNS.items():
             pos = self.header.index(column)
             self.assertEqual(il[key], [row * 1000 + pos for row in range(4)], key)
 
-    def test_param_grow_levels_1_to_100(self):
+    def test_param_grow_levels_1_to_100(self) -> None:
         _, pg = self.generate()
         self.assertEqual(len(pg), 100)
         self.assertEqual(pg[0], [1001, 2001, 3001])  # level 1 (row 0 is skipped)
         self.assertEqual(pg[89], [1090, 2090, 3090])  # level 90
         self.assertEqual(pg[99], [1100, 2100, 3100])  # level 100
 
-    def test_param_grow_top_level_follows_the_data(self):
+    def test_param_grow_top_level_follows_the_data(self) -> None:
         """The top level is the highest row with an ItemLevelSync: a level cap of 110 gives 110 levels, and rows above
         the cap with no ItemLevelSync (like the real rows 101 to 200, and row 201's 100/100) are left out."""
         write_param_grow(self.dir / 'ParamGrow.csv', range(111))
@@ -196,12 +196,12 @@ class GenItemLevelTest(unittest.TestCase):
         self.assertEqual(len(pg), 100)
         self.assertEqual(pg[-1], [1100, 2100, 3100])
 
-    def test_param_grow_missing_level_fails(self):
+    def test_param_grow_missing_level_fails(self) -> None:
         write_param_grow(self.dir / 'ParamGrow.csv', [lv for lv in range(101) if lv != 57])
         with self.assertRaisesRegex(SchemaError, r'ParamGrow.csv: level\(s\) 57 missing'):
             self.generate()
 
-    def test_non_contiguous_item_level_ids_fail(self):
+    def test_non_contiguous_item_level_ids_fail(self) -> None:
         with (self.dir / 'ItemLevel.csv').open('a', encoding='utf-8', newline='') as f:
             csv.writer(f, lineterminator='\n').writerow(['9'] + ['0'] * (len(self.header) - 1))
         with self.assertRaisesRegex(SchemaError, 'ItemLevel.csv ids'):

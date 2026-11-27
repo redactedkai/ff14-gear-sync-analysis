@@ -24,7 +24,7 @@ from common import (
 from item_format import SchemaError
 
 
-def fake_png(width=64, height=64, tag=0, whole=True):
+def fake_png(width: int = 64, height: int = 64, tag: int = 0, whole: bool = True) -> bytes:
     """The bytes of a PNG: signature, an IHDR chunk with the given size, one byte `tag` (so each icon differs) and the end
     chunk (enough for gen_job_icons' checks). whole=False cuts the end chunk off, as a download that stopped early does."""
     ihdr = (13).to_bytes(4, 'big') + b'IHDR' + width.to_bytes(4, 'big') + height.to_bytes(4, 'big') + bytes([8, 6, 0, 0, 0])
@@ -32,7 +32,7 @@ def fake_png(width=64, height=64, tag=0, whole=True):
 
 
 class GenJobIconsTest(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.tmp = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.tmp)
         self.icons = self.tmp / 'icons'
@@ -41,7 +41,7 @@ class GenJobIconsTest(unittest.TestCase):
             (self.icons / f'{job}.png').write_bytes(fake_png(tag=i))  # a different file per job
         self.out = self.tmp / 'job-icons.js'
 
-    def test_every_job_embedded_as_its_own_png(self):
+    def test_every_job_embedded_as_its_own_png(self) -> None:
         run_quiet(gen_job_icons.main, self.icons, self.out)
         icons = read_export(self.out, 'JOB_ICONS')
         self.assertEqual(list(icons), JOBS)
@@ -50,7 +50,7 @@ class GenJobIconsTest(unittest.TestCase):
             data = __import__('base64').b64decode(url.split(',', 1)[1])
             self.assertEqual(data, (self.icons / f'{job}.png').read_bytes(), job)
 
-    def test_header_names_fetch_date_and_hashes(self):
+    def test_header_names_fetch_date_and_hashes(self) -> None:
         """The header records the fetch date (fetch.py's record, else the newest file date) and each PNG's sha256."""
         (self.icons / gen_job_icons.FETCH_RECORD).write_text('2026-10-12\n', encoding='utf-8')
         run_quiet(gen_job_icons.main, self.icons, self.out)
@@ -65,25 +65,25 @@ class GenJobIconsTest(unittest.TestCase):
         run_quiet(gen_job_icons.main, self.icons, self.out)
         self.assertIn('Fetched 2026-01-01 (newest file date)', self.out.read_text(encoding='utf-8'))
 
-    def test_missing_icon_fails(self):
+    def test_missing_icon_fails(self) -> None:
         (self.icons / 'SGE.png').unlink()
         with self.assertRaisesRegex(SchemaError, 'SGE: no SGE.png'):
             gen_job_icons.main(self.icons, self.out)
         self.assertFalse(self.out.exists())
 
-    def test_a_png_cut_short_with_a_good_header_fails(self):
+    def test_a_png_cut_short_with_a_good_header_fails(self) -> None:
         (self.icons / 'SGE.png').write_bytes(fake_png(whole=False))
         with self.assertRaisesRegex(SchemaError, r'SGE: SGE.png is cut short \(no PNG end chunk\)'):
             gen_job_icons.main(self.icons, self.out)
         self.assertFalse(self.out.exists())
 
-    def test_wrong_size_or_not_png_fails(self):
+    def test_wrong_size_or_not_png_fails(self) -> None:
         (self.icons / 'PLD.png').write_bytes(fake_png(40, 40))
         (self.icons / 'WAR.png').write_bytes(b'<html>error page</html>')
         with self.assertRaisesRegex(SchemaError, r'PLD: PLD.png is 40 x 40, expected 64 x 64; WAR: WAR.png is not a PNG'):
             gen_job_icons.main(self.icons, self.out)
 
-    def test_icon_number_is_62100_plus_class_job_row(self):
+    def test_icon_number_is_62100_plus_class_job_row(self) -> None:
         # ClassJob rows from the real sheet: Paladin is row 19, Sage 40 (icons 062119 and 062140)
         rows = {'PLD': 19, 'WAR': 21, 'SGE': 40}
         with (self.tmp / 'ClassJob.csv').open('w', encoding='utf-8', newline='') as f:
@@ -99,32 +99,32 @@ class GenJobIconsTest(unittest.TestCase):
 class IconDownloadTest(unittest.TestCase):
     """fetch.download_icon: a download is renamed into place only when it is a whole 64 x 64 PNG."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.tmp = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.tmp)
         self.dest = self.tmp / 'SGE.png'
 
-    def download(self, body):
+    def download(self, body: bytes) -> None:
         """Run download_icon against a fake server that answers with `body`."""
         response = mock.MagicMock()
         response.__enter__.return_value.read.return_value = body
         with mock.patch.object(fetch.urllib.request, 'urlopen', return_value=response):
             fetch.download_icon('https://example.invalid/icon.png', self.dest)
 
-    def test_a_whole_png_replaces_the_old_icon_and_leaves_no_temp_file(self):
+    def test_a_whole_png_replaces_the_old_icon_and_leaves_no_temp_file(self) -> None:
         self.dest.write_bytes(b'old')
         self.download(fake_png(tag=7))
         self.assertEqual(self.dest.read_bytes(), fake_png(tag=7))
         self.assertEqual([p.name for p in self.tmp.iterdir()], ['SGE.png'])
 
-    def test_a_cut_short_png_is_refused_and_the_old_icon_stays(self):
+    def test_a_cut_short_png_is_refused_and_the_old_icon_stays(self) -> None:
         self.dest.write_bytes(fake_png(tag=1))
         with self.assertRaisesRegex(SystemExit, 'SGE.png: the download .* is not a whole 64 x 64 PNG'):
             self.download(fake_png(tag=2, whole=False))
         self.assertEqual(self.dest.read_bytes(), fake_png(tag=1))
         self.assertEqual([p.name for p in self.tmp.iterdir()], ['SGE.png'])
 
-    def test_an_error_page_or_a_wrong_size_is_refused(self):
+    def test_an_error_page_or_a_wrong_size_is_refused(self) -> None:
         for body in (b'<html>error page</html>', fake_png(40, 40)):
             with self.subTest(body=body[:10]), self.assertRaises(SystemExit):
                 self.download(body)

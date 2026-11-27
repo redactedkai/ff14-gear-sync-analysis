@@ -36,13 +36,13 @@ class GearCategoriesTest(unittest.TestCase):
 
     WEAPON_SLOTS: ClassVar[set[int]] = {0, 1, 2}
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         self.dir = Path(self.tmp.name)
         for f in FIXTURES.glob('*.csv'):
             shutil.copy(f, self.dir / f.name)
 
-        def items(rows):
+        def items(rows: list[list[str]]) -> None:
             h = rows[0]
             book, token = list(rows[1]), list(rows[1])  # copies of the empty row 0, as non-gear items
             book[0], book[h.index('Name')] = '1098', 'Test Savage Book'
@@ -55,7 +55,7 @@ class GearCategoriesTest(unittest.TestCase):
 
         edit_csv(self.dir / 'Item.csv', items)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.tmp.cleanup()
 
     def categories(self):
@@ -64,7 +64,7 @@ class GearCategoriesTest(unittest.TestCase):
         names = {r['#']: r['Name'] for r, _ in kept}
         return {names[i]: c for i, c in cats.items()}, kept, cats
 
-    def test_rules(self):
+    def test_rules(self) -> None:
         cats, kept, ids = self.categories()
         expect = {
             'Test Greataxe': 'relic',
@@ -90,7 +90,7 @@ class GearCategoriesTest(unittest.TestCase):
         out, _ = gear_activities.routes(self.dir, kept, ids)
         return {r['Name']: sorted('+'.join(k for i, k in enumerate(keys) if m >> i & 1) for m in out[r['#']]) for r, _ in kept}
 
-    def test_inferred_routes_are_counted(self):
+    def test_inferred_routes_are_counted(self) -> None:
         """Pieces and currencies placed by a fallback rule are counted by activity for the report printed on every
         run: the Savage book has no way in and buys Savage gear, so it counts as a Savage currency."""
         _, kept, ids = self.categories()
@@ -101,13 +101,13 @@ class GearCategoriesTest(unittest.TestCase):
         report = gear_activities.inferred_report(inferred)
         self.assertTrue(report.startswith('Routes inferred: 2 pieces with no way in the game files (Dungeon 2); 4 currencies'), report)
 
-    def test_savage_splits_at_the_level_cap(self):
+    def test_savage_splits_at_the_level_cap(self) -> None:
         # Savage at the highest equip level of the kept gear (the level cap) is Savage (Current), below it Savage (Legacy)
         routes = self.routes()
         self.assertIn('savage_current', routes['Test Earring'])
         self.assertIn('savage_current', routes['Test Hood of Healing'])
 
-        def fn(rows):
+        def fn(rows: list[list[str]]) -> None:
             lv = rows[0].index('LevelEquip')
             next(r for r in rows if r[0] == '1009')[lv] = '40'
 
@@ -116,10 +116,10 @@ class GearCategoriesTest(unittest.TestCase):
         self.assertIn('savage_legacy', routes['Test Earring'])
         self.assertIn('savage_current', routes['Test Hood of Healing'])  # equip level 50, the highest: current
 
-    def test_code_250_and_990_are_left_out(self):
+    def test_code_250_and_990_are_left_out(self) -> None:
         # code 250 is Diadem gear at equip level 60 and Aetherial gear at 50 or below (both random secondary
         # attributes); code 990 is legacy gear. All three categories are dropped from the database.
-        def fn(rows):
+        def fn(rows: list[list[str]]) -> None:
             h = rows[0]
             sort, lv = h.index('SubcategorySort'), h.index('LevelEquip')
             for gid, code, level in (('1006', '8250', '60'), ('1007', '8250', '50'), ('1008', '8990', '50')):
@@ -131,21 +131,21 @@ class GearCategoriesTest(unittest.TestCase):
         self.assertEqual((cats['Test Gloves'], cats['Test Tonban'], cats['Test Shoes']), ('diadem', 'aetherial', 'legacy'))
         self.assertTrue({'diadem', 'aetherial', 'legacy'} <= gear_categories.LEFT_OUT)
 
-    def test_shared_shop_is_caught(self):
+    def test_shared_shop_is_caught(self) -> None:
         # a Normal token taken by the Savage shop makes the Normal robe "savage"; the dye check reports it
         edit_csv(self.dir / 'SpecialShop.csv', lambda rows: add_shop(rows, '1769097', [('1004', '1099')]))
         cats, kept, ids = self.categories()
         self.assertEqual(cats['Test Robe'], 'savage')
         self.assertTrue(any('Test Robe' in p and 'dye' in p for p in gear_categories.check(kept, ids)))
 
-    def test_currency_override(self):
+    def test_currency_override(self) -> None:
         # gear bought with Proto Ultima Heat Shielding is alliance raid gear whatever its code says
         edit_csv(self.dir / 'SpecialShop.csv', lambda rows: add_shop(rows, '1769096', [('1003', '17521')]))
         cats, _, _ = self.categories()
         self.assertEqual(cats['Test Shield'], 'alliance_raid')  # code 60 would make it trial
 
-    def test_override_id_with_a_new_name_stops(self):
-        def fn(rows):
+    def test_override_id_with_a_new_name_stops(self) -> None:
+        def fn(rows: list[list[str]]) -> None:
             n = rows[0].index('Name')
             next(r for r in rows if r[0] == '17521')[n] = 'Something Else'
 
@@ -154,8 +154,8 @@ class GearCategoriesTest(unittest.TestCase):
             self.categories()
         self.assertIn('Proto Ultima Heat Shielding', str(cm.exception))
 
-    def test_unknown_code_stops(self):
-        def fn(rows):
+    def test_unknown_code_stops(self) -> None:
+        def fn(rows: list[list[str]]) -> None:
             sc = rows[0].index('SubcategorySort')
             next(r for r in rows if r[0] == '1015')[sc] = '8999'
 
@@ -164,8 +164,8 @@ class GearCategoriesTest(unittest.TestCase):
             self.categories()
         self.assertIn('999 (1 pieces)', str(cm.exception))
 
-    def test_cross_check_flags_a_recipe_result_outside_crafted(self):
-        def fn(rows):
+    def test_cross_check_flags_a_recipe_result_outside_crafted(self) -> None:
+        def fn(rows: list[list[str]]) -> None:
             sc = rows[0].index('SubcategorySort')
             next(r for r in rows if r[0] == '1020')[sc] = '8270'
 

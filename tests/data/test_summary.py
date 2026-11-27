@@ -15,7 +15,8 @@ import summary
 class SummaryTest(unittest.TestCase):
     """summary.py: the counts of summary.json, the drift between two runs and the changelog line."""
 
-    FMT: ClassVar[dict[str, Any]] = {
+    # a partial format: only the keys summarize() reads
+    FMT: ClassVar[Any] = {
         'itemRow': {'fields': ['name', 'slotCode', 'ilvl', 'routes', 'category']},
         'activities': [{'key': 'quests'}, {'key': 'crafted'}],
         'category': {'list': [{'key': 'crafted'}, {'key': 'dungeon'}]},
@@ -28,9 +29,9 @@ class SummaryTest(unittest.TestCase):
         'inferredPieces': {'Dungeon': 1},
     }
 
-    def test_counts(self):
+    def test_counts(self) -> None:
         # routes: bit 0 quests, bit 1 crafted, bit 2 the market board
-        rows = [['A', 3, 100, [2, 4], 0], ['B', 3, 90, [1], 1], ['C', 11, 50, [], 1]]
+        rows: list[list[Any]] = [['A', 3, 100, [2, 4], 0], ['B', 3, 90, [1], 1], ['C', 11, 50, [], 1]]
         counts = summary.summarize({'items': rows}, {'foods': [[], []]}, {**self.REPORT, 'inferredCurrencies': {}}, self.FMT)
         self.assertEqual((counts['rows'], counts['maxIlvl'], counts['noRoute'], counts['meals']), (3, 100, 1, 2))
         self.assertEqual(counts['bySlot'], {'3': 2, '11': 1})
@@ -38,7 +39,7 @@ class SummaryTest(unittest.TestCase):
         self.assertEqual(counts['byBox'], {'quests': 1, 'crafted': 1, 'market_board': 1})
         self.assertEqual(counts['dropped'], {'name': 4})
 
-    def test_drift(self):
+    def test_drift(self) -> None:
         old = {'rows': 20000, 'byCategory': {'savage': 1000, 'event': 4, 'old': 7}}
         new = {'rows': 21000, 'byCategory': {'savage': 500, 'event': 9, 'fresh': 12}}
         # rows +5% and event +5 stay quiet; savage -50% is reported, so are a category gone and a new one
@@ -48,7 +49,7 @@ class SummaryTest(unittest.TestCase):
         )
         self.assertEqual(summary.drift(new, new), [])
 
-    def test_changelog_line(self):
+    def test_changelog_line(self) -> None:
         source = provenance.make('d9582a624eaec69d45649366dee801c2f3a6e9b3', '2026-09-30T03:03:49-05:00')
         counts, old = {'rows': 20031, 'meals': 296}, {'rows': 19000, 'meals': 300}
         self.assertEqual(

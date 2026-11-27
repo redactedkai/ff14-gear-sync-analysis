@@ -27,19 +27,19 @@ WEAPON_SLOTS = {0, 1, 2}
 TANK_HELM = 'Test Tank Helm'  # a kept dungeon piece (code 270), item level 130
 
 
-def fixture_copy(directory):
+def fixture_copy(directory: Path | str) -> None:
     for path in FIXTURES.glob('*.csv'):
         shutil.copy(path, Path(directory) / path.name)
 
 
-def item_id_of(csv_dir, name):
+def item_id_of(csv_dir: Path | str, name: str) -> str:
     return next(r['#'] for r in read_csv(Path(csv_dir) / 'Item.csv') if r['Name'] == name)
 
 
-def set_item_cells(csv_dir, item_id, cells):
+def set_item_cells(csv_dir: Path | str, item_id: str, cells: dict[str, str]) -> None:
     """Set `cells` ({column: value}) on the Item.csv row with id `item_id`, in place."""
 
-    def edit(rows):
+    def edit(rows: list[list[str]]) -> None:
         header = rows[0]
         row = next(r for r in rows[1:] if r[0] == item_id)
         for column, value in cells.items():
@@ -55,7 +55,7 @@ class UnknownCodeStopsTest(unittest.TestCase):
         code=st.integers(min_value=0, max_value=999).filter(lambda c: c not in gear_categories.CATEGORY_BY_CODE),
         role=st.integers(min_value=0, max_value=60),
     )
-    def test_an_unknown_subcategory_code_stops_the_categories(self, code, role):
+    def test_an_unknown_subcategory_code_stops_the_categories(self, code: int, role: int) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             fixture_copy(tmp)
             set_item_cells(tmp, item_id_of(tmp, TANK_HELM), {'SubcategorySort': str(role * gear_categories.CODE_DIVISOR + code)})
@@ -65,20 +65,20 @@ class UnknownCodeStopsTest(unittest.TestCase):
             self.assertIn(f'{code} (1 pieces)', str(stop.exception))
 
     @given(activity=st.text(max_size=20).filter(lambda a: a not in gear_activities.ACTIVITY_BOX))
-    def test_an_activity_with_no_box_stops_the_routes(self, activity):
+    def test_an_activity_with_no_box_stops_the_routes(self, activity: str) -> None:
         boxes = gear_activities.Boxes({1: 100}, set(), {1: 'x'})
         with self.assertRaises(SchemaError):
             boxes.bit(activity, 1)
 
     @given(activity=st.sampled_from(sorted(gear_activities.ACTIVITY_BOX)))
-    def test_every_activity_with_a_box_maps_to_a_bit(self, activity):
+    def test_every_activity_with_a_box_maps_to_a_bit(self, activity: str) -> None:
         # the other side of the stop above: a known activity never raises, at the level cap or below it
         boxes = gear_activities.Boxes({1: 100, 2: 90}, set(), {})
         for item in (1, 2):
             self.assertGreater(boxes.bit(activity, item), 0)
 
     @given(category=st.text(min_size=1, max_size=20).filter(lambda c: c not in gear_activities.DROP_ACTIVITY))
-    def test_a_category_with_no_drop_activity_stops_the_routes(self, category):
+    def test_a_category_with_no_drop_activity_stops_the_routes(self, category: str) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             fixture_copy(tmp)
             kept = gen_items.select(tmp).kept
@@ -89,7 +89,7 @@ class UnknownCodeStopsTest(unittest.TestCase):
             self.assertIn(repr(category), str(stop.exception))
 
     @given(wrong_name=st.text(max_size=12).filter(lambda n: n != 'Kept Name'), item_id=st.integers(min_value=1, max_value=10**6))
-    def test_a_hand_kept_id_naming_another_item_stops(self, wrong_name, item_id):
+    def test_a_hand_kept_id_naming_another_item_stops(self, wrong_name: str, item_id: int) -> None:
         expected = {item_id: 'Kept Name'}
         check_ids({item_id: 'Kept Name'}, expected, 'Item.csv', 'currency', 'T')
         with self.assertRaises(SchemaError):
@@ -98,13 +98,13 @@ class UnknownCodeStopsTest(unittest.TestCase):
             check_ids({}, expected, 'Item.csv', 'currency', 'T')  # the id is gone
 
     @given(value=st.text(max_size=8).filter(lambda v: v not in ('True', 'False')))
-    def test_a_boolean_column_with_another_value_stops(self, value):
+    def test_a_boolean_column_with_another_value_stops(self, value: str) -> None:
         check_bools([{'CanBeHq': 'True'}, {'CanBeHq': 'False'}], ['CanBeHq'], 'Item.csv')
         with self.assertRaises(SchemaError):
             check_bools([{'CanBeHq': 'True'}, {'CanBeHq': value}], ['CanBeHq'], 'Item.csv')
 
     @given(missing=st.sets(st.sampled_from(['#', 'Name', 'Extra']), min_size=1))
-    def test_a_missing_required_column_stops_read_csv(self, missing):
+    def test_a_missing_required_column_stops_read_csv(self, missing: set[str]) -> None:
         columns = ['#', 'Name', 'Extra']
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / 'Sheet.csv'
@@ -115,7 +115,7 @@ class UnknownCodeStopsTest(unittest.TestCase):
                 self.assertIn(column, str(stop.exception))
 
     @given(extra=st.text(min_size=1, max_size=10).filter(lambda k: k not in gear_categories.CATEGORIES), repeat=st.booleans())
-    def test_the_category_list_of_the_format_must_match_the_categories(self, extra, repeat):
+    def test_the_category_list_of_the_format_must_match_the_categories(self, extra: str, repeat: bool) -> None:
         gen_items.category_index(load_format())  # the shipped list is accepted
         with_unknown = load_format()
         with_unknown['category']['list'].append({'key': extra, 'label': extra})
@@ -135,7 +135,7 @@ class DropRulesTest(unittest.TestCase):
     stats. The oracle is written from the doc, not from select()."""
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.tmp = tempfile.TemporaryDirectory()
         cls.base = Path(cls.tmp.name)
         fixture_copy(cls.base)
@@ -148,10 +148,10 @@ class DropRulesTest(unittest.TestCase):
         cls.baseline = gen_items.select(cls.base)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         cls.tmp.cleanup()
 
-    def test_the_funnel_of_the_fixtures_adds_up(self):
+    def test_the_funnel_of_the_fixtures_adds_up(self) -> None:
         self.assertEqual(len(self.baseline.kept) + sum(self.baseline.dropped.values()), self.total_rows)
         self.assertIn(self.tank_id, {row['#'] for row, _ in self.baseline.kept})
 
@@ -162,7 +162,9 @@ class DropRulesTest(unittest.TestCase):
         has_slot=st.booleans(),
         has_stats=st.booleans(),
     )
-    def test_a_row_is_kept_exactly_when_it_passes_every_rule(self, has_name, item_level, has_job, has_slot, has_stats):
+    def test_a_row_is_kept_exactly_when_it_passes_every_rule(
+        self, has_name: bool, item_level: int, has_job: bool, has_slot: bool, has_stats: bool
+    ) -> None:
         cells = {
             'Name': TANK_HELM if has_name else '',
             'LevelItem': str(item_level),
