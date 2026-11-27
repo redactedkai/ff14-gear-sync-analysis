@@ -12,15 +12,27 @@ import { frontSearch } from '../../../../src/core/optimizer/front.ts';
 import { slotInfo } from '../../../../src/core/items.ts';
 import { pruneForLimits } from '../../../../src/core/optimizer/candidates.ts';
 import { gcdTierAt } from '../../../../src/core/speed.ts';
+import { makeLimit } from '../../../../src/core/optimizer/limit.ts';
+import type { SearchSlot } from '../../../../src/core/optimizer/slot-index.ts';
+import type { Candidate, JobContext, Limit, PoolItem, SlotType, SolveSuccess, StatKey, Sync } from '../../../../src/core/types.ts';
 import { exhaustive, smallPool } from '../../helpers/exhaustive.ts';
-import { rng } from '../../helpers/common.ts';
+import { mustSolve, rng } from '../../helpers/common.ts';
+import { syntheticCandidate } from '../../helpers/synthetic-candidates.ts';
 
-const NO_SYNC = { cap: null, sync: false, level: 100 };
+const NO_SYNC: Sync = { cap: null, sync: false, level: 100 };
 
 /* A minimum on `stat` for a run: between its total in the free result and the most any loadout has (that one past it
    one time in six: nothing reaches it). */
-function minimumFor(job, pool, sync, melds, stat, free, int) {
-  const most = optimize(job, pool, sync, { target: stat, melds }).totals[stat];
+function minimumFor(
+  job: JobContext,
+  pool: readonly PoolItem[],
+  sync: Sync,
+  melds: boolean,
+  stat: StatKey,
+  free: SolveSuccess,
+  int: (n: number) => number,
+): number {
+  const most = mustSolve(optimize(job, pool, sync, { target: stat, melds })).totals[stat];
   if (int(6) === 0) {
     return most + 1;
   }
@@ -29,7 +41,7 @@ function minimumFor(job, pool, sync, melds, stat, free, int) {
 
 test('minimums on one or two stats match exhaustive search, with and without melds', () => {
   const rand = rng(20261017),
-    int = n => Math.floor(rand() * n);
+    int = (n: number): number => Math.floor(rand() * n);
   let runs = 0,
     changed = 0,
     infeasible = 0;
@@ -40,17 +52,17 @@ test('minimums on one or two stats match exhaustive search, with and without mel
       continue;
     }
     const ilvls = pool.map(i => i.ilvl).sort((a, b) => a - b);
-    const sync = rand() < 0.5 ? NO_SYNC : { cap: ilvls[int(ilvls.length)], sync: true, level: 100 };
+    const sync: Sync = rand() < 0.5 ? NO_SYNC : { cap: ilvls[int(ilvls.length)], sync: true, level: 100 };
     const melds = rand() < 0.7;
     // the target: a substat, or the main stat now and then (it melds nothing)
     const subs = job.substats;
-    const target = rand() < 0.2 ? job.mainKey : subs[int(subs.length)];
+    const target: StatKey = rand() < 0.2 ? job.mainKey : subs[int(subs.length)];
     const others = subs.filter(s => s !== target);
-    const tiebreak = rand() < 0.5 ? [others[int(others.length)]] : [];
-    const free = optimize(job, pool, sync, { target, tiebreak, melds });
+    const tiebreak: StatKey[] = rand() < 0.5 ? [others[int(others.length)]] : [];
+    const free = mustSolve(optimize(job, pool, sync, { target, tiebreak, melds }));
     // one or two limited stats, other than the target (speed among them now and then)
     const limited = [...others].sort(() => rand() - 0.5).slice(0, 1 + int(2));
-    const mins = {};
+    const mins: Record<string, number> = {};
     for (const s of limited) {
       mins[s] = minimumFor(job, pool, sync, melds, s, free, int);
     }
@@ -78,7 +90,7 @@ test('minimums on one or two stats match exhaustive search, with and without mel
     }
     // the plain search (no tables, groups or memo) on the same candidates agrees
     const prep = prepare(job, pool, sync, { target, tiebreak, melds, minStats: limited });
-    const plain = solve(prep, { mins, plain: true });
+    const plain = mustSolve(solve(prep, { mins, plain: true }));
     assert.deepEqual(
       [target, ...tiebreak].map(s => plain.totals[s]),
       want,
@@ -94,7 +106,7 @@ test('minimums on one or two stats match exhaustive search, with and without mel
    are built from the first node (lazyTables 0), and 2H weapons with shields and hooded bodies are in the pools. */
 test('a speed band with minimums on other stats, and blocked slots, match exhaustive search', () => {
   const rand = rng(515),
-    int = n => Math.floor(rand() * n);
+    int = (n: number): number => Math.floor(rand() * n);
   let runs = 0;
   for (let t = 0; t < 24; t++) {
     const job = makeJobContext(['PLD', 'SGE', 'NIN'][t % 3]);
@@ -105,7 +117,7 @@ test('a speed band with minimums on other stats, and blocked slots, match exhaus
     const subs = job.substats.filter(s => s !== job.speedKey);
     const target = subs[int(subs.length)];
     const other = subs.filter(s => s !== target)[int(subs.length - 1)];
-    const free = optimize(job, pool, NO_SYNC, { target, melds: true });
+    const free = mustSolve(optimize(job, pool, NO_SYNC, { target, melds: true }));
     const tier = gcdTierAt(free.totals[job.speedKey], 100);
     const spdMax = tier.next != null && rand() < 0.5 ? tier.next - 1 : null;
     const mins = { [other]: minimumFor(job, pool, NO_SYNC, true, other, free, int) };
@@ -118,6 +130,7 @@ test('a speed band with minimums on other stats, and blocked slots, match exhaus
     if (!want) {
       assert.equal(r.ok, false, label);
     } else {
+      assert.ok(r.ok, label);
       assert.deepEqual([r.totals[target]], want, label);
     }
   }
@@ -133,9 +146,9 @@ test('a minimum needs candidates prepared for it; a speed minimum in mins is spd
   // 'sps' in minStats prepares a speed rule of 'min'; mins.spd then searches like spdMin
   const withSpd = prepare(job, pool, NO_SYNC, { target: 'crit', melds: true, minStats: ['sps'] });
   assert.equal(withSpd.speed, 'min');
-  const spd = optimize(job, pool, NO_SYNC, { target: 'sps', melds: true }).totals.sps;
-  const a = solve(withSpd, { mins: { sps: spd } }),
-    b = solve(withSpd, { spdMin: spd });
+  const spd = mustSolve(optimize(job, pool, NO_SYNC, { target: 'sps', melds: true })).totals.sps;
+  const a = mustSolve(solve(withSpd, { mins: { sps: spd } })),
+    b = mustSolve(solve(withSpd, { spdMin: spd }));
   assert.deepEqual(a.totals, b.totals);
   assert.ok(a.totals.sps >= spd);
 });
@@ -143,16 +156,14 @@ test('a minimum needs candidates prepared for it; a speed minimum in mins is spd
 /* The swap argument (optimizer.md, section 4): a candidate with less score survives when it has more of a limited stat,
    and goes when no stat is limited or a rival has at least as much of every limited one. */
 test('pruneForLimits keeps a candidate only if no rival has its score and every limited value', () => {
-  const item = (id, copies = 1) => ({ id, copies });
-  const cand = (id, score, eff) => ({ item: item(id), eff, copies: 1, blocks: [], score });
-  const a = cand(1, 10, { crit: 5, det: 9, sks: 0 }),
-    b = cand(2, 9, { crit: 8, det: 9, sks: 0 }),
-    c = cand(3, 8, { crit: 5, det: 4, sks: 0 });
+  const a = syntheticCandidate(10, { crit: 5, det: 9, sks: 0 }),
+    b = syntheticCandidate(9, { crit: 8, det: 9, sks: 0 }),
+    c = syntheticCandidate(8, { crit: 5, det: 4, sks: 0 });
   assert.deepEqual(pruneForLimits([a, b, c], 1, []), [a]);
   assert.deepEqual(pruneForLimits([a, b, c], 1, ['crit']), [a, b]);
   assert.deepEqual(pruneForLimits([a, b, c], 1, ['crit', 'det']), [a, b]);
   // with a speed maximum only equal speeds compare: a slower candidate is kept
-  const d = cand(4, 7, { crit: 5, det: 9, sks: -1 });
+  const d = syntheticCandidate(7, { crit: 5, det: 9, sks: -1 });
   assert.deepEqual(pruneForLimits([a, b, d], 1, ['sks'], 'sks'), [a, d]);
 });
 
@@ -160,7 +171,7 @@ test('pruneForLimits keeps a candidate only if no rival has its score and every 
    and tiebreak totals as without one, and the seed itself when nothing beats it. */
 test('a seed gives the same totals; a seed that is already the best comes back', () => {
   const rand = rng(99),
-    int = n => Math.floor(rand() * n);
+    int = (n: number): number => Math.floor(rand() * n);
   let runs = 0;
   for (let t = 0; t < 20; t++) {
     const job = makeJobContext(['SGE', 'WAR', 'NIN'][t % 3]);
@@ -170,7 +181,7 @@ test('a seed gives the same totals; a seed that is already the best comes back',
     }
     const subs = job.substats.filter(s => s !== job.speedKey);
     const [target, other] = [...subs].sort(() => rand() - 0.5);
-    const free = optimize(job, pool, NO_SYNC, { target, melds: true });
+    const free = mustSolve(optimize(job, pool, NO_SYNC, { target, melds: true }));
     const mins = { [other]: minimumFor(job, pool, NO_SYNC, true, other, free, int) };
     const prep = prepare(job, pool, NO_SYNC, { target, tiebreak: [other], melds: true, minStats: [other] });
     const plain = solve(prep, { mins });
@@ -178,12 +189,12 @@ test('a seed gives the same totals; a seed that is already the best comes back',
       continue;
     }
     // a seed: the best set for `other` alone, which meets its minimum (that minimum is at most its most)
-    const seed = optimize(job, pool, NO_SYNC, { target: other, melds: true }).picks;
-    const seeded = solve(prep, { mins, seed });
+    const seed = mustSolve(optimize(job, pool, NO_SYNC, { target: other, melds: true })).picks;
+    const seeded = mustSolve(solve(prep, { mins, seed }));
     const label = `${job.jobId} #${t} ${target} > ${other} ${JSON.stringify(mins)}`;
     assert.deepEqual([seeded.totals[target], seeded.totals[other]], [plain.totals[target], plain.totals[other]], label);
     // the optimum as its own seed comes back unchanged
-    const again = solve(prep, { mins, seed: plain.picks });
+    const again = mustSolve(solve(prep, { mins, seed: plain.picks }));
     assert.deepEqual(again.totals, plain.totals, `${label} again`);
     runs++;
   }
@@ -197,7 +208,7 @@ test('a seed gives the same totals; a seed that is already the best comes back',
    these small cases are settled by it (method 'trial') and never build fronts, so both count. */
 test('tight minimums with a seed: the filters, the trial search and fronts give the plain search totals', () => {
   const rand = rng(5),
-    int = n => Math.floor(rand() * n);
+    int = (n: number): number => Math.floor(rand() * n);
   let runs = 0,
     onePass = 0,
     before = 0,
@@ -210,8 +221,8 @@ test('tight minimums with a seed: the filters, the trial search and fronts give 
     }
     const subs = job.substats.filter(s => s !== job.speedKey);
     const [target, other] = [...subs].sort(() => rand() - 0.5);
-    const free = optimize(job, pool, NO_SYNC, { target, melds: true });
-    const most = optimize(job, pool, NO_SYNC, { target: other, melds: true }).totals[other];
+    const free = mustSolve(optimize(job, pool, NO_SYNC, { target, melds: true }));
+    const most = mustSolve(optimize(job, pool, NO_SYNC, { target: other, melds: true })).totals[other];
     const mins = { [other]: most - int(6) };
     const spdMin = Math.max(0, free.totals[job.speedKey] - int(60));
     const limits = { spdMin, spdMax: spdMin + 10 + int(30), mins };
@@ -224,7 +235,7 @@ test('tight minimums with a seed: the filters, the trial search and fronts give 
     // filters must keep what beats it; the best set itself when that one does not exist
     const atMost = solve(prep, { ...limits, mins: { [other]: most }, plain: true });
     const seed = atMost.ok ? atMost.picks : plain.picks;
-    const full = solve(prep, { ...limits, seed });
+    const full = mustSolve(solve(prep, { ...limits, seed }));
     const label = `${job.jobId} #${t} ${target} > ${other} ${JSON.stringify(limits)}`;
     assert.deepEqual([full.totals[target], full.totals[other]], [plain.totals[target], plain.totals[other]], label);
     runs++;
@@ -243,9 +254,9 @@ test('a seed that breaks a limit is ignored', () => {
   const job = makeJobContext('SGE');
   const pool = smallPool(job, rng(4), ['head', 'body', 'neck', 'ring'], 3, 1, { ilvlMin: 690, ilvlMax: 730 });
   const prep = prepare(job, pool, NO_SYNC, { target: 'crit', melds: true, minStats: ['det'] });
-  const det = optimize(job, pool, NO_SYNC, { target: 'det', melds: true }).totals.det;
+  const det = mustSolve(optimize(job, pool, NO_SYNC, { target: 'det', melds: true })).totals.det;
   // the best Critical Hit set has less Determination than the most: as a seed for a minimum at the most, it breaks it
-  const bestCrit = optimize(job, pool, NO_SYNC, { target: 'crit', melds: true });
+  const bestCrit = mustSolve(optimize(job, pool, NO_SYNC, { target: 'crit', melds: true }));
   assert.ok(bestCrit.totals.det < det);
   const r = solve(prep, { mins: { det }, seed: bestCrit.picks });
   assert.ok(r.ok && r.totals.det >= det);
@@ -259,7 +270,7 @@ test('a seed that breaks a limit is ignored', () => {
    shields and Unique rings. */
 test('improveStart: the improved seed is a legal set meeting the limits, and the search still finds the best', () => {
   const rand = rng(77),
-    int = n => Math.floor(rand() * n);
+    int = (n: number): number => Math.floor(rand() * n);
   let runs = 0,
     improved = 0;
   for (let t = 0; t < 80; t++) {
@@ -281,10 +292,7 @@ test('improveStart: the improved seed is a legal set meeting the limits, and the
     const label = `${job.jobId} #${t} ${target} > ${other} ${JSON.stringify(limits)}`;
 
     // the improved seed, on the lists the search sees (after the shortfall filter)
-    const lim = [
-      { stat: job.speedKey, min: limits.spdMin || 0, max: limits.spdMax },
-      { stat: other, min: limits.mins[other], max: null },
-    ];
+    const lim: Limit[] = [makeLimit(job.speedKey, limits.spdMin, limits.spdMax), makeLimit(other, limits.mins[other], null)];
     const lists = dropShortfalls(prep.slotList, prep.posList, prep.dims, lim);
     const start = seedStart(prep, seed.picks);
     const better = improveStart(prep.slotList, lists, lim, start);
@@ -301,15 +309,15 @@ test('improveStart: the improved seed is a legal set meeting the limits, and the
     }
     cands.forEach((a, i) => {
       if (a) {
-        assert.ok(lists[i].includes(a) || a === start.best[i].cand, `${label} slot ${i} from its list`);
+        assert.ok(lists[i].includes(a) || a === start.best[i]?.cand, `${label} slot ${i} from its list`);
         const worn = cands.filter(b => b && b.item.id === a.item.id).length;
         assert.ok(worn <= (a.item.copies || 1), `${label} copies of ${a.item.name}`);
       }
-      const blocked = cands.some(b => b && slotInfo(job, b.item).blocks.includes(prep.slotList[i]));
+      const blocked = cands.some(b => b && slotInfo(job, b.item).blocks.some(type => type === prep.slotList[i]));
       if (blocked) {
         assert.equal(a, null, `${label} slot ${i} blocked but filled`);
       } else if (!a) {
-        assert.equal(start.best[i].cand, null, `${label} slot ${i} emptied`);
+        assert.equal(start.best[i]?.cand, null, `${label} slot ${i} emptied`);
       }
     });
     if (better !== start) {
@@ -317,8 +325,8 @@ test('improveStart: the improved seed is a legal set meeting the limits, and the
     }
 
     // the search from the seed against the plain search
-    const plain = solve(prep, { ...limits, plain: true });
-    const full = solve(prep, { ...limits, seed: seed.picks });
+    const plain = mustSolve(solve(prep, { ...limits, plain: true }));
+    const full = mustSolve(solve(prep, { ...limits, seed: seed.picks }));
     assert.deepEqual([full.totals[target], full.totals[other]], [plain.totals[target], plain.totals[other]], label);
     runs++;
   }
@@ -333,14 +341,14 @@ test('improveStart: the improved seed is a legal set meeting the limits, and the
    (FRONT_COMPARES). Synthetic candidates. The clock check only catches a give-up that no longer works (minutes):
    alone this runs in about a second, but up to 7 s while the other test files share the machine. */
 test('frontSearch gives up on too many ring pairs or too much filtering, without throwing', () => {
-  const cand = (id, score, det) => ({ item: { id }, eff: { det }, score, blocks: [], copies: 1 });
-  const rings = Array.from({ length: 2000 }, (_, i) => cand(`r${i}`, i, 2000 - i));
-  assert.equal(frontSearch(['ring', 'ring'], [rings, rings], [{ stat: 'det', min: 10, max: null }]), null);
+  const cand = (score: number, det: number): Candidate => syntheticCandidate(score, { det });
+  const rings = Array.from({ length: 2000 }, (_, i) => cand(i, 2000 - i));
+  assert.equal(frontSearch(['ring', 'ring'], [rings, rings], [makeLimit('det', 10, null)]), null);
   // a neck with room for the minimum, filled last, so the head and body totals stay below it and apart
-  const lists = [999, 1000].map((n, s) => Array.from({ length: n }, (_, i) => cand(`${s}-${i}`, i, 1000 - i)));
+  const lists = [999, 1000].map((n, s) => Array.from({ length: n }, (_, i) => cand(i, 1000 - i)));
   const t = performance.now();
-  const limits = [{ stat: 'det', min: 2000, max: null }];
-  assert.equal(frontSearch(['neck', 'head', 'body'], [[cand('n', 0, 2000)], ...lists], limits), null);
+  const limits = [makeLimit('det', 2000, null)];
+  assert.equal(frontSearch(['neck', 'head', 'body'], [[cand(0, 2000)], ...lists], limits), null);
   assert.ok(performance.now() - t < 30000, `${Math.round(performance.now() - t)} ms`);
 });
 
@@ -350,8 +358,9 @@ test('frontSearch gives up on too many ring pairs or too much filtering, without
    a speed maximum alone with a minimum (less speed is better). */
 test('frontSearch alone gives the plain search best: staircase, pairwise, and a maximum only', () => {
   const rand = rng(41),
-    int = n => Math.floor(rand() * n);
-  const settled = { band1: 0, band2: 0, min3: 0, max1: 0 };
+    int = (n: number): number => Math.floor(rand() * n);
+  const kinds = ['band1', 'band2', 'min3', 'max1'] as const;
+  const settled: Record<(typeof kinds)[number], number> = { band1: 0, band2: 0, min3: 0, max1: 0 };
   for (let t = 0; t < 32; t++) {
     const job = makeJobContext(['SGE', 'WAR', 'PLD', 'NIN'][t % 4]);
     const pool = smallPool(job, rand, ['head', 'body', 'hands', 'legs', 'neck', 'ring'], 3);
@@ -362,14 +371,14 @@ test('frontSearch alone gives the plain search best: staircase, pairwise, and a 
     const prep = prepare(job, pool, NO_SYNC, { target, melds: true, speed: 'exact', minStats: [a, b] });
     // tight limits, so that dominance decides: speed at most a little below the free result's, each minimum between
     // the free result's total and the most the pool reaches
-    const free = optimize(job, pool, NO_SYNC, { target, melds: true }).totals;
+    const free = mustSolve(optimize(job, pool, NO_SYNC, { target, melds: true })).totals;
     const spd = Math.max(1, free[job.speedKey] - int(40));
-    const below = s => {
-      const most = optimize(job, pool, NO_SYNC, { target: s, melds: true }).totals[s];
+    const below = (s: StatKey): number => {
+      const most = mustSolve(optimize(job, pool, NO_SYNC, { target: s, melds: true })).totals[s];
       return Math.max(1, free[s] + int(most - free[s] + 1));
     };
-    const kind = Object.keys(settled)[t % 4];
-    const limits = {
+    const kind = kinds[t % 4];
+    const limitsByKind: Record<(typeof kinds)[number], Limit[]> = {
       band1: [
         { stat: job.speedKey, min: spd, max: spd + 20 },
         { stat: a, min: below(a), max: null },
@@ -388,7 +397,8 @@ test('frontSearch alone gives the plain search best: staircase, pairwise, and a 
         { stat: job.speedKey, min: 0, max: spd },
         { stat: a, min: below(a), max: null },
       ],
-    }[kind];
+    };
+    const limits = limitsByKind[kind];
     const fronts = frontSearch(prep.slotList, prep.posList, limits);
     if (!fronts) {
       continue; // gave up: the search would run
@@ -410,11 +420,13 @@ test('frontSearch alone gives the plain search best: staircase, pairwise, and a 
    lists, under a speed band and a minimum, a speed minimum and a minimum, and a minimum alone. */
 test('frontSearch alone gives the plain search best: empty, blockable and ringless slots', () => {
   const rand = rng(23),
-    int = n => Math.floor(rand() * n);
-  let id = 0;
-  const cand = (blocks = []) => ({ item: { id: `i${id++}` }, eff: { sks: int(40), det: int(40) }, score: int(100), blocks, copies: 1 });
-  const list = (n, make = () => cand()) => Array.from({ length: n }, make).sort((x, y) => y.score - x.score);
-  const shapes = {
+    int = (n: number): number => Math.floor(rand() * n);
+  const cand = (blocks: SlotType[] = []): Candidate => {
+    const eff = { sks: int(40), det: int(40) };
+    return syntheticCandidate(int(100), eff, blocks);
+  };
+  const list = (n: number, make: () => Candidate = () => cand()): Candidate[] => Array.from({ length: n }, make).sort((x, y) => y.score - x.score);
+  const shapes: Record<string, () => [SearchSlot[], Candidate[][]]> = {
     empty: () => [
       ['head', 'body', 'neck'],
       [list(3), [], list(3)],
@@ -444,7 +456,7 @@ test('frontSearch alone gives the plain search best: empty, blockable and ringle
     const kind = Object.keys(shapes)[t % 5];
     const [slotList, posList] = shapes[kind]();
     const spdMin = int(40);
-    const limits = [
+    const limits: Limit[] = [
       [
         { stat: 'sks', min: spdMin, max: spdMin + 30 },
         { stat: 'det', min: int(50), max: null },
