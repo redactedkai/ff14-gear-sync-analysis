@@ -6,6 +6,9 @@
    gearNeeded. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { PoolItem, SlotType, Sync } from '../../../src/core/types.ts';
+import type { FoodChoice } from '../../../src/core/food.ts';
+import type { JobContext } from '../../../src/core/types.ts';
 import { foodChoices } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { optimize, prepare, solve } from '../../../src/core/optimizer/index.ts';
@@ -15,8 +18,15 @@ import { exhaustive, foodAdd, gamePool, smallPool, WINDOWS } from '../helpers/ex
 import { rng } from '../helpers/common.ts';
 
 /* GCD tier starts around the free result's speed `free` at `level`: two below (slower GCDs) and two above (faster). */
-function tiersAround(free, level) {
-  const out = [];
+/* optimize for a pool that has a loadout: the result, never a failure. */
+function optimizeOk(...args: Parameters<typeof optimize>) {
+  const result = optimize(...args);
+  assert.ok(result.ok, 'the pool has a loadout');
+  return result;
+}
+
+function tiersAround(free: number, level: number) {
+  const out: number[] = [];
   let t = gcdTierAt(free, level);
   out.push(t.start);
   for (let i = 0; i < 2 && t.next != null; i++) {
@@ -33,8 +43,8 @@ function tiersAround(free, level) {
 
 test('both modes with melds match exhaustive search, on tiers slower and faster than the free result', () => {
   const rand = rng(20261016),
-    int = n => Math.floor(rand() * n);
-  const types = ['head', 'body', 'neck', 'ring'];
+    int = (n: number) => Math.floor(rand() * n);
+  const types: SlotType[] = ['head', 'body', 'neck', 'ring'];
   let runs = 0,
     slower = 0,
     infeasible = 0;
@@ -45,14 +55,14 @@ test('both modes with melds match exhaustive search, on tiers slower and faster 
       continue;
     }
     const ilvls = pool.map(i => i.ilvl).sort((a, b) => a - b);
-    const sync = rand() < 0.5 ? { cap: null, sync: false, level: 100 } : { cap: ilvls[int(ilvls.length)], sync: true, level: 100 };
+    const sync: Sync = rand() < 0.5 ? { cap: null, sync: false, level: 100 } : { cap: ilvls[int(ilvls.length)], sync: true, level: 100 };
     const subs = job.substats.filter(s => s !== job.speedKey);
     const target = subs[int(subs.length)];
     const tiebreak = rand() < 0.6 ? [subs[int(subs.length)]] : [];
-    const free = optimize(job, pool, sync, { target, tiebreak, melds: true }).totals[job.speedKey];
+    const free = optimizeOk(job, pool, sync, { target, tiebreak, melds: true }).totals[job.speedKey] ?? 0;
     for (const start of tiersAround(free, 100)) {
       const next = gcdTierAt(start, 100).next;
-      for (const mode of ['min', 'exact']) {
+      for (const mode of ['min', 'exact'] as const) {
         const opts = { target, tiebreak, melds: true, spdMin: start || null, spdMax: mode === 'exact' && next != null ? next - 1 : null };
         const want = exhaustive(job, pool, sync, opts);
         const r = optimize(job, pool, sync, opts);
@@ -72,9 +82,9 @@ test('both modes with melds match exhaustive search, on tiers slower and faster 
           want,
           label,
         );
-        assert.ok(r.totals[job.speedKey] >= start, label);
+        assert.ok((r.totals[job.speedKey] ?? 0) >= start, label);
         if (opts.spdMax != null) {
-          assert.ok(r.totals[job.speedKey] <= opts.spdMax, label);
+          assert.ok((r.totals[job.speedKey] ?? 0) <= opts.spdMax, label);
         }
       }
     }
@@ -86,7 +96,7 @@ test('both modes with melds match exhaustive search, on tiers slower and faster 
 
 test('2H weapons, shields and blocked slots with a speed band match exhaustive search', () => {
   const rand = rng(77),
-    int = n => Math.floor(rand() * n);
+    int = (n: number) => Math.floor(rand() * n);
   let runs = 0;
   for (let t = 0; t < 16; t++) {
     const job = makeJobContext(['PLD', 'SGE'][t % 2]);
@@ -95,12 +105,12 @@ test('2H weapons, shields and blocked slots with a speed band match exhaustive s
       continue;
     }
     const target = job.substats.filter(s => s !== job.speedKey)[int(3)];
-    const free = optimize(job, pool, { cap: null, sync: false, level: 100 }, { target, melds: true }).totals[job.speedKey];
+    const free = optimizeOk(job, pool, { cap: null, sync: false, level: 100 }, { target, melds: true }).totals[job.speedKey] ?? 0;
     for (const start of tiersAround(free, 100).slice(0, 3)) {
       const next = gcdTierAt(start, 100).next;
       for (const spdMax of [null, next != null ? next - 1 : null]) {
         const opts = { target, melds: true, spdMin: start || null, spdMax };
-        const sync = { cap: null, sync: false, level: 100 };
+        const sync: Sync = { cap: null, sync: false, level: 100 };
         const want = exhaustive(job, pool, sync, opts);
         const r = optimize(job, pool, sync, opts);
         const label = `${job.jobId} #${t} ${JSON.stringify(opts)}`;
@@ -108,6 +118,7 @@ test('2H weapons, shields and blocked slots with a speed band match exhaustive s
         if (!want) {
           assert.equal(r.ok, false, label);
         } else {
+          assert.ok(r.ok, label);
           assert.deepEqual([r.totals[target]], want, label);
         }
       }
@@ -123,28 +134,30 @@ test('2H weapons, shields and blocked slots with a speed band match exhaustive s
    search. */
 test('speed tables for blocked slots (built from the first node) match exhaustive search', () => {
   const rand = rng(91),
-    int = n => Math.floor(rand() * n);
+    int = (n: number) => Math.floor(rand() * n);
   let runs = 0,
     blocking = 0;
   for (let t = 0; t < 40; t++) {
-    const [id, window] = [
+    const windows: [id: string, window: { ilvlMin: number; ilvlMax: number } | undefined][] = [
       ['WHM', { ilvlMin: 38, ilvlMax: 55 }],
       ['WHM', { ilvlMin: 38, ilvlMax: 55 }],
       ['BLM', WINDOWS[0]],
       ['SCH', WINDOWS[t % 3]],
-    ][t % 4];
+    ];
+    const [id, window] = windows[t % 4] ?? ['WHM', undefined];
     const job = makeJobContext(id);
     const pool = smallPool(job, rand, ['weapon', 'offhand', 'head', 'body', 'ring'], 2, 1, window);
     if (!pool.length) {
       continue;
     }
-    const sync = { cap: null, sync: false, level: 100 };
+    const sync: Sync = { cap: null, sync: false, level: 100 };
     const target = job.substats.filter(s => s !== job.speedKey)[int(3)];
+    assert.ok(target);
     const prep = prepare(job, pool, sync, { target, melds: true, speed: 'exact' });
     if (prep.posList.some(l => l.some(a => a.blocks.some(b => prep.posList[prep.slotList.indexOf(b)]?.length)))) {
       blocking++;
     }
-    const free = optimize(job, pool, sync, { target, melds: true }).totals[job.speedKey];
+    const free = optimizeOk(job, pool, sync, { target, melds: true }).totals[job.speedKey] ?? 0;
     for (const start of tiersAround(free, 100).slice(0, 3)) {
       const next = gcdTierAt(start, 100).next;
       for (const spdMax of [null, next != null ? next - 1 : null]) {
@@ -156,6 +169,7 @@ test('speed tables for blocked slots (built from the first node) match exhaustiv
         if (!want) {
           assert.equal(r.ok, false, label);
         } else {
+          assert.ok(r.ok, label);
           assert.deepEqual([r.totals[target]], want, label);
         }
       }
@@ -167,9 +181,9 @@ test('speed tables for blocked slots (built from the first node) match exhaustiv
 
 /* The gear speeds whose GCD with `meal` and `haste` is the target (exact) or at most it (min), by scanning every value;
    they form one band, which is checked. */
-function gearBand(job, meal, gcd, mode, level, haste) {
-  let lo = null,
-    hi = null;
+function gearBand(job: JobContext, meal: FoodChoice, gcd: number, mode: 'exact' | 'min', level: number, haste: number) {
+  let lo: number | null = null,
+    hi: number | null = null;
   for (let g = 0; g <= 6000; g++) {
     const at = gcdFor(g + foodAdd(job, meal, job.speedKey, g, level), level, 2500, haste);
     const ok = mode === 'exact' ? at === gcd : at <= gcd;
@@ -186,7 +200,7 @@ function gearBand(job, meal, gcd, mode, level, haste) {
 
 test('Target GCD with food and haste matches exhaustive search over every meal', () => {
   const rand = rng(4242),
-    int = n => Math.floor(rand() * n);
+    int = (n: number) => Math.floor(rand() * n);
   let runs = 0;
   for (let t = 0; t < 10; t++) {
     const job = makeJobContext(['SAM', 'SGE'][t % 2]);
@@ -194,16 +208,16 @@ test('Target GCD with food and haste matches exhaustive search over every meal',
     if (!pool.length) {
       continue;
     }
-    const sync = { cap: null, sync: false, level: 100 };
+    const sync: Sync = { cap: null, sync: false, level: 100 };
     const haste = hasteFor(job.jobId, 100)?.pct ?? 0;
     const subs = job.substats.filter(s => s !== job.speedKey);
     const target = subs[int(subs.length)];
-    const free = optimize(job, pool, sync, { target, melds: true }).totals[job.speedKey];
+    const free = optimizeOk(job, pool, sync, { target, melds: true }).totals[job.speedKey] ?? 0;
     const at = gcdFor(free, 100, 2500, haste);
     for (const gcd of [Math.round((at + 0.01) * 100) / 100, at, Math.round((at - 0.01) * 100) / 100]) {
-      for (const mode of ['exact', 'min']) {
+      for (const mode of ['exact', 'min'] as const) {
         // the reference: every meal on its own, exhaustive over its gear-speed band, totals with food compared
-        let want = null;
+        let want: number[] | null = null;
         for (const meal of foodChoices(job)) {
           const band = gearBand(job, meal, gcd, mode, 100, haste);
           if (!band) {
@@ -213,8 +227,9 @@ test('Target GCD with food and haste matches exhaustive search over every meal',
           if (!best) {
             continue;
           }
-          const withFood = [best[0] + foodAdd(job, meal, target, best[0], 100)];
-          if (!want || withFood[0] > want[0]) {
+          const bestTarget = best[0] ?? 0;
+          const withFood = [bestTarget + foodAdd(job, meal, target, bestTarget, 100)];
+          if (!want || (withFood[0] ?? 0) > (want[0] ?? 0)) {
             want = withFood;
           }
         }
@@ -239,20 +254,22 @@ test('Target GCD with food and haste matches exhaustive search over every meal',
 test('pieces covering several slots, with a speed band, match exhaustive search', () => {
   const war = makeJobContext('WAR');
   const rand = rng(1313),
-    int = n => Math.floor(rand() * n);
+    int = (n: number) => Math.floor(rand() * n);
   const all = gamePool(war, { type: 'any', ilvlMin: 40, ilvlMax: 75, lvlMax: 100 });
   const blockers = all.filter(i => /^(Heavy Darksteel Flanchard|High Mythril Flanchard|Herklaedi)$/.test(i.name));
   assert.equal(blockers.length, 3);
-  const sync = { cap: null, sync: false, level: 100 };
+  const sync: Sync = { cap: null, sync: false, level: 100 };
   let runs = 0;
   for (let t = 0; t < 6; t++) {
-    const pool = [...blockers];
+    const pool: PoolItem[] = [...blockers];
     for (const ty of ['body', 'hands', 'legs', 'feet']) {
       const of = all.filter(i => i.type === ty && !blockers.includes(i));
-      pool.push(of[int(of.length)]);
+      const chosen = of[int(of.length)];
+      assert.ok(chosen);
+      pool.push(chosen);
     }
-    const target = ['det', 'crit', 'ten'][t % 3];
-    const free = optimize(war, pool, sync, { target, melds: true }).totals.sks;
+    const target = (['det', 'crit', 'ten'] as const)[t % 3] ?? 'det';
+    const free = optimizeOk(war, pool, sync, { target, melds: true }).totals.sks ?? 0;
     for (const start of tiersAround(free, 100)) {
       const next = gcdTierAt(start, 100).next;
       for (const spdMax of [null, next != null ? next - 1 : null]) {
@@ -264,6 +281,7 @@ test('pieces covering several slots, with a speed band, match exhaustive search'
         if (!want) {
           assert.equal(r.ok, false, label);
         } else {
+          assert.ok(r.ok, label);
           assert.deepEqual([r.totals[target]], want, label);
         }
       }
