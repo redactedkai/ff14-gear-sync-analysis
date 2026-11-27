@@ -56,3 +56,22 @@ export function fromKeys<K extends string, V>(keys: readonly K[], valueFor: (key
 export function entriesOf<K extends string, V>(record: Partial<Record<K, V>>): [K, V][] {
   return Object.entries(record) as [K, V][];
 }
+
+/* The keys of `record` as a list typed `K`: `Object.keys` types them as text. The one cast below says a record's own keys
+   are its key type; use it for a record written out in the code (a table of labels), not for one read from a file. */
+export function keysOf<K extends string>(record: Record<K, unknown>): K[] {
+  return Object.keys(record) as K[];
+}
+
+/* `values` (text read from a data file) as a frozen list typed `K`: each must be one of `allowed`, else this throws
+   `Unknown <what> "<value>"` when the module loads, so a generator change that adds a key shows up as an error. */
+export function checkedKeys<K extends string>(values: readonly string[], allowed: readonly K[], what: string): readonly K[] {
+  return Object.freeze(
+    values.map(value => {
+      if (!isOneOf(allowed, value)) {
+        throw new Error(`Unknown ${what} "${value}"`);
+      }
+      return value;
+    }),
+  );
+}

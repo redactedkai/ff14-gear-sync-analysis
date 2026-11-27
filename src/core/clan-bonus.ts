@@ -33,14 +33,14 @@ export function clanGroups(): { race: string; clans: string[] }[] {
 }
 
 /* Whether `name` is the name of a clan ("Midlander"). */
-export function isClan(name: unknown): boolean {
-  return CLAN_BY_NAME.has(name as string);
+export function isClan(name: unknown): name is string {
+  return typeof name === 'string' && CLAN_BY_NAME.has(name);
 }
 
 /* What clan `clanName` adds to the stat `statKey` (a stat key: str, dex, int, mind, vit), in points. 0 for no clan (null,
    '' or an unknown name) and for a stat no clan changes (a substat, Piety). */
 export function clanOffset(clanName: string | null | undefined, statKey: StatKey): number {
-  const points = CLAN_BY_NAME.get(clanName as string)?.[statKey];
+  const points = clanName ? CLAN_BY_NAME.get(clanName)?.[statKey] : undefined;
   return typeof points === 'number' ? points : 0;
 }
 

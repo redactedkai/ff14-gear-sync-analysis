@@ -15,7 +15,7 @@
    - Each stage that finishes proves the most of its key under its limits; every later search of the meal gets that
      proof (solve's `proven`) and cuts by it (optimizer/regain.js). */
 import { isDimKeyOf } from './damage-defense.ts';
-import { must } from './guards.ts';
+import { must, mustHave } from './guards.ts';
 import { gearNeeded, mealsFor, mealTotals, pickMeal } from './food.ts';
 import { prepare, solve } from './optimizer/index.ts';
 import { speedForGcd } from './speed.ts';
@@ -126,7 +126,7 @@ export function rankByTier(
   // 1. the Target GCD's band on total speed, if one is set
   let band: { min: number; max: number | null } | null = null;
   if (gcdMode) {
-    band = speedForGcd(opts.gcd as number, level, gcdMode, pct);
+    band = speedForGcd(mustHave(opts.gcd, 'Target GCD'), level, gcdMode, pct);
     if (!band) {
       return { ok: false, reason: 'unreachable', ...base, fastest: fastestGcd(job, pool, sync, { ...opts, level }) };
     }
@@ -255,7 +255,7 @@ export function rankByTier(
     searches: runs.size,
     ...food,
     held: best.entry.state.held,
-    faster: gcdMode != null && food.gcd < (opts.gcd as number),
+    faster: gcdMode != null && food.gcd < mustHave(opts.gcd, 'Target GCD'),
     band,
   };
 }

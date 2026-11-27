@@ -42,7 +42,10 @@ export function makeSession({
       const items = gear(job);
       kept.set(job.jobId, items);
       if (kept.size > size) {
-        kept.delete(kept.keys().next().value as string);
+        const oldest = kept.keys().next();
+        if (!oldest.done) {
+          kept.delete(oldest.value);
+        }
       }
       return items;
     },

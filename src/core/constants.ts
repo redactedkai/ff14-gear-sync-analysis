@@ -3,6 +3,7 @@
    item-format.json's `stats`). A JobContext (job-context.ts) says which of them a job has: mainKey, speedKey, specKey.
    The generated-data format (job bit order, raw stat order, slot codes) comes from item-format.json, which the
    Python generators read too. */
+import { checkedKeys, fromKeys, keysOf, mustHave } from './guards.ts';
 import ITEM_FORMAT from './item-format.json' with { type: 'json' };
 import type { RowIndex } from './types.ts';
 
@@ -47,12 +48,21 @@ export const ACCESSORIES_LABEL = 'Accessories';
    (WEAPON_PCT); BASE_SLOT_PCT.weapon is the two-handed value. Multi-slot codes (`blocks`, e.g. a cloak) have their own
    share and do not set the type's. */
 const weaponSlotPct = (twoHanded: boolean): number =>
-  (ITEM_FORMAT.slots.find(s => s.type === 'weapon' && s.twoHanded === twoHanded) as { percent: number }).percent;
+  mustHave(
+    ITEM_FORMAT.slots.find(s => s.type === 'weapon' && s.twoHanded === twoHanded),
+    'weapon slot of item-format.json',
+  ).percent;
 export const WEAPON_PCT = Object.freeze({ '2h': weaponSlotPct(true), '1h+oh': weaponSlotPct(false) });
-export const BASE_SLOT_PCT = Object.freeze({
-  weapon: WEAPON_PCT['2h'],
-  ...Object.fromEntries(ITEM_FORMAT.slots.filter(s => s.type !== 'weapon' && !s.blocks).map(s => [s.type, s.percent])),
-} as Record<SlotType, number>);
+export const BASE_SLOT_PCT = Object.freeze(
+  fromKeys(SLOT_TYPES, type =>
+    type === 'weapon'
+      ? WEAPON_PCT['2h']
+      : mustHave(
+          ITEM_FORMAT.slots.find(s => s.type === type && !s.blocks),
+          `slot ${type} of item-format.json`,
+        ).percent,
+  ),
+);
 
 /* Substat shares by rank on a piece, in percent. Empirical pattern, not stored in the game files (docs/mechanics/math.md section 4; evidence in docs/mechanics/validation.md). */
 export const SUB_WEIGHTS = Object.freeze([100, 70]);
@@ -143,7 +153,8 @@ export const STAT_SHORT = Object.freeze({
 });
 
 /* The weapon damage and defense keys of an item row (`damageDefense` in item-format.json; DAMAGE_DEFENSE_KEYS lists them). */
-export type DamageDefenseKey = 'damagePhys' | 'damageMag' | 'defensePhys' | 'defenseMag';
+const DAMAGE_DEFENSE_KEY_LIST = ['damagePhys', 'damageMag', 'defensePhys', 'defenseMag'] as const;
+export type DamageDefenseKey = (typeof DAMAGE_DEFENSE_KEY_LIST)[number];
 /* The weapon damage key of a job's weapons (a DamageDefenseKey that is damage, not defense). */
 export type DamageKey = 'damagePhys' | 'damageMag';
 /* A key of the raw stats of an item row, as `stats` of item-format.json lists them: the stat keys, the game's generic Main
@@ -309,11 +320,19 @@ export const ROW = Object.freeze(
 ) as unknown as RowIndex;
 /* The weapon damage and defense keys of a row (`damageDefense` in item-format.json): damagePhys, damageMag,
    defensePhys, defenseMag. */
-export const DAMAGE_DEFENSE_KEYS = Object.freeze(ITEM_FORMAT.damageDefense.entries.map(e => e.key)) as readonly DamageDefenseKey[];
+export const DAMAGE_DEFENSE_KEYS = checkedKeys(
+  ITEM_FORMAT.damageDefense.entries.map(e => e.key),
+  DAMAGE_DEFENSE_KEY_LIST,
+  'damage or defense key',
+);
 /* The gear categories, in the order of a row's category field: {key, label} (where a piece comes from: Crafted,
    Dungeon, Raid, ...; gear_categories.py). */
 export const GEAR_CATEGORIES = Object.freeze(ITEM_FORMAT.category.list.map(c => Object.freeze({ key: c.key, label: c.label })));
-export const ITEM_STAT_ORDER = Object.freeze(ITEM_FORMAT.stats.map(s => s.key)) as readonly RawStatKey[];
+export const ITEM_STAT_ORDER = checkedKeys(
+  ITEM_FORMAT.stats.map(s => s.key),
+  [...keysOf(STAT_LABEL), 'mainAttr', 'secAttr'],
+  'item stat',
+);
 export const RAW_MAIN_IDX = Object.freeze((['str', 'dex', 'int', 'mind'] as const).map(k => ITEM_STAT_ORDER.indexOf(k)));
 export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');
 /* Mind's position in a row's raw stats: the old healer gear whose only main stat is Mind carries a fixed Direct Hit line
@@ -327,12 +346,16 @@ export const RAW_SUBSTAT_IDX = Object.freeze(
   ITEM_STAT_ORDER.map((_, i) => i).filter(i => !RAW_MAIN_IDX.includes(i) && i !== RAW_VIT_IDX && i !== RAW_MAIN_ATTR_IDX),
 );
 /* slot code -> pool slot type; codes 0 = two-handed, 1 = one-handed weapon, 12 = body that also covers the head */
-export const DB_SLOT_TYPE = Object.freeze(ITEM_FORMAT.slots.map(s => s.type)) as readonly SlotType[];
+export const DB_SLOT_TYPE = checkedKeys(
+  ITEM_FORMAT.slots.map(s => s.type),
+  SLOT_TYPES,
+  'slot type',
+);
 export const DB_SLOT_PCT = Object.freeze(ITEM_FORMAT.slots.map(s => s.percent));
 /* slot code -> the slot types a piece in it leaves empty: the off-hand for a two-handed weapon, the head for a cloak */
 export const DB_SLOT_BLOCKS = Object.freeze(
-  ITEM_FORMAT.slots.map(s => Object.freeze(s.twoHanded ? ['offhand'] : s.blocks || [])),
-) as readonly (readonly SlotType[])[];
+  ITEM_FORMAT.slots.map(s => checkedKeys(s.twoHanded ? ['offhand'] : s.blocks || [], SLOT_TYPES, 'blocked slot type')),
+);
 /* The slot code of a two-handed weapon (`twoHanded` in item-format.json). */
 export const TWO_HANDED_SLOT_CODE = ITEM_FORMAT.slots.findIndex(s => s.type === 'weapon' && s.twoHanded);
 /* The boxes of the "Gear categories" filter, by what a player does to get a piece (scripts/data/gear_activities.py):

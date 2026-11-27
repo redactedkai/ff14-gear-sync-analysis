@@ -8,10 +8,9 @@ export const PATCHES_SOURCE = PATCHES_FILE.source ?? null;
 
 /* PATCHES: every patch, oldest first, [[version, release day]]: the version as the game names it ("7.56", "2.1b") and
    the day it was released, "YYYY-MM-DD" in UTC. */
-export const PATCHES = Object.freeze(PATCHES_FILE.PATCHES.map(entry => Object.freeze([...entry]))) as readonly (readonly [
-  version: string,
-  day: string,
-])[];
+export const PATCHES: readonly (readonly [version: string, day: string])[] = Object.freeze(
+  PATCHES_FILE.PATCHES.map(([version, day]) => Object.freeze([version, day] as const)),
+);
 
 /* The patch that game data of the day `day` ("YYYY-MM-DD") belongs to: the version of the newest patch released on or
    before that day ("7.56" for "2026-09-30", after 7.56 (2026-09-08) and before 7.57 (2026-10-13)), or '' when `day` is

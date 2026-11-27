@@ -14,7 +14,7 @@
      versions every meld version of the piece, this one among them (itemVersions only): a regain cut (regain.ts) may
              swap a ring for any of them, including those pruning dropped
      fixed   true on a pinned piece (fixedCandidate): worn as it is, in a slot the search does not fill */
-import { must, present } from '../guards.ts';
+import { messageOf, must, present } from '../guards.ts';
 import { SLOT_TYPES } from '../constants.ts';
 import { WD_KEY, weaponDamage } from '../damage-defense.ts';
 import { meldInfo, slotInfo } from '../items.ts';
@@ -479,7 +479,7 @@ export function buildCandidates(
   });
   // for the page's note: pieces with no slot data (hand-made, generated) never take melds
   const noMeldData = melds ? pool.filter(i => !meldInfo(i)).length : 0;
-  const fixedBlocked = fixed.length
+  const fixedBlocked: FixedBlocked[] = fixed.length
     ? SLOT_TYPES.flatMap((t, k): FixedBlocked[] => {
         const hasPieces = pool.some(i => i.type === t);
         if (pinned.covered.has(t)) {
@@ -488,7 +488,7 @@ export function buildCandidates(
         const open = t === 'ring' ? pinned.rings < 2 : !pinned.filled.has(t);
         return open && hasPieces && !candsByType[slotNames[k]].length ? [{ type: t, blockedBy: null }] : [];
       })
-    : ([] as FixedBlocked[]);
+    : [];
   return { slotList, posList: slotList.map(t => prunedByType[t]), dims, noMeldData, score, fixed, fixedBlocked };
 }
 
@@ -537,7 +537,7 @@ export function pinProblem(fixed: readonly Candidate[]): string | null {
     pinnedSlots(fixed);
     return null;
   } catch (error) {
-    return (error as Error).message;
+    return messageOf(error);
   }
 }
 

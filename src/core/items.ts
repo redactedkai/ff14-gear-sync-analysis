@@ -4,7 +4,7 @@
    Identity: anything that is kept (a set's pieces, saved picks) refers to a database piece by its gameId (the game's
    item id, itemById), with its name stored beside it for a reader; poolKey (name, slot, item level) only groups the same
    piece from several sources, as the menus do. A gameId never changes; a name can, in a patch. */
-import { fromKeys } from './guards.ts';
+import { fromKeys, last, mustHave } from './guards.ts';
 import {
   SLOT_LABEL,
   ITEM_STAT_ORDER,
@@ -210,10 +210,10 @@ export function expansionBounds(): ExpansionBound[] {
    later) use the item level band of expansionBounds instead. */
 export function expansionOf(lvl: number, ilvl: number): string {
   if (lvl > 1) {
-    return (EXPANSIONS.find(e => lvl <= e.levelCap) ?? (EXPANSIONS.at(-1) as (typeof EXPANSIONS)[number])).short;
+    return (EXPANSIONS.find(e => lvl <= e.levelCap) ?? last(EXPANSIONS, 'expansions')).short;
   }
   const b = expansionBounds().find(x => (x.from == null || ilvl > x.from) && (x.to == null || ilvl <= x.to));
-  return (b as ExpansionBound).short;
+  return mustHave(b, `expansion band for item level ${ilvl}`).short;
 }
 
 /* Whether `text` passes a search box: every word of `query` is in it, ignoring case; an empty search passes

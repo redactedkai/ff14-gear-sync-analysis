@@ -302,8 +302,9 @@ function fixedDirectHitShare(raw: readonly number[], item: RowFacts): number {
 export function predictRaw(il: number, slotCode: number, raw: readonly number[], kind: number, item: RowFacts = {}): number[] {
   // named exceptions first: the Atma weapons carry an older item level's stats, the all-jobs accessories their own factors
   const statIlvl = item.name?.endsWith(ATMA_NAME_SUFFIX) ? ATMA_STAT_ILVL : il;
-  const accessoryFactors: Partial<Record<string, number>> = Object.hasOwn(ALL_JOBS_ACCESSORY_FACTORS, item.name ?? '')
-    ? ALL_JOBS_ACCESSORY_FACTORS[item.name as string]
+  const itemName = item.name ?? '';
+  const accessoryFactors: Partial<Record<string, number>> = Object.hasOwn(ALL_JOBS_ACCESSORY_FACTORS, itemName)
+    ? ALL_JOBS_ACCESSORY_FACTORS[itemName]
     : {};
 
   // one stat line at a slot share (per mille), the item's stat factor (MP and the accessory factors are percents, so
@@ -349,7 +350,7 @@ export function predictRaw(il: number, slotCode: number, raw: readonly number[],
   }
 
   // the 18 reduced-stat dungeon pieces: main stats at 90%, everything else at 80%, of the usual values
-  if (REDUCED_STAT_PIECES.names.has(item.name as string)) {
+  if (item.name !== undefined && REDUCED_STAT_PIECES.names.has(item.name)) {
     const { main: mainPct, rest: restPct } = REDUCED_STAT_PIECES;
     return out.map((v, i) => rnd((v * (mainIdx.includes(i) ? mainPct : restPct)) / 100));
   }

@@ -32,10 +32,10 @@ export function piecesJobCannotWear(
   const bit = 1 << job.jobIndex;
   const out: { index: number; slot: SlotType; gameId: number; name: string }[] = [];
   pieces.forEach((piece, index) => {
-    const row = piece.gameId == null ? null : itemById(piece.gameId);
-    if (row && !(row[ROW.jobMask] & bit)) {
-      // a row was found by the piece's game id, so the piece has one
-      out.push({ index, slot: piece.slot, gameId: piece.gameId as number, name: row[ROW.name] });
+    const gameId = piece.gameId;
+    const row = gameId == null ? null : itemById(gameId);
+    if (gameId != null && row && !(row[ROW.jobMask] & bit)) {
+      out.push({ index, slot: piece.slot, gameId, name: row[ROW.name] });
     }
   });
   return out;

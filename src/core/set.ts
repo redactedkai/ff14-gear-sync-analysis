@@ -178,7 +178,7 @@ export function evaluateSet(
   const lost = sumOver(w => w.lost);
 
   // 2. the meal and the totals with it; the character's base for the panel's numbers
-  const clan = isClan(bonuses.clan) ? (bonuses.clan as string) : null;
+  const clan = isClan(bonuses.clan) ? bonuses.clan : null;
   const roles = partyRoles(bonuses.partyRoles);
   const clanBase = Object.fromEntries(bonusStats(job).map(s => [s, clanOffset(clan, s)]));
   const meal = (set.meal != null && allMeals(job).find(m => m.key === set.meal)) || null;

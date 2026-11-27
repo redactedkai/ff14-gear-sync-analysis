@@ -292,9 +292,10 @@ export function solve(prep: Prepared, opts?: SolveOptions): SolveResult {
       picks.push({ type, item: null, blockedBy: slot?.blockedBy?.item ?? null });
       return;
     }
-    picks.push({ type, item: slot.cand.item, eff: slot.cand.eff, meld: slot.cand.meld });
+    const { cand } = slot;
+    picks.push({ type, item: cand.item, eff: cand.eff, meld: cand.meld });
     dims.forEach(d => {
-      totals[d] += (slot.cand as Candidate).eff[d];
+      totals[d] += cand.eff[d];
     });
   });
   // the search fills blockable slots last; show the picks in the game's order (the sort is stable, so rings keep theirs)
