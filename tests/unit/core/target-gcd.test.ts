@@ -1,6 +1,6 @@
 /* Target GCD (src/core/target-gcd.ts): the GCD the result reports is checked with the GCD formula and food bonus
    directly, food choices against running each meal on its own, and the edge cases on hand-made pools. Whether the
-   loadout is the best one is the exhaustive tests' job (core/optimizer/index.exhaustive.test.js). */
+   loadout is the best one is the exhaustive tests' job (core/optimizer/index.exhaustive.test.ts). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { PoolItem, Sync } from '../../../src/core/types.ts';
@@ -12,7 +12,7 @@ import { mkItem } from '../../../src/core/items.ts';
 import { prepare, solve } from '../../../src/core/optimizer/index.ts';
 import { gcdFor } from '../../../src/core/speed.ts';
 import { optimizeGcd } from '../../../src/core/target-gcd.ts';
-import { gamePool } from '../helpers/exhaustive.js';
+import { gamePool } from '../helpers/exhaustive.ts';
 
 const sge = makeJobContext('SGE');
 const sam = makeJobContext('SAM');

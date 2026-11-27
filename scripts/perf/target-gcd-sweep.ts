@@ -6,7 +6,7 @@
    Checks:
    - every 4th run (food off): the same candidates solved by the plain search (no speed tables, groups or memo), which
      must give the same score or also find nothing;
-   - per task, small random pools against the exhaustive reference (tests/unit/helpers/exhaustive.js), which shares
+   - per task, small random pools against the exhaustive reference (tests/unit/helpers/exhaustive.ts), which shares
      no code with meld versions, pruning or the search.
    node scripts/perf/target-gcd-sweep.ts [--workers 5] [--jobs SGE,WAR] [--resume]
    --resume keeps the rows already in the output and runs only the job x sync tasks missing from it (a task's rows are
@@ -144,7 +144,7 @@ if (isMainThread) {
   const { optimize, solve }: typeof import('../../src/core/optimizer/index.ts') = await import(`${ROOT}src/core/optimizer/index.ts`);
   const { gcdFor, hasteFor, speedForGcd }: typeof import('../../src/core/speed.ts') = await import(`${ROOT}src/core/speed.ts`);
   const { optimizeGcd }: typeof import('../../src/core/target-gcd.ts') = await import(`${ROOT}src/core/target-gcd.ts`);
-  const { exhaustive }: typeof import('../../tests/unit/helpers/exhaustive.js') = await import(`${ROOT}tests/unit/helpers/exhaustive.js`);
+  const { exhaustive }: typeof import('../../tests/unit/helpers/exhaustive.ts') = await import(`${ROOT}tests/unit/helpers/exhaustive.ts`);
   const score = (r: SolveResult | GcdSuccess | GcdFailure, keys: readonly StatKey[]): number[] | null =>
     r.ok ? keys.map(key => r.totals[key] || 0) : null;
   let k = 0;

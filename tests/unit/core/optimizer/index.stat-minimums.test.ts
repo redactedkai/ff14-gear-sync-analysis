@@ -1,5 +1,5 @@
 /* Minimums on any stat (the engine side of tier ranking, roadmap A7) against the exhaustive reference
-   (helpers/exhaustive.js), on small real pools: the reference enumerates every legal loadout and, with melds, every
+   (helpers/exhaustive.ts), on small real pools: the reference enumerates every legal loadout and, with melds, every
    stone placement itself, so it shares no code with the meld versions, pruning, limit tables or memo. Each minimum is
    set between the stat's total in the free result (the best set with no minimum) and the most the pool can reach, so
    it changes the answer; one past that most checks that nothing is found. */
@@ -12,7 +12,7 @@ import { frontSearch } from '../../../../src/core/optimizer/front.ts';
 import { slotInfo } from '../../../../src/core/items.ts';
 import { pruneForLimits } from '../../../../src/core/optimizer/candidates.ts';
 import { gcdTierAt } from '../../../../src/core/speed.ts';
-import { exhaustive, smallPool } from '../../helpers/exhaustive.js';
+import { exhaustive, smallPool } from '../../helpers/exhaustive.ts';
 import { rng } from '../../helpers/common.ts';
 
 const NO_SYNC = { cap: null, sync: false, level: 100 };

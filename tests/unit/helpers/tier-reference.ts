@@ -12,7 +12,7 @@ import { levelParams } from '../../../src/core/level-params.ts';
 import { gcdFor, hasteFor } from '../../../src/core/speed.ts';
 import { rankByTier } from '../../../src/core/tier-rank.ts';
 import { rng } from './common.ts';
-import { foodAdd, forEachLoadout, loadoutCount, smallPool } from './exhaustive.js';
+import { foodAdd, forEachLoadout, loadoutCount, smallPool } from './exhaustive.ts';
 import { pickPins, pinsCoexist, pinsOf } from './pins.ts';
 import type { FoodChoice } from '../../../src/core/food.ts';
 import type { GcdMode } from '../../../src/core/speed.ts';

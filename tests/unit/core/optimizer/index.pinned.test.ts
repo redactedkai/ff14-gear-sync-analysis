@@ -1,5 +1,5 @@
 /* Pinned pieces in the optimizer (fixedCandidate, buildCandidates' `fixed`, solve): a search with pins equals a brute-force
-   search over the same restricted loadouts (helpers/exhaustive.js, whose `fixed` option is written independently), on
+   search over the same restricted loadouts (helpers/exhaustive.ts, whose `fixed` option is written independently), on
    hand-made pools, real pools with pieces that cover other slots and with melds, a Target GCD and stat minimums, and
    rank by tier. Also the cases the random pools cannot name: a pinned Unique ring, every slot pinned, and the picks'
    shape. */
@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { mkItem, slotInfo, meldInfo } from '../../../../src/core/items.ts';
 import { fixedCandidate, optimize, prepare, solve } from '../../../../src/core/optimizer/index.ts';
-import { exhaustive, gamePool, loadoutCount, smallPool } from '../../helpers/exhaustive.js';
+import { exhaustive, gamePool, loadoutCount, smallPool } from '../../helpers/exhaustive.ts';
 import { pickPins, pinsCoexist, pinsOf } from '../../helpers/pins.ts';
 import { checkPinned } from '../../helpers/tier-reference.ts';
 import { rng } from '../../helpers/common.ts';

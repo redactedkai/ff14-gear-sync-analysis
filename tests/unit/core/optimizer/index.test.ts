@@ -1,6 +1,6 @@
 /* The optimizer (src/core/optimizer/) on real gear against the brute-force reference, one job per role, and the
    ring-pair bound and dominance pruning that keep its search small. Unique rings on real gear are in core/same-result.test.ts,
-   hand-made ring cases in core/optimizer/index.exhaustive.test.js. */
+   hand-made ring cases in core/optimizer/index.exhaustive.test.ts. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
@@ -9,7 +9,7 @@ import { pruneDominated, makeScorer } from '../../../../src/core/optimizer/candi
 import { suffixBounds } from '../../../../src/core/optimizer/search.ts';
 import { optimizeGcd } from '../../../../src/core/target-gcd.ts';
 import { rankByTier } from '../../../../src/core/tier-rank.ts';
-import { exhaustive, gamePool, loadoutCount } from '../../helpers/exhaustive.js';
+import { exhaustive, gamePool, loadoutCount } from '../../helpers/exhaustive.ts';
 
 const sge = makeJobContext('SGE');
 const SYNC = { cap: 123, sync: true };

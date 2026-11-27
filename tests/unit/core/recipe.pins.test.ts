@@ -1,6 +1,6 @@
 /* Pins in a solve (src/core/recipe.ts: runRecipe's `pins`, resolvePins): a pinned piece is kept with exactly
    its stones and counts in the totals, the tiers and a Target GCD; a pinned meal is the meal; a pin the solve cannot
-   keep says so. Real Sage items; the optimizer's own pin coverage is core/optimizer/index.pinned.test.js. */
+   keep says so. Real Sage items; the optimizer's own pin coverage is core/optimizer/index.pinned.test.ts. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { PoolItem, Stone, Sync } from '../../../src/core/types.ts';

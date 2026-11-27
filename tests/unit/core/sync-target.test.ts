@@ -13,7 +13,7 @@ import { capsFor } from '../../../src/core/formulas.ts';
 import { browseItems, dbStats, kindFactors, parseRow, poolItemFromRow } from '../../../src/core/items.ts';
 import { optimize } from '../../../src/core/optimizer/index.ts';
 import { effStats, itemSyncIlvl } from '../../../src/core/piece.ts';
-import { exhaustive, gamePool, loadoutCount } from '../helpers/exhaustive.js';
+import { exhaustive, gamePool, loadoutCount } from '../helpers/exhaustive.ts';
 import { SLOT_PERMILLE, roundHalfUp } from '../helpers/common.ts';
 
 const sge = makeJobContext('SGE');

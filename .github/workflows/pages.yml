@@ -56,7 +56,7 @@ jobs:
       # the component stories in Chromium, Firefox and WebKit (check ran them in Chromium only)
       - run: npm run test:stories:all
       # the long random sweep of tier ranking against its reference (tests/sweep/), kept out of npm test for speed
-      - run: node --test "tests/sweep/*.test.js"
+      - run: node --test "tests/sweep/*.test.ts"
       # the stories' traces, screenshots and error notes, and the smoke test's output, to see what failed on this runner
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

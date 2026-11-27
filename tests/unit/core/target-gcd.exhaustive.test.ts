@@ -1,4 +1,4 @@
-/* Target GCD against the exhaustive reference (helpers/exhaustive.js), on small real pools with melds: the reference
+/* Target GCD against the exhaustive reference (helpers/exhaustive.ts), on small real pools with melds: the reference
    enumerates every stone placement itself (meldVectors) and tries every legal loadout, so it shares no code with the
    meld versions, pruning, speed tables or memo. Speed rules are GCD tiers on both sides of the free result (the best
    set with no rule), so the drift case (a slower GCD than the gear wants) is covered, in both modes. The food test
@@ -14,7 +14,7 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { optimize, prepare, solve } from '../../../src/core/optimizer/index.ts';
 import { gcdFor, gcdTierAt, hasteFor } from '../../../src/core/speed.ts';
 import { optimizeGcd } from '../../../src/core/target-gcd.ts';
-import { exhaustive, foodAdd, gamePool, smallPool, WINDOWS } from '../helpers/exhaustive.js';
+import { exhaustive, foodAdd, gamePool, smallPool, WINDOWS } from '../helpers/exhaustive.ts';
 import { rng } from '../helpers/common.ts';
 
 /* GCD tier starts around the free result's speed `free` at `level`: two below (slower GCDs) and two above (faster). */

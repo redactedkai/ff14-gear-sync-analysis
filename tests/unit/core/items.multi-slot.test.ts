@@ -11,7 +11,7 @@ import { ROW } from '../../../src/core/constants.ts';
 import { predictRaw, syncStats } from '../../../src/core/formulas.ts';
 import { optimize } from '../../../src/core/optimizer/index.ts';
 import { effStats } from '../../../src/core/piece.ts';
-import { exhaustive, gamePool, loadoutCount } from '../helpers/exhaustive.js';
+import { exhaustive, gamePool, loadoutCount } from '../helpers/exhaustive.ts';
 import { itemRow } from '../helpers/common.ts';
 
 /* Gear that takes more than its own slot: a two-handed weapon leaves the off-hand empty, and the Vermilion Cloaks

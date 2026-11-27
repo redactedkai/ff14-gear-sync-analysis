@@ -198,7 +198,7 @@ function enumerateVectors(job, item, sync, keys, exactSpd) {
    One item per slot that has items; two rings (the same item twice only if it has 2 copies).
 
    Two engine policies are copied here on purpose, not derived independently (docs/engineering/optimizer.md, section 5,
-   "Empty slot"; each has a direct test in core/optimizer/index.exhaustive.test.js, "policy:"):
+   "Empty slot"; each has a direct test in core/optimizer/index.exhaustive.test.ts, "policy:"):
    - a single ring only when no pair exists: if any legal pair exists, a loadout with one ring is not considered,
      even when a pair breaks a maximum and one ring alone would not;
    - a slot is never left empty to satisfy a maximum (or any other constraint): every slot that has items gets one.

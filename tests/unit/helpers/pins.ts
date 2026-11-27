@@ -1,10 +1,10 @@
 /* Pins for the optimizer's tests: random pieces to pin, with stones, in the two forms the code under test and its
-   reference take (`fixed`: fixedCandidate; `oracle`: pinnedVector in exhaustive.js, written independently). */
+   reference take (`fixed`: fixedCandidate; `oracle`: pinnedVector in exhaustive.ts, written independently). */
 import { meldInfo, slotInfo } from '../../../src/core/items.ts';
 import { fixedCandidate } from '../../../src/core/optimizer/index.ts';
 import { itemSyncIlvl } from '../../../src/core/piece.ts';
 import { MATERIA } from '../../../src/core/tables.ts';
-import { pinnedVector } from './exhaustive.js';
+import { pinnedVector } from './exhaustive.ts';
 import type { Candidate, JobContext, PoolItem, Stone, Sync } from '../../../src/core/types.ts';
 
 /* The pieces of one pin case: each a pool item with the stones in it ([] for none). */

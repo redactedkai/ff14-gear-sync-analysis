@@ -2,12 +2,12 @@
    the best set is the best item per slot, with the ring pair and the slots a piece blocks handled exactly. Written here from
    the rules (optimizer.md, section 2), not from the search. It shares the sync model (effStats, weaponDamage) with the code
    under test, so it does not check that; with melds it takes each item's stat vectors from the meld enumerator
-   `meldVectors` (exhaustive.js). Used by core/optimizer/index.exact-solver.test.js. */
+   `meldVectors` (exhaustive.ts). Used by core/optimizer/index.exact-solver.test.ts. */
 import { SLOT_TYPES } from '../../../src/core/constants.ts';
 import { slotInfo } from '../../../src/core/items.ts';
 import { weaponDamage } from '../../../src/core/damage-defense.ts';
 import { effStats, itemSyncIlvl } from '../../../src/core/piece.ts';
-import { meldVectors } from './exhaustive.js';
+import { meldVectors } from './exhaustive.ts';
 import type { DimKey, JobContext, PoolItem, StatKey, Sync } from '../../../src/core/types.ts';
 
 /* One way to fill a slot type: its stat list in rank order, the slots it leaves empty, and `empty` for leaving the type itself empty. */

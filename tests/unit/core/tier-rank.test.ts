@@ -11,7 +11,7 @@ import { optimize } from '../../../src/core/optimizer/index.ts';
 import { rankByTier } from '../../../src/core/tier-rank.ts';
 import { rankTierOf, tierStart } from '../../../src/core/tiers.ts';
 import { rng } from '../helpers/common.ts';
-import { smallPool } from '../helpers/exhaustive.js';
+import { smallPool } from '../helpers/exhaustive.ts';
 import { asVector, checkGcd, checkNoGcd, tierLex } from '../helpers/tier-reference.ts';
 
 test('rank by tier matches the reference: two and three keys, main stat, food off / one meal / every meal, levels 50 and 100', () => {

@@ -12,7 +12,7 @@
     "dev": "node scripts/build/dev.ts",
     "test": "node --test \"tests/unit/**/*.test.js\" \"tests/unit/**/*.test.ts\"",
     "test:fast": "node scripts/test.ts --fast",
-    "test:full": "node --test \"tests/unit/**/*.test.js\" \"tests/unit/**/*.test.ts\" \"tests/sweep/*.test.js\"",
+    "test:full": "node --test \"tests/unit/**/*.test.js\" \"tests/unit/**/*.test.ts\" \"tests/sweep/*.test.ts\"",
     "test:py": "node scripts/py.ts -m unittest discover -s tests/data -p \"test_*.py\"",
     "test:smoke": "node tests/e2e/smoke.ts",
     "test:model": "node scripts/test.ts --domain model",

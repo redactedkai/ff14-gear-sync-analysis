@@ -67,7 +67,7 @@ Which file tests what? One line per file; the file itself says the rest.
 
 ### Unit tests
 
-**Naming rule.** The folder of a test file under `tests/unit/` is the folder of the module it tests under `src/`, and the file is the module's name, then `.test.js` (`.test.ts` for a module written in TypeScript: Node strips the types, and a `.ts` import names its extension). A file on one concern of a module adds the concern after a dot. So the test for `src/ui/views/gcd.ts` is `tests/unit/ui/views/gcd.test.js`, and the sync clamp of `src/core/formulas.ts` is in `tests/unit/core/formulas.sync-clamp.test.ts`. A folder counts as a module (`src/core/optimizer/` is `core/optimizer/index`, so `core/optimizer/index.exhaustive.test.js`). Tests of `scripts/` go in `tests/unit/scripts/` and tests of the smoke test's own helpers (`tests/e2e/lib/`) in `tests/unit/smoke-helpers/`; the CSS tests are in `tests/unit/styles/`, named for the concern. A test that crosses modules goes in the file of the module whose rule it checks, or in the folder that holds the modules it scans (`ui/no-alpine`, `ui/views/no-bad-values`). Sorted by path, a module's files sit together. A test's domain is its module's (section 1.1). The test lists below name a file by its path under `tests/unit/`, without `.test.js`.
+**Naming rule.** The folder of a test file under `tests/unit/` is the folder of the module it tests under `src/`, and the file is the module's name, then `.test.js` (`.test.ts` for a module written in TypeScript: Node strips the types, and a `.ts` import names its extension). A file on one concern of a module adds the concern after a dot. So the test for `src/ui/views/gcd.ts` is `tests/unit/ui/views/gcd.test.js`, and the sync clamp of `src/core/formulas.ts` is in `tests/unit/core/formulas.sync-clamp.test.ts`. A folder counts as a module (`src/core/optimizer/` is `core/optimizer/index`, so `core/optimizer/index.exhaustive.test.ts`). Tests of `scripts/` go in `tests/unit/scripts/` and tests of the smoke test's own helpers (`tests/e2e/lib/`) in `tests/unit/smoke-helpers/`; the CSS tests are in `tests/unit/styles/`, named for the concern. A test that crosses modules goes in the file of the module whose rule it checks, or in the folder that holds the modules it scans (`ui/no-alpine`, `ui/views/no-bad-values`). Sorted by path, a module's files sit together. A test's domain is its module's (section 1.1). The test lists below name a file by its path under `tests/unit/`, without `.test.js`.
 
 | File | Covers |
 | --- | --- |
@@ -284,7 +284,7 @@ Notes:
 - **The elements' logic** is unit tested in Node (the files in `tests/unit/ui/elements/`, one folder per domain): each screen's logic is a plain model class (`sheets-screen-model.ts`, `app-root-model.ts`, ...) bound to a plain store, and a set page's logic is a plain session (`src/ui/elements/set-page/session.ts`) tested the same way in `tests/unit/ui/elements/set-page/`. The smoke test checks how they are wired into the page.
 - **What each file checks** is in its header comment and test names, and where each expected value comes from is in a comment next to it. They are not repeated here, so they cannot drift apart.
 - **Shared helpers** are in `tests/unit/helpers/`:
-  - the brute-force reference and real-gear pools (`exhaustive.js`, section 2.1);
+  - the brute-force reference and real-gear pools (`exhaustive.ts`, section 2.1);
   - seeded random numbers, item lookup by name, store-shaped state, and values typed in from outside sources such as the `BaseParam` slot shares and AkhMorning's level table (`common.js`);
   - the tier ranking reference with its random cases, shared with the long sweep in `tests/sweep/` (`tier-reference.js`);
   - the view tests' store-shaped state with sync at 123 and a set's recipe, their small real-gear pools and an Auto-fill's solve (`views.js`);
@@ -698,7 +698,7 @@ The rule behind the table: a value that depends on what gear exists may move; a 
 | Concept | File |
 | --- | --- |
 | Unit tests | `tests/unit/<src folder>/<module>.test.js`, named by the rule in section 2 |
-| Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.js` (`exhaustive`, `gamePool`, `loadoutCount`) |
+| Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.ts` (`exhaustive`, `gamePool`, `loadoutCount`) |
 | Shared test helpers and typed-in outside values | `tests/unit/helpers/common.ts` (`rng`, `itemRow`, `appState`, `SLOT_PERMILLE`, `AKH_LEVEL`) |
 | Tier ranking reference and its random cases | `tests/unit/helpers/tier-reference.ts` (`tierLex`, `checkNoGcd`, `checkGcd`); the long sweep in `tests/sweep/` |
 | View test state, small real-gear pools and an Auto-fill's solve | `tests/unit/helpers/views.ts` (`makeApp`, `solveOf`, `windowPool`) |

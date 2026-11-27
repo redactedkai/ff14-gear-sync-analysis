@@ -8,7 +8,7 @@ import { MAX_REAL } from '../../../../src/core/tables.ts';
 import { shownSync, syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { appState, mustFind } from '../../helpers/common.ts';
 import type { TestAppState } from '../../helpers/common.ts';
-import { exhaustive, gamePool } from '../../helpers/exhaustive.js';
+import { exhaustive, gamePool } from '../../helpers/exhaustive.ts';
 import { explainerViewOf, gearViewOf, makeApp, okOf, pieceViewOf, solveOf } from '../../helpers/views.ts';
 
 /* Level sync (synced level 90, item level sync off) in the views. Real gear at item level 663 to 666: the equip level

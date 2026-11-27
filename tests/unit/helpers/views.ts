@@ -1,6 +1,6 @@
 /* Shared setup of the view builder and solve tests: store-shaped state with sync on at cap 123 and a set's recipe (its
    Auto-fill settings at their defaults, rank by tier off), small real-gear pools whose best loadouts the brute force
-   (exhaustive.js) can check, a solve as a set page's Auto-fill asks for it (core/recipe.ts runRecipe, evaluated by
+   (exhaustive.ts) can check, a solve as a set page's Auto-fill asks for it (core/recipe.ts runRecipe, evaluated by
    core/set.ts evaluateSet), and the other tabs' builders called as their components call them. */
 import { recipePool, runRecipe } from '../../../src/core/recipe.ts';
 import { makeSession } from '../../../src/core/session.ts';
@@ -12,7 +12,7 @@ import { searchCount } from '../../../src/ui/solve.ts';
 import { explainerItemLevel, explainerView, meldKeys } from '../../../src/ui/views/sync-explainer.ts';
 import { appState } from './common.ts';
 import type { TestAppState } from './common.ts';
-import { gamePool } from './exhaustive.js';
+import { gamePool } from './exhaustive.ts';
 import type { Recipe, RecipeChoices, RecipeResult, RecipeSuccess, Pins } from '../../../src/core/recipe.ts';
 import type { JobContext, PoolItem, StatKey } from '../../../src/core/types.ts';
 import type { SetEvaluation } from '../../../src/core/set.ts';

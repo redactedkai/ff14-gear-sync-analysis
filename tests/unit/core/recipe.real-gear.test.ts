@@ -17,7 +17,7 @@ import { optimizeGcd } from '../../../src/core/target-gcd.ts';
 import { rankByTier } from '../../../src/core/tier-rank.ts';
 import { statTier } from '../../../src/core/tiers.ts';
 import { DEFAULT_EXCLUDE, syncSettings } from '../../../src/ui/job-sync-panel.ts';
-import { exhaustive, gamePool } from '../helpers/exhaustive.js';
+import { exhaustive, gamePool } from '../helpers/exhaustive.ts';
 import {
   countOf,
   explainerViewOf,

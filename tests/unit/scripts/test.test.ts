@@ -38,7 +38,7 @@ test('wrapper selection: a unit test goes to the domain of its module; --fast le
   // real files: the set page's row builder and the optimizer are in different domains
   assert.ok(unitFilesOf(['set-page']).includes('tests/unit/ui/views/set-rows.test.ts'));
   assert.ok(!unitFilesOf(['solver']).includes('tests/unit/ui/views/set-rows.test.ts'));
-  assert.ok(unitFilesOf(['solver']).includes('tests/unit/core/optimizer/index.exact-solver.test.js'));
+  assert.ok(unitFilesOf(['solver']).includes('tests/unit/core/optimizer/index.exact-solver.test.ts'));
   const all = unitFilesOf(DOMAIN_NAMES);
   const fast = unitFilesOf(DOMAIN_NAMES, { fast: true });
   assert.deepEqual(

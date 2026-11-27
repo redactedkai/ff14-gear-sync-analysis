@@ -1,6 +1,6 @@
 /* Small helpers shared by the unit tests: seeded random numbers, item lookup by name, store-shaped state, values
    typed in from outside sources (slot shares, AkhMorning's level table), so tests stay independent of the code under
-   test. The brute-force reference and real-gear pools are in exhaustive.js. */
+   test. The brute-force reference and real-gear pools are in exhaustive.ts. */
 import assert from 'node:assert/strict';
 import { ROW } from '../../../src/core/constants.ts';
 import { browseItems, poolItemFromRow } from '../../../src/core/items.ts';

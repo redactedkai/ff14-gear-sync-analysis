@@ -12,7 +12,7 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { applyStones, bestMeld, meldStones } from '../../../src/core/meld.ts';
 import { effStats } from '../../../src/core/piece.ts';
 import { rng } from '../helpers/common.ts';
-import { meldVectors } from '../helpers/exhaustive.js';
+import { meldVectors } from '../helpers/exhaustive.ts';
 import { lexCompare } from '../helpers/exact-solver.ts';
 
 const PIECES = 3000;

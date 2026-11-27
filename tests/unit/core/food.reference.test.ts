@@ -1,5 +1,5 @@
 /* Food against references written out in the test, over every job's every meal (allMeals), random levels and gear totals
-   from a fixed seed: the bonus of a meal equals min(max, floor(pct x (base + gear) / 100)) (foodAdd in helpers/exhaustive.js)
+   from a fixed seed: the bonus of a meal equals min(max, floor(pct x (base + gear) / 100)) (foodAdd in helpers/exhaustive.ts)
    and is never negative; bestFood over the pruned choices (foodChoices) reaches the same rank as the best of every meal; and
    gearNeeded is the least gear that reaches a total with the meal, by a linear scan. */
 import { test } from 'node:test';
@@ -9,7 +9,7 @@ import type { FoodChoice } from '../../../src/core/food.ts';
 import { allMeals, bestFood, foodBonus, foodChoices, gearNeeded, withFood } from '../../../src/core/food.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { rng } from '../helpers/common.ts';
-import { foodAdd } from '../helpers/exhaustive.js';
+import { foodAdd } from '../helpers/exhaustive.ts';
 import { lexCompare } from '../helpers/exact-solver.ts';
 
 const CASES_PER_JOB = 120;

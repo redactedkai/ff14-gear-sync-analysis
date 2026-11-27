@@ -135,7 +135,7 @@ With one ring pinned, the other ring is a slot of its own (`FREE_RING` in `slot-
 
 With no pinned piece nothing changes: same lists, same node counts (checked on 540 searches, 106,307 nodes).
 
-Tests: `core/optimizer/index.pinned.test.js` against the brute-force reference with the same pins (`fixed` in `tests/unit/helpers/exhaustive.js`, written independently), and `core/recipe.pins.test.ts`.
+Tests: `core/optimizer/index.pinned.test.ts` against the brute-force reference with the same pins (`fixed` in `tests/unit/helpers/exhaustive.ts`, written independently), and `core/recipe.pins.test.ts`.
 
 ### Target GCD: from a GCD to a speed range
 
@@ -654,7 +654,7 @@ Several gear sets can have exactly the same ranked totals: weapon damage, the ta
 | Page timing marks (`fill`, `save`) | `src/ui/elements/set-page/fill-run.ts`, `fill-settings-edit.ts`, `src/main.js` |
 | Dated benchmark runs | `docs/engineering/perf-log.md` |
 | Stress-test scripts | `scripts/perf/` (`bench.ts`, `split.ts`, `adversarial.ts`, `browser.ts`, `db-parse.ts`, `compare.ts`, `memory.ts`, `workloads.ts`, `target-gcd-sweep.ts`) |
-| Tests | `tests/unit/core/optimizer/index.test.js`, `tests/unit/core/optimizer/index.exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/core/optimizer/index.speed-limits.test.js`, `tests/unit/core/target-gcd.test.ts`, `tests/unit/core/target-gcd.exhaustive.test.ts`, `tests/unit/core/optimizer/index.stat-minimums.test.js`, `tests/unit/core/optimizer/regain.test.js`, `tests/unit/core/recipe.ties.test.ts` (ties, see Ties above) |
+| Tests | `tests/unit/core/optimizer/index.test.ts`, `tests/unit/core/optimizer/index.exhaustive.test.ts` (with the brute-force reference in `tests/unit/helpers/exhaustive.ts`), `tests/unit/core/optimizer/index.speed-limits.test.ts`, `tests/unit/core/target-gcd.test.ts`, `tests/unit/core/target-gcd.exhaustive.test.ts`, `tests/unit/core/optimizer/index.stat-minimums.test.ts`, `tests/unit/core/optimizer/regain.test.ts`, `tests/unit/core/recipe.ties.test.ts` (ties, see Ties above) |
 
 Notes on the table:
 
