@@ -135,7 +135,7 @@ test('what the template shows is in the view: the row class, the category pill, 
 });
 
 test('every piece a picker lists has a category, since the template draws its pill for every row', () => {
-  for (const id of Object.keys(JOBS)) {
+  for (const { id } of JOBS) {
     const job = makeJobContext(id);
     const gear = jobGear(job);
     assert.ok(gear.length > 0, id);
