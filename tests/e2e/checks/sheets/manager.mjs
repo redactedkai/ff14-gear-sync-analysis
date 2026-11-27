@@ -1,7 +1,7 @@
 // The Sheets tab: the sheet manager.
 
 import { NARROW, STORE_KEY, shot } from '../../lib/constants.mjs';
-import { check, checkNoBadText, expect, poll, same } from '../../lib/expect.mjs';
+import { check, checkNoBadText, expect, focusInsideLayer, poll, same } from '../../lib/expect.mjs';
 import { hasHScroll, setNumber, waitReady, waitSaved } from '../../lib/nav.mjs';
 import { figuresRadio, rowAction, sheetNames } from '../../lib/sheets.mjs';
 
@@ -92,6 +92,7 @@ export async function checkSheets(pg) {
   // the set's notes: edited in "Edit gear set", the first line in the list
   await rowAction(pg, '#sh-sets', 1, 'edit').click();
   await expect(pg.locator('#sh-dlg-description')).toBeVisible();
+  await focusInsideLayer(pg, '#sh-dialog'); // Zag gives the Name box the focus a frame after the dialog opens: a fill before that lands in it
   await pg.fill('#sh-dlg-description', 'My own set\nwith a crafted body');
   await pg.click('#sh-dlg-ok');
   await expect(pg.locator('#sh-sets .setnotes')).toHaveText('My own set');

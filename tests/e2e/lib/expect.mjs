@@ -60,6 +60,17 @@ export async function placedByZag(pg, selector) {
   await pg.locator(selector).evaluate(boxStillForFrames);
 }
 
+/** Wait until the focus is on the layer matching `selector` or inside it. Zag moves the focus into a dialog or menu a frame after it
+ * opens (to the control the layer names, or the layer itself), and a key or a `fill` before that lands on whatever had the focus: a
+ * `fill` into one box, then the move to the first box, puts the text into the wrong box. Wait here before typing into a layer
+ * whose first control is not the one typed into. */
+export async function focusInsideLayer(pg, selector) {
+  await poll(`the focus to be inside ${selector}`, async () => {
+    const got = await pg.evaluate(sel => document.querySelector(sel)?.contains(document.activeElement) ?? false, selector);
+    return { ok: got, got };
+  });
+}
+
 export function expect(loc) {
   const make = neg => {
     const m = (what, read, test) =>
