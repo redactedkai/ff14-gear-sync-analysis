@@ -22,6 +22,9 @@
      stones differ (crit, crit or det, det: both reach the same capped totals). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { JobContext, PoolItem, SlotType, StatKey } from '../../../src/core/types.ts';
+import type { Recipe } from '../../../src/core/recipe.ts';
+import type { SetEvaluation, WornRow } from '../../../src/core/set.ts';
 import { weaponDamage } from '../../../src/core/damage-defense.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { equipLevel, jobGear } from '../../../src/core/items.ts';
@@ -40,7 +43,16 @@ const ORDER_SEEDS = [11, 222, 3333]; // the shuffled pool orders, besides the da
    one, head, body, hands, legs, feet, earrings, necklace, wrist, rings) and what the two pieces share:
      'everything'  every stat, the item level and the equip level (two copies of one piece, as the game has them);
      'ranked'      the ranked stats only; some other stat or the stones differ. */
-const CASES = [
+interface TieCase {
+  name: string;
+  jobId: string;
+  cap: number | null;
+  level: number;
+  goal: Partial<Recipe>;
+  totals: Partial<Record<StatKey, number>>;
+  ties: { row: number; slot: SlotType; database: number; reversed: number; share: 'everything' | 'ranked' }[];
+}
+const CASES: TieCase[] = [
   {
     name: 'Sage at cap 123, level 50, Mind',
     jobId: 'SGE',
@@ -80,27 +92,34 @@ const CASES = [
 ];
 
 /* Auto-fill for `testCase` with the job's gear in `pool`'s order: {job, sync, recipe, set, evaluated}. */
-function solveWith(testCase, pool) {
+function solveWith(testCase: TieCase, pool: readonly PoolItem[]) {
   const job = makeJobContext(testCase.jobId);
   const sync = syncSettings({ cap: testCase.cap, sync: testCase.cap != null, level: testCase.level });
   const recipe = { ...fillRecipe(defaultFillSettings(job)), ...testCase.goal };
   const result = runRecipe(job, sync, testCase.level, recipe, makeSession({ gear: () => pool }));
-  assert.equal(result.status, 'ok', `${testCase.name}: ${result.status}`);
+  assert.ok(result.status === 'ok', `${testCase.name}: ${result.status}`);
   return { job, sync, recipe, set: result.set, evaluated: evaluateSet(job, result.set, sync, testCase.level) };
 }
 
+/* The row of an evaluated set at `index`, which must show a piece. */
+function wornRowOf(evaluated: SetEvaluation, index: number): WornRow {
+  const row = evaluated.rows[index];
+  assert.ok(row?.item, `row ${index} shows a piece`);
+  return row;
+}
+
 /* The gear's weapon damage after sync: the first key of every search, which the ranked text of rankedOf leaves out. */
-function weaponDamageOf(job, evaluated) {
+function weaponDamageOf(job: JobContext, evaluated: SetEvaluation) {
   return evaluated.rows.reduce((sum, row) => sum + (row.item ? weaponDamage(job, row.item, row.target) : 0), 0);
 }
 
 /* What a case's solves in the first `count` pool orders give: [{label, solved}], the database's order first. */
-function solveInOrders(testCase, count = Infinity) {
+function solveInOrders(testCase: TieCase, count = Infinity) {
   const gear = jobGear(makeJobContext(testCase.jobId));
-  const orders = [
+  const orders: [label: string, pool: readonly PoolItem[]][] = [
     ['database order', gear],
     ['reversed order', [...gear].reverse()],
-    ...ORDER_SEEDS.map(seed => [`order ${seed}`, shuffled(gear, seed)]),
+    ...ORDER_SEEDS.map((seed): [string, readonly PoolItem[]] => [`order ${seed}`, shuffled(gear, seed)]),
   ];
   return orders.slice(0, count).map(([label, pool]) => ({ label, solved: solveWith(testCase, pool) }));
 }
@@ -109,7 +128,12 @@ test('the ranked totals of a tied Auto-fill are the same in every pool order', (
   for (const testCase of CASES) {
     const [first, ...others] = solveInOrders(testCase);
     const { job, sync, recipe, evaluated } = first.solved;
-    for (const [key, points] of Object.entries(testCase.totals)) {
+    const wanted = Object.entries(testCase.totals).flatMap(([key, points]) => {
+      const stat = job.stats.find(k => k === key);
+      assert.ok(stat, key);
+      return [[stat, points] as const];
+    });
+    for (const [key, points] of wanted) {
       assert.equal(evaluated.gear[key], points, `${testCase.name}: ${key} in the ${first.label}`);
     }
     const want = rankedOf(job, first.solved.set, sync, testCase.level, recipe);
@@ -117,8 +141,8 @@ test('the ranked totals of a tied Auto-fill are the same in every pool order', (
     for (const other of others) {
       assert.equal(rankedOf(job, other.solved.set, sync, testCase.level, recipe), want, `${testCase.name}: ${other.label}`);
       assert.equal(weaponDamageOf(job, other.solved.evaluated), wantDamage, `${testCase.name}: weapon damage, ${other.label}`);
-      for (const key of Object.keys(testCase.totals)) {
-        assert.equal(other.solved.evaluated.gear[key], testCase.totals[key], `${testCase.name}: ${key}, ${other.label}`);
+      for (const [key, points] of wanted) {
+        assert.equal(other.solved.evaluated.gear[key], points, `${testCase.name}: ${key}, ${other.label}`);
       }
     }
   }
@@ -128,13 +152,13 @@ test('equal pieces on the ranked stats are chosen differently when the pool come
   for (const testCase of CASES) {
     const [database, reversed] = solveInOrders(testCase, 2).map(entry => entry.solved);
     const job = database.job;
-    const rankedKeys = [database.recipe.target, database.recipe.tb, database.recipe.tb2].filter(Boolean);
+    const rankedKeys = [database.recipe.target, database.recipe.tb, database.recipe.tb2].filter((key): key is StatKey => key !== '');
     assert.notEqual(setKey(database.set), setKey(reversed.set), `${testCase.name}: the two orders no longer show different pieces`);
 
     for (const tie of testCase.ties) {
       const label = `${testCase.name}, ${tie.slot} (row ${tie.row})`;
-      const first = database.evaluated.rows[tie.row];
-      const second = reversed.evaluated.rows[tie.row];
+      const first = wornRowOf(database.evaluated, tie.row);
+      const second = wornRowOf(reversed.evaluated, tie.row);
       assert.equal(first.slot, tie.slot, `${label}: the row's slot`);
       assert.equal(first.item.gameId, tie.database, `${label}: the database order's piece`);
       assert.equal(second.item.gameId, tie.reversed, `${label}: the reversed order's piece`);
