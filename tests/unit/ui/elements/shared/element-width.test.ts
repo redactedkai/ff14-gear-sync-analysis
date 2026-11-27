@@ -3,8 +3,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ElementWidthController } from '../../../../../src/ui/elements/shared/element-width.ts';
-import type { WidthHost, WidthLifecycle } from '../../../../../src/ui/elements/shared/element-width.ts';
 import { opaque, resizeEntry } from '../../../helpers/dom-fakes.ts';
+import { fakeLitHost } from '../../../helpers/fakes.ts';
 
 /* A fake ResizeObserver that records what it watches; `report(width)` delivers a size to the latest one made. */
 let watchers: FakeObserver[];
@@ -40,18 +40,6 @@ const runFrames = (): void => {
   }
 };
 
-/* A host that counts its redraws and keeps its controllers. */
-class FakeHost implements WidthHost {
-  redraws = 0;
-  readonly controllers: WidthLifecycle[] = [];
-  addController(added: WidthLifecycle): void {
-    this.controllers.push(added);
-  }
-  requestUpdate(): void {
-    this.redraws += 1;
-  }
-}
-
 /* A controller on a fake host whose box is `box.current`, and the host's count of redraws. */
 function setUp() {
   watchers = [];
@@ -59,7 +47,7 @@ function setUp() {
   globalThis.ResizeObserver = FakeObserver;
   globalThis.requestAnimationFrame = frame => frames.push(frame);
   const box: { current: Element | null } = { current: opaque<Element>() };
-  const host = new FakeHost();
+  const host = fakeLitHost();
   const controller = new ElementWidthController(host, () => box.current);
   return { box, host, controller };
 }
@@ -71,13 +59,13 @@ test('the width follows the box after each draw, in the next frame, rounded; a h
   report(512.4);
   assert.equal(controller.width, 0, 'not in the delivery that reports it');
   runFrames();
-  assert.deepEqual([controller.width, host.redraws], [512, 1]);
+  assert.deepEqual([controller.width, host.updateRequests], [512, 1]);
   report(0);
   runFrames();
   assert.equal(controller.width, 512);
   report(512);
   runFrames();
-  assert.equal(host.redraws, 1, 'the same width draws nothing again');
+  assert.equal(host.updateRequests, 1, 'the same width draws nothing again');
 });
 
 test('a box that comes and goes is followed again; no box, nothing is watched', () => {
@@ -101,7 +89,7 @@ test('a disconnected host stops watching, and a reconnected one draws again to f
   controller.hostDisconnected();
   assert.equal(watchers[0].targets.size, 0);
   controller.hostConnected();
-  assert.equal(host.redraws, 1);
+  assert.equal(host.updateRequests, 1);
   controller.hostUpdated();
   assert.equal(latest().targets.size, 1);
 });

@@ -3,17 +3,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { UNLOAD_GUARD_OFF_KEY, installUnloadGuard, unloadGuardDisabled } from '../../../../src/ui/router/unload-guard.ts';
 import type { UnloadEvent } from '../../../../src/ui/router/unload-guard.ts';
-import { fakeStorage } from '../../helpers/sheet-fixtures.ts';
+import { fakeStorage, fakeWindow } from '../../helpers/fakes.ts';
 
-/* A window stand-in that keeps the listener, and an unload event as the browser hands it. */
-function fakeWindow() {
-  const listeners: ((event: UnloadEvent) => void)[] = [];
+/* A window stand-in (fakes.ts fakeWindow) with `unload()`: it fires a `beforeunload` event as the browser hands it, and returns that event. */
+function fakeUnloadWindow() {
+  const win = fakeWindow<UnloadEvent>();
   return {
-    addEventListener: (type: 'beforeunload', fn: (event: UnloadEvent) => void) => {
-      if (type === 'beforeunload') {
-        listeners.push(fn);
-      }
-    },
+    addEventListener: win.addEventListener,
     unload() {
       const event = {
         prevented: false,
@@ -22,16 +18,14 @@ function fakeWindow() {
           this.prevented = true;
         },
       };
-      for (const fn of listeners) {
-        fn(event);
-      }
+      win.fire('beforeunload', event);
       return event;
     },
   };
 }
 
 test('unload guard: asks while work is held, stays quiet with none', () => {
-  const win = fakeWindow();
+  const win = fakeUnloadWindow();
   let held = false;
   installUnloadGuard({ target: win, hasUnsettled: () => held, storage: fakeStorage() });
   assert.equal(win.unload().prevented, false);
@@ -42,7 +36,7 @@ test('unload guard: asks while work is held, stays quiet with none', () => {
 
 test('unload guard: the dev flag turns it off, any other value or a throwing storage leaves it on', () => {
   const storage = fakeStorage();
-  const win = fakeWindow();
+  const win = fakeUnloadWindow();
   installUnloadGuard({ target: win, hasUnsettled: () => true, storage });
   storage.setItem(UNLOAD_GUARD_OFF_KEY, '1');
   assert.equal(win.unload().prevented, false);

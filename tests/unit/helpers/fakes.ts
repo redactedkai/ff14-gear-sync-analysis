@@ -136,3 +136,94 @@ export function errorEvent(): ErrorEvent {
 export function answerAs<Result>(value: unknown): Result {
   return JSON.parse(JSON.stringify(value));
 }
+
+/* The hooks of a Lit controller (ReactiveControllerHost's lifecycle) that a fake host runs. */
+export interface FakeLifecycle {
+  hostConnected?(): void;
+  hostDisconnected?(): void;
+  hostUpdate?(): void;
+  hostUpdated?(): void;
+}
+
+/* A stand-in for a Lit element as a controller's host: it keeps the controllers added to it, counts the draws asked for
+   (`updateRequests`), and runs their hooks on `connect()`, `disconnect()` and `update()` (the hostUpdate hooks, then the
+   hostUpdated hooks). A test that needs an element too makes it one with `withLitHost(element)`. */
+export interface FakeLitHost {
+  readonly controllers: FakeLifecycle[];
+  updateRequests: number;
+  addController(controller: FakeLifecycle): void;
+  requestUpdate(): void;
+  connect(): void;
+  disconnect(): void;
+  update(): void;
+}
+
+/* `element` made into a FakeLitHost (its members added to it, so `updateRequests` counts on `element` itself): an element
+   that also plays the Lit side. */
+export function withLitHost<Element extends object>(element: Element): Element & FakeLitHost {
+  const host: Element & FakeLitHost = Object.assign(element, {
+    controllers: [] as FakeLifecycle[],
+    updateRequests: 0,
+    addController: (controller: FakeLifecycle) => {
+      host.controllers.push(controller);
+    },
+    requestUpdate: () => {
+      host.updateRequests += 1;
+    },
+    connect: () => {
+      for (const controller of host.controllers) {
+        controller.hostConnected?.();
+      }
+    },
+    disconnect: () => {
+      for (const controller of host.controllers) {
+        controller.hostDisconnected?.();
+      }
+    },
+    update: () => {
+      for (const controller of host.controllers) {
+        controller.hostUpdate?.();
+      }
+      for (const controller of host.controllers) {
+        controller.hostUpdated?.();
+      }
+    },
+  });
+  return host;
+}
+
+/* A new FakeLitHost with no controllers and no draws asked for. */
+export function fakeLitHost(): FakeLitHost {
+  return withLitHost({});
+}
+
+/* A stand-in for the window's event hooks: it keeps the listeners by event name. `fire(type, event)` calls those of `type`
+   with `event` (`Payload` is the type of what they receive: a DOM Event by default) and `count(type)` says how many are listening. */
+export interface FakeWindow<Payload = Event> {
+  addEventListener(type: string, listener: (event: Payload) => void): void;
+  removeEventListener(type: string, listener: (event: Payload) => void): void;
+  fire(type: string, event: Payload): void;
+  count(type: string): number;
+}
+
+/* A new FakeWindow with no listeners. */
+export function fakeWindow<Payload = Event>(): FakeWindow<Payload> {
+  const listeners = new Map<string, Set<(event: Payload) => void>>();
+  return {
+    addEventListener(type, listener) {
+      if (!listeners.has(type)) {
+        listeners.set(type, new Set());
+      }
+      listeners.get(type)?.add(listener);
+    },
+    removeEventListener(type, listener) {
+      listeners.get(type)?.delete(listener);
+    },
+    fire(type, event) {
+      for (const listener of listeners.get(type) ?? []) {
+        listener(event);
+      }
+    },
+    count: type => listeners.get(type)?.size ?? 0,
+  };
+}

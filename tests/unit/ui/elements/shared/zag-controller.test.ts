@@ -4,11 +4,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { HOST_ATTRIBUTE, PART_ATTRIBUTE, ZAG_ID_PREFIX, ZagController } from '../../../../../src/ui/elements/shared/zag-controller.ts';
-import type { ZagLifecycle } from '../../../../../src/ui/elements/shared/zag-controller.ts';
 import { createMachine } from '@zag-js/core';
 import type { VanillaMachine } from '@zag-js/vanilla';
 import type { MachineSchema, Service } from '@zag-js/core';
 import { standsFor } from '../../../helpers/dom-fakes.ts';
+import { withLitHost } from '../../../helpers/fakes.ts';
+import type { FakeLitHost } from '../../../helpers/fakes.ts';
 
 // how many effects of the tiny machine are running
 let liveEffects = 0;
@@ -147,45 +148,10 @@ function fakeElement(parent: FakeNode | null = null, attributes: Record<string, 
   return element;
 }
 
-/* A fake element that also plays the Lit side: it keeps the controllers and runs their update hooks on `update()`. */
-type FakeHost = FakeNode & {
-  updateRequests: number;
-  addController(controller: ZagLifecycle): void;
-  requestUpdate(): void;
-  connect(): void;
-  disconnect(): void;
-  update(): void;
-};
+/* A fake element that also plays the Lit side (fakes.ts fakeLitHost): it keeps the controllers and runs their update hooks on `update()`. */
+type FakeHost = FakeNode & FakeLitHost;
 function fakeHost(parent: FakeNode | null = null): FakeHost {
-  const controllers: ZagLifecycle[] = [];
-  const host: FakeHost = Object.assign(fakeElement(parent), {
-    updateRequests: 0,
-    addController: (controller: ZagLifecycle) => {
-      controllers.push(controller);
-    },
-    requestUpdate: () => {
-      host.updateRequests += 1;
-    },
-    connect: () => {
-      for (const controller of controllers) {
-        controller.hostConnected?.();
-      }
-    },
-    disconnect: () => {
-      for (const controller of controllers) {
-        controller.hostDisconnected?.();
-      }
-    },
-    update: () => {
-      for (const controller of controllers) {
-        controller.hostUpdate?.();
-      }
-      for (const controller of controllers) {
-        controller.hostUpdated?.();
-      }
-    },
-  });
-  return host;
+  return withLitHost(fakeElement(parent));
 }
 
 /* A controller of the tiny machine on a new fake host (or the given one). */

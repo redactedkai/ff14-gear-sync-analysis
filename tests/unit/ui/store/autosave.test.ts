@@ -8,6 +8,7 @@ import { createAppStore } from '../../../../src/ui/store/app-state.ts';
 import type { RestoredState } from '../../../../src/ui/store/app-state.ts';
 import { AUTOSAVE_DEBOUNCE_MS, startAutosave } from '../../../../src/ui/store/autosave.ts';
 import type { AutosaveTimers } from '../../../../src/ui/store/autosave.ts';
+import { fakeWindow } from '../../helpers/fakes.ts';
 
 const NO_SHEETS = { available: false, sheets: [], unreadable: [], indexProblem: null };
 const tick = () => new Promise<void>(resolve => setTimeout(resolve, 0));
@@ -39,28 +40,6 @@ function fakeClock() {
         }
       }
     },
-  };
-}
-
-/* A stand-in for the window: it keeps the listeners and fires an event by name. */
-function fakeWindow() {
-  const listeners = new Map<string, Set<() => void>>();
-  return {
-    addEventListener(type: string, listener: () => void) {
-      if (!listeners.has(type)) {
-        listeners.set(type, new Set());
-      }
-      listeners.get(type)?.add(listener);
-    },
-    removeEventListener(type: string, listener: () => void) {
-      listeners.get(type)?.delete(listener);
-    },
-    fire(type: string) {
-      for (const listener of listeners.get(type) ?? []) {
-        listener();
-      }
-    },
-    count: (type: string) => listeners.get(type)?.size ?? 0,
   };
 }
 
@@ -140,11 +119,11 @@ test("'pagehide' writes at once what waits, and writes nothing when nothing wait
   const { actions, clock, pageEvents, writes } = setup();
   clock.advance(AUTOSAVE_DEBOUNCE_MS);
   writes.length = 0;
-  pageEvents.fire('pagehide');
+  pageEvents.fire('pagehide', new Event('pagehide'));
   assert.equal(writes.length, 0);
   actions.editBrowse({ q: 'Dread' });
   await tick();
-  pageEvents.fire('pagehide');
+  pageEvents.fire('pagehide', new Event('pagehide'));
   assert.deepEqual(
     writes.map(json => JSON.parse(json).browse.q),
     ['Dread'],
@@ -210,7 +189,7 @@ test('a write that failed is tried again at a change of the screen, at a later w
   await tick();
   clock.advance(AUTOSAVE_DEBOUNCE_MS);
   failing = false;
-  pageEvents.fire('pagehide'); // the page goes away before another change: the failed settings are written at once
+  pageEvents.fire('pagehide', new Event('pagehide')); // the page goes away before another change: the failed settings are written at once
   assert.equal(JSON.parse(written.at(-1) as string).browse.q, 'ringed');
 });
 

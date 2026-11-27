@@ -3,8 +3,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Select, shallowEq } from '../../../../src/ui/store/select.ts';
-import type { SelectController, SelectHost } from '../../../../src/ui/store/select.ts';
 import { Store } from '../../../../src/ui/store/store.ts';
+import { fakeLitHost } from '../../helpers/fakes.ts';
 
 interface DemoState extends Record<string, object> {
   settings: { count: number; other: number; pair: { a: number; b: number } };
@@ -12,31 +12,9 @@ interface DemoState extends Record<string, object> {
 const demoStore = () => new Store<DemoState>({ settings: { count: 0, other: 0, pair: { a: 1, b: 2 } } });
 const tick = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 
-/* A stand-in for a Lit element: it keeps its controllers and counts its render requests. */
-class FakeHost implements SelectHost {
-  controllers: SelectController[] = [];
-  renders = 0;
-  addController(controller: SelectController): void {
-    this.controllers.push(controller);
-  }
-  requestUpdate(): void {
-    this.renders += 1;
-  }
-  connect(): void {
-    for (const controller of this.controllers) {
-      controller.hostConnected?.();
-    }
-  }
-  disconnect(): void {
-    for (const controller of this.controllers) {
-      controller.hostDisconnected?.();
-    }
-  }
-}
-
 test('the host renders once for a change of what it selected, and not for a change of something else', async () => {
   const store = demoStore();
-  const host = new FakeHost();
+  const host = fakeLitHost();
   const count = new Select(host, store, state => state.settings.count);
   host.connect();
   assert.equal(count.value, 0);
@@ -44,20 +22,20 @@ test('the host renders once for a change of what it selected, and not for a chan
     state.settings.other += 1;
   });
   await tick();
-  assert.equal(host.renders, 0);
+  assert.equal(host.updateRequests, 0);
   for (let i = 1; i <= 1000; i++) {
     store.update('settings/count', state => {
       state.settings.count = i;
     });
   }
   await tick();
-  assert.equal(host.renders, 1, '1,000 changes in a tick are one render');
+  assert.equal(host.updateRequests, 1, '1,000 changes in a tick are one render');
   assert.equal(count.value, 1000);
 });
 
 test('disconnecting unsubscribes, and 1,000 connect and disconnect cycles leave no listener behind', async () => {
   const store = demoStore();
-  const host = new FakeHost();
+  const host = fakeLitHost();
   new Select(host, store, state => state.settings.count);
   for (let i = 0; i < 1000; i++) {
     host.connect();
@@ -69,12 +47,12 @@ test('disconnecting unsubscribes, and 1,000 connect and disconnect cycles leave 
     state.settings.count = 5;
   });
   await tick();
-  assert.equal(host.renders, 0, 'a disconnected host is never asked to render');
+  assert.equal(host.updateRequests, 0, 'a disconnected host is never asked to render');
 });
 
 test('connecting twice in a row does not subscribe twice', () => {
   const store = demoStore();
-  const host = new FakeHost();
+  const host = fakeLitHost();
   new Select(host, store, state => state.settings.count);
   host.connect();
   host.connect();
@@ -83,12 +61,12 @@ test('connecting twice in a row does not subscribe twice', () => {
 
 test('a host reconnected after the value changed renders at once; one reconnected with the same value does not', async () => {
   const store = demoStore();
-  const host = new FakeHost();
+  const host = fakeLitHost();
   const count = new Select(host, store, state => state.settings.count);
   host.connect();
   host.disconnect();
   host.connect();
-  assert.equal(host.renders, 0);
+  assert.equal(host.updateRequests, 0);
   host.disconnect();
   store.update('settings/count', state => {
     state.settings.count = 3;
@@ -96,14 +74,14 @@ test('a host reconnected after the value changed renders at once; one reconnecte
   await tick();
   assert.equal(count.value, 3, 'a disconnected controller still reads the live state');
   host.connect();
-  assert.equal(host.renders, 1);
+  assert.equal(host.updateRequests, 1);
   assert.equal(count.value, 3);
 });
 
 test('a selector that builds a new object needs shallowEq: Object.is renders on every change, shallowEq only on a different value', async () => {
   const store = demoStore();
-  const loose = new FakeHost();
-  const tight = new FakeHost();
+  const loose = fakeLitHost();
+  const tight = fakeLitHost();
   new Select(loose, store, state => ({ ...state.settings.pair }));
   new Select(tight, store, state => ({ ...state.settings.pair }), shallowEq);
   loose.connect();
@@ -112,12 +90,12 @@ test('a selector that builds a new object needs shallowEq: Object.is renders on 
     state.settings.other += 1;
   });
   await tick();
-  assert.deepEqual([loose.renders, tight.renders], [1, 0]);
+  assert.deepEqual([loose.updateRequests, tight.updateRequests], [1, 0]);
   store.update('settings/pair', state => {
     state.settings.pair.a = 9;
   });
   await tick();
-  assert.deepEqual([loose.renders, tight.renders], [2, 1]);
+  assert.deepEqual([loose.updateRequests, tight.updateRequests], [2, 1]);
 });
 
 test('shallowEq: same keys with the same values; arrays too; nothing deeper', () => {
