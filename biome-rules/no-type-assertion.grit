@@ -1,0 +1,7 @@
+language js(typescript)
+
+// A type assertion (`value as Type`) tells the compiler to trust the writer. `as const` only narrows a literal, so it stays.
+`$value as $type` where {
+  $type <: not `const`,
+  register_diagnostic(span=$type, message="A type assertion hides what the compiler cannot prove. Use a type guard or a typed helper (src/core/guards.ts), or, for a cast that has to stay, add a biome-ignore comment that says why and which test checks it.", severity="error")
+}

@@ -28,7 +28,7 @@ export const DOMAINS = {
       'src/core/{clan-bonus,sync-target}.ts',
       'src/core/{food,formulas,tiers}.ts',
       'src/core/{damage-defense,speed}.ts',
-      'src/core/{base-stats,clamp,level-params}.ts',
+      'src/core/{base-stats,clamp,guards,level-params}.ts',
       'scripts/validate/**',
     ],
     tests: ['tests/unit/helpers/model-validation.ts'],
