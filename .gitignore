@@ -8,6 +8,7 @@ node_modules/
 __pycache__/
 *.pyc
 .DS_Store
+.hypothesis/
 /docs/scratchpad/
 .claude/worktrees/
 .claude/settings.local.json

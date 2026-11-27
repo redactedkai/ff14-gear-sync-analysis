@@ -114,3 +114,23 @@ def rename_column(path, old, new):
         rows[0][rows[0].index(old)] = new
 
     edit_csv(path, fn)
+
+
+# Hypothesis (property tests, tests/data/test_*_properties.py): one profile for every test file, registered here so that
+# importing `common` is enough. Deterministic (derandomize), no example database on disk (nothing written into the
+# repo), no deadline (a generator run on fixtures takes tens of milliseconds, and machines differ), few examples
+# (each one runs a generator on a copy of the fixtures; the whole suite stays near 40 seconds).
+try:
+    from hypothesis import HealthCheck, settings
+
+    settings.register_profile(
+        'generators',
+        derandomize=True,
+        database=None,
+        deadline=None,
+        max_examples=12,
+        suppress_health_check=[HealthCheck.too_slow],
+    )
+    settings.load_profile('generators')
+except ImportError:  # the property tests need Hypothesis (requirements-dev.txt); the other tests do not
+    pass
