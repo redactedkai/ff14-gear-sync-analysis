@@ -11,14 +11,14 @@ import type { sheetManagerView } from '../../views/sheet-manager.ts';
 import { LitElement, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { JOB_ICONS } from '../../../data/job-icons.js';
+import { JOB_ICONS } from '../../../data/job-icons.ts';
 import { followInPage } from '../../router/plain-click.ts';
 import { dragHandle } from './drag-handle.ts';
 import { opensRow } from './open-row.ts';
 import { RowReorder } from './row-reorder.ts';
 import { type SheetAction, sendSheetAction } from './sheet-action.ts';
 
-/* The framed job icons by job id (src/data/job-icons.js). */
+/* The framed job icons by job id (src/data/job-icons.ts). */
 const ICONS: Record<string, string> = JOB_ICONS;
 
 /* The manager's view (views/sheet-manager.ts sheetManagerView). */

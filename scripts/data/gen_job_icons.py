@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Build src/data/job-icons.js from the job icons fetch.py saved in data/icons/<JOB>.png.
+"""Build src/data/job-icons.ts from the job icons fetch.py saved in data/icons/<JOB>.png.
 
-Usage: python scripts/data/gen_job_icons.py [icon_dir] [out.js]
+Usage: python scripts/data/gen_job_icons.py [icon_dir] [out.ts]
 
 JOB_ICONS = {job: 'data:image/png;base64,...'} for every job in src/core/item-format.json, embedded so the page stays
 one self-contained file with no image requests. A missing icon, or a file that is not a 64 x 64 PNG, stops the
@@ -89,13 +89,14 @@ def main(icon_dir: Path | str, out: Path | str) -> None:
     if problems:
         raise SchemaError('job icons: ' + '; '.join(problems) + '. Run: python scripts/data/fetch.py')
     date, how = fetch_date(icon_dir, [icon_dir / f'{job}.png' for job in icons])
-    js = header(date, how, hashes) + 'export const JOB_ICONS=' + json.dumps(icons, separators=(',', ':')) + ';\n'
+    declaration = 'export const JOB_ICONS: Readonly<Record<string, string>> = '
+    js = header(date, how, hashes) + declaration + json.dumps(icons, separators=(',', ':')) + ';\n'
     provenance.write_generated(out, js)
 
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('icon_dir', nargs='?', default=str(ROOT / 'data' / 'icons'))
-    ap.add_argument('out', nargs='?', default=str(ROOT / 'src' / 'data' / 'job-icons.js'))
+    ap.add_argument('out', nargs='?', default=str(ROOT / 'src' / 'data' / 'job-icons.ts'))
     args = ap.parse_args()
     run_main(main, args.icon_dir, args.out)

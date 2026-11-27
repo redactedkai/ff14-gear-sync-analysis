@@ -59,12 +59,12 @@ def generate(work: Path, full: bool) -> list[str]:
         gen_items.main(CSV, work / 'items.json', report=str(work / 'items-report.json'))
         gen_gear_groups.main(work / 'items.json', work / 'gear-groups.json')
         gen_food.main(CSV, work / 'food.json')
-        gen_job_icons.main(ICON_DIR, work / 'job-icons.js')
+        gen_job_icons.main(ICON_DIR, work / 'job-icons.ts')
         gen_patches.main(PATCHES_DIR / 'patchlist.json', work / 'patches.json')
         # summary.py reads the item and food tables from these module constants: point them at the ones made here
         summary.ITEMS, summary.FOOD = work / 'items.json', work / 'food.json'
         summary.main(CSV, work / 'items-report.json', changelog=False, summary_path=work / 'summary.json')
-    names = ['item-level.json', 'items.json', 'gear-groups.json', 'food.json', 'job-icons.js', 'patches.json', 'summary.json']
+    names = ['item-level.json', 'items.json', 'gear-groups.json', 'food.json', 'job-icons.ts', 'patches.json', 'summary.json']
     if full:
         subprocess.run(['node', str(MAX_SPEED_SCRIPT), str(work / 'max-speed.json')], check=True, stdout=subprocess.DEVNULL)
         names.append('max-speed.json')

@@ -18,7 +18,7 @@
 import * as menu from '@zag-js/menu';
 import { LitElement, html, nothing } from 'lit';
 import { JOBS, JOB_ROWS, jobById } from '../../../core/constants.ts';
-import { JOB_ICONS } from '../../../data/job-icons.js';
+import { JOB_ICONS } from '../../../data/job-icons.ts';
 import { trackLastInput } from '../shared/key-focus.ts';
 import { createOverlayBridge } from '../shared/overlay-bridge.ts';
 import { ZagController, touchFriendlyTrigger } from '../shared/zag-controller.ts';

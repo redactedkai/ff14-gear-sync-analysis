@@ -20,7 +20,7 @@ import { LitElement, type PropertyValues, type TemplateResult, html, nothing } f
 import { classMap } from 'lit/directives/class-map.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { JOB_ICONS } from '../../../data/job-icons.js';
+import { JOB_ICONS } from '../../../data/job-icons.ts';
 import { followInPage } from '../../router/plain-click.ts';
 import { fillButtonView, noPiecesFlag, setPageViews } from '../../views/set-page.ts';
 import '../gear-browser/expansion-menu.ts';
@@ -41,7 +41,7 @@ import type { SetPagePorts } from './session-types.ts';
 import './settings-popover.ts';
 import type { PageView, RowView } from './set-page-types.ts';
 
-/* The framed job icons by job id (src/data/job-icons.js). */
+/* The framed job icons by job id (src/data/job-icons.ts). */
 const ICONS: Record<string, string> = JOB_ICONS;
 
 /* The page's top line (views/sheet-sets.ts setHeaderView). */

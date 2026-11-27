@@ -17,6 +17,7 @@ import contextlib
 import csv
 import io
 import json
+import re
 import sys
 from collections.abc import Callable, Iterable
 from pathlib import Path
@@ -41,11 +42,13 @@ HEAL = stats(mind=33, vit=32, piety=22, dh=6, sps=31)
 
 
 def read_export(path: str | Path, name: str) -> Any:
-    """The JSON value of `export const <name>=...;` in a generated JS file (other lines are ignored)."""
-    prefix = f'export const {name}='
+    """The JSON value of `export const <name>=...;` (or `export const <name>: <type> = ...;`) in a generated JS or TS file
+    (other lines are ignored)."""
+    start = re.compile(rf'export const {re.escape(name)}(?::[^=]+)?\s*=\s*')
     for line in Path(path).read_text(encoding='utf-8').splitlines():
-        if line.startswith(prefix):
-            return json.loads(line[len(prefix) :].rstrip().rstrip(';'))
+        found = start.match(line)
+        if found:
+            return json.loads(line[found.end() :].rstrip().rstrip(';'))
     raise AssertionError(f'{name} not found in {path}')
 
 

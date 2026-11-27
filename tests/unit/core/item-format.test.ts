@@ -17,7 +17,7 @@ import {
   DAMAGE_DEFENSE_KEYS,
 } from '../../../src/core/constants.ts';
 import { IL, PG, ITEMS, MP, MATERIA, SHARES, MAX_ILVL } from '../../../src/core/tables.ts';
-import { JOB_ICONS } from '../../../src/data/job-icons.js';
+import { JOB_ICONS } from '../../../src/data/job-icons.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 
 test('job bit order, stat order and slot codes come from item-format.json', () => {

@@ -16,7 +16,7 @@ import { LitElement, type PropertyValues, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { live } from 'lit/directives/live.js';
 import { JOB_ROWS, jobById } from '../../../core/constants.ts';
-import { JOB_ICONS } from '../../../data/job-icons.js';
+import { JOB_ICONS } from '../../../data/job-icons.ts';
 import { ERROR_ICON } from '../app/cap-flag.ts';
 import '../app/cap-field.ts';
 import '../app/level-field.ts';
@@ -29,7 +29,7 @@ import type { Counter, DialogAction, FormView, SheetDialogView } from './sheet-d
 export const DIALOG_ACTION_EVENT = 'dialog-action';
 export const DIALOG_CLOSED_EVENT = 'dialog-closed';
 
-/* The framed job icons by job id (src/data/job-icons.js). */
+/* The framed job icons by job id (src/data/job-icons.ts). */
 const ICONS: Record<string, string> = JOB_ICONS;
 
 /* The job picker of the New sheet form: rows by role, each job with its name and icon (the Job and sync panel's). */

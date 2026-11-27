@@ -20,7 +20,7 @@ class LineEndingsTest(unittest.TestCase):
                 'item-level.json',
                 'items.json',
                 'food.json',
-                'job-icons.js',
+                'job-icons.ts',
                 'gear-groups.json',
                 'max-speed.json',
                 'patches.json',

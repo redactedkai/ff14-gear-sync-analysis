@@ -1,4 +1,4 @@
-"""Tests for scripts/data/gen_job_icons.py (src/data/job-icons.js) and the job icon numbering in scripts/data/fetch.py.
+"""Tests for scripts/data/gen_job_icons.py (src/data/job-icons.ts) and the job icon numbering in scripts/data/fetch.py.
 
 No CSV fixtures: the icons are fake PNG headers written to a temporary folder (`fake_png`).
 
@@ -39,7 +39,7 @@ class GenJobIconsTest(unittest.TestCase):
         self.icons.mkdir()
         for i, job in enumerate(JOBS):
             (self.icons / f'{job}.png').write_bytes(fake_png(tag=i))  # a different file per job
-        self.out = self.tmp / 'job-icons.js'
+        self.out = self.tmp / 'job-icons.ts'
 
     def test_every_job_embedded_as_its_own_png(self) -> None:
         run_quiet(gen_job_icons.main, self.icons, self.out)

@@ -15,7 +15,7 @@
 import { LitElement, type PropertyValues, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { JOB_ICONS } from '../../../data/job-icons.js';
+import { JOB_ICONS } from '../../../data/job-icons.ts';
 import { followInPage } from '../../router/plain-click.ts';
 import { bonusOptions } from '../../sheets/bonus-options.ts';
 import { nextListSort, sheetListView } from '../../views/sheet-sets.ts';
@@ -30,7 +30,7 @@ import { RowReorder } from './row-reorder.ts';
 import { type EditResult, type SheetAction, sendSheetAction } from './sheet-action.ts';
 import './switch-menu.ts';
 
-/* The framed job icons by job id (src/data/job-icons.js). */
+/* The framed job icons by job id (src/data/job-icons.ts). */
 const ICONS: Record<string, string> = JOB_ICONS;
 
 /* The entries of the Clan and Party bonus lists (the same for every sheet). */

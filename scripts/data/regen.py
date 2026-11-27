@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate src/data/item-level.json, src/data/items.json, src/data/food.json, src/data/job-icons.js,
+"""Regenerate src/data/item-level.json, src/data/items.json, src/data/food.json, src/data/job-icons.ts,
 src/data/gear-groups.json, src/data/max-speed.json, src/data/patches.json and src/data/summary.json from what fetch.py saved
 in data/, then rebuild dist/. The summary step prints the counts that moved since the last run and adds a line to
 docs/data-changelog.md for a new commit.
