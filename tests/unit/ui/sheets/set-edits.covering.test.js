@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { poolItemById, slotInfo } from '../../../../src/core/items.ts';
+import { poolItemById } from '../../../../src/core/items.ts';
 import { evaluateSet, makeSet } from '../../../../src/core/set.ts';
 import { placePiece, removedNote } from '../../../../src/ui/sheets/set-edits.ts';
 import { SAGE_IDS, sageSet } from '../../helpers/sheet-fixtures.js';
@@ -19,12 +19,6 @@ const VERMILION_CLOAK_OF_HEALING = 24856; // a Sage body piece that covers the h
 function setWithHead() {
   return sageSet({ pinned: { pieces: [HEAD], meal: false } });
 }
-
-test('the real item: the cloak is a body piece that covers the head', () => {
-  const cloak = poolItemById(SGE, VERMILION_CLOAK_OF_HEALING);
-  assert.equal(cloak.type, 'body');
-  assert.deepEqual(slotInfo(SGE, cloak).blocks, ['head']);
-});
 
 test('a cloak picked over a held head empties and unpins the head row and names the head', () => {
   const placed = placePiece(SGE, setWithHead(), BODY, VERMILION_CLOAK_OF_HEALING);

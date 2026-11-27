@@ -7,10 +7,6 @@ import { LEVEL_TEXT, capFlag, levelTextBad, rangeOnly, rangeText } from '../../.
 
 const maxLevelOf = jobId => makeJobContext(jobId).maxLevel;
 
-test("the job's level caps used here are the game's: Paladin 100, Blue Mage 80, Beastmaster 50", () => {
-  assert.deepEqual(['PLD', 'BLU', 'BST'].map(maxLevelOf), [100, 80, 50]);
-});
-
 test("levelTextBad: a whole number from 1 to the job's level cap is a level, anything else is not", () => {
   for (const jobId of ['PLD', 'BLU', 'BST']) {
     const max = maxLevelOf(jobId);

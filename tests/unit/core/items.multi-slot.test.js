@@ -56,6 +56,18 @@ test('slot info: a piece is capped at its own slot share, and names what it cove
   assert.deepEqual(slotInfo(whm, cane), { pct: 140, blocks: ['offhand'], factors: kindFactors(whm, itemRow('Tidal Wave Cane')[ROW.kind]) });
 });
 
+test("the items the set-edit tests pick: Sage's Vermilion Cloak of Healing covers the head; White Mage's Dreadwyrm Cane takes both hands and its Tidal Wave Wand does not", () => {
+  const sage = makeJobContext('SGE');
+  const cloak = poolItemById(sage, 24856);
+  assert.equal(cloak.name, 'Vermilion Cloak of Healing');
+  assert.equal(cloak.type, 'body');
+  assert.deepEqual(slotInfo(sage, cloak).blocks, ['head']);
+  const dreadwyrmCane = poolItemById(whm, 9006);
+  assert.equal(dreadwyrmCane.name, 'Dreadwyrm Cane');
+  assert.deepEqual(slotInfo(whm, dreadwyrmCane).blocks, ['offhand']);
+  assert.deepEqual(slotInfo(whm, poolItemById(whm, 7818)).blocks, []); // Tidal Wave Wand
+});
+
 /* Real pools with multi-slot choices; the brute force checks blocked slots on the whole loadout. */
 /* Item level 100 White Mage gear: every weapon and the shield, and two sets for the other slots (to keep the brute
    force small). */

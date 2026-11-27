@@ -4,7 +4,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { poolItemById } from '../../../../src/core/items.ts';
 import { draftView } from '../../../../src/ui/views/set-draft.ts';
 import { editableCopy, placePiece, removedNote } from '../../../../src/ui/sheets/set-edits.ts';
 import { hasParts } from '../../helpers/common.js';
@@ -27,11 +26,6 @@ function wandAndShield(pinShield = true) {
   set.pieces[OFFHAND] = { slot: 'offhand', gameId: TIDAL_WAVE_BUCKLER, stones: [] };
   return set;
 }
-
-test('the real items: the cane takes both hands, the wand does not', () => {
-  assert.equal(poolItemById(WHM, DREADWYRM_CANE).name, 'Dreadwyrm Cane');
-  assert.equal(poolItemById(WHM, TIDAL_WAVE_BUCKLER).name, 'Tidal Wave Buckler');
-});
 
 test('a 2H weapon picked over a held shield empties and unpins the Off-hand row and names the shield', () => {
   const set = wandAndShield();
