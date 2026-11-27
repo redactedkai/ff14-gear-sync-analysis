@@ -3,6 +3,8 @@
    rows and real items. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { DimKey, StatKey, StatMap, Sync } from '../../../src/core/types.ts';
+import type { ParsedRow } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { IL, ITEMS } from '../../../src/core/tables.ts';
 import { JOBS } from '../../../src/core/constants.ts';
@@ -16,7 +18,7 @@ import { SLOT_PERMILLE, roundHalfUp } from '../helpers/common.ts';
 
 const sge = makeJobContext('SGE');
 const ROWS = ITEMS.map(parseRow);
-const jobsOf = r => JOBS.filter((_, i) => r.mask & (1 << i)).map(j => makeJobContext(j.id));
+const jobsOf = (r: ParsedRow) => JOBS.filter((_, i) => r.mask & (1 << i)).map(j => makeJobContext(j.id));
 
 /* ParamGrow.ItemLevelSync, read from the game file: the level caps of each expansion. xivgear's tests sync level 94
    to 100 gear to item level 660 in a level 90 duty (issue #317, in-game reports), the same value. */
@@ -34,7 +36,8 @@ test('level sync item level: ParamGrow.ItemLevelSync at each level cap, and leve
 });
 
 test('syncTarget: the item level trigger, the level trigger, both, and neither', () => {
-  const t = (itemLevel, equipLevel, syncOn, cap, syncedLevel) => syncTarget({ itemLevel, equipLevel, syncOn, cap, syncedLevel });
+  const t = (itemLevel: number, equipLevel: number | null, syncOn: boolean, cap: number | null, syncedLevel: number | null) =>
+    syncTarget({ itemLevel, equipLevel, scales: false, syncOn, cap, syncedLevel });
   // item level sync only: above the cap -> the cap; at or below it -> untouched
   assert.equal(t(130, 50, true, 123, 100), 123);
   assert.equal(t(123, 50, true, 123, 100), null);
@@ -113,7 +116,7 @@ test('level 50 with cap 123: 71 pieces are synced by level alone, to item level 
    whatever its equip level, or to the item level cap where that is lower. Expected item levels for the boost gear are
    the Wiki's artifact armor values: 548 at level 89, 678 at level 99. */
 test('syncTarget: gear that scales with the level follows the level whatever its equip level', () => {
-  const t = (itemLevel, equipLevel, syncOn, cap, syncedLevel) =>
+  const t = (itemLevel: number, equipLevel: number, syncOn: boolean, cap: number | null, syncedLevel: number | null) =>
     syncTarget({ itemLevel, equipLevel, scales: true, syncOn, cap, syncedLevel });
   assert.equal(t(430, 1, false, null, 50), 130); // equip level 1: plain level sync would leave it
   assert.equal(t(430, 1, false, null, 70), 400);
@@ -131,7 +134,7 @@ test('syncTarget: gear that scales with the level follows the level whatever its
 test('scaling gear: every real piece drops to the level item level at its own level, and none is synced at 100', () => {
   const scaling = ROWS.filter(r => r.scales);
   assert.ok(scaling.length > 200); // 260 in the current data; new field operation gear adds more
-  const target = (r, level) =>
+  const target = (r: ParsedRow, level: number) =>
     syncTarget({ itemLevel: r.ilvl, equipLevel: r.lvl, scales: true, syncOn: false, cap: null, syncedLevel: level });
   for (const r of scaling) {
     assert.equal(target(r, 100), null, r.name);
@@ -144,27 +147,27 @@ test('scaling gear: every real piece drops to the level item level at its own le
   }
   // the Wiki's artifact armor: a level 99 head at item level 690 is 678 at level 99
   const visor = ROWS.find(r => r.name === 'Asklepian Visor');
-  assert.ok(visor.scales && visor.ilvl === 690 && visor.lvl === 99);
+  assert.ok(visor?.scales && visor.ilvl === 690 && visor.lvl === 99);
   // Bozjan Earring (equip level 71, item level 430): at level 75 plain level sync leaves it, the scaling rule does not
   const bozja = ROWS.find(r => r.name === 'Bozjan Earring');
-  assert.ok(bozja.scales);
+  assert.ok(bozja?.scales);
   assert.equal(target(bozja, 75), levelSyncIlvl(75));
   assert.ok(levelSyncIlvl(75) < 430);
 });
 
 test("Menphina's Earring at level 50: synced to item level 130, its stats capped at the 130 earring caps", () => {
   const row = ROWS.find(r => r.name === "Menphina's Earring");
-  assert.ok(row.scales && row.lvl === 1 && row.ilvl === 430);
+  assert.ok(row?.scales && row.lvl === 1 && row.ilvl === 430);
   for (const job of [sge, makeJobContext('WAR'), makeJobContext('BST')]) {
     const item = poolItemFromRow(job, row);
-    const sync = { cap: null, sync: false, level: 50 };
+    const sync: Sync = { cap: null, sync: false, level: 50 };
     assert.equal(itemSyncIlvl(item, sync), 130, job.jobId);
     const c = capsFor(job, row.type, 130, row.pct, kindFactors(job, row.kind));
     const eff = effStats(job, item, sync);
     for (const s of job.stats) {
       assert.equal(eff[s] || 0, Math.min(item.stats[s] || 0, c[s]), `${job.jobId} ${s}`);
     }
-    assert.ok(eff[job.mainKey] < item.stats[job.mainKey], `${job.jobId}: main stat lowered`);
+    assert.ok((eff[job.mainKey] ?? 0) < (item.stats[job.mainKey] ?? 0), `${job.jobId}: main stat lowered`);
     assert.deepEqual(effStats(job, item, { cap: null, sync: false, level: 100 }), item.stats);
   }
 });
@@ -176,8 +179,8 @@ test('level 90, item level sync off: level 100 head pieces are capped at the ite
   // every level 100 healer head piece at item level 780 or more (each has a main stat above the 660 cap)
   const rows = browseItems(sge, { type: 'head', ilvlMin: 780, lvlMax: 100 }).filter(r => r.lvl === 100);
   assert.ok(rows.length >= 2);
-  const head = col => roundHalfUp((IL[col][660] * SLOT_PERMILLE.head) / 1000);
-  const cap = {
+  const head = (col: StatKey) => roundHalfUp(((IL[col][660] ?? 0) * SLOT_PERMILLE.head) / 1000);
+  const cap: StatMap = {
     mind: head('mind'),
     vit: roundHalfUp(head('vit') * 0.9),
     crit: head('crit'),
@@ -190,9 +193,9 @@ test('level 90, item level sync off: level 100 head pieces are capped at the ite
   for (const row of rows) {
     const item = poolItemFromRow(sge, row);
     const eff = effStats(sge, item, { cap: null, sync: false, level: 90 });
-    assert.ok(item.stats.mind > cap.mind, row.name);
+    assert.ok((item.stats.mind ?? 0) > (cap.mind ?? 0), row.name);
     for (const s of sge.stats) {
-      assert.equal(eff[s] || 0, Math.min(item.stats[s] || 0, cap[s]), `${row.name} ${s}`);
+      assert.equal(eff[s] || 0, Math.min(item.stats[s] || 0, cap[s] ?? 0), `${row.name} ${s}`);
     }
     // at level 100 the same piece is untouched
     assert.deepEqual(effStats(sge, item, { cap: null, sync: false, level: 100 }), item.stats);
@@ -211,16 +214,19 @@ for (const id of ['SGE', 'WAR', 'PLD']) {
     const job = makeJobContext(id);
     const pool = gamePool(job, WINDOW);
     assert.ok(loadoutCount(job, pool) <= 20000);
-    const levelOnly = { cap: null, sync: false, level: 90 };
+    const levelOnly: Sync = { cap: null, sync: false, level: 90 };
     assert.ok(pool.some(i => itemSyncIlvl(i, levelOnly) === 660) && pool.some(i => itemSyncIlvl(i, levelOnly) == null));
     let differs = false;
-    for (const sync of [levelOnly, { cap: 662, sync: true, level: 90 }, { cap: 664, sync: true, level: 90 }]) {
-      for (const [target, tiebreak] of [
+    const syncs: Sync[] = [levelOnly, { cap: 662, sync: true, level: 90 }, { cap: 664, sync: true, level: 90 }];
+    for (const sync of syncs) {
+      const goals: [target: DimKey, tiebreak: DimKey[]][] = [
         [job.speedKey, [job.mainKey, 'vit']],
         ['crit', ['det']],
         [job.mainKey, []],
-      ]) {
+      ];
+      for (const [target, tiebreak] of goals) {
         const r = optimize(job, pool, sync, { target, tiebreak });
+        assert.ok(r.ok);
         const want = exhaustive(job, pool, sync, { target, tiebreak });
         assert.deepEqual(
           [target, ...tiebreak].map(k => r.totals[k]),
@@ -228,6 +234,7 @@ for (const id of ['SGE', 'WAR', 'PLD']) {
           `${JSON.stringify(sync)} ${target}`,
         );
         const free = optimize(job, pool, { cap: null, sync: false, level: 100 }, { target, tiebreak });
+        assert.ok(free.ok);
         if (free.totals[target] !== r.totals[target]) {
           differs = true;
         }
@@ -244,7 +251,7 @@ for (const id of ['SGE', 'WAR', 'PLD']) {
 test('capCeiling: the best gear made for a level, at or above the highest real cap there', () => {
   assert.deepEqual([50, 55, 60, 70, 75, 80, 90, 95, 99].map(capCeiling), [135, 136, 275, 405, 406, 535, 665, 666, 678]);
   // [level, highest cap a real duty has there]
-  for (const [level, cap] of [
+  const duties: [level: number, cap: number][] = [
     [15, 5],
     [50, 135],
     [60, 240],
@@ -256,7 +263,8 @@ test('capCeiling: the best gear made for a level, at or above the highest real c
     [94, 663],
     [95, 666],
     [98, 675],
-  ]) {
+  ];
+  for (const [level, cap] of duties) {
     assert.ok(cap <= capCeiling(level), `level ${level}: cap ${cap} above ${capCeiling(level)}`);
   }
   assert.equal(capCeiling(90), 665); // Mount Rokkon and Aloalo Island, the most above the level's 660

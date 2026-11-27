@@ -15,18 +15,19 @@ import { capCeiling, levelSyncIlvl, syncTarget } from '../../../src/core/sync-ta
 const MAX_LEVEL = 100;
 
 /* The distinct [item level, equip level, scales] of the database. */
-const pieces = [
+type Piece = [itemLevel: number, equipLevel: number, scales: boolean];
+const pieces: Piece[] = [
   ...new Map(
-    ITEMS.map(row => [
+    ITEMS.map((row): [string, Piece] => [
       `${row[ROW.ilvl]}|${row[ROW.equipLevel]}|${row[ROW.scales] ? 1 : 0}`,
       [row[ROW.ilvl], row[ROW.equipLevel], Boolean(row[ROW.scales])],
     ]),
   ).values(),
 ];
-const targetOf = ([itemLevel, equipLevel, scales], syncedLevel, cap) =>
+const targetOf = ([itemLevel, equipLevel, scales]: Piece, syncedLevel: number, cap: number | null) =>
   syncTarget({ itemLevel, equipLevel, scales, syncOn: cap != null, cap, syncedLevel });
 /* The item level a piece has in the duty: its own, or the target when that is lower. */
-const effectiveOf = (piece, level, cap) => {
+const effectiveOf = (piece: Piece, level: number, cap: number | null) => {
   const target = targetOf(piece, level, cap);
   return target == null ? piece[0] : Math.min(piece[0], target);
 };
@@ -68,15 +69,14 @@ test('level sync alone never takes a piece below the level item level or above i
 });
 
 test('for a fixed level and cap a duty can have, a higher item level never ends lower (one equip level, not scaling)', () => {
-  const byEquipLevel = new Map();
+  const byEquipLevel = new Map<number, Piece[]>();
   for (const piece of pieces) {
     if (piece[2]) {
       continue;
     }
-    if (!byEquipLevel.has(piece[1])) {
-      byEquipLevel.set(piece[1], []);
-    }
-    byEquipLevel.get(piece[1]).push(piece);
+    const list = byEquipLevel.get(piece[1]) ?? [];
+    list.push(piece);
+    byEquipLevel.set(piece[1], list);
   }
   for (const [equipLevel, list] of byEquipLevel) {
     list.sort((a, b) => a[0] - b[0]);
@@ -94,7 +94,7 @@ test('for a fixed level and cap a duty can have, a higher item level never ends 
 });
 
 test('raising the cap can lower a piece: a level 94 piece of item level 663 at level 90 (the documented rule)', () => {
-  const piece = [663, 94, false];
+  const piece: Piece = [663, 94, false];
   assert.equal(effectiveOf(piece, 90, 662), 662);
   assert.equal(effectiveOf(piece, 90, 663), 660);
 });
