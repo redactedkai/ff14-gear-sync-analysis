@@ -219,8 +219,13 @@ test.describe('<gsa-set-page>', () => {
                     if (!(owns(box.right - 6, box.bottom - 6) && owns(box.left + 6, box.top + 6))) {
                       problems.push('a corner belongs to the page behind it');
                     }
-                    if ([...element.querySelectorAll('span, small, p, label')].some(each => each.scrollWidth > each.clientWidth + 1)) {
-                      problems.push('a text is cut');
+                    for (const each of element.querySelectorAll('span, small, p, label')) {
+                      // an inline element has no client width in Chromium and WebKit (nothing to cut); Firefox gives it its text's width
+                      if (each.clientWidth > 0 && each.scrollWidth > each.clientWidth + 1) {
+                        problems.push(
+                          `a text is cut: <${each.localName} class="${each.className}"> ${each.scrollWidth} in ${each.clientWidth}`,
+                        );
+                      }
                     }
                     if (element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1) {
                       problems.push('the menu scrolls');

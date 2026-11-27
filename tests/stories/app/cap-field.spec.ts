@@ -68,7 +68,10 @@ test.describe('<gsa-cap-field>', () => {
     await cap.focus();
     for (let press = 0; press < 5; press++) {
       await page.keyboard.press('ArrowUp');
-      // two frames: the step, the lowering again and the new draw have happened
+      // the page was told of the step and of the lowering again before the next press (a slow engine would step twice otherwise)
+      await expect
+        .poll(async () => JSON.parse((await component.getByTestId('events').textContent()) ?? '[]').length)
+        .toBe(1 + 2 * (press + 1));
       await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done))));
     }
     await expect(cap).toHaveValue(String(CAP_AT_LEVEL_40));

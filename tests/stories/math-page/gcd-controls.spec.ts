@@ -30,7 +30,10 @@ test.describe('<gsa-gcd-controls>', () => {
     const png = await page.screenshot({ clip: { x: box.x + box.width + 2, y: box.y, width, height: box.height } });
     return page.evaluate(async base64 => {
       const bitmap = await createImageBitmap(await (await fetch(`data:image/png;base64,${base64}`)).blob());
-      const context = new OffscreenCanvas(bitmap.width, bitmap.height).getContext('2d') as OffscreenCanvasRenderingContext2D;
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const context = canvas.getContext('2d') as CanvasRenderingContext2D;
       context.drawImage(bitmap, 0, 0);
       const { data } = context.getImageData(0, 0, bitmap.width, bitmap.height);
       let ink = 0;
