@@ -64,9 +64,8 @@ class PatchTableTest(unittest.TestCase):
             'a version with two dates': [entry(1, '7.56', 1777447634), entry(2, '7.57', 1788852416), entry(3, '7.56', 1791895156)],
         }
         for what, entries in bad.items():
-            with self.subTest(what):
-                with self.assertRaises(SchemaError):
-                    gen_patches.patch_table(entries)
+            with self.subTest(what), self.assertRaises(SchemaError):
+                gen_patches.patch_table(entries)
 
     def test_a_version_with_a_letter_is_a_patch(self):
         self.assertEqual(gen_patches.patch_table([entry(1, '2.1b', 1387238400, 'Patch 2.1b: A Realm Awoken')]), [['2.1b', '2013-12-17']])
@@ -115,12 +114,13 @@ class GenPatchesTest(unittest.TestCase):
             ],
             capture_output=True,
             text=True,
+            check=False,
         )
         self.assertEqual(run.returncode, 0, run.stderr)
         doc = json.loads(self.out.read_text(encoding='utf-8'))
         self.assertEqual(doc['source'], {'repo': 'xivapi/ffxiv-datamining-patches', 'commit': 'c' * 40, 'date': '2026-10-13T00:00:00Z'})
         self.patchlist.write_text(json.dumps([entry(1, '7.56', 'soon')]), encoding='utf-8')
-        run = subprocess.run([sys.executable, str(script), str(self.patchlist), str(self.out)], capture_output=True, text=True)
+        run = subprocess.run([sys.executable, str(script), str(self.patchlist), str(self.out)], capture_output=True, text=True, check=False)
         self.assertEqual(run.returncode, 1)
         self.assertIn('ReleaseDate', run.stderr)
 

@@ -72,7 +72,7 @@ def patch_table(entries):
 def main(patchlist, out, source: provenance.SourceArg = 'detect'):
     """source: provenance dict, None for unknown, or 'detect' to ask git about the patch list's clone."""
     source = provenance.resolve(source, Path(patchlist).parent, provenance.PATCHES_REPO)
-    with open(patchlist, encoding='utf-8') as f:
+    with Path(patchlist).open(encoding='utf-8') as f:
         entries = json.load(f)
     doc = {
         '_generated': provenance.note(source, provenance.PATCHES_REPO),

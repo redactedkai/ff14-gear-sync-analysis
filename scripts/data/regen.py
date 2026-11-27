@@ -86,7 +86,7 @@ STEPS = [
 for _label, cmd in progress.steps(STEPS, label=lambda s: s[0]):
     # stdout is held back so a progress bar stays intact, then shown: the item generator's drop report, the counts
     # that moved and any warning (the build's file size is dropped). Errors go to stderr as they happen.
-    p = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
+    p = subprocess.run(cmd, stdout=subprocess.PIPE, text=True, check=False)  # a failure is reported below, after the output
     if cmd[0] == py and p.stdout.strip():
         progress.note(p.stdout.rstrip())
     if p.returncode:

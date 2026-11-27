@@ -49,7 +49,7 @@ class GenItemsTest(unittest.TestCase):
     def test_row_shape(self):
         for r in self.rows:
             self.assertEqual(len(r), 20, r)
-            name, slot, ilvl, lvl, mask, st, unique, hq, routes, kind, meld_slots, overmeld, rarity, game_id, scales, cat, *dd = r
+            name, slot, _ilvl, _lvl, _mask, st, unique, hq, routes, kind, meld_slots, overmeld, rarity, game_id, scales, cat, *dd = r
             self.assertIsInstance(name, str)
             self.assertIn(slot, range(15))
             self.assertEqual(len(st.split(',')), len(STAT_ORDER))
@@ -92,7 +92,7 @@ class GenItemsTest(unittest.TestCase):
         """select() counts the rows each rule left out; with the kept rows they add up to the whole Item.csv. The report
         line names each rule that left something out, the LEFT_OUT categories, and the rows kept."""
         kept, _, dropped, dangling = gen_items.select(FIXTURES)
-        with open(FIXTURES / 'Item.csv', encoding='utf-8', newline='') as f:
+        with (FIXTURES / 'Item.csv').open(encoding='utf-8', newline='') as f:
             n_items = sum(1 for _ in csv.DictReader(f))
         self.assertEqual(list(dropped), list(gen_items.DROP_RULES))
         self.assertEqual(len(kept) + sum(dropped.values()), n_items)

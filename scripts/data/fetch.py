@@ -86,7 +86,7 @@ def fetch_icons(csv_dir):
 
 def git_out(*args, cwd=None):
     """A git command's output, stripped, or None when it fails."""
-    r = subprocess.run(['git', *args], cwd=cwd, capture_output=True, text=True)
+    r = subprocess.run(['git', *args], cwd=cwd, capture_output=True, text=True, check=False)
     return r.stdout.strip() if r.returncode == 0 else None
 
 

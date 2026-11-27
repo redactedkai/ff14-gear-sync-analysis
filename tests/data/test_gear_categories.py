@@ -11,6 +11,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from typing import ClassVar
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import gear_activities
@@ -33,7 +34,7 @@ class GearCategoriesTest(unittest.TestCase):
     Test Sallet HQ 8320 (a recipe result -> crafted); every other piece 8270 (dungeon). Hood and Earring are also sold
     for the Savage book, which has no way in and buys Savage gear: their routes for the Gear categories filter include Savage."""
 
-    WEAPON_SLOTS = {0, 1, 2}
+    WEAPON_SLOTS: ClassVar[set[int]] = {0, 1, 2}
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -83,7 +84,7 @@ class GearCategoriesTest(unittest.TestCase):
 
     def routes(self):
         """{name: routes as box keys} from gear_activities.py on this test's copy of the fixtures."""
-        cats, kept, ids = self.categories()
+        _cats, kept, ids = self.categories()
         kept = [(r, row) for r, row in kept if ids[r['#']] not in gear_categories.LEFT_OUT]
         keys = [a['key'] for a in load_format()['activities']]
         out, _ = gear_activities.routes(self.dir, kept, ids)

@@ -57,20 +57,20 @@ class GenGearGroupsTest(unittest.TestCase):
     def test_threshold_is_shared_over_either(self):
         # PLD wears 100 pieces, WAR wears 80 of them: 80 / 100 shared, exactly the link percent
         rest = [([j], 100) for j in self.fmt['jobs'] if j not in ('PLD', 'WAR')]
-        groups = gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 80), (['PLD'], 20)] + rest), self.fmt)
+        groups = gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 80), (['PLD'], 20), *rest]), self.fmt)
         self.assertIn(['PLD', 'WAR'], groups)
         # 79 percent is in the gap between linked and clearly apart, so the generator stops
         with self.assertRaisesRegex(SchemaError, 'not clear'):
-            gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 79), (['PLD'], 21)] + rest), self.fmt)
+            gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 79), (['PLD'], 21), *rest]), self.fmt)
         # 40 / 140 shared: apart
-        groups = gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 40), (['PLD'], 60), (['WAR'], 60)] + rest), self.fmt)
+        groups = gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 40), (['PLD'], 60), (['WAR'], 60), *rest]), self.fmt)
         self.assertIn(['PLD'], groups)
 
     def test_unclear_data_stops_the_generator(self):
         rest = [([j], 100) for j in self.fmt['jobs'] if j not in ('PLD', 'WAR')]
         # 70 shared of 130 pieces either wears (54 percent) is neither linked nor clearly apart
         with self.assertRaisesRegex(SchemaError, 'not clear'):
-            gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 70), (['PLD'], 30), (['WAR'], 30)] + rest), self.fmt)
+            gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 70), (['PLD'], 30), (['WAR'], 30), *rest]), self.fmt)
         # a job that can wear nothing: the job mask order is probably wrong
         with self.assertRaisesRegex(SchemaError, 'can wear no piece'):
             gen_gear_groups.gear_groups([self.row(0, self.fmt['jobs'])], self.fmt)

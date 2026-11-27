@@ -9,8 +9,17 @@ quote-style = "single"
 line-ending = "lf"
 
 [tool.ruff.lint]
-# pyflakes, pycodestyle errors/warnings, import order, bugbear, pyupgrade
-select = ["F", "E", "W", "I", "B", "UP"]
+# pyflakes, pycodestyle errors/warnings, import order, bugbear, pyupgrade, then: Ruff-specific, simplify, comprehensions,
+# flake8-pie, perflint, flynt, refurb, pylint (errors and warnings), pathlib, blind except, naive datetimes, pygrep hooks,
+# debugger calls, implicit string concatenation, raise and logging checks, and open() without an encoding (PLW1514, a
+# preview rule: explicit-preview-rules below keeps every other preview rule off)
+select = [
+  "F", "E", "W", "I", "B", "UP",
+  "RUF", "SIM", "C4", "PIE", "PERF", "FLY", "FURB", "PLE", "PLW", "PTH",
+  "BLE", "DTZ", "PGH", "T10", "ISC", "RSE", "LOG", "PLW1514",
+]
+preview = true
+explicit-preview-rules = true
 
 [tool.pyrefly]
 # The data scripts and their tests import their neighbours by bare name.

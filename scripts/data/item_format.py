@@ -239,7 +239,7 @@ class SchemaError(Exception):
 
 def load_format() -> ItemFormat:
     """The parsed src/core/item-format.json, typed as ItemFormat (the types are checked against the file by a test)."""
-    with open(FORMAT_PATH, encoding='utf-8') as f:
+    with FORMAT_PATH.open(encoding='utf-8') as f:
         return json.load(f)
 
 
@@ -250,7 +250,7 @@ def read_csv(path: str | Path, required: Iterable[str] = ()) -> list[Row]:
     """All rows of a datamining CSV as dicts keyed by the header row. Raises SchemaError naming the sheet and every
     column of `required` that the header lacks."""
     path = Path(path)
-    with open(path, encoding='utf-8', newline='') as f:
+    with path.open(encoding='utf-8', newline='') as f:
         reader = csv.DictReader(f)
         header = set(reader.fieldnames or ())
         missing = [c for c in dict.fromkeys(required) if c not in header]
@@ -391,9 +391,11 @@ def check_slot_percents(base_param_csv, fmt: ItemFormat):
         if r is None:
             problems.append(f'no row {st["baseParam"]} ({st["key"]})')
             continue
-        for s in fmt['slots']:
-            if r[s['baseParamColumn']] != str(s['percent']):
-                problems.append(f'{st["key"]} {s["baseParamColumn"]} = {r[s["baseParamColumn"]]}, page uses {s["percent"]}')
+        problems.extend(
+            f'{st["key"]} {s["baseParamColumn"]} = {r[s["baseParamColumn"]]}, page uses {s["percent"]}'
+            for s in fmt['slots']
+            if r[s['baseParamColumn']] != str(s['percent'])
+        )
     if problems:
         raise SchemaError(f'{Path(base_param_csv).name} slot shares differ from {FORMAT_PATH.name}: ' + '; '.join(problems))
 

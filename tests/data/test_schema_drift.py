@@ -39,7 +39,7 @@ class SchemaDriftTest(unittest.TestCase):
         self.dir = Path(self.tmp.name)
         for f in FIXTURES.glob('*.csv'):
             shutil.copy(f, self.dir / f.name)
-        write_param_grow(self.dir / 'ParamGrow.csv', range(0, 101))
+        write_param_grow(self.dir / 'ParamGrow.csv', range(101))
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -417,7 +417,9 @@ class SchemaDriftTest(unittest.TestCase):
     def test_command_line_exits_nonzero(self):
         rename_column(self.dir / 'ClassJobCategory.csv', 'SGE', 'SAGE')
         script = ROOT / 'scripts' / 'data' / 'gen_items.py'
-        p = subprocess.run([sys.executable, str(script), str(self.dir), str(self.dir / 'out.js')], capture_output=True, text=True)
+        p = subprocess.run(
+            [sys.executable, str(script), str(self.dir), str(self.dir / 'out.js')], capture_output=True, text=True, check=False
+        )
         self.assertEqual(p.returncode, 1)
         self.assertIn('SGE', p.stderr)
         self.assertNotIn('Traceback', p.stderr)

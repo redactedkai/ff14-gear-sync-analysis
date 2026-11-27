@@ -39,7 +39,10 @@ def csv_blobs(csv_dir, sheets):
     """{sheet: git blob id} of each sheets' CSV at the clone's HEAD, or None when git cannot tell (not a clone)."""
     try:
         run = subprocess.run(
-            ['git', '-C', str(csv_dir), 'ls-tree', 'HEAD', '--', *(f'{s}.csv' for s in sheets)], capture_output=True, text=True
+            ['git', '-C', str(csv_dir), 'ls-tree', 'HEAD', '--', *(f'{s}.csv' for s in sheets)],
+            capture_output=True,
+            text=True,
+            check=False,
         )
     except OSError:  # git not installed
         return None
@@ -117,7 +120,7 @@ def drift(old, new):
 def commit_subject(csv_dir):
     """The subject line of the clone's HEAD commit, or ''."""
     try:
-        run = subprocess.run(['git', '-C', str(csv_dir), 'log', '-1', '--format=%s'], capture_output=True, text=True)
+        run = subprocess.run(['git', '-C', str(csv_dir), 'log', '-1', '--format=%s'], capture_output=True, text=True, check=False)
     except OSError:
         return ''
     return run.stdout.strip() if run.returncode == 0 else ''

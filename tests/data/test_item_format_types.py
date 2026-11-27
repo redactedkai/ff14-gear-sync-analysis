@@ -42,7 +42,7 @@ def problems_of(value, expected, where):
 
 class ItemFormatTypesTest(unittest.TestCase):
     def test_the_types_match_the_file(self):
-        with open(FORMAT_PATH, encoding='utf-8') as f:
+        with FORMAT_PATH.open(encoding='utf-8') as f:
             raw = json.load(f)
         self.assertEqual(problems_of(raw, ItemFormat, 'item-format'), [])
 

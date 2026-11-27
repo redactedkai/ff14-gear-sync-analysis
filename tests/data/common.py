@@ -53,15 +53,29 @@ def run_quiet(fn, *args):
         fn(*args)
 
 
-PARAM_GROW_HEADER = (
-    '#,ExpToNext,MpModifier,BaseSpeed,LevelModifier,HuntingLogExpReward,MonsterNoteSeals,ScaledQuestXP,HpModifier,'
-    'ItemLevelSync,ProperDungeon,ProperGuildOrder,CraftingLevel,AdditionalActions,ApplyAction,QuestExpModifier'
-).split(',')
+PARAM_GROW_HEADER = [
+    '#',
+    'ExpToNext',
+    'MpModifier',
+    'BaseSpeed',
+    'LevelModifier',
+    'HuntingLogExpReward',
+    'MonsterNoteSeals',
+    'ScaledQuestXP',
+    'HpModifier',
+    'ItemLevelSync',
+    'ProperDungeon',
+    'ProperGuildOrder',
+    'CraftingLevel',
+    'AdditionalActions',
+    'ApplyAction',
+    'QuestExpModifier',
+]
 
 
 def write_param_grow(path, levels):
     """ParamGrow rows for the given levels: BaseSpeed 1000+l, LevelModifier 2000+l, ItemLevelSync 3000+l."""
-    with open(path, 'w', encoding='utf-8', newline='') as f:
+    with Path(path).open('w', encoding='utf-8', newline='') as f:
         w = csv.writer(f, lineterminator='\n')
         w.writerow(PARAM_GROW_HEADER)
         for lv in levels:
@@ -86,10 +100,10 @@ def add_shop(rows, shop_id, listings):
 
 def edit_csv(path, fn):
     """Rewrite a CSV in place: fn(rows) gets the rows as lists (header first) and changes them."""
-    with open(path, encoding='utf-8', newline='') as f:
+    with Path(path).open(encoding='utf-8', newline='') as f:
         rows = list(csv.reader(f))
     fn(rows)
-    with open(path, 'w', encoding='utf-8', newline='') as f:
+    with Path(path).open('w', encoding='utf-8', newline='') as f:
         csv.writer(f, lineterminator='\n').writerows(rows)
 
 

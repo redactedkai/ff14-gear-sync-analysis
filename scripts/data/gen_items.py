@@ -35,6 +35,7 @@ import argparse
 import json
 from collections import Counter
 from collections.abc import Mapping
+from itertools import chain, pairwise
 from pathlib import Path
 from typing import Any, NamedTuple
 
@@ -131,7 +132,7 @@ def grade_values(row, key, fmt, gate_of_item, problems):
             problems.append(f'{where} {col} = {row[col]}: no materia item with a {materia["gateColumn"]}')
         gates.append(int(level) if level and level.isdigit() else None)
     known_gates = [g for g in gates if g is not None]
-    if len(known_gates) == len(gates) and any(b < a for a, b in zip(known_gates, known_gates[1:], strict=False)):
+    if len(known_gates) == len(gates) and any(b < a for a, b in pairwise(known_gates)):
         problems.append(f'{where} gates {",".join(map(str, gates))} decrease')
     return [int(v) if v.isdigit() else v for v in values], gates
 
@@ -163,7 +164,7 @@ def overmeld_rates(grade_csv, fmt):
     n_grades, n_slots = materia['grades'], materia['overmeldSlots']
     sheet = Path(grade_csv).name
     columns = {kind: [f'{name}[{i}]' for i in range(n_slots)] for kind, name in materia['overmeldColumns'].items()}
-    rows = {r['#']: r for r in read_csv(grade_csv, ['#', *sum(columns.values(), [])])}
+    rows = {r['#']: r for r in read_csv(grade_csv, ['#', *chain.from_iterable(columns.values())])}
     missing = [str(g) for g in range(n_grades) if str(g) not in rows]
     if missing:
         raise SchemaError(f'{sheet}: no overmeld rates for grade row(s) {", ".join(missing)}')

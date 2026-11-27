@@ -77,7 +77,7 @@ class GenJobIconsTest(unittest.TestCase):
     def test_icon_number_is_62100_plus_class_job_row(self):
         # ClassJob rows from the real sheet: Paladin is row 19, Sage 40 (icons 062119 and 062140)
         rows = {'PLD': 19, 'WAR': 21, 'SGE': 40}
-        with open(self.tmp / 'ClassJob.csv', 'w', encoding='utf-8', newline='') as f:
+        with (self.tmp / 'ClassJob.csv').open('w', encoding='utf-8', newline='') as f:
             w = csv.writer(f)
             w.writerow(['#', 'Name', 'Abbreviation'])
             for k, job in enumerate(JOBS):

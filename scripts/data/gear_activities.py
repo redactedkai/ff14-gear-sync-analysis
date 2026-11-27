@@ -315,7 +315,7 @@ def listing_costs(shop, given, costs, newest, kept_ids, ilvl_of):
         else:
             resolved.append(('activity', 'Tomestones'))
             gear_given = [item for item in given if item in kept_ids]
-            retired = retired or bool(gear_given) and all(ilvl_of[item] < newest.get(code, 0) for item in gear_given)
+            retired = retired or (bool(gear_given) and all(ilvl_of[item] < newest.get(code, 0) for item in gear_given))
     return resolved, retired
 
 
@@ -426,9 +426,10 @@ class RouteFinder:
                 if RETIRED in need:
                     needs_retired = True
                     continue
+                route = need
                 if gate and need <= {'Vendor'}:  # a gil (or free) listing behind a quest or an achievement
-                    need = frozenset({'Quest' if gate == 'quest' else 'Achievement'})
-                found.add(need or frozenset({'Vendor'}))
+                    route = frozenset({'Quest' if gate == 'quest' else 'Achievement'})
+                found.add(route or frozenset({'Vendor'}))
         return frozenset(found) if found else self.no_way_in(item, needs_retired, depth)
 
     def no_way_in(self, item: int, needs_retired: bool, depth: int = 0) -> Routes:

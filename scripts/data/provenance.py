@@ -24,7 +24,7 @@ class Source(TypedDict):
 
 
 def _git(csv_dir: str | Path, *args: str) -> str | None:
-    r = subprocess.run(['git', '-C', str(csv_dir), *args], capture_output=True, text=True)
+    r = subprocess.run(['git', '-C', str(csv_dir), *args], capture_output=True, text=True, check=False)
     return r.stdout.strip() if r.returncode == 0 else None
 
 
@@ -57,7 +57,9 @@ def local_edits(csv_dir: str | Path) -> list[str] | None:
     example ' M csv/en/Item.csv'), [] when it is clean, or None when git cannot tell. The provenance names the commit
     only, so data generated from an edited clone would claim to be that commit's."""
     try:
-        r = subprocess.run(['git', '-C', str(csv_dir), 'status', '--porcelain', '--untracked-files=no'], capture_output=True, text=True)
+        r = subprocess.run(
+            ['git', '-C', str(csv_dir), 'status', '--porcelain', '--untracked-files=no'], capture_output=True, text=True, check=False
+        )
     except OSError:  # git not installed
         return None
     return [line for line in r.stdout.splitlines() if line.strip()] if r.returncode == 0 else None
@@ -111,5 +113,4 @@ def json_lines(doc, expand=(), ensure_ascii=True):
 
 def write_generated(out, js):
     """Write a generated file as UTF-8 with LF line endings on every platform (the repo stores LF)."""
-    with open(out, 'w', encoding='utf-8', newline='\n') as f:
-        f.write(js)
+    Path(out).write_text(js, encoding='utf-8', newline='\n')

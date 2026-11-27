@@ -117,11 +117,11 @@ def savage_items(csv_dir, items, gear):
     listings = []  # (given, costs) as Item.csv ids (text, as in `gear`)
     costs_of_shop, shops_selling_seed = {}, set()  # by shop row id
     for shop, _k, given, costs in shop_listings(read_csv(Path(csv_dir) / 'SpecialShop.csv', ['#', 'UseCurrencyType'])):
-        given = [str(g) for g in given]
-        costs = [str(c) for c in costs if c >= CODE_LIMIT]  # below CODE_LIMIT: currency codes
-        listings.append((given, costs))
-        costs_of_shop.setdefault(shop['#'], set()).update(c for c in costs if c not in gear)
-        if any(g in seed for g in given):
+        given_ids = [str(g) for g in given]
+        cost_ids = [str(c) for c in costs if c >= CODE_LIMIT]  # below CODE_LIMIT: currency codes
+        listings.append((given_ids, cost_ids))
+        costs_of_shop.setdefault(shop['#'], set()).update(c for c in cost_ids if c not in gear)
+        if any(g in seed for g in given_ids):
             shops_selling_seed.add(shop['#'])
     currencies = set().union(*(costs_of_shop[s] for s in shops_selling_seed))
     savage = set(seed)

@@ -59,8 +59,8 @@ class GenItemLevelTest(unittest.TestCase):
         shutil.copy(FIXTURES / 'ClassJob.csv', self.dir / 'ClassJob.csv')
         shutil.copy(FIXTURES / 'Tribe.csv', self.dir / 'Tribe.csv')
         shutil.copy(FIXTURES / 'Race.csv', self.dir / 'Race.csv')
-        write_param_grow(self.dir / 'ParamGrow.csv', range(0, 101))
-        with open(FIXTURES / 'ItemLevel.csv', encoding='utf-8', newline='') as f:
+        write_param_grow(self.dir / 'ParamGrow.csv', range(101))
+        with (FIXTURES / 'ItemLevel.csv').open(encoding='utf-8', newline='') as f:
             self.header = next(csv.reader(f))
 
     def tearDown(self):
@@ -183,10 +183,10 @@ class GenItemLevelTest(unittest.TestCase):
     def test_param_grow_top_level_follows_the_data(self):
         """The top level is the highest row with an ItemLevelSync: a level cap of 110 gives 110 levels, and rows above
         the cap with no ItemLevelSync (like the real rows 101 to 200, and row 201's 100/100) are left out."""
-        write_param_grow(self.dir / 'ParamGrow.csv', range(0, 111))
+        write_param_grow(self.dir / 'ParamGrow.csv', range(111))
         self.assertEqual(len(self.generate()[1]), 110)
-        write_param_grow(self.dir / 'ParamGrow.csv', range(0, 101))
-        with open(self.dir / 'ParamGrow.csv', 'a', encoding='utf-8', newline='') as f:
+        write_param_grow(self.dir / 'ParamGrow.csv', range(101))
+        with (self.dir / 'ParamGrow.csv').open('a', encoding='utf-8', newline='') as f:
             w = csv.writer(f, lineterminator='\n')
             for lv, speed in ((101, 0), (102, 0), (201, 100)):
                 row: dict[str, Any] = dict.fromkeys(PARAM_GROW_HEADER, '0')
@@ -197,12 +197,12 @@ class GenItemLevelTest(unittest.TestCase):
         self.assertEqual(pg[-1], [1100, 2100, 3100])
 
     def test_param_grow_missing_level_fails(self):
-        write_param_grow(self.dir / 'ParamGrow.csv', [lv for lv in range(0, 101) if lv != 57])
+        write_param_grow(self.dir / 'ParamGrow.csv', [lv for lv in range(101) if lv != 57])
         with self.assertRaisesRegex(SchemaError, r'ParamGrow.csv: level\(s\) 57 missing'):
             self.generate()
 
     def test_non_contiguous_item_level_ids_fail(self):
-        with open(self.dir / 'ItemLevel.csv', 'a', encoding='utf-8', newline='') as f:
+        with (self.dir / 'ItemLevel.csv').open('a', encoding='utf-8', newline='') as f:
             csv.writer(f, lineterminator='\n').writerow(['9'] + ['0'] * (len(self.header) - 1))
         with self.assertRaisesRegex(SchemaError, 'ItemLevel.csv ids'):
             self.generate()

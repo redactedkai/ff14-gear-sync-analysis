@@ -91,6 +91,6 @@ class PinningTest(unittest.TestCase):
             self.assertEqual(provenance.local_edits(clone / 'csv'), [' M csv/Item.csv'])
 
             # summary.json names each sheet's blob id at the commit (an untracked or missing sheet has none)
-            blob = subprocess.run(['git', '-C', str(clone), 'rev-parse', 'HEAD:csv/Item.csv'], capture_output=True, text=True)
+            blob = subprocess.run(['git', '-C', str(clone), 'rev-parse', 'HEAD:csv/Item.csv'], capture_output=True, text=True, check=False)
             self.assertEqual(summary.csv_blobs(clone / 'csv', ['Item', 'Scratch', 'Missing']), {'Item': blob.stdout.strip()})
             self.assertIsNone(summary.csv_blobs(clone / 'missing', ['Item']))

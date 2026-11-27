@@ -71,10 +71,10 @@ class FoodSchemaTest(unittest.TestCase):
 
     def edit(self, sheet, fn):
         path = self.dir / f'{sheet}.csv'
-        with open(path, encoding='utf-8', newline='') as f:
+        with path.open(encoding='utf-8', newline='') as f:
             rows = list(csv.reader(f))
         rows = fn(rows)
-        with open(path, 'w', encoding='utf-8', newline='') as f:
+        with path.open('w', encoding='utf-8', newline='') as f:
             csv.writer(f, lineterminator='\n').writerows(rows)
 
     def test_renamed_column(self):

@@ -2,6 +2,8 @@
 #   python build.py        (writes index.html beside it)
 # Rules are in SKILL.md. Replace the toy "card" UI in mock() with a reproduction of the real UI.
 
+import pathlib
+
 TITLE = 'Report title'
 TARGETS = 'prototype A and prototype B'  # where an approved change gets applied
 INTRO = (
@@ -10,8 +12,8 @@ INTRO = (
 )
 
 # Applied state of the UI so far. Later changes start from this (CURRENT), not from the original.
-CURRENT = dict(label='Total', subtitle=True, rows=True)
-ORIGINAL = dict(CURRENT, label='Totals')
+CURRENT = {'label': 'Total', 'subtitle': True, 'rows': True}
+ORIGINAL = {**CURRENT, 'label': 'Totals'}
 
 
 def variant(base, **kw):
@@ -40,21 +42,21 @@ STATUS = {}
 
 # One entry per change. b/a = before/after option dicts, bm/am = mark sets, cap_* = one caption each.
 CHANGES = [
-    dict(
-        n='1',
-        title='Rename the label',
-        size='small',
-        space='none',
-        see='The card says "Totals" while the table holds one total.',
-        why='The plural makes the reader look for a second total.',
-        fix='Say "Total".',
-        b=ORIGINAL,
-        bm={'label'},
-        a=CURRENT,
-        am={'label'},
-        cap_b='Red: the label.',
-        cap_a='Red: the same label, reworded.',
-    ),
+    {
+        'n': '1',
+        'title': 'Rename the label',
+        'size': 'small',
+        'space': 'none',
+        'see': 'The card says "Totals" while the table holds one total.',
+        'why': 'The plural makes the reader look for a second total.',
+        'fix': 'Say "Total".',
+        'b': ORIGINAL,
+        'bm': {'label'},
+        'a': CURRENT,
+        'am': {'label'},
+        'cap_b': 'Red: the label.',
+        'cap_a': 'Red: the same label, reworded.',
+    },
 ]
 
 CSS = """
@@ -138,4 +140,4 @@ html = f"""<!doctype html><meta charset=utf-8><title>{TITLE}</title><style>{CSS}
 <h2>What I would keep</h2><ul>{keep_items}</ul>
 <h2>My pick</h2><p>{PICK}</p>
 <h2>Open questions</h2><ul>{question_items}</ul>"""
-open('index.html', 'w', encoding='utf-8').write(html)
+pathlib.Path('index.html').write_text(html, encoding='utf-8')

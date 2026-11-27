@@ -73,7 +73,9 @@ def generate(work, full):
 def max_speed_is_current():
     """Whether src/data/max-speed.json's `inputs` hash matches the data and the src/core code now (a quick check; the
     table itself is not searched again)."""
-    result = subprocess.run(['node', str(MAX_SPEED_SCRIPT), '--check', str(COMMITTED / 'max-speed.json')], capture_output=True, text=True)
+    result = subprocess.run(
+        ['node', str(MAX_SPEED_SCRIPT), '--check', str(COMMITTED / 'max-speed.json')], capture_output=True, text=True, check=False
+    )
     return result.returncode == 0
 
 

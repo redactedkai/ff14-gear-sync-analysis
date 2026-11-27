@@ -5,6 +5,7 @@ Run: npm run test:py (npm run check:all runs them too)
 """
 
 import unittest
+from typing import Any, ClassVar
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
 import provenance
@@ -14,12 +15,18 @@ import summary
 class SummaryTest(unittest.TestCase):
     """summary.py: the counts of summary.json, the drift between two runs and the changelog line."""
 
-    FMT = {
+    FMT: ClassVar[dict[str, Any]] = {
         'itemRow': {'fields': ['name', 'slotCode', 'ilvl', 'routes', 'category']},
         'activities': [{'key': 'quests'}, {'key': 'crafted'}],
         'category': {'list': [{'key': 'crafted'}, {'key': 'dungeon'}]},
     }
-    REPORT = {'itemSheetRows': 10, 'dropped': {'name': 4}, 'leftOut': {}, 'dangling': {}, 'inferredPieces': {'Dungeon': 1}}
+    REPORT: ClassVar[dict[str, Any]] = {
+        'itemSheetRows': 10,
+        'dropped': {'name': 4},
+        'leftOut': {},
+        'dangling': {},
+        'inferredPieces': {'Dungeon': 1},
+    }
 
     def test_counts(self):
         # routes: bit 0 quests, bit 1 crafted, bit 2 the market board
