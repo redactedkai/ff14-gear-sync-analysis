@@ -12,16 +12,31 @@ line-ending = "lf"
 # pyflakes, pycodestyle errors/warnings, import order, bugbear, pyupgrade, then: Ruff-specific, simplify, comprehensions,
 # flake8-pie, perflint, flynt, refurb, pylint (errors and warnings), pathlib, blind except, naive datetimes, pygrep hooks,
 # debugger calls, implicit string concatenation, raise and logging checks, and open() without an encoding (PLW1514, a
-# preview rule: explicit-preview-rules below keeps every other preview rule off)
+# preview rule: explicit-preview-rules below keeps every other preview rule off), and the annotation checks (ANN) for the
+# pipeline in scripts/data only (per-file-ignores below)
 select = [
   "F", "E", "W", "I", "B", "UP",
   "RUF", "SIM", "C4", "PIE", "PERF", "FLY", "FURB", "PLE", "PLW", "PTH",
-  "BLE", "DTZ", "PGH", "T10", "ISC", "RSE", "LOG", "PLW1514",
+  "BLE", "DTZ", "PGH", "T10", "ISC", "RSE", "LOG", "PLW1514", "ANN",
 ]
 preview = true
 explicit-preview-rules = true
+
+[tool.ruff.lint.per-file-ignores]
+# Pyrefly's strict preset checks the annotations of the tests; ANN would only repeat -> None on every test method.
+"tests/**" = ["ANN"]
+"scripts/validate/**" = ["ANN"]  # the validation scripts against other tools are run by hand, outside the pipeline
+".claude/**" = ["ANN"]  # tooling for the agents, not the data pipeline
 
 [tool.pyrefly]
 # The data scripts and their tests import their neighbours by bare name.
 search-path = ["scripts/data", "tests/data"]
 python-version = "3.11"
+# Every parameter, return and empty container is typed (scripts/data and tests/data are annotated).
+preset = "strict"
+
+[[tool.pyrefly.sub-config]]
+matches = "tests/**"
+[tool.pyrefly.sub-config.errors]
+# @override is typing.override (Python 3.12) and the floor is 3.11: setUp, tearDown and the like cannot carry it.
+missing-override-decorator = false
