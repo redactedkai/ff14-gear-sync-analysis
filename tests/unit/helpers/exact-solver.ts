@@ -8,9 +8,17 @@ import { slotInfo } from '../../../src/core/items.ts';
 import { weaponDamage } from '../../../src/core/damage-defense.ts';
 import { effStats, itemSyncIlvl } from '../../../src/core/piece.ts';
 import { meldVectors } from './exhaustive.js';
+import type { DimKey, JobContext, PoolItem, StatKey, Sync } from '../../../src/core/types.ts';
+
+/* One way to fill a slot type: its stat list in rank order, the slots it leaves empty, and `empty` for leaving the type itself empty. */
+interface Choice {
+  vector: number[];
+  blocks: readonly string[];
+  empty?: boolean;
+}
 
 /* Compares two equal-length number lists like words in a dictionary: negative, 0 or positive. */
-export const lexCompare = (a, b) => {
+export const lexCompare = (a: readonly number[], b: readonly number[]): number => {
   for (let i = 0; i < a.length; i++) {
     if (a[i] !== b[i]) {
       return a[i] - b[i];
@@ -18,26 +26,33 @@ export const lexCompare = (a, b) => {
   }
   return 0;
 };
-const addLists = (a, b) => a.map((x, i) => x + b[i]);
+const addLists = (a: readonly number[], b: readonly number[]): number[] => a.map((x, i) => x + b[i]);
 
 /* The best ranked totals of `pool` for `job` under `sync`, goal `goal` and tiebreaks `tiebreak` (stat keys), with or without
    melds: {ranked: the keys in rank order (weapon damage 'wd' first when the job has it), total: their numbers}, or null
    when no legal set exists. */
-export function solveExact(job, pool, sync, goal, tiebreak, melds) {
-  const keys = [goal, ...tiebreak];
-  const ranked = job.damageKey ? ['wd', ...keys] : keys;
+export function solveExact(
+  job: JobContext,
+  pool: readonly PoolItem[],
+  sync: Sync,
+  goal: StatKey,
+  tiebreak: readonly StatKey[],
+  melds: boolean,
+): { ranked: DimKey[]; total: number[] } | null {
+  const keys: StatKey[] = [goal, ...tiebreak];
+  const ranked: DimKey[] = job.damageKey ? ['wd', ...keys] : keys;
   const zero = ranked.map(() => 0);
 
   // an item's best stat list in rank order (with melds: the best of every stone placement)
-  const vectorsOf = item => {
+  const vectorsOf = (item: PoolItem): number[][] => {
     const wd = job.damageKey ? weaponDamage(job, item, itemSyncIlvl(item, sync)) : 0;
-    const asRanked = stats => ranked.map(k => (k === 'wd' ? wd : stats[k] || 0));
+    const asRanked = (stats: Partial<Record<DimKey, number>>): number[] => ranked.map(k => (k === 'wd' ? wd : stats[k] || 0));
     return melds ? meldVectors(job, item, sync, keys).map(asRanked) : [asRanked(effStats(job, item, sync))];
   };
-  const bestVector = item => vectorsOf(item).reduce((a, b) => (lexCompare(a, b) >= 0 ? a : b));
+  const bestVector = (item: PoolItem): number[] => vectorsOf(item).reduce((a, b) => (lexCompare(a, b) >= 0 ? a : b));
 
   // per slot type: the choices that can matter, each with the slots it blocks
-  const choicesByType = new Map();
+  const choicesByType = new Map<string, Choice[]>();
   for (const type of SLOT_TYPES) {
     const items = pool.filter(item => item.type === type);
     if (!items.length) {
@@ -46,7 +61,7 @@ export function solveExact(job, pool, sync, goal, tiebreak, melds) {
     if (type === 'ring') {
       // the best pair: a pair is worth the sum of its two rings, so it is among the top few rings (the same ring twice only with two copies)
       const scored = items.map(item => ({ item, vector: bestVector(item) })).sort((a, b) => lexCompare(b.vector, a.vector));
-      let pair = null;
+      let pair: number[] | null = null;
       for (let x = 0; x < scored.length; x++) {
         for (let y = x; y < scored.length; y++) {
           if (x === y && (scored[x].item.copies || 1) < 2) {
@@ -65,12 +80,13 @@ export function solveExact(job, pool, sync, goal, tiebreak, melds) {
       continue;
     }
     // items blocking the same slots are interchangeable: keep the best of each kind
-    const bestByBlocks = new Map();
+    const bestByBlocks = new Map<string, Choice>();
     for (const item of items) {
       const blocks = slotInfo(job, item).blocks;
       const vector = bestVector(item);
       const kind = blocks.join();
-      if (!bestByBlocks.has(kind) || lexCompare(vector, bestByBlocks.get(kind).vector) > 0) {
+      const kept = bestByBlocks.get(kind);
+      if (!kept || lexCompare(vector, kept.vector) > 0) {
         bestByBlocks.set(kind, { vector, blocks });
       }
     }
@@ -80,9 +96,9 @@ export function solveExact(job, pool, sync, goal, tiebreak, melds) {
   // every combination of one choice per slot type; a slot that a piece blocks is empty, any other slot is filled
   const types = [...choicesByType.keys()];
   const blockable = new Set([...choicesByType.values()].flat().flatMap(choice => choice.blocks));
-  let best = null;
-  const picked = [];
-  const search = depth => {
+  let best: number[] | null = null;
+  const picked: Choice[] = [];
+  const search = (depth: number): void => {
     if (depth === types.length) {
       const blocked = new Set(picked.flatMap(choice => choice.blocks));
       if (picked.some((choice, i) => Boolean(choice.empty) !== blocked.has(types[i]))) {
@@ -94,7 +110,7 @@ export function solveExact(job, pool, sync, goal, tiebreak, melds) {
       }
       return;
     }
-    const choices = [...choicesByType.get(types[depth])];
+    const choices = [...(choicesByType.get(types[depth]) ?? [])];
     if (blockable.has(types[depth])) {
       choices.push({ vector: zero, blocks: [], empty: true });
     }

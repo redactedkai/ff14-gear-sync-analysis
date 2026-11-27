@@ -4,6 +4,7 @@ import { RAW_SUBSTAT_IDX, ROW } from '../../../src/core/constants.ts';
 import { IL, ITEMS } from '../../../src/core/tables.ts';
 import { offhandParts, predictRaw, statLine } from '../../../src/core/formulas.ts';
 import { rowStats } from '../../../src/core/items.ts';
+import type { ItemRow } from '../../../src/core/types.ts';
 
 /* The item level range the stat model's patterns were measured on (substat shares, stat factors, the Direct Hit line).
    The database starts lower (item level 1, gen_items.py MIN_ILVL) for gear worn in low-level duties; below this its
@@ -21,7 +22,7 @@ const ACCURACY_BANDS = Object.freeze([
 ]);
 
 /* The {name, hq, rarity} of a database row, as predictRaw takes it. */
-export function rowItem(row) {
+export function rowItem(row: ItemRow): { name: string; hq: boolean; rarity: number } {
   return { name: row[ROW.name], hq: row[ROW.hq] === 1, rarity: row[ROW.rarity] };
 }
 
@@ -77,7 +78,7 @@ export function wikiChecks() {
   return WIKI475.map(({ label, type, published, share }) => {
     // the slot's share of Critical Hit's budget (statLine's first step); the off-hand is the two-handed value minus
     // the one-handed value (offhandParts)
-    const full = pct => statLine(IL.crit[475], pct).value;
+    const full = (pct: number) => statLine(IL.crit[475], pct).value;
     const computed = type === 'offhand' ? offhandParts(full).value : full(share);
     return { label, type, published, share, computed, match: computed === published };
   });

@@ -46,47 +46,51 @@ export const WRONG = [
   'ring',
 ];
 
+/* One step of a path into a value: an object's key or an array's index. */
+type Step = string | number;
+
+/* A value that holds others (an object or an array). */
+type Container = Record<Step, unknown>;
+const isContainer = (value: unknown): value is Container => value !== null && typeof value === 'object';
+
 /* A deep copy through JSON (undefined becomes null). */
-export const clone = value => {
-  const text = JSON.stringify(value);
-  return text === undefined ? null : JSON.parse(text);
-};
+export const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value) ?? 'null');
 
 /* Every path (list of keys and indexes) to a value inside `value`. */
-function pathsIn(value, at = []) {
+function pathsIn(value: unknown, at: Step[] = []): Step[][] {
   const own = at.length ? [at] : [];
-  if (value === null || typeof value !== 'object') {
+  if (!isContainer(value)) {
     return own;
   }
-  return [...own, ...Object.keys(value).flatMap(key => pathsIn(value[key], [...at, Array.isArray(value) ? Number(key) : key]))];
+  return [...own, ...Object.entries(value).flatMap(([key, child]) => pathsIn(child, [...at, Array.isArray(value) ? Number(key) : key]))];
 }
 
 /* A damaged copy of `good`: `count` random fields each deleted, replaced by a value found elsewhere in it, or replaced by
    one of WRONG. `rand` is a seeded number generator (rng). */
-export function damage(good, count, rand) {
-  const int = n => Math.floor(rand() * n);
-  const pick = list => list[int(list.length)];
+export function damage<T>(good: T, count: number, rand: () => number): T {
+  const int = (n: number): number => Math.floor(rand() * n);
+  const pick = <Item>(list: readonly Item[]): Item => list[int(list.length)];
   const copy = clone(good);
   const all = pathsIn(copy);
-  const valueAt = path => path.reduce((value, key) => (value == null ? value : value[key]), copy);
+  const valueAt = (path: Step[]): unknown => path.reduce((value: unknown, key) => (isContainer(value) ? value[key] : value), copy);
   for (let n = 0; n < count; n++) {
     const path = pick(all);
-    let parent = copy;
+    let parent: unknown = copy;
     for (const key of path.slice(0, -1)) {
-      if (parent == null || typeof parent !== 'object') {
+      if (!isContainer(parent)) {
         parent = null;
         break;
       }
       parent = parent[key];
     }
-    if (parent == null || typeof parent !== 'object') {
+    if (!isContainer(parent)) {
       continue;
     }
-    const last = path.at(-1);
+    const last = path[path.length - 1];
     const how = int(6);
     if (how === 0) {
       if (Array.isArray(parent)) {
-        parent.splice(last, 1);
+        parent.splice(Number(last), 1);
       } else {
         delete parent[last];
       }

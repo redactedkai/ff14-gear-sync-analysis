@@ -56,7 +56,7 @@ export const DOMAINS = {
     ],
     tests: [
       'tests/sweep/**',
-      'tests/unit/helpers/exhaustive.js',
+      'tests/unit/helpers/exhaustive.{js,d.ts}',
       'tests/unit/helpers/{exact-solver,pins,recipe-sets,tier-reference}.ts',
       'tests/unit/helpers/optimizer-view-sets.json',
     ],

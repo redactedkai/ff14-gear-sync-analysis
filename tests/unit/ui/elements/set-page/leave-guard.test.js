@@ -5,7 +5,6 @@ import assert from 'node:assert/strict';
 import { runningLeaveText } from '../../../../../src/ui/elements/set-page/leave-guard.ts';
 import { FILL_CANCELLED_TEXT, RESULT_DISCARDED_TEXT } from '../../../../../src/ui/views/set-page.ts';
 import { overlays } from '../../../../../src/ui/overlays.ts';
-import { inProcessSolver } from '../../../../../src/ui/solver.ts';
 import { unsettledKind } from '../../../../../src/ui/store/app-state.ts';
 import { bind, heldSolver, tick, twoToFill } from '../../../helpers/set-page-bind.ts';
 import { SAGE_IDS } from '../../../helpers/sheet-fixtures.ts';
@@ -45,8 +44,8 @@ test('leaving: a draft asks Apply or Discard, Keep stays; a running Auto-fill as
   // a waiting result: Leave drops it
   sheets.openSet('g_1');
   const answered = session.fill.fill();
-  const { request, resolve } = solver.held.shift();
-  resolve(await inProcessSolver().request(request));
+  const { answer } = solver.held.shift();
+  await answer();
   await answered;
   assert.ok(session.suggestion);
   sheets.openManager();
@@ -70,8 +69,8 @@ test('unsettled: the store asks the open set page, with no side effect, for a dr
   await tick();
   const answered = session.fill.fill();
   assert.equal(sheets.hasUnsettled(), true); // running
-  const { request, resolve } = solver.held.shift();
-  resolve(await inProcessSolver().request(request));
+  const { answer } = solver.held.shift();
+  await answer();
   await answered;
   assert.ok(session.suggestion);
   assert.equal(sheets.hasUnsettled(), true); // waiting result

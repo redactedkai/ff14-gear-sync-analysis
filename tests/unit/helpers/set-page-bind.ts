@@ -9,10 +9,14 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { fillButtonView, noPiecesFlag, setPageViews } from '../../../src/ui/views/set-page.ts';
 import { fakeStorage, sageSet, sheetOf } from './sheet-fixtures.ts';
 import { fakeFrames, stubElement } from './frames.ts';
+import type { ElementCall } from './frames.ts';
 import { createStores } from './stores.ts';
+import type { Solver, SolverKind, SolverReply, SolverRequest } from '../../../src/ui/solver.ts';
+import type { SessionHost } from '../../../src/ui/elements/set-page/session-types.ts';
+import type { SavedGearSet } from '../../../src/ui/sheets/saved-types.ts';
 
 /* The elements of the page the logic reaches by selector, by the name `calls` records them under; the frame callback runs at once in Node */
-const PAGE_ELEMENTS = {
+const PAGE_ELEMENTS: Record<string, string> = {
   '#sh-cancel': 'cancel',
   '#sh-apply': 'apply',
   '#sh-discard': 'discard',
@@ -27,56 +31,83 @@ const HANDS = 4;
 const FEET = 6;
 
 /* The page's thread solver without its wait for a painted frame (Node paints nothing). */
-export function pageThreadSolver() {
+export function pageThreadSolver(): Solver {
   const inner = inProcessSolver();
   return { blocksPage: false, request: request => inner.request(request), cancel: () => false };
 }
+
+/* A request that heldSolver holds: the request, `answer()` (sends the page thread's own reply to it) and `reject` (the
+   rejection of its reply that Cancel sends). */
+export interface HeldRequest {
+  request: SolverRequest;
+  answer: () => Promise<void>;
+  reject: (error: Error) => void;
+}
+
+/* What heldSolver returns: a Solver with the requests it holds and the `[kind, key]` of each cancel. */
+export interface HeldSolver extends Solver {
+  held: HeldRequest[];
+  cancelled: [SolverKind, string | number | undefined][];
+}
+
 /* A solver whose solves wait until the test answers them; Gear to search requests answer at once. */
-export function heldSolver() {
+export function heldSolver(): HeldSolver {
   const inner = inProcessSolver();
-  const held = [];
-  const cancelled = [];
+  const held: HeldRequest[] = [];
+  const cancelled: HeldSolver['cancelled'] = [];
   return {
     held,
     cancelled,
     blocksPage: false,
-    request(request) {
+    request<Result = unknown>(request: SolverRequest): Promise<SolverReply<Result>> {
       if (request.kind !== 'solve') {
-        return inner.request(request);
+        return inner.request<Result>(request);
       }
-      return new Promise((resolve, reject) => held.push({ request, resolve, reject }));
+      return new Promise((resolve, reject) =>
+        held.push({ request, answer: async () => resolve(await inner.request<Result>(request)), reject }),
+      );
     },
     cancel(kind, key) {
       cancelled.push([kind, key]);
-      for (const h of held.splice(0)) {
-        h.reject(Object.assign(new Error('cancelled'), { cancelled: true }));
+      for (const heldRequest of held.splice(0)) {
+        heldRequest.reject(Object.assign(new Error('cancelled'), { cancelled: true }));
       }
       return true;
     },
   };
 }
 
+/* The element stand-in a bound session serves (SessionHost, with `isConnected` and `dialogOpen` the test can set). */
+export interface FakeHost extends SessionHost {
+  isConnected: boolean;
+  dialogOpen: boolean;
+}
+
 /* The Sage set `gearSet` saved in a sheet (made with `sheetOptions`: sheetOf's level, sync), its page open, and the session over it.
    Returns {session, host (the element's stand-in: `isConnected` false is a page left), store, sheets, storage, solver, calls (what the page's elements recorded, as [name, method, argument]), view() (the
    page's view now), mealMenu() (its Food menu), fillButton() (the Auto-fill button)}. */
-export function bind(gearSet = sageSet(), solver = pageThreadSolver(), sheetOptions = {}) {
+export function bind(
+  gearSet: SavedGearSet = sageSet(),
+  solver: Solver = pageThreadSolver(),
+  sheetOptions: Parameters<typeof sheetOf>[2] = {},
+) {
   const storage = fakeStorage();
   saveSheet(sheetOf('SGE', [gearSet], sheetOptions), storage);
   const { store, sheets } = createStores(undefined, { storage });
   sheets.openSheet('s_1');
   sheets.openSet(gearSet.id);
-  const calls = [];
+  const calls: ElementCall[] = [];
   const elements = Object.fromEntries(Object.entries(PAGE_ELEMENTS).map(([selector, name]) => [selector, stubElement(calls, name)]));
-  const host = {
+  const host: FakeHost = {
     isConnected: true,
     dialogOpen: false,
     requestUpdate() {},
-    afterDraw: callback => {
+    afterDraw: (callback: () => void) => {
       if (host.isConnected) {
         callback();
       }
     },
-    query: selector => elements[selector] ?? null,
+    query: (selector: string) => elements[selector] ?? null,
   };
   const session = new PageSession({ store, sheets, solver, maxReal: 795 }, gearSet.id, host);
   session.start();
@@ -104,47 +135,68 @@ export function bind(gearSet = sageSet(), solver = pageThreadSolver(), sheetOpti
 export function twoToFill() {
   let set = sageSet({ pinned: { pieces: [0, 1, 2, 3, 5, 7, 8, 9, 10, 11], meal: false } });
   for (const row of [HANDS, FEET]) {
-    set = placePiece(SGE, set, row, null).gearSet;
+    const placed = placePiece(SGE, set, row, null);
+    if (!placed.ok) {
+      throw new Error(`row ${row} was not emptied`);
+    }
+    set = placed.gearSet;
   }
   return set;
 }
 
+/* What refusingSolver returns: a Solver and the kinds of request made so far. */
+export interface RefusingSolver extends Solver {
+  started: SolverKind[];
+}
+
 /* The page's thread solver with `failing` kinds of request refused, as a crashed or broken worker does; `blocksPage`
    and `started` (the kinds requested so far) let a test watch the paint wait. */
-export function refusingSolver(failing, { blocksPage = false } = {}) {
+export function refusingSolver(failing: SolverKind[], { blocksPage = false } = {}): RefusingSolver {
   const inner = inProcessSolver();
-  const started = [];
+  const started: SolverKind[] = [];
   return {
     blocksPage,
     started,
-    request(request) {
+    request<Result = unknown>(request: SolverRequest): Promise<SolverReply<Result>> {
       started.push(request.kind);
       if (failing.includes(request.kind)) {
         return Promise.reject(new Error('worker crashed.'));
       }
-      return inner.request(request);
+      return inner.request<Result>(request);
     },
     cancel: () => false,
   };
 }
-export const tick = () => new Promise(resolve => setTimeout(resolve));
+export const tick = (): Promise<void> => new Promise(resolve => setTimeout(resolve));
+
+/* A request that lateSolver holds: the request, and `answer()`, which sends the page thread's own reply to it. */
+export interface LateRequest {
+  request: SolverRequest;
+  answer: () => Promise<void>;
+}
+
+/* What lateSolver returns: a Solver with the requests it holds and the `[kind, key]` of each cancel. */
+export interface LateSolver extends Solver {
+  held: LateRequest[];
+  cancelled: [SolverKind, string | number | undefined][];
+}
 
 /* A solver whose replies the test sends, any time and in any order (a worker's reply already on its way when Cancel is
    pressed still arrives). `kinds` are the request kinds it holds; the others are answered at once. held[i].answer()
    replies to held request i with the page thread's own answer. cancel() only records: it does not reject what is held. */
-export function lateSolver(kinds = ['solve']) {
+export function lateSolver(kinds: SolverKind[] = ['solve']): LateSolver {
   const inner = inProcessSolver();
-  const held = [];
-  const cancelled = [];
+  const held: LateRequest[] = [];
+  const cancelled: LateSolver['cancelled'] = [];
   return {
     held,
     cancelled,
     blocksPage: false,
-    request(request) {
+    request<Result = unknown>(request: SolverRequest): Promise<SolverReply<Result>> {
       if (!kinds.includes(request.kind)) {
-        return inner.request(request);
+        return inner.request<Result>(request);
       }
-      return new Promise(resolve => held.push({ request, answer: async () => resolve(await inner.request(request)) }));
+      return new Promise(resolve => held.push({ request, answer: async () => resolve(await inner.request<Result>(request)) }));
     },
     cancel(kind, key) {
       cancelled.push([kind, key]);

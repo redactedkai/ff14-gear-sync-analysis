@@ -21,5 +21,12 @@
   },
   "include": ["src/**/*.ts", "tests/**/*.ts", "scripts/**/*.ts"],
   // xg_sync_test.ts runs inside xivgear's own checkout against their types, so it is left out; the rest is build output
-  "exclude": ["**/node_modules/**", "scripts/validate/xivgear/xg_sync_test.ts", "scripts/validate/out/**", "scripts/perf/out/**", "tests/stories/out/**", "tests/e2e/out/**"]
+  "exclude": [
+    "**/node_modules/**",
+    "scripts/validate/xivgear/xg_sync_test.ts",
+    "scripts/validate/out/**",
+    "scripts/perf/out/**",
+    "tests/stories/out/**",
+    "tests/e2e/out/**"
+  ]
 }

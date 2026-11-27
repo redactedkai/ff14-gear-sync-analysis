@@ -8,8 +8,15 @@ const COLOR_NAMES =
 const COLOR_PROPERTIES =
   /^(color|background|background-color|border(-[a-z]+)*|outline(-[a-z]+)*|box-shadow|text-shadow|fill|stroke|caret-color|accent-color|text-decoration(-color)?|column-rule(-color)?|scrollbar-color)$/;
 
+/** One declaration found in CSS text: its selector (the nested ones joined by the walk), property and value. */
+export interface CssDeclaration {
+  selector: string;
+  property: string;
+  value: string;
+}
+
 /** The text of the `{ ... }` block opened at index `open` of `css`, and the index after its closing brace. */
-function block(css, open) {
+function block(css: string, open: number): { body: string; end: number } {
   let depth = 0;
   for (let i = open; i < css.length; i++) {
     if (css[i] === '{') {
@@ -25,9 +32,9 @@ function block(css, open) {
 /** Every declaration in `css` (comments removed) as `{ selector, property, value }`, with the `:root` token blocks of the theme
  * (the light values, the system-dark block under `@media (prefers-color-scheme: dark)` and `:root[data-theme="dark"]`)
  * left out: they are where the colors are defined. Nested at-rules (@media, @supports, @keyframes) are walked into. */
-function declarationsOutsideTokens(css) {
-  const out = [];
-  const walk = (text, inside) => {
+function declarationsOutsideTokens(css: string): CssDeclaration[] {
+  const out: CssDeclaration[] = [];
+  const walk = (text: string, inside: string): void => {
     let at = 0;
     while (at < text.length) {
       const open = text.indexOf('{', at);
@@ -63,7 +70,7 @@ function declarationsOutsideTokens(css) {
 /** The declarations of `css` that hard-code a color: `[{ selector, property, value }]`, empty when every color goes through a
  * `var(--token)`. A color inside an at-rule's condition (`@supports (color: color-mix(in srgb, red 50%, blue))`) is a feature
  * test, not a declaration, and is not reported. Strings (`content: "red"`) are ignored. */
-export function findLiteralColors(css) {
+export function findLiteralColors(css: string): CssDeclaration[] {
   return declarationsOutsideTokens(css).filter(({ property, value }) => {
     const bare = value.replace(/"[^"]*"|'[^']*'/g, '').replace(/var\(--[\w-]+\)/g, '');
     if (COLOR_FUNCTION.test(bare)) {

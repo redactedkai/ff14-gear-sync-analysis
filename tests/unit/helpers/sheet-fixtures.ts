@@ -4,11 +4,15 @@
    from the code under test. */
 import { poolItemById } from '../../../src/core/items.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
+import type { SlotType, StatKey } from '../../../src/core/types.ts';
+import type { GearPins, SavedFillSettings, SavedGearSet, SavedRow, SavedSheet, SavedStone } from '../../../src/ui/sheets/saved-types.ts';
+
+export { fakeStorage, quotaError } from './fakes.ts';
 
 /* Real game ids. Sage: Rainbow Cap, Robe, Slops, Archaeoskin Gloves and Shoes of Healing, Mythrite Earrings, Rainbow
    Ribbon, Mythrite Bangle, Agate Ring (all crafted, item level 115). Warrior: Ironworks Magitek Axe and the Demon
    armor of Fending, Ironworks accessories (item level 120). */
-export const SAGE_IDS = {
+export const SAGE_IDS: Record<Exclude<SlotType, 'weapon' | 'offhand'>, number> = {
   head: 10880,
   body: 10887,
   hands: 10894,
@@ -19,7 +23,7 @@ export const SAGE_IDS = {
   wrist: 11042,
   ring: 11054,
 };
-export const WAR_IDS = {
+export const WAR_IDS: Record<Exclude<SlotType, 'offhand'>, number> = {
   weapon: 8641,
   head: 9901,
   body: 9902,
@@ -33,17 +37,29 @@ export const WAR_IDS = {
 };
 
 /* A saved row: a piece, with stones `stones` ([] for none). */
-export const piece = (slot, gameId, stones = []) => ({ slot, gameId, stones });
+export const piece = (slot: SlotType, gameId: number, stones: SavedStone[] = []): SavedRow => ({ slot, gameId, stones });
 
 /* Three Critical Hit IV stones: the head's Critical Hit is 20 under a cap of 28, so they add 8 and cut 4. */
-export const THREE_CRIT_IV = [
+export const THREE_CRIT_IV: SavedStone[] = [
   { stat: 'crit', grade: 4 },
   { stat: 'crit', grade: 4 },
   { stat: 'crit', grade: 4 },
 ];
 
 /* The 12 saved rows of a Sage set (weapon and off-hand empty, the head with THREE_CRIT_IV), then `meal`. */
-export function sageSet({ id = 'g_1', name = 'Set 1', meal = null, pinned = { pieces: [], meal: false }, fillSettings = null } = {}) {
+export function sageSet({
+  id = 'g_1',
+  name = 'Set 1',
+  meal = null,
+  pinned = { pieces: [], meal: false },
+  fillSettings = null,
+}: {
+  id?: string;
+  name?: string;
+  meal?: string | null;
+  pinned?: GearPins;
+  fillSettings?: SavedFillSettings | null;
+} = {}): SavedGearSet {
   const i = SAGE_IDS;
   return {
     id,
@@ -72,7 +88,7 @@ export function sageSet({ id = 'g_1', name = 'Set 1', meal = null, pinned = { pi
 }
 
 /* The 12 saved rows of a Warrior set; the off-hand row holds the axe again, which a two-handed job does not count. */
-export function warSet({ id = 'g_w', name = 'Tank 1' } = {}) {
+export function warSet({ id = 'g_w', name = 'Tank 1' }: { id?: string; name?: string } = {}): SavedGearSet {
   const i = WAR_IDS;
   return {
     id,
@@ -102,10 +118,16 @@ export function warSet({ id = 'g_w', name = 'Tank 1' } = {}) {
 
 /* A saved sheet around `sets`. */
 export function sheetOf(
-  job,
-  sets,
-  { id = 's_1', name = `${job} sheet`, level = 100, sync = { on: true, cap: 123 }, description = '' } = {},
-) {
+  job: string,
+  sets: SavedGearSet[],
+  {
+    id = 's_1',
+    name = `${job} sheet`,
+    level = 100,
+    sync = { on: true, cap: 123 },
+    description = '',
+  }: { id?: string; name?: string; level?: number; sync?: { on: boolean; cap: number }; description?: string } = {},
+): SavedSheet {
   return {
     v: 1,
     id,
@@ -123,44 +145,23 @@ export function sheetOf(
 
 /* The gear points of the rows `pieces` of `jobId` straight from the item data (unsynced, no materia), per stat key, for
    the rows that hold a piece and whose slot the job uses. */
-export function rawGear(jobId, pieces) {
+export function rawGear(jobId: string, pieces: readonly SavedRow[]): Partial<Record<StatKey, number>> {
   const job = makeJobContext(jobId);
-  const sum = Object.fromEntries(job.stats.map(s => [s, 0]));
+  const sum: Partial<Record<StatKey, number>> = Object.fromEntries(job.stats.map(s => [s, 0]));
   for (const p of pieces) {
     if (p.gameId == null || !job.activeSlotTypes.includes(p.slot)) {
       continue;
     }
     const item = poolItemById(job, p.gameId);
+    if (!item) {
+      throw new Error(`no item with game id ${p.gameId}`);
+    }
     for (const s of job.stats) {
-      sum[s] += item.stats[s] || 0;
+      sum[s] = (sum[s] ?? 0) + (item.stats[s] ?? 0);
     }
   }
   return sum;
 }
-
-/* A Storage stand-in (localStorage's methods over a Map). `failWith`: an error every setItem throws (a full storage:
-   quotaError()). */
-export function fakeStorage({ failWith = null } = {}) {
-  const data = new Map();
-  return {
-    data,
-    failWith,
-    get length() {
-      return data.size;
-    },
-    key: i => [...data.keys()][i] ?? null,
-    getItem: k => (data.has(k) ? data.get(k) : null),
-    setItem(k, v) {
-      if (this.failWith) {
-        throw this.failWith;
-      }
-      data.set(k, String(v));
-    },
-    removeItem: k => data.delete(k),
-  };
-}
-/* The error a full browser storage throws. */
-export const quotaError = () => Object.assign(new Error('full'), { name: 'QuotaExceededError', code: 22 });
 
 /* A White Mage weapon: the Ironworks Magitek Cane (item level 120), which no other healer can wear. */
 export const WHM_CANE = 8645;
