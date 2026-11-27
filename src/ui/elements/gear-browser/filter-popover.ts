@@ -29,6 +29,10 @@ export interface FilterPopoverOptions {
      label, `name` (its `aria-label`). */
   labelId?: () => string;
   name?: string;
+  /* `fixed`: the panel is placed against the window, so it adds nothing to the page's scrollable width (WebKit on Linux counts the
+     panel's width from its unplaced box, which sideways-scrolls a 960 px page for a panel wider than the room right of the button).
+     Not given: against the page (`absolute`), or the window inside a layer. */
+  strategy?: 'fixed';
   /* The window's line the panel must stay under (px from the window's top; the page's pinned headers end there), read at each placement;
      none: the window's top. */
   viewTop?: () => number;
@@ -47,7 +51,7 @@ function parentLayerOf(element: Element): string | null {
 /* Returns the Zag popover controller and the overlay bridge of one menu element; the element draws `data-zag-part` "trigger",
    "positioner" and "content" and calls `bridge.sync()` after each draw and `bridge.release()` when it leaves the page. */
 export function createFilterPopover(options: FilterPopoverOptions) {
-  const { element, triggerId, contentId, placement, labelId, name, viewTop } = options;
+  const { element, triggerId, contentId, placement, labelId, name, viewTop, strategy } = options;
   const zag = new ZagController(element, {
     name: 'popover',
     machine: popover.machine,
@@ -59,7 +63,7 @@ export function createFilterPopover(options: FilterPopoverOptions) {
       positioning: {
         placement,
         gutter: PANEL_GAP_PX,
-        strategy: parentLayerOf(element) ? ('fixed' as const) : ('absolute' as const),
+        strategy: strategy ?? (parentLayerOf(element) ? ('fixed' as const) : ('absolute' as const)),
         ...(parentLayerOf(element) ? { listeners: NESTED_LAYER_LISTENERS } : {}),
         // the window under the pinned parts of the page: the panel flips and is no taller than the room there
         ...(viewTop ? { boundary: () => windowBelow(viewTop()) } : {}),

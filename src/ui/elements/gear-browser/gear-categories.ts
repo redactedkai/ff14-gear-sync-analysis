@@ -57,6 +57,7 @@ export class GsaGearCategories extends LitElement {
       contentId: () => `${this.idPrefix}-from-menu`,
       labelId: () => `${this.idPrefix}-from-label`,
       placement: 'bottom-end',
+      strategy: 'fixed',
     });
   }
 
