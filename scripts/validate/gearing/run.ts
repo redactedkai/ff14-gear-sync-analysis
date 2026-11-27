@@ -1,10 +1,10 @@
 /* Check our synced stats against ffxiv-gearing's, every piece, job and sync setting (roadmap A5).
 
 ffxiv-gearing (github.com/Asvel/ffxiv-gearing) runs its own code in its own page; our core is bundled from
-scripts/validate/gearing/ours.js and injected into that page, so both tools compute each stat side by side. For every
+scripts/validate/gearing/ours.ts and injected into that page, so both tools compute each stat side by side. For every
 job, every database piece it can wear, and every sync setting ffxiv-gearing offers (each job level 50 to 100 up to the
 job's cap, "level only" and each duty item level it lists), each stat is compared and every difference is tagged with
-the known cause it matches (ours.js). Pass: no difference tagged 'unexplained' or 'target'.
+the known cause it matches (ours.ts). Pass: no difference tagged 'unexplained' or 'target'.
 
   --site local  their page built from the pinned clone (fetch.py), served from data/ffxiv-gearing/dist (default)
   --site live   their published page, https://asvel.github.io/ffxiv-gearing/ (one page load per job)
@@ -12,7 +12,7 @@ the known cause it matches (ours.js). Pass: no difference tagged 'unexplained' o
 Output: scripts/validate/out/gearing-<site>.json (counts per job and setting, examples of each tag, every unexplained
 difference) and a summary on stdout. With both files present, a live run also reports whether the two agree.
 
-Run: python scripts/validate/gearing/fetch.py (once), then node scripts/validate/gearing/run.mjs [--site live] [--jobs SGE,PLD]
+Run: python scripts/validate/gearing/fetch.py (once), then node scripts/validate/gearing/run.ts [--site live] [--jobs SGE,PLD]
 */
 
 import * as esbuild from 'esbuild';
@@ -27,7 +27,7 @@ import ITEM_FORMAT from '../../../src/core/item-format.json' with { type: 'json'
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const CLONE = join(ROOT, 'data', 'ffxiv-gearing');
 const OUT = join(ROOT, 'scripts', 'validate', 'out');
-const BUNDLE = join(OUT, 'gearing-ours.js');
+const BUNDLE = join(OUT, 'gearing-ours.ts');
 const LIVE_URL = 'https://asvel.github.io/ffxiv-gearing/';
 const DATA_VERSION = '7.57'; // the data version the pinned commit carries (fetch.py COMMIT); the live page must show it too
 const JOBS = ITEM_FORMAT.jobs; // the 23 combat jobs, in the shared format's order
@@ -51,7 +51,7 @@ const MIME = {
 async function bundle() {
   mkdirSync(OUT, { recursive: true });
   await esbuild.build({
-    entryPoints: [join(ROOT, 'scripts', 'validate', 'gearing', 'ours.js')],
+    entryPoints: [join(ROOT, 'scripts', 'validate', 'gearing', 'ours.ts')],
     bundle: true,
     format: 'iife',
     target: 'es2020',

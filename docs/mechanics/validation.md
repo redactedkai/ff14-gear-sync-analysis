@@ -522,5 +522,5 @@ Notes:
 | Unit tests named above | `tests/unit/core/formulas.model-accuracy.test.ts`, `core/formulas.test.ts`, `core/formulas.caps-at-123.test.ts`, `core/formulas.sync-clamp.test.ts`, `core/formulas.sync-cap-order.test.ts`, `core/sync-target.test.ts`, `core/speed.test.ts`, `core/optimizer/index.test.js`, `core/optimizer/index.exhaustive.test.js`, `core/optimizer/index.speed-limits.test.js`, `core/formulas.stat-factor.test.ts`, `ui/views/*.test.js`, `core/items.test.ts`, `core/item-format.test.ts`, `core/tables.provenance.test.ts`, `ui/state.test.ts` |
 | Generator tests | `tests/data/test_*.py` |
 | Smoke test | `tests/e2e/smoke.ts` |
-| Check against ffxiv-gearing (section 9) | `scripts/validate/gearing/` (`fetch.py` clones and builds it, `run.mjs --site local\|live` compares, `ours.js` is this project's side) |
-| Check against xivgear (section 10) | `scripts/validate/xivgear/` (`fetch.py` clones it and installs its dependencies, `run.py` compares, `xg_sync_test.ts` runs in its test runner, `ours.js` is this project's side and the corrections) |
+| Check against ffxiv-gearing (section 9) | `scripts/validate/gearing/` (`fetch.py` clones and builds it, `run.ts --site local\|live` compares, `ours.ts` is this project's side) |
+| Check against xivgear (section 10) | `scripts/validate/xivgear/` (`fetch.py` clones it and installs its dependencies, `run.py` compares, `xg_sync_test.ts` runs in its test runner, `ours.ts` is this project's side and the corrections) |

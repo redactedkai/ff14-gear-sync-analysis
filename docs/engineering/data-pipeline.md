@@ -772,7 +772,7 @@ Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its f
 | `core/constants.ts` | its name and role profile in `JOB_INFO`; its row in `JOB_ROWS` (the picker's order); the lists in note 2 |
 | `core/job-context.ts` | nothing for a job like the others; `maxLevel` covers limited jobs (Beastmaster) and any other |
 | `ui/` (state, store, views, `index.html`) | nothing for a job like the others; Beastmaster made the level inputs, restore and the optimizer pool follow `maxLevel` |
-| `scripts/validate/gearing/run.mjs`, `scripts/validate/xivgear/run.py` | nothing: both read the job list from `item-format.json` |
+| `scripts/validate/gearing/run.ts`, `scripts/validate/xivgear/run.py` | nothing: both read the job list from `item-format.json` |
 | `tests/data/fixtures/ClassJob.csv`, `ClassJobCategory.csv` | the job's real rows and column |
 | `tests/data/common.py`, `tests/data/test_gen_item_level.py` | `ALL_JOBS_MASK` (all jobs' bits); the job count in the job modifier test |
 | `tests/unit/core/formulas.stat-factor.test.ts` and others | the all-jobs mask ($2^{n} - 1$); tests for a new rule (Beastmaster: level cap, shield, its own gear) |

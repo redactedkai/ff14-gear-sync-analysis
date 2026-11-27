@@ -1,10 +1,10 @@
 """Check our synced stats against xivgear's, every piece, job and sync setting.
 
 xivgear (github.com/xiv-gear-planner/gear-planner) runs its own TypeScript core under its own test runner in the clone
-fetch.py made; our core is bundled from scripts/validate/xivgear/ours.js and loaded into that process, so both tools
+fetch.py made; our core is bundled from scripts/validate/xivgear/ours.ts and loaded into that process, so both tools
 compute each stat side by side (xg_sync_test.ts). For every job, every piece both tools have, and the 139 sync settings
 of settings.json (the duty syncs the ffxiv-gearing check uses), each stat is compared and every difference is tagged
-with the known cause it matches (ours.js). Pass: no difference tagged 'unexplained' or 'target'.
+with the known cause it matches (ours.ts). Pass: no difference tagged 'unexplained' or 'target'.
 
 Their item data comes from their data API (data.xivgear.app), cached per URL in data/xivgear-cache: the first run
 fetches, later runs are offline. Delete the cache to re-read the API.
@@ -34,7 +34,7 @@ OUT = ROOT / 'scripts' / 'validate' / 'out'
 BUNDLE = OUT / 'xivgear-ours.cjs'
 TEST = CORE / 'src' / 'test' / 'zz_gear_sync_analysis_test.ts'
 JOBS = json.loads((ROOT / 'src' / 'core' / 'item-format.json').read_text(encoding='utf-8'))['jobs']  # the 23 combat jobs
-# X1 (level sync item level) and X2 (level-scaling gear) are corrected on their side before comparing (ours.js)
+# X1 (level sync item level) and X2 (level-scaling gear) are corrected on their side before comparing (ours.ts)
 PASS_TAGS = {'X3', 'D1', 'D2'}
 
 
@@ -44,7 +44,7 @@ def bundle():
         "platform: 'node', target: 'node18', outfile: process.argv[2], logLevel: 'warning'}))"
     )
     OUT.mkdir(parents=True, exist_ok=True)
-    subprocess.run(['node', '-e', script, str(HERE / 'ours.js'), str(BUNDLE)], cwd=ROOT, check=True)
+    subprocess.run(['node', '-e', script, str(HERE / 'ours.ts'), str(BUNDLE)], cwd=ROOT, check=True)
 
 
 def main():
