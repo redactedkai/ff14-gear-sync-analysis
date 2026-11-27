@@ -8,16 +8,18 @@ import { check, expect, poll } from '../../lib/expect.ts';
 import { afterFrames, setJob, setNumber, showMath, showTab, waitReady, waitSaved } from '../../lib/nav.ts';
 import { setUpShared } from '../../lib/setup.ts';
 import { pickOption } from '../../lib/select.ts';
+import type { Page } from 'playwright';
 
 /** The window the later steps expect after a step that resized it. */
 const DEFAULT_WINDOW = { width: 1000, height: 900 };
 
 /** The words the Sync chip says for IL Sync on or off at `level` and item level `cap`. */
-const chipWords = (level, cap) => `${SYNC_CHIP_TEXT.level(level)}${SYNC_CHIP_TEXT.separator}${SYNC_CHIP_TEXT.itemLevel(cap)}`;
+const chipWords = (level: number | string, cap: number | string) =>
+  `${SYNC_CHIP_TEXT.level(level)}${SYNC_CHIP_TEXT.separator}${SYNC_CHIP_TEXT.itemLevel(cap)}`;
 
 /** Stat Allocation and Substat tiers each have their own job in the bar's Job box; GCD Scaling has no Job box; neither job touches
  * the Gear browser's, and a reload keeps both. (Substat tiers' level being its job's level cap is `checkTiers`' and `state.tiers-job`'s.) */
-export async function checkMathJobs(pg) {
+export async function checkMathJobs(pg: Page) {
   await pg.setViewportSize(DEFAULT_WINDOW);
   const jobName = () => pg.locator('#m-job-name').innerText();
   await showMath(pg, 'piece');
@@ -61,7 +63,7 @@ export async function checkMathJobs(pg) {
  * level change moves it; the weapon's inferred level sync target carries a gold star over the chip. The chip's other states (none at
  * the level cap, "Enter IL" in red, the cap lowered) are `sync-explainer.chips`'s, the cap's rule `cap-follow` and
  * `job-sync-panel.level-sync-cap`'s. */
-export async function checkSyncChip(pg) {
+export async function checkSyncChip(pg: Page) {
   await pg.setViewportSize(DEFAULT_WINDOW);
   await showMath(pg, 'piece');
   // the shared setup carried over: level 50, IL Sync on, item level 123
@@ -111,7 +113,7 @@ export async function checkSyncChip(pg) {
  * in the label line with the range and "only", the sentence as the box's name for a screen reader, the chip red), an empty box too,
  * and the stored level stays as it was; a good level clears it (and is stored as typed); leaving the popover drops the text. The
  * other bad texts and the box's rules are `level-cap.level-text`'s and `tests/stories/app/level-field.spec.ts`'s. */
-export async function checkLevelBox(pg) {
+export async function checkLevelBox(pg: Page) {
   await pg.setViewportSize(DEFAULT_WINDOW);
   await showMath(pg, 'piece');
   const storedLevel = () => pg.evaluate(() => window.gsaDebug.app.level);
@@ -155,13 +157,19 @@ export async function checkLevelBox(pg) {
 /** On the real page, the Job box of Substat tiers and its Level box, and the Gear browser strip's Job, Level and Item level boxes, are as
  * high as the Job box of Stat Allocation: 16 px and 1.5 rem, at normal and larger text. (Stat Allocation's own boxes, the three layouts
  * of the controls row with their rules and gaps, and the sub-tabs keeping their places are `math-bar.spec.ts`'s.) */
-export async function checkMathBarBoxes(pg) {
+export async function checkMathBarBoxes(pg: Page) {
   await pg.setViewportSize({ width: 1280, height: 900 });
   await showMath(pg, 'piece');
-  const heights = selectors =>
+  const heights = (selectors: string[]) =>
     pg.evaluate(
       selectorList =>
-        selectorList.map(selector => [selector, Math.round(document.querySelector(selector).getBoundingClientRect().height * 10) / 10]),
+        selectorList.map((selector): [string, number] => {
+          const element = document.querySelector(selector);
+          if (!element) {
+            throw new Error(`no ${selector}`);
+          }
+          return [selector, Math.round(element.getBoundingClientRect().height * 10) / 10];
+        }),
       selectors,
     );
   for (const zoom of ['100%', '125%']) {

@@ -3,17 +3,18 @@
 import { check, expect } from '../../lib/expect.ts';
 import { openPieceMenus, setNumber, showMath, tableRows } from '../../lib/nav.ts';
 import { pickOption } from '../../lib/select.ts';
+import type { Page } from 'playwright';
 
 /** Opens Piece stats' "Stat budget analysis, step by step" if it is closed. */
-async function openSteps(pg) {
-  if (!(await pg.locator('#p-steps').evaluate(d => d.open))) {
+async function openSteps(pg: Page) {
+  if (!(await pg.locator('#p-steps').evaluate(details => details instanceof HTMLDetailsElement && details.open))) {
     await pg.click('#p-steps > summary');
   }
 }
 
 /** The sync help popover dims the whole page with a backdrop. The tab bar and the bar's own Job box are dimmed like the rest
  * (the backdrop is what is under their pixels), and their own border and background do not change. */
-export async function checkHelpDimsPage(pg) {
+export async function checkHelpDimsPage(pg: Page) {
   await showMath(pg, 'piece');
   const read = () =>
     pg.evaluate(() => {
@@ -21,10 +22,13 @@ export async function checkHelpDimsPage(pg) {
       return Object.fromEntries(
         Object.entries(parts).map(([name, selector]) => {
           const element = document.querySelector(selector);
+          if (!element) {
+            throw new Error(`no ${selector}`);
+          }
           const box = element.getBoundingClientRect();
           const style = getComputedStyle(element);
           const topmost = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-          return [name, { border: style.borderColor, background: style.backgroundColor, topmost: topmost.className }];
+          return [name, { border: style.borderColor, background: style.backgroundColor, topmost: topmost?.className ?? null }];
         }),
       );
     });
@@ -48,7 +52,7 @@ export async function checkHelpDimsPage(pg) {
 
 /** SGE, ilvl 130 head, Spell Speed / Piety = the ranked stats of a real item level 130 healer head piece, on the real page: the
  * four rows, the head's Mind at the cap, the explainer and the chart. */
-export async function checkPieceLab(pg) {
+export async function checkPieceLab(pg: Page) {
   await showMath(pg, 'piece');
   await pickOption(pg, '#p-slot', 'head');
   await openPieceMenus(pg);

@@ -4,6 +4,7 @@ import { NARROW, shot } from '../../lib/constants.ts';
 import { check, checkNoBadText, expect } from '../../lib/expect.ts';
 import { hasHScroll, setCap, setJob, setNumber, showMath } from '../../lib/nav.ts';
 import { setUpShared } from '../../lib/setup.ts';
+import type { Page } from 'playwright';
 
 // How the math works, Substat tiers. Sage at level 100 (SUB 420, MAIN 440): Spell Speed 624 is in AkhMorning's 2.47 s tier, which
 // starts at 613 on the panel (gear speed 193; validation.md section 5).
@@ -13,7 +14,7 @@ import { setUpShared } from '../../lib/setup.ts';
  * level cap), Stat Allocation's IL Sync with no item level says nothing here, and no bad text or sideways scroll at NARROW. The rules
  * (a value held to its base and most, the level kept until the job or level changes, the typed texts "60.7" and "1e1", the "?" note,
  * Paladin's Tenacity columns) are `views/tiers`, `number-field` and `tiers-view.spec.ts`'s. */
-export async function checkTiers(pg) {
+export async function checkTiers(pg: Page) {
   await pg.setViewportSize(NARROW);
   await showMath(pg, 'tiers');
   await setJob(pg, 'SGE');
@@ -51,7 +52,7 @@ export async function checkTiers(pg) {
  * stay off the tab, the base speed 341 at level 50 is the first step, and a typed speed 753 is the 2.10 s GCD in the middle row.
  * The boxes' rules (held to the range, settled after typing, a row or a bar clicked, a haste's marks) are `views/gcd`,
  * `gcd-view.spec.ts` and `gcd-controls.spec.ts`'s. */
-export async function checkGcdTab(pg) {
+export async function checkGcdTab(pg: Page) {
   await showMath(pg, 'gcd');
   await expect(pg.locator('#p-slot')).toBeHidden();
   await expect(pg.locator('#p-range')).toBeHidden();
