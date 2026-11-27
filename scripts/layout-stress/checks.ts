@@ -1,5 +1,6 @@
 /* The checks of one window: open the page, visit every view of a screen, measure it, and judge the measures by the rules
    (rules.ts). A finding is {rule, severity, detail, where, view}; the runner adds the screen, setup, window and browser. */
+import type { Browser, Page } from 'playwright';
 import {
   findBoxRowProblems,
   findOutside,
@@ -16,12 +17,21 @@ import { judgeMathBar } from './math-rules.ts';
 import { measureDialog, measureFocusRing, measureMenu, measureView } from './probe.ts';
 import { openPage, settle } from './session.ts';
 import { probeConfig } from './targets.ts';
+import type { Finding, FixtureOpen, FixtureSetup, Probe, Screen, Setup, View } from './types.ts';
+
+/* The findings collector of rules.ts makeFindings. */
+type Findings = ReturnType<typeof makeFindings>;
+
+/* The first line of an error's message (anything thrown that is not an Error gives its text). */
+export function firstLine(error: unknown): string {
+  return String(error instanceof Error ? error.message : error).split('\n')[0] ?? '';
+}
 
 /* The most Tab stops a focus walk visits in one view. */
 const MAX_FOCUS_STOPS = 70;
 
 /* Scrolls a set page so its pinned header is at the top of the window: the worst case for the rows under it. */
-export async function pinHeader(page, selector = '.shead') {
+export async function pinHeader(page: Page, selector = '.shead'): Promise<void> {
   await page.evaluate(header => {
     const element = document.querySelector(header);
     if (element) {
@@ -32,7 +42,7 @@ export async function pinHeader(page, selector = '.shead') {
 }
 
 /* Reaches `view` on `page` and measures it (with the widest numbers typed in when `widest`: the stress build). Returns the probe (rules.ts shape). Waits for the page to be still. */
-export async function reachAndMeasure(page, view, open, widest = false) {
+export async function reachAndMeasure(page: Page, view: View, open: FixtureOpen, widest = false): Promise<Probe> {
   await view.reach(page, open);
   if (widest && view.widest) {
     await view.widest(page);
@@ -45,7 +55,7 @@ export async function reachAndMeasure(page, view, open, widest = false) {
 }
 
 /* Measures `view` again where the page is (after a resize), pinned again when the view is. */
-export async function measureAgain(page, view) {
+export async function measureAgain(page: Page, view: View): Promise<Probe> {
   if (view.pinned) {
     await pinHeader(page);
   }
@@ -54,7 +64,7 @@ export async function measureAgain(page, view) {
 
 /* The findings of the rules that look at one probe: the page, each scope, the labels and the rows under a pinned header.
    `where` names the view. Returns a list of {rule, severity, detail, where}. */
-export function judgeProbe(probe, where) {
+export function judgeProbe(probe: Probe, where: string): Finding[] {
   const found = makeFindings();
   if (probe.hscroll) {
     found.add('no-sideways-scroll', `the page is wider than the window (${probe.width} px)`, where);
@@ -79,6 +89,7 @@ export function judgeProbe(probe, where) {
         'control-in-container',
         `${outside.length} control(s) past their box: ${outside
           .slice(0, 3)
+
           .map(item => `${item.id} in ${item.container} by ${item.by}px`)
           .join(', ')}`,
         `${where}/${name}`,
@@ -124,11 +135,11 @@ export function judgeProbe(probe, where) {
 }
 
 /* The scopes of `view` that must keep their layout when something opens or its content changes: its `stable` ones. */
-const stableScopes = view => view.stable ?? [];
+const stableScopes = (view: View): string[] => view.stable ?? [];
 
 /* Opens and measures each menu of `view`, then shuts it (Escape, then a click on the page's title if it stayed after a moment). A popup
    (`menu.popup`) is judged as a warning only (the page can scroll to it). Opening a menu must not move the view's stable scopes. */
-async function checkMenus(page, view, probe, found) {
+async function checkMenus(page: Page, view: View, probe: Probe, found: Findings): Promise<void> {
   for (const menu of view.menus ?? []) {
     const where = `${view.id}/${menu.id}`;
     try {
@@ -156,16 +167,16 @@ async function checkMenus(page, view, probe, found) {
       await hideOr(page, menu.selector, () => page.mouse.click(2, 2));
       await settle(page);
     } catch (error) {
-      found.add('check-completed', `${menu.id}: ${error.message.split('\n')[0]}`, where);
+      found.add('check-completed', `${menu.id}: ${firstLine(error)}`, where);
     }
   }
 }
 
 /* Puts the view through each of its `states` (content the layout must not depend on: [{id, apply(page)}]): each state's
    findings that the base state did not have are the state's, and the stable scopes must lay out as in the base state. */
-async function checkStates(page, view, baseProbe, found) {
+async function checkStates(page: Page, view: View, baseProbe: Probe, found: Findings): Promise<void> {
   const reported = new Set(judgeProbe(baseProbe, view.id).map(item => `${item.rule}|${item.detail}`));
-  for (const state of view.states) {
+  for (const state of view.states ?? []) {
     await state.apply(page);
     await settle(page);
     const probe = await page.evaluate(measureView, probeConfig(view));
@@ -183,7 +194,7 @@ async function checkStates(page, view, baseProbe, found) {
 
 /* Scrolls the page down and checks that the sticky bar `view.pinnedBar` is at the top of the window with its controls in the
    same places. A page too short to scroll is not checked. */
-async function checkPinnedBar(page, view, baseProbe, found) {
+async function checkPinnedBar(page: Page, view: View, baseProbe: Probe, found: Findings): Promise<void> {
   const scrollable = await page.evaluate(() => document.documentElement.scrollHeight > innerHeight + 200);
   if (!scrollable) {
     return;
@@ -191,8 +202,8 @@ async function checkPinnedBar(page, view, baseProbe, found) {
   await page.evaluate(() => scrollTo(0, 500));
   await settle(page);
   const top = await page.evaluate(
-    selector => Math.round(document.querySelector(selector).getBoundingClientRect().top * 10) / 10,
-    view.pinnedBar,
+    selector => Math.round((document.querySelector(selector)?.getBoundingClientRect().top ?? 0) * 10) / 10,
+    view.pinnedBar ?? '',
   );
   const probe = await page.evaluate(measureView, probeConfig(view));
   if (Math.abs(top) > 0.5) {
@@ -213,12 +224,12 @@ const HIDE_AFTER_ESCAPE_MS = 1500;
 
 /* Waits for the first element of `selector` to hide; runs `fallback` (an async function) when it is still shown after
    HIDE_AFTER_ESCAPE_MS. */
-async function hideOr(page, selector, fallback) {
+async function hideOr(page: Page, selector: string, fallback: () => unknown): Promise<void> {
   await page.locator(selector).first().waitFor({ state: 'hidden', timeout: HIDE_AFTER_ESCAPE_MS }).catch(fallback);
 }
 
 /* Shuts the open dialog (Escape; its Cancel button when Escape did not), so the next view's clicks reach the page. */
-async function closeDialog(page, selector) {
+async function closeDialog(page: Page, selector: string): Promise<void> {
   await page.keyboard.press('Escape');
   await hideOr(page, selector, () => page.click(`${selector} .dlgbtns button:not(.primary)`));
   await page.waitForSelector(selector, { state: 'detached', timeout: 5000 });
@@ -226,11 +237,13 @@ async function closeDialog(page, selector) {
 
 /* Presses Tab through the view from its start and checks each focus ring (a ring that a box around the control cuts off,
    or the window's edge). One finding per control. */
-async function checkFocusRings(page, view, found) {
-  const reported = new Set();
+async function checkFocusRings(page: Page, view: View, found: Findings): Promise<void> {
+  const reported = new Set<string>();
   await page.evaluate(() => {
     scrollTo(0, 0);
-    document.activeElement?.blur();
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
   });
   for (let stop = 0; stop < MAX_FOCUS_STOPS; stop++) {
     await page.keyboard.press('Tab');
@@ -246,14 +259,18 @@ async function checkFocusRings(page, view, found) {
 }
 
 /* Picks every job in turn through the view's job menu: a finding the view's own probe did not have (`baseProbe`) is a finding of that job, and the job's scope must lay out as it did for the first. */
-async function checkJobs(page, view, jobIds, baseProbe, found) {
+async function checkJobs(page: Page, view: View, jobIds: readonly string[], baseProbe: Probe, found: Findings): Promise<void> {
+  const jobs = view.jobs;
+  if (!jobs) {
+    return;
+  }
   // what the view already reported for its first job is not reported again for every job
   const reported = new Set(judgeProbe(baseProbe, view.id).map(item => `${item.rule}|${item.detail}`));
   const jobRules = ['no-clipped-cells', 'label-one-line', 'no-overlap', 'control-in-container', 'boxes-equal-height'];
-  let first = null;
+  let first: { jobId: string; probe: Probe } | null = null;
   for (const jobId of jobIds) {
-    await view.jobs.open(page);
-    await view.jobs.pick(page, jobId);
+    await jobs.open(page);
+    await jobs.pick(page, jobId);
     await settle(page);
     const probe = await page.evaluate(measureView, probeConfig(view));
     for (const item of judgeProbe(probe, `${view.id} (${jobId})`)) {
@@ -264,7 +281,7 @@ async function checkJobs(page, view, jobIds, baseProbe, found) {
     if (!first) {
       first = { jobId, probe };
     } else {
-      const differences = compareProbes(first.probe, probe, [view.jobs.scope]);
+      const differences = compareProbes(first.probe, probe, [jobs.scope]);
       if (differences.length) {
         found.add('content-independent', `${jobId} against ${first.jobId}: ${differences.slice(0, 3).join('; ')}`, `${view.id}/jobs`);
       }
@@ -286,13 +303,28 @@ export async function checkScreenInWindow({
   setup,
   walkFocus = true,
   widest = false,
-}) {
+}: {
+  browser: Browser;
+  file: string;
+  screen: Screen;
+  fixtures: Record<string, FixtureSetup>;
+  jobIds: readonly string[];
+  width: number;
+  height: number;
+  setup: Setup;
+  walkFocus?: boolean;
+  widest?: boolean;
+}): Promise<{ findings: Finding[]; probes: Record<string, Probe>; fonts: boolean }> {
   const found = makeFindings();
-  const probes = {};
+  const probes: Record<string, Probe> = {};
   let fontsLoaded = false;
   const byFixture = Map.groupBy(screen.views, view => view.fixture);
   for (const [fixtureName, views] of byFixture) {
-    const { fixture, failWrites } = fixtures[fixtureName];
+    const chosen = fixtures[fixtureName];
+    if (!chosen) {
+      throw new Error(`unknown fixture ${fixtureName}`);
+    }
+    const { fixture, failWrites } = chosen;
     const { context, page, errors, fonts } = await openPage(browser, { file, width, height, fixture, failWrites, setup });
     fontsLoaded = fonts;
     try {
@@ -326,7 +358,7 @@ export async function checkScreenInWindow({
             await closeDialog(page, view.dialog);
           }
         } catch (error) {
-          found.add('check-completed', `${view.id}: ${error.message.split('\n')[0]}`, view.id);
+          found.add('check-completed', `${view.id}: ${firstLine(error)}`, view.id);
         }
       }
       if (screen.crossCheck && fixtureName === screen.crossFixture) {
@@ -335,7 +367,7 @@ export async function checkScreenInWindow({
             found.add(item.rule, item.detail, item.where);
           }
         } catch (error) {
-          found.add('check-completed', `${screen.id} cross check: ${error.message.split('\n')[0]}`, screen.id);
+          found.add('check-completed', `${screen.id} cross check: ${firstLine(error)}`, screen.id);
         }
       }
     } finally {
@@ -347,7 +379,7 @@ export async function checkScreenInWindow({
   }
   // a view and its twin hold other content: the scopes that must not depend on content lay out the same
   for (const view of screen.views.filter(item => item.twin)) {
-    const twin = probes[view.twin];
+    const twin = probes[view.twin ?? ''];
     const own = probes[view.id];
     if (!twin || !own) {
       continue;

@@ -10,17 +10,38 @@
    A change point is the first width of the new layout, so the layout at `at - 1` is the old one. Where both ends of a step
    (or of a half of it) have the same key, the part between is taken as flat: a change that goes away again inside one
    step is missed. */
-export async function findChangePoints({ from, to, step, measure, keyOf, describe }) {
-  const cache = new Map();
-  const at = async width => {
-    if (!cache.has(width)) {
-      cache.set(width, await measure(width));
+export async function findChangePoints<Result>({
+  from,
+  to,
+  step,
+  measure,
+  keyOf,
+  describe,
+}: {
+  from: number;
+  to: number;
+  step: number;
+  measure: (width: number) => Promise<Result>;
+  keyOf: (result: Result) => string;
+  describe: (before: Result, after: Result) => string[];
+}): Promise<{
+  changes: { at: number; changes: string[] }[];
+  series: { width: number; result: Result }[];
+  measured: number;
+}> {
+  const cache = new Map<number, Result>();
+  const at = async (width: number): Promise<Result> => {
+    const known = cache.get(width);
+    if (known !== undefined) {
+      return known;
     }
-    return cache.get(width);
+    const result = await measure(width);
+    cache.set(width, result);
+    return result;
   };
 
   // the coarse pass
-  const coarse = [];
+  const coarse: number[] = [];
   for (let width = from; width < to; width += step) {
     coarse.push(width);
   }
@@ -30,8 +51,8 @@ export async function findChangePoints({ from, to, step, measure, keyOf, describ
   }
 
   // every step whose ends differ is split in halves until two neighbours differ by 1 px
-  const changes = [];
-  const refine = async (low, high) => {
+  const changes: { at: number; changes: string[] }[] = [];
+  const refine = async (low: number, high: number): Promise<void> => {
     const lowResult = await at(low);
     const highResult = await at(high);
     if (keyOf(lowResult) === keyOf(highResult)) {

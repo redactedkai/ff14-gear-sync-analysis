@@ -172,7 +172,7 @@ export const DOMAINS: Record<string, Domain> = {
   },
   tooling: {
     title: 'The build, the test runners and the repo code rules',
-    src: ['scripts/build/**', 'scripts/layout-stress/**', 'scripts/{check-deps,py,test,visual}.mjs'],
+    src: ['scripts/build/**', 'scripts/layout-stress/**', 'scripts/{check-deps,py,test,visual}.ts'],
     tests: [
       'tests/domains.ts',
       // the component stories: the gallery, the fixtures, the config and the stories of every element (one folder per domain)

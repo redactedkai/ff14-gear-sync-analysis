@@ -2,9 +2,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { barLayout, expectedBarLayout, judgeMathBar, mathBarState } from '../../../../scripts/layout-stress/math-rules.ts';
+import type { MathBar } from '../../../../scripts/layout-stress/types.ts';
 
 /* A bar measure of Stat Allocation at the page's own text size (16 px), one row, with its two dividers in place. */
-function oneRowBar(overrides = {}) {
+function oneRowBar(overrides: Partial<MathBar> = {}): MathBar {
   return {
     rem: 16,
     rowWidth: 1280,
@@ -12,7 +13,20 @@ function oneRowBar(overrides = {}) {
     extraGap: 0,
     overflowX: 'clip',
     sections: [
-      { id: 'job', kind: 'job', hasRule: false, top: 100 },
+      {
+        id: 'job',
+        kind: 'job',
+        hasRule: false,
+        wideGap: false,
+        left: 0,
+        top: 100,
+        height: 40,
+        startsLine: true,
+        ruleLeft: 0,
+        ruleHeight: 0,
+        ruleClear: false,
+        ruleShown: false,
+      },
       {
         id: 'piece',
         kind: 'divided',
@@ -114,7 +128,7 @@ test('in the narrow layout (Job | Piece, then Sync | Item level) the Item level 
     tops: { job: 100, piecesec: 100, piece: 100, sync: 100, il: 180 },
     sections: [sections[0], sections[1], { ...sections[2], top: 180 }],
   });
-  assert.match(judgeMathBar(alone).find(item => item.rule === 'bar-dividers').detail, /no section before it/);
+  assert.match(judgeMathBar(alone).find(item => item.rule === 'bar-dividers')?.detail ?? '', /no section before it/);
 });
 
 test('a box of the bar must be as high as the Job box, and a slider track under 100 px is a finding', () => {

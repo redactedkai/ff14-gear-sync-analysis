@@ -24,9 +24,11 @@
    the screen is listed in the report and not visited, for a screen whose markup is being changed). The three math sub-tabs
    are screens of their own (math-piece, math-gcd, math-tiers). */
 
+import type { Page } from 'playwright';
 import { measureView } from './probe.ts';
 import { compareProbes } from './rules.ts';
 import { settle } from './session.ts';
+import type { Finding, FixtureOpen, Menu, Probe, ProbeConfig, Screen, View, ViewMeasure } from './types.ts';
 
 /* The controls every screen measures, the boxes that share rows, and the text that must fit. */
 const CONTROLS = 'button, a[href], input:not([type="hidden"]), select, textarea, [role="button"][tabindex]';
@@ -47,29 +49,29 @@ const LABELS = [
 const COMMON = { controls: CONTROLS, boxes: BOXES, clipped: CLIPPED, labels: LABELS };
 
 /* The scope every view has: the title and the tab bar. */
-const TOP = { top: '.pagetop' };
+const TOP: Record<string, string> = { top: '.pagetop' };
 
 /* Waits for the page to have started and then for `selector`. */
-async function ready(page, selector) {
+async function ready(page: Page, selector: string): Promise<void> {
   await page.waitForSelector('html[data-started]', { timeout: 20000 });
   await page.waitForSelector('#boot', { state: 'detached', timeout: 20000 }); // the startup check has run and shown the page
   await page.waitForSelector(selector, { state: 'visible', timeout: 20000 });
 }
 
 /* Goes to the page's address `hash` the way a typed address does, and waits for `selector`. */
-async function go(page, hash, selector) {
+async function go(page: Page, hash: string, selector: string): Promise<void> {
   await page.evaluate(address => {
     location.hash = address;
   }, hash);
   await ready(page, selector);
 }
 
-const sheetHash = open => `#/sheets/${open.sheetId}`;
-const setHash = open => `#/sheets/${open.sheetId}/sets/${open.setId}`;
+const sheetHash = (open: FixtureOpen): string => `#/sheets/${open.sheetId}`;
+const setHash = (open: FixtureOpen): string => `#/sheets/${open.sheetId}/sets/${open.setId}`;
 
 /* Clicks `button` until `menu` shows: a click can land while the page is still busy (Firefox under load), or on a menu that
    was closing, so one retry follows a click that opened nothing. */
-async function clickUntilVisible(page, button, menu) {
+async function clickUntilVisible(page: Page, button: string, menu: string): Promise<void> {
   for (const timeout of [4000, 8000]) {
     await page.locator(button).first().scrollIntoViewIfNeeded();
     if (await page.locator(menu).first().isVisible()) {
@@ -88,10 +90,13 @@ async function clickUntilVisible(page, button, menu) {
 }
 
 /* Opens the menu with button `button`, and waits for `menu` to show. */
-const opener = (button, menu) => page => clickUntilVisible(page, button, menu);
+const opener =
+  (button: string, menu: string) =>
+  (page: Page): Promise<void> =>
+    clickUntilVisible(page, button, menu);
 
 /* The Sheets screen: the sheet manager, a sheet's page and the two dialogs. */
-const sheets = {
+const sheets: Screen = {
   id: 'sheets',
   label: 'Sheets',
   views: [
@@ -223,7 +228,7 @@ const sheets = {
 };
 
 /* The set page's measure: the sticky header in parts, the gear table, the item names and the rows under the pinned header. */
-const SET_MEASURE = {
+const SET_MEASURE: ViewMeasure = {
   scopes: { ...TOP, crumb: '.shead .setline', actions: '.shead .setactions', bar: '.shead .tbar', table: '#sh-gear' },
   names: '#sh-gear .same-btn > span:first-child',
   pinned: { header: '.shead', columns: '#sh-gear thead th' },
@@ -231,7 +236,7 @@ const SET_MEASURE = {
 };
 
 /* The set menus: the set switch, a piece's list, the Food list and the Auto-fill settings. */
-const SET_MENUS = [
+const SET_MENUS: Menu[] = [
   { id: 'set switch', open: opener('#sh-set-switch', '#sh-set-menu'), selector: '#sh-set-menu', inPinnedHeader: true },
   { id: 'piece menu', open: opener('#sh-gear [data-pick]:not([aria-disabled="true"])', '.pick-menu'), selector: '.pick-menu' },
   { id: 'meal menu', open: opener('#sh-meal-btn', '#sh-meal-menu'), selector: '#sh-meal-menu' },
@@ -239,7 +244,7 @@ const SET_MENUS = [
 ];
 
 /* The set page screen: the page itself, with a suggestion, with the longest content, and empty. */
-const set = {
+const set: Screen = {
   id: 'set',
   label: 'Set page',
   views: [
@@ -291,7 +296,7 @@ const set = {
 };
 
 /* The Gear browser screen. */
-const gear = {
+const gear: Screen = {
   id: 'gear',
   label: 'Gear browser',
   views: [
@@ -366,10 +371,14 @@ const gear = {
 const APP = 'window.gsaDebug.app';
 
 /* A function that runs `code` (statements using `app`, the page's settings facade: its edit actions write) in the page. */
-const setApp = code => page => page.evaluate(`(() => { const app = ${APP}; ${code} })()`);
+const setApp =
+  (code: string) =>
+  async (page: Page): Promise<void> => {
+    await page.evaluate(`(() => { const app = ${APP}; ${code} })()`);
+  };
 
 /* The content states of Stat Allocation's bar: what its chips and boxes say must not change where its controls sit. */
-const BAR_STATES = [
+const BAR_STATES: { id: string; apply: (page: Page) => Promise<void> }[] = [
   { id: 'sync off, level 100', apply: setApp("app.setJob('PLD'); app.editPanel({ sync: false, level: 100, cap: null });") },
   { id: 'sync on, no cap', apply: setApp("app.setJob('PLD'); app.editPanel({ sync: true, level: 85, cap: null });") },
   {
@@ -393,25 +402,34 @@ const MATH_PIECE_WIDEST = setApp("app.setJob('PLD'); app.editPanel({ sync: true,
 const MATH_LEVEL_WIDEST = setApp('app.editPanel({ level: app.jobCtx.maxLevel });');
 
 /* Opens the Job menu of the math bar if it is shut (picking a job may close it). */
-const openMathJobMenu = page => clickUntilVisible(page, '#m-job-btn', '#m-job-menu');
+const openMathJobMenu = (page: Page): Promise<void> => clickUntilVisible(page, '#m-job-btn', '#m-job-menu');
 
 /* Picks job `jobId` in the math bar's Job menu. */
-const pickMathJob = (page, jobId) => page.click(`#m-job-menu [data-job-id="${jobId}"]`);
+const pickMathJob = (page: Page, jobId: string): Promise<void> => page.click(`#m-job-menu [data-job-id="${jobId}"]`);
 
 /* The scopes every math view measures: the title, the whole sticky bar, the sub-tab strip, the ? button and the controls row. */
-const MATH_SCOPES = { ...TOP, mathbar: '#m-bar', subtabs: '#m-bar .subtabs', help: '#m-bar .helpwrap', bar: '.barrow' };
+const MATH_SCOPES: Record<string, string> = {
+  ...TOP,
+  mathbar: '#m-bar',
+  subtabs: '#m-bar .subtabs',
+  help: '#m-bar .helpwrap',
+  bar: '.barrow',
+};
 
 /* The measure settings every math view shares: the math bar's own rules, and the labels of its controls. */
-const MATH_MEASURE = { mathBar: true, labels: [...LABELS, '#m-job-label', '#p-piece-label', '#p-sync-label', '.mctl-head'] };
+const MATH_MEASURE: Partial<ProbeConfig> = {
+  mathBar: true,
+  labels: [...LABELS, '#m-job-label', '#p-piece-label', '#p-sync-label', '.mctl-head'],
+};
 
 /* The Job menu of the math bar. */
-const MATH_JOB_MENU = { id: 'job menu', open: opener('#m-job-btn', '#m-job-menu'), selector: '#m-job-menu', inPinnedHeader: true };
+const MATH_JOB_MENU: Menu = { id: 'job menu', open: opener('#m-job-btn', '#m-job-menu'), selector: '#m-job-menu', inPinnedHeader: true };
 
 /* The geometry of the parts the sub-tab switch must leave where they are: {job, help, tabs} as [left, top, width, height] or null. */
-const subTabGeometry = page =>
+const subTabGeometry = (page: Page): Promise<SubTabGeometry> =>
   page.evaluate(() => {
-    const box = selector => {
-      const element = document.querySelector(selector);
+    const box = (selector: string): number[] | null => {
+      const element = document.querySelector<HTMLElement>(selector);
       if (!element?.offsetWidth) {
         return null;
       }
@@ -426,51 +444,58 @@ const subTabGeometry = page =>
     return {
       job: box('#m-job-wrap'),
       help: box('#m-help'),
-      tabs: [...document.querySelectorAll('[data-sub]')].map(element => box(`[data-sub="${element.dataset.sub}"]`)),
+      tabs: [...document.querySelectorAll<HTMLElement>('[data-sub]')].map(element => box(`[data-sub="${element.dataset.sub}"]`)),
     };
   });
+
+/* The geometry of the parts the sub-tab switch leaves in place: [left, top, width, height] of each, or null when it is not shown. */
+type SubTabGeometry = { job: number[] | null; help: number[] | null; tabs: (number[] | null)[] };
 
 /* How far the page is scrolled before a sub-tab is clicked, in px. */
 const SUB_TAB_SCROLLED_PX = 120;
 
 /* The selector each sub-tab waits for. */
-const SUB_TAB_READY = { piece: '#p-slot', tiers: '#t-level', gcd: '#g-level' };
+const SUB_TAB_READY: Record<string, string> = { piece: '#p-slot', tiers: '#t-level', gcd: '#g-level' };
 
 /* The clicks of the sub-tab check, in order, for the sub-tab that is open when it starts: each is { sub, step } with the step's name
    ('warm-up' is not checked or measured; 'start' and 'end' measure the layout of Stat Allocation, 'tiers' and 'gcd' the geometry of
    their own). Every click goes to a sub-tab other than the open one, because clicking the open sub-tab keeps the scroll by design
    (nothing opens), so it would never start at the top: when Stat Allocation is open, a warm-up click on Substat tiers comes first. */
-export function subTabVisits(openSub) {
+export function subTabVisits(openSub: string | null): { sub: string; step: string }[] {
   const visits = [
     { sub: 'piece', step: 'start' },
     { sub: 'tiers', step: 'tiers' },
     { sub: 'gcd', step: 'gcd' },
     { sub: 'piece', step: 'end' },
   ];
-  return openSub === visits[0].sub ? [{ sub: 'tiers', step: 'warm-up' }, ...visits] : visits;
+  return openSub === visits[0]?.sub ? [{ sub: 'tiers', step: 'warm-up' }, ...visits] : visits;
 }
 
 /* Goes Stat Allocation, Substat tiers, GCD Scaling and back, and reports what is wrong: a sub-tab opened by a click starts at the
    top of the page (the page was scrolled before the click), the sub-tabs stay put, the Job box is where it was on Substat tiers
    and absent on GCD Scaling (it has no job), and the way back gives the layout it started with. */
-async function subTabsStartAtTop(page) {
-  const found = [];
-  const open = async (sub, checked) => {
+async function subTabsStartAtTop(page: Page): Promise<Pick<Finding, 'rule' | 'detail' | 'where'>[]> {
+  const found: Pick<Finding, 'rule' | 'detail' | 'where'>[] = [];
+  const open = async (sub: string, checked: boolean): Promise<void> => {
     // scrolled a little before the click (a page too short to scroll stays at 0), so that a sub-tab that kept the depth shows
     await page.evaluate(scrolledPx => window.scrollTo(0, scrolledPx), SUB_TAB_SCROLLED_PX);
     await page.click(`[data-sub="${sub}"]`);
-    await page.waitForSelector(SUB_TAB_READY[sub], { state: 'visible', timeout: 10000 });
+    await page.waitForSelector(SUB_TAB_READY[sub] ?? '', { state: 'visible', timeout: 10000 });
     await settle(page);
     const top = await page.evaluate(() => window.scrollY);
     if (checked && top !== 0) {
       found.push({ rule: 'tabs-start-at-top', detail: `${sub} opens at ${top} px, not at the top`, where: 'math' });
     }
   };
-  const config = probeConfig(MATH_VIEWS[0]);
-  const openSub = await page.evaluate(() => document.querySelector('[data-sub][aria-current="page"]')?.dataset.sub ?? null);
-  const geometry = {};
-  let start;
-  let end;
+  const firstView = MATH_VIEWS[0];
+  if (!firstView) {
+    return found;
+  }
+  const config = probeConfig(firstView);
+  const openSub = await page.evaluate(() => document.querySelector<HTMLElement>('[data-sub][aria-current="page"]')?.dataset.sub ?? null);
+  const geometry: Partial<Record<string, SubTabGeometry>> = {};
+  let start: Probe | undefined;
+  let end: Probe | undefined;
   for (const { sub, step } of subTabVisits(openSub)) {
     await open(sub, step !== 'warm-up');
     if (step === 'start') {
@@ -482,19 +507,29 @@ async function subTabsStartAtTop(page) {
       end = await page.evaluate(measureView, config);
     }
   }
-  if (JSON.stringify(geometry.piece.job) !== JSON.stringify(geometry.tiers.job)) {
+  const { piece, tiers, gcd } = geometry;
+  if (!piece || !tiers || !gcd || !start || !end) {
+    throw new Error('a sub-tab visit did not run');
+  }
+  if (JSON.stringify(piece.job) !== JSON.stringify(tiers.job)) {
     found.push({
       rule: 'tabs-start-at-top',
-      detail: `the Job box is at ${JSON.stringify(geometry.piece.job)} on Stat Allocation and ${JSON.stringify(geometry.tiers.job)} on Substat tiers`,
+      detail: `the Job box is at ${JSON.stringify(piece.job)} on Stat Allocation and ${JSON.stringify(tiers.job)} on Substat tiers`,
       where: 'math',
     });
   }
-  if (geometry.gcd.job) {
+  if (gcd.job) {
     found.push({ rule: 'tabs-start-at-top', detail: 'the Job box shows on GCD Scaling', where: 'math' });
   }
-  for (const sub of ['tiers', 'gcd']) {
-    geometry[sub].tabs.forEach((box, index) => {
-      const was = geometry.piece.tabs[index];
+  for (const [sub, there] of [
+    ['tiers', tiers],
+    ['gcd', gcd],
+  ] as const) {
+    there.tabs.forEach((box, index) => {
+      const was = piece.tabs[index];
+      if (!was || !box) {
+        throw new Error(`sub-tab ${index + 1} is not shown`);
+      }
       if (Math.abs(was[0] - box[0]) > 0.6 || Math.abs(was[1] - box[1]) > 0.6) {
         found.push({
           rule: 'tabs-start-at-top',
@@ -512,7 +547,7 @@ async function subTabsStartAtTop(page) {
 }
 
 /* The math views, in the order of the sub-tabs. */
-const MATH_VIEWS = [
+const MATH_VIEWS: View[] = [
   {
     id: 'math-piece',
     label: 'Stat Allocation',
@@ -562,10 +597,15 @@ const MATH_VIEWS = [
 ];
 
 /* A math screen: one sub-tab of How the math works. */
-const mathScreen = (view, extra = {}) => ({ id: view.id, label: `How the math works, ${view.label}`, views: [view], ...extra });
+const mathScreen = (view: View, extra: Partial<Screen> = {}): Screen => ({
+  id: view.id,
+  label: `How the math works, ${view.label}`,
+  views: [view],
+  ...extra,
+});
 
 /* Every screen, in the order of --screens. */
-export const SCREENS = Object.freeze([
+export const SCREENS: readonly Screen[] = Object.freeze([
   sheets,
   set,
   gear,
@@ -575,17 +615,17 @@ export const SCREENS = Object.freeze([
 ]);
 
 /* The screen ids a run visits when none is named: every screen that is not waiting. */
-export function defaultScreenIds() {
+export function defaultScreenIds(): string[] {
   return SCREENS.filter(screen => !screen.waiting).map(screen => screen.id);
 }
 
 /* A view's whole measure settings: the common ones, then its own (its scopes added, its other fields over them). */
-export function measureOf(view) {
+export function measureOf(view: View): ViewMeasure & typeof COMMON {
   return { ...COMMON, ...view.measure };
 }
 
 /* The page-side config of a view (plain data: no functions). */
-export function probeConfig(view) {
+export function probeConfig(view: View): ProbeConfig {
   const { scopes, controls, boxes, clipped, labels, names, pinned, rows, mathBar } = measureOf(view);
   return {
     scopes,

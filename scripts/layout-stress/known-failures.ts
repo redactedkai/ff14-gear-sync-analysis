@@ -4,10 +4,15 @@
 
    An entry is {rule, screen, view?, setup?, browser?, note} and matches a finding with that rule on that screen, and on
    that view, setup and browser when the entry names them. `note` says what the finding is, for the line. */
-export const KNOWN_FAILURES = Object.freeze([]);
+/* A listed finding: its rule and screen, and the view, setup and browser it is limited to. */
+export type KnownFailure = { rule: string; screen: string; view?: string; setup?: string; browser?: string; note: string };
+export const KNOWN_FAILURES: readonly KnownFailure[] = Object.freeze([]);
+
+/* The fields of a finding a known failure is matched on. */
+export type FindingKey = { rule: string; screen: string; view?: string; setup?: string; browser?: string };
 
 /* The key of a finding: its rule, screen, view, setup and browser, with no window or width (a known failure covers every window it appears in). */
-function matches(entry, finding) {
+function matches(entry: KnownFailure, finding: FindingKey): boolean {
   return (
     entry.rule === finding.rule &&
     entry.screen === finding.screen &&
@@ -22,19 +27,22 @@ function matches(entry, finding) {
    - `fresh`: the findings no entry lists;
    - `knownLines`: one `KNOWN FAILURE (rule, screen ...): note` text per entry that matched, with the number of findings;
    - `stale`: the entries that matched nothing (a listed finding stopped happening: the run fails). */
-export function applyKnownFailures(findings, known = KNOWN_FAILURES) {
+export function applyKnownFailures<Found extends FindingKey>(
+  findings: Found[],
+  known: readonly KnownFailure[] = KNOWN_FAILURES,
+): { fresh: Found[]; knownLines: string[]; stale: KnownFailure[] } {
   const counts = known.map(() => 0);
-  const fresh = [];
+  const fresh: Found[] = [];
   for (const finding of findings) {
     const at = known.findIndex(entry => matches(entry, finding));
     if (at < 0) {
       fresh.push(finding);
     } else {
-      counts[at]++;
+      counts[at] = (counts[at] ?? 0) + 1;
     }
   }
   const knownLines = known
-    .map((entry, at) => ({ entry, count: counts[at] }))
+    .map((entry, at) => ({ entry, count: counts[at] ?? 0 }))
     .filter(item => item.count > 0)
     .map(
       ({ entry, count }) =>

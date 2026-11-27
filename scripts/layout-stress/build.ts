@@ -25,7 +25,8 @@ export const STRESS_ITEM_LEVEL = 8888;
    - the tables keyed by level (PG, MAX_SPEED, the main stat base in base-stats.ts) get rows up to level 888 that repeat the
      last real row, so no number turns into NaN and the page keeps working;
    - MAX_ILVL (the ItemLevel table's last row, 920) is left as it is: an item level above it reads the last row. */
-export const STRESS_PATCHES = Object.freeze([
+export type Patch = { file: string; from: string; to: string; all?: boolean };
+export const STRESS_PATCHES: readonly Patch[] = Object.freeze([
   {
     file: 'src/core/tables.ts',
     from: 'export const PG = ITEM_LEVEL_FILE.PG;',
@@ -55,7 +56,7 @@ export const STRESS_PATCHES = Object.freeze([
 ]);
 
 /* `text` with `patch` applied; throws when the patch's text is not in it. */
-export function applyPatch(text, patch) {
+export function applyPatch(text: string, patch: Patch): string {
   if (!text.includes(patch.from)) {
     throw new Error(`stress patch for ${patch.file} does not apply: "${patch.from}" is not in the source any more`);
   }
@@ -68,7 +69,15 @@ const COPIED = ['src', join('scripts', 'build'), 'package.json'];
 /* A private build in a new folder of the system's temporary folder. `patches` are applied to the copy of the source first
    (STRESS_PATCHES for the stress build, none for the real one). The build is the one the repo's own dev branch shows (the
    DEV badge and its test data button, `branch`). Returns {dir, page} (the built page's path) and `remove()`, which deletes the folder. */
-export function buildPrivate({ patches = [], branch = 'dev', root = REPO_ROOT } = {}) {
+export function buildPrivate({
+  patches = [],
+  branch = 'dev',
+  root = REPO_ROOT,
+}: {
+  patches?: readonly Patch[];
+  branch?: string;
+  root?: string;
+} = {}): { dir: string; page: string; remove: () => void } {
   const dir = mkdtempSync(join(tmpdir(), 'ff14-stress-'));
   for (const name of COPIED) {
     cpSync(join(root, name), join(dir, name), { recursive: true });

@@ -2,6 +2,7 @@
    tiers; src/ui/elements/math-page/math-screen.ts, src/styles/math-bar.css and math-controls.css): its dividers, its row breakpoints and its box heights. They judge
    what `measureView` returns as `mathBar` when a view asks for it (probe.ts). Pure: plain data in, a list of
    {rule, detail} out. Ported from the Stat Allocation stress script of the math bar port (the probe of j3-stress.mjs). */
+import type { BarTops, MathBar } from './types.ts';
 
 /* The widths of the bar's row, in rem, where Stat Allocation's controls change rows (src/styles/math-bar.css): from
    `ONE_ROW_REM` up everything is on one row; from `THREE_ACROSS_REM` the Job box, Piece and Sync settings share a row and the
@@ -25,13 +26,13 @@ const BOX_HEIGHT_TOLERANCE = 0.5;
    its own row), 'job+piece/sync+il' or 'other(N rows)'. `tops` holds the top (px) of the Job box (`job`), the Piece section's
    box (`piecesec`), the Substats chip (`piece`), the Sync settings chip (`sync`) and the Item level control (`il`). null when the
    Item level control is not shown (the other sub-tabs). */
-export function barLayout(tops) {
+export function barLayout(tops: BarTops): string | null {
   if (tops.il === null || tops.il === undefined) {
     return null;
   }
-  const same = (a, b) => Math.abs(tops[a] - tops[b]) < 3;
-  const sorted = [tops.job, tops.piecesec, tops.piece, tops.sync, tops.il].sort((a, b) => a - b);
-  const rows = 1 + sorted.slice(1).filter((top, index) => top - sorted[index] >= 3).length;
+  const same = (a: keyof BarTops, b: keyof BarTops): boolean => Math.abs((tops[a] ?? 0) - (tops[b] ?? 0)) < 3;
+  const sorted = [tops.job ?? 0, tops.piecesec ?? 0, tops.piece ?? 0, tops.sync ?? 0, tops.il].sort((a, b) => a - b);
+  const rows = 1 + sorted.slice(1).filter((top, index) => top - (sorted[index] ?? 0) >= 3).length;
   if (rows === 1) {
     return 'one-row';
   }
@@ -45,7 +46,7 @@ export function barLayout(tops) {
 }
 
 /* The layout the breakpoints give for a row `rowWidth` px wide at root font size `rem` px. */
-export function expectedBarLayout(rowWidth, rem) {
+export function expectedBarLayout(rowWidth: number, rem: number): string {
   const rems = rowWidth / rem;
   if (rems >= ONE_ROW_REM) {
     return 'one-row';
@@ -55,11 +56,12 @@ export function expectedBarLayout(rowWidth, rem) {
 
 /* Which dividers show, as text ("afterjob:1,ilgroup:0"), and the layout: the state of the bar that changes at a breakpoint.
    '' when the measure has no bar. */
-export function mathBarState(mathBar) {
+export function mathBarState(mathBar: MathBar | null | undefined): string {
   if (!mathBar) {
     return '';
   }
   const dividers = mathBar.sections
+
     .map(section => (section.kind === 'job' ? 'job' : `${section.id}:${section.ruleShown ? 1 : 0}`))
     .join(',');
   return `${barLayout(mathBar.tops) ?? 'no-item-level'}|${dividers}`;
@@ -67,8 +69,8 @@ export function mathBarState(mathBar) {
 
 /* The findings for the bar measure `mathBar` (probe.ts, measureView):
    [{rule, detail}] with the rules bar-dividers, bar-breakpoints, bar-box-height and bar-slider-track. */
-export function judgeMathBar(mathBar) {
-  const out = [];
+export function judgeMathBar(mathBar: MathBar | null | undefined): { rule: string; detail: string }[] {
+  const out: { rule: string; detail: string }[] = [];
   if (!mathBar) {
     return out;
   }

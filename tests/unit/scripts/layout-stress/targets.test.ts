@@ -2,24 +2,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SCREENS, defaultScreenIds, measureOf, probeConfig, subTabVisits } from '../../../../scripts/layout-stress/targets.ts';
+import type { Screen } from '../../../../scripts/layout-stress/types.ts';
 
-/* The parts of a screen and its views these tests read (targets.mjs gives them as plain objects). */
-interface StressView {
-  id: string;
-  fixture: string;
-  reach: unknown;
-  measure: { scopes: Record<string, unknown> };
-  twin?: string;
-  stable?: string[];
-  menus?: { id: string; selector: string; open: unknown }[];
-  jobs?: { scope: string; open: unknown; pick: unknown };
-}
-interface StressScreen {
-  id: string;
-  waiting?: string;
-  views: StressView[];
-}
-const screens: readonly StressScreen[] = SCREENS;
+const screens: readonly Screen[] = SCREENS;
 
 const FIXTURES = ['standard', 'extreme', 'empty', 'none', 'failing'];
 

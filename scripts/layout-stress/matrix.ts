@@ -1,8 +1,9 @@
 /* The windows the layout stress tool visits (docs/engineering/testing.md, section 3.1): the matrix of physical screens and
    Windows display scales, the heights of the width sweep, and the text and font setups. Pure: no browser, no files. */
+import type { Setup } from './types.ts';
 
 /* The physical screens (width, height in device pixels) the matrix covers. */
-export const SCREENS = Object.freeze([
+export const SCREENS: readonly (readonly [number, number])[] = Object.freeze([
   [1366, 768],
   [1920, 1080],
   [2560, 1440],
@@ -12,12 +13,13 @@ export const SCREENS = Object.freeze([
 ]);
 
 /* The Windows display scales (1 is 100%). */
-export const SCALES = Object.freeze([1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3]);
+export const SCALES: readonly number[] = Object.freeze([1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3]);
 
 /* What a maximised browser takes from the screen, in CSS pixels, measured on the owner's Windows 10 machine (Chrome, one
    maximised window, 2026-11): the vertical scrollbar's width, the taskbar's height, and the height of the tabs, address
    bar and bookmarks bar. */
-export const CHROME = Object.freeze({ scrollbarWidth: 15, taskbarHeight: 40, browserBarsHeight: 115 });
+export type Chrome = { scrollbarWidth: number; taskbarHeight: number; browserBarsHeight: number };
+export const CHROME: Chrome = Object.freeze({ scrollbarWidth: 15, taskbarHeight: 40, browserBarsHeight: 115 });
 
 /* The narrowest CSS screen the page supports (a window narrower than this is not supported). */
 export const FLOOR_CSS_WIDTH = 960;
@@ -28,16 +30,31 @@ export const SWEEP_TO = 2560;
 export const SWEEP_STEP = 40;
 
 /* The heights the sweep runs at: the short window (a 1080p laptop at 150%) and a tall one. The quick run uses the middle one. */
-export const SWEEP_HEIGHTS = Object.freeze([565, 900]);
-export const QUICK_SWEEP_HEIGHTS = Object.freeze([700]);
+export const SWEEP_HEIGHTS: readonly number[] = Object.freeze([565, 900]);
+export const QUICK_SWEEP_HEIGHTS: readonly number[] = Object.freeze([700]);
 
 /* The windows (viewport width x height) of the quick run: the 960 px floor, the short window, the owner's window and the widest. */
-export const QUICK_WINDOWS = Object.freeze(['960x700', '1265x565', '1905x925', '2545x1285']);
+export const QUICK_WINDOWS: readonly string[] = Object.freeze(['960x700', '1265x565', '1905x925', '2545x1285']);
 
 /* One physical screen at one scale as a setup: its CSS screen (device pixels over the scale, rounded down), the window a
    maximised browser gets on it (`width` x `height`: the scrollbar, taskbar and browser bars taken off), and whether the CSS
    screen reaches the floor. `chrome` and `floor` are the measured sizes above, or others for a test. */
-export function setupFor(physicalWidth, physicalHeight, scale, chrome = CHROME, floor = FLOOR_CSS_WIDTH) {
+export type ScreenSetup = {
+  physical: string;
+  scale: number;
+  cssWidth: number;
+  cssHeight: number;
+  width: number;
+  height: number;
+  supported: boolean;
+};
+export function setupFor(
+  physicalWidth: number,
+  physicalHeight: number,
+  scale: number,
+  chrome: Chrome = CHROME,
+  floor: number = FLOOR_CSS_WIDTH,
+): ScreenSetup {
   const cssWidth = Math.floor(physicalWidth / scale);
   const cssHeight = Math.floor(physicalHeight / scale);
   return {
@@ -53,22 +70,27 @@ export function setupFor(physicalWidth, physicalHeight, scale, chrome = CHROME, 
 
 /* The whole matrix: `setups` (every screen at every scale) and `windows`, a Map from "WxH" to the supported setups that
    land on that window, so a window two setups share is checked once. */
-export function buildMatrix(screens = SCREENS, scales = SCALES, chrome = CHROME, floor = FLOOR_CSS_WIDTH) {
+export function buildMatrix(
+  screens: readonly (readonly [number, number])[] = SCREENS,
+  scales: readonly number[] = SCALES,
+  chrome: Chrome = CHROME,
+  floor: number = FLOOR_CSS_WIDTH,
+): { setups: ScreenSetup[]; windows: Map<string, ScreenSetup[]> } {
   const setups = screens.flatMap(([width, height]) => scales.map(scale => setupFor(width, height, scale, chrome, floor)));
-  const windows = new Map();
+  const windows = new Map<string, ScreenSetup[]>();
   for (const setup of setups.filter(item => item.supported)) {
     const key = `${setup.width}x${setup.height}`;
     if (!windows.has(key)) {
       windows.set(key, []);
     }
-    windows.get(key).push(setup);
+    windows.get(key)?.push(setup);
   }
   return { setups, windows };
 }
 
 /* A window key "WxH" as {width, height}. */
-export function parseWindow(key) {
-  const [width, height] = key.split('x').map(Number);
+export function parseWindow(key: string): { width: number; height: number } {
+  const [width = 0, height = 0] = key.split('x').map(Number);
   return { width, height };
 }
 
@@ -76,8 +98,9 @@ export function parseWindow(key) {
    stack shows) and `css` (a style the tool adds after the page's own, forcing the setup). A text size scales the page's root
    font size and the body's 15 px, as a browser's "larger text" setting would. */
 const BODY_PX = 15;
-const textScale = percent => `html{font-size:${percent}% !important} body{font-size:${(BODY_PX * percent) / 100}px !important}`;
-export const FONT_SETUPS = Object.freeze([
+const textScale = (percent: number): string =>
+  `html{font-size:${percent}% !important} body{font-size:${(BODY_PX * percent) / 100}px !important}`;
+export const FONT_SETUPS: readonly Setup[] = Object.freeze([
   { id: 'page', label: 'Page fonts', blockFonts: false, css: '' },
   { id: 'fallback', label: 'Google Fonts blocked', blockFonts: true, css: '' },
   {
@@ -92,13 +115,13 @@ export const FONT_SETUPS = Object.freeze([
 ]);
 
 /* The setups a run uses: the page's own fonts only, or all of them with `--fonts`. */
-export function chooseSetups(allFonts) {
+export function chooseSetups(allFonts: boolean): readonly Setup[] {
   return allFonts ? FONT_SETUPS : FONT_SETUPS.slice(0, 1);
 }
 
 /* The windows the text and font setups and the stress build (every setup but the page's own fonts) are visited in: the floor, the
    short and the tall ones, the owner's window and the widest, to keep a full run to about an hour and a half. Every one is a window of the matrix. */
-export const FONT_SETUP_WINDOWS = Object.freeze([
+export const FONT_SETUP_WINDOWS: readonly string[] = Object.freeze([
   '945x385',
   '1009x485',
   '1137x565',
@@ -111,7 +134,7 @@ export const FONT_SETUP_WINDOWS = Object.freeze([
 
 /* The window keys one setup is visited in: the quick run's windows in a quick run; the page's own fonts visit every window
    `allKeys`; every other setup visits FONT_SETUP_WINDOWS. */
-export function windowsForSetup(allKeys, setupId, quick) {
+export function windowsForSetup(allKeys: readonly string[], setupId: string, quick: boolean): readonly string[] {
   if (quick) {
     return QUICK_WINDOWS;
   }

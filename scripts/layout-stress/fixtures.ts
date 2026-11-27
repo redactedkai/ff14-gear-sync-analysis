@@ -4,11 +4,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO_ROOT } from './build.ts';
+import type { PoolItem, SlotType } from '../../src/core/types.ts';
+import type { SavedGearSet, SavedSheet } from '../../src/ui/sheets/saved-types.ts';
+import type { Fixture } from './types.ts';
 
 /* The page's saved-data key (src/ui/store-key.ts) and the keys of the sheets' index and records. */
 export const STORE_KEY = 'ilvl-stat-lab-v4';
 const INDEX_KEY = `${STORE_KEY}:sheets`;
-const RECORD_KEY = id => `${STORE_KEY}:sheet:${id}`;
+const RECORD_KEY = (id: string): string => `${STORE_KEY}:sheet:${id}`;
 
 /* The longest name a sheet or a gear set takes (NAME_MAX_LENGTH in src/ui/sheets/ops.ts) and the longest description. */
 export const NAME_MAX = 60;
@@ -22,18 +25,20 @@ export const LONGEST_NAME_WORDS = 'Extremely long name of a sheet that keeps goi
 export const MANY_SETS = 40;
 
 /* The test sheets the page ships, parsed. */
-export function readTestSheets(root = REPO_ROOT) {
+export function readTestSheets(root: string = REPO_ROOT): SavedSheet[] {
   return JSON.parse(readFileSync(join(root, 'src', 'ui', 'test-sheets.json'), 'utf8'));
 }
 
 /* The ids of the 23 combat jobs, from the page's own table (src/core/constants.ts JOBS). */
-export async function readJobIds(root = REPO_ROOT) {
-  const { JOBS } = await import(new URL(`file:///${join(root, 'src', 'core', 'constants.ts').replaceAll('\\', '/')}`));
+export async function readJobIds(root: string = REPO_ROOT): Promise<string[]> {
+  const { JOBS }: typeof import('../../src/core/constants.ts') = await import(
+    new URL(`file:///${join(root, 'src', 'core', 'constants.ts').replaceAll('\\', '/')}`).href
+  );
   return JOBS.map(job => job.id);
 }
 
 /* A gear set of `slots` with no piece in any row, named `name`. `at` is the time in ms. */
-function emptySet(id, name, slots, at, description = '') {
+function emptySet(id: string, name: string, slots: readonly SlotType[], at: number, description = ''): SavedGearSet {
   return {
     id,
     name,
@@ -49,13 +54,33 @@ function emptySet(id, name, slots, at, description = '') {
 }
 
 /* An empty sheet record (no gear set yet, or the given ones). */
-function sheetRecord({ id, name, description = '', job, level, sync, sets = [], at, gameData }) {
+function sheetRecord({
+  id,
+  name,
+  description = '',
+  job,
+  level,
+  sync,
+  sets = [],
+  at,
+  gameData,
+}: {
+  id: string;
+  name: string;
+  description?: string;
+  job: string;
+  level: number;
+  sync: { on: boolean; cap: number };
+  sets?: SavedGearSet[];
+  at: number;
+  gameData: SavedSheet['gameData'];
+}): SavedSheet {
   return { v: 1, id, name, description, job, level, sync, clan: null, partyRoles: 0, sets, gameData, createdAt: at, updatedAt: at };
 }
 
 /* The test sheets as they ship: six sheets of different jobs, four gear sets each. The sheet and set the views open are
    the first sheet and its first set that holds pieces. */
-export function standardFixture(testSheets) {
+export function standardFixture(testSheets: SavedSheet[]): Fixture {
   const first = testSheets[0];
   const set = first.sets.find(candidate => candidate.pieces.some(piece => piece.gameId)) ?? first.sets[0];
   return { sheets: structuredClone(testSheets), open: { sheetId: first.id, setId: set.id, fillSetId: first.sets[1]?.id ?? set.id } };
@@ -66,7 +91,7 @@ export function standardFixture(testSheets) {
    - the longest names with no space and with words, a 400-character description with line breaks;
    - one sheet with MANY_SETS gear sets, the first of them holding the longest-named pieces and the longest set name;
    - a sheet per job, its set with empty rows, level and item level at their widest in the real limits. */
-export function extremeFixture(testSheets, jobIds, longest) {
+export function extremeFixture(testSheets: SavedSheet[], jobIds: readonly string[], longest: Record<string, number | undefined>): Fixture {
   const at = 1793188800000;
   const gameData = testSheets[0].gameData;
   const slots = testSheets[0].sets[0].pieces.map(piece => piece.slot);
@@ -129,7 +154,7 @@ export function extremeFixture(testSheets, jobIds, longest) {
 }
 
 /* A sheet with no gear set and a sheet whose one set has empty rows (sync off, so no cap applies): the empty states. */
-export function emptyFixture(testSheets) {
+export function emptyFixture(testSheets: SavedSheet[]): Fixture {
   const at = 1793188800000;
   const gameData = testSheets[0].gameData;
   const slots = testSheets[0].sets[0].pieces.map(piece => piece.slot);
@@ -156,7 +181,7 @@ export function emptyFixture(testSheets) {
 }
 
 /* No sheets at all. */
-export function noSheetsFixture() {
+export function noSheetsFixture(): Fixture {
   return { sheets: [], open: {} };
 }
 
@@ -164,7 +189,17 @@ export function noSheetsFixture() {
    per context (a reload keeps what the page saved since), and with `failWrites` makes every write fail with a
    full-storage error, as the browser does when the quota is used up. It takes one argument, the plain data below, and is
    serialised into the page: it uses nothing outside itself. */
-export function seedStorage({ indexKey, recordKeyPrefix, sheets, failWrites }) {
+export function seedStorage({
+  indexKey,
+  recordKeyPrefix,
+  sheets,
+  failWrites,
+}: {
+  indexKey: string;
+  recordKeyPrefix: string;
+  sheets: { id: string }[];
+  failWrites: boolean;
+}): void {
   const SEEDED_KEY = 'layout-stress:seeded'; // not under the page's own key, so the page never reads it as its data
   try {
     if (!localStorage.getItem(SEEDED_KEY)) {
@@ -187,17 +222,20 @@ export function seedStorage({ indexKey, recordKeyPrefix, sheets, failWrites }) {
 }
 
 /* The argument `seedStorage` takes for a fixture. */
-export function seedArgument(fixture, failWrites = false) {
+export function seedArgument(
+  fixture: Fixture,
+  failWrites = false,
+): { indexKey: string; recordKeyPrefix: string; sheets: SavedSheet[]; failWrites: boolean } {
   return { indexKey: INDEX_KEY, recordKeyPrefix: RECORD_KEY(''), sheets: fixture.sheets, failWrites };
 }
 
 /* The id of the longest-named piece each slot takes, for the Sage: {slot: gameId}, read from the page's own item
    database through its job context (read only). Used to fill the longest set. */
-export async function longestPieces(root = REPO_ROOT) {
-  const url = file => new URL(`file:///${join(root, file).replaceAll('\\', '/')}`);
-  const { jobGear } = await import(url('src/core/items.ts'));
-  const { makeJobContext } = await import(url('src/core/job-context.ts'));
-  const longest = {};
+export async function longestPieces(root: string = REPO_ROOT): Promise<Record<string, number | undefined>> {
+  const url = (file: string): URL => new URL(`file:///${join(root, file).replaceAll('\\', '/')}`);
+  const { jobGear }: typeof import('../../src/core/items.ts') = await import(url('src/core/items.ts').href);
+  const { makeJobContext }: typeof import('../../src/core/job-context.ts') = await import(url('src/core/job-context.ts').href);
+  const longest: Record<string, PoolItem> = {};
   for (const item of jobGear(makeJobContext('SGE'))) {
     if (!longest[item.type] || item.name.length > longest[item.type].name.length) {
       longest[item.type] = item;
@@ -207,7 +245,7 @@ export async function longestPieces(root = REPO_ROOT) {
 }
 
 /* `fixture` with every sheet at the widest level and item level (the stress build's limits), sync on. */
-export function withStressNumbers(fixture, level, itemLevel) {
+export function withStressNumbers(fixture: Fixture, level: number, itemLevel: number): Fixture {
   const sheets = structuredClone(fixture.sheets).map(sheet => ({ ...sheet, level, sync: { on: true, cap: itemLevel } }));
   return { ...fixture, sheets };
 }

@@ -2,7 +2,20 @@
 import { SCREENS, defaultScreenIds } from './targets.ts';
 
 /* The browsers the tool can launch (Playwright's names). */
-export const BROWSER_NAMES = Object.freeze(['chromium', 'firefox', 'webkit']);
+export const BROWSER_NAMES: readonly string[] = Object.freeze(['chromium', 'firefox', 'webkit']);
+
+/* The options of a run. */
+export type StressOptions = {
+  screens: string[];
+  browsers: string[];
+  fonts: boolean;
+  quick: boolean;
+  report: string | null;
+  workers: number;
+  stress: boolean;
+  keep: boolean;
+  rules: boolean;
+};
 
 /* The usage text. */
 export const USAGE = `usage: npm run stress:layout -- [options]
@@ -19,8 +32,8 @@ export const USAGE = `usage: npm run stress:layout -- [options]
 /* The options `argv` (the arguments after the command) names, as {screens, browsers, fonts, quick, report, workers,
    stress, keep, rules}, or {error} with a text that says what is wrong. A screen that waits for the math bar port is
    accepted by name and visited as "waiting". */
-export function parseArgs(argv) {
-  const options = {
+export function parseArgs(argv: string[]): StressOptions | { error: string } {
+  const options: StressOptions = {
     screens: defaultScreenIds(),
     browsers: ['chromium'],
     fonts: false,

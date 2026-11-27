@@ -7,8 +7,9 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium, firefox, webkit } from 'playwright';
+import type { Browser } from 'playwright';
 import { STRESS_ITEM_LEVEL, STRESS_LEVEL, STRESS_PATCHES, buildPrivate } from './build.ts';
-import { checkScreenInWindow } from './checks.ts';
+import { checkScreenInWindow, firstLine } from './checks.ts';
 import {
   emptyFixture,
   extremeFixture,
@@ -31,11 +32,14 @@ import {
   windowsForSetup,
 } from './matrix.ts';
 import { USAGE, parseArgs } from './options.ts';
+import type { ScreenSetup } from './matrix.ts';
 import { groupFindings, renderReport, shortList } from './report.ts';
+import type { WindowResult } from './report.ts';
 import { rulesMarkdown } from './rules.ts';
 import { pageFontsLoaded } from './session.ts';
 import { sweepView } from './sweep.ts';
 import { SCREENS } from './targets.ts';
+import type { FixtureSetup, RunFinding, Setup } from './types.ts';
 
 /* How many grouped findings the run prints to the console (the report and its .json have them all). */
 const MAX_PRINTED_FINDINGS = 40;
@@ -45,7 +49,7 @@ const QUICK_SWEEP_STEP = 80;
 
 /* The stress build's setup: the page's own fonts on the build with level 888 and item level 8888. It is visited in the
    matrix's windows only. */
-const STRESS_SETUP = Object.freeze({
+const STRESS_SETUP: Setup = Object.freeze({
   id: 'stress',
   label: `Level ${STRESS_LEVEL}, item level ${STRESS_ITEM_LEVEL}`,
   blockFonts: false,
@@ -53,15 +57,25 @@ const STRESS_SETUP = Object.freeze({
   build: 'stress',
 });
 
+/* A window the run visits: its "WxH" key, its size, and the screen setups that land on it. */
+type StressWindow = { key: string; width: number; height: number; setups: ScreenSetup[] };
+
 /* Runs `jobs` (async functions) with at most `limit` at a time; returns their results in order. */
-async function runPool(jobs, limit, onDone) {
-  const results = new Array(jobs.length);
+async function runPool<Result>(
+  jobs: (() => Promise<Result>)[],
+  limit: number,
+  onDone?: (done: number, total: number) => void,
+): Promise<Result[]> {
+  const results: Result[] = new Array(jobs.length);
   let next = 0;
   let done = 0;
   const worker = async () => {
     while (next < jobs.length) {
       const at = next++;
-      results[at] = await jobs[at]();
+      const job = jobs[at];
+      if (job) {
+        results[at] = await job();
+      }
       onDone?.(++done, jobs.length);
     }
   };
@@ -70,7 +84,7 @@ async function runPool(jobs, limit, onDone) {
 }
 
 /* The fixtures of a build: {name: {fixture, failWrites}}. The stress build's have the widest level and item level. */
-async function makeFixtures(stress) {
+async function makeFixtures(stress: boolean): Promise<{ fixtures: Record<string, FixtureSetup>; jobIds: string[] }> {
   const testSheets = readTestSheets();
   const jobIds = await readJobIds();
   const longest = await longestPieces();
@@ -81,7 +95,7 @@ async function makeFixtures(stress) {
     none: noSheetsFixture(),
   };
   const withFailing = { ...fixtures, failing: standardFixture(testSheets) };
-  const entries = Object.entries(withFailing).map(([name, fixture]) => [
+  const entries = Object.entries(withFailing).map(([name, fixture]): [string, FixtureSetup] => [
     name,
     { fixture: stress ? withStressNumbers(fixture, STRESS_LEVEL, STRESS_ITEM_LEVEL) : fixture, failWrites: name === 'failing' },
   ]);
@@ -89,26 +103,30 @@ async function makeFixtures(stress) {
 }
 
 /* The Playwright browser types by name. */
-const BROWSER_TYPES = { chromium, firefox, webkit };
+const BROWSER_TYPES: Record<string, typeof chromium> = { chromium, firefox, webkit };
 
 /* Launches `name` (a Playwright browser), or returns null with the reason when it cannot start. */
-async function launch(name) {
+async function launch(name: string): Promise<{ browser: Browser } | { error: string }> {
   try {
-    return { browser: await BROWSER_TYPES[name].launch() };
+    const type = BROWSER_TYPES[name];
+    if (!type) {
+      throw new Error(`unknown browser ${name}`);
+    }
+    return { browser: await type.launch() };
   } catch (error) {
-    return { error: error.message.split('\n')[0] };
+    return { error: firstLine(error) };
   }
 }
 
 /* The windows to visit: the matrix's, or the quick subset. Returns [{key, width, height, setups}]. */
-function windowsFor(quick) {
+function windowsFor(quick: boolean): StressWindow[] {
   const { windows } = buildMatrix();
   const keys = quick ? QUICK_WINDOWS : [...windows.keys()];
   return keys.map(key => ({ key, ...parseWindow(key), setups: windows.get(key) ?? [] }));
 }
 
 /* The windows one setup is visited in (matrix.ts windowsForSetup), from all the windows. */
-function windowsOfSetup(windows, setup, quick) {
+function windowsOfSetup(windows: StressWindow[], setup: Setup, quick: boolean): StressWindow[] {
   const keys = windowsForSetup(
     windows.map(window => window.key),
     setup.id,
@@ -118,13 +136,13 @@ function windowsOfSetup(windows, setup, quick) {
 }
 
 /* Runs the stress tool with `argv`; returns the exit code. */
-export async function main(argv) {
+export async function main(argv: string[]): Promise<number> {
   if (argv.includes('--help')) {
     console.log(USAGE);
     return 0;
   }
   const options = parseArgs(argv);
-  if (options.error) {
+  if ('error' in options) {
     console.error(`${options.error}\n${USAGE}`);
     return 2;
   }
@@ -152,14 +170,22 @@ export async function main(argv) {
   const builds = { real, stress };
   const fixtureSets = { real: await makeFixtures(false), stress: stress ? await makeFixtures(true) : null };
 
-  const findings = [];
-  const breakpoints = [];
-  const windowResults = [];
-  const browserNotes = [];
+  const findings: RunFinding[] = [];
+  const breakpoints: {
+    browser: string;
+    setup: string;
+    screen: string;
+    view: string;
+    height: number;
+    changes: { at: number; changes: string[] }[];
+    measured: number;
+  }[] = [];
+  const windowResults: WindowResult[] = [];
+  const browserNotes: { browser: string; error: string }[] = [];
   try {
     for (const browserName of options.browsers) {
       const launched = await launch(browserName);
-      if (launched.error) {
+      if ('error' in launched) {
         console.error(`${browserName}: cannot start (${launched.error}); run "npx playwright install ${browserName}"`);
         browserNotes.push({ browser: browserName, error: launched.error });
         findings.push({
@@ -175,12 +201,16 @@ export async function main(argv) {
         continue;
       }
       const { browser } = launched;
-      const tasks = [];
+      const tasks: (() => Promise<void>)[] = [];
 
       // the matrix's windows, every setup
       for (const setup of setups) {
-        const build = builds[setup.build ?? 'real'];
-        const { fixtures, jobIds } = fixtureSets[setup.build ?? 'real'];
+        const build = setup.build === 'stress' ? builds.stress : builds.real;
+        const sets = setup.build === 'stress' ? fixtureSets.stress : fixtureSets.real;
+        if (!build || !sets) {
+          continue;
+        }
+        const { fixtures, jobIds } = sets;
         for (const screen of visited) {
           for (const window of windowsOfSetup(windows, setup, options.quick)) {
             tasks.push(async () => {

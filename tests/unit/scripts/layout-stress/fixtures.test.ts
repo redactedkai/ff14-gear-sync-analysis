@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseSheet } from '../../../../src/ui/sheets/storage.ts';
 import type { SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
+import type { Fixture } from '../../../../scripts/layout-stress/types.ts';
 import {
   DESCRIPTION_MAX,
   MANY_SETS,
@@ -17,12 +18,6 @@ import {
   standardFixture,
   withStressNumbers,
 } from '../../../../scripts/layout-stress/fixtures.ts';
-
-/* A fixture: the saved sheets a run seeds the page with, and the ids of what it opens. */
-interface Fixture {
-  sheets: SavedSheet[];
-  open: Record<string, string>;
-}
 
 const testSheets: SavedSheet[] = readTestSheets();
 const jobIds = await readJobIds();

@@ -5,6 +5,7 @@
    `up` (the index of the nearest control around it, or -1) and `c` (the index of its container). A container is
    {id, l, t, r, b, scrolls} (`scrolls`: it scrolls on its own, so what is beyond its edge is reachable). */
 import { mathBarState } from './math-rules.ts';
+import type { Container, Control, Finding, KeyedProbe, NamedBox, ScopeShape, Severity } from './types.ts';
 
 /* The thresholds, in px unless named. */
 export const THRESHOLDS = Object.freeze({
@@ -23,7 +24,7 @@ export const THRESHOLDS = Object.freeze({
 });
 
 /* Every rule: id -> [severity, what it checks]. `fail` makes the run exit 1; `warn` is only reported. */
-export const RULES = Object.freeze({
+export const RULES: Readonly<Record<string, readonly [Severity, string]>> = Object.freeze({
   'no-sideways-scroll': ['fail', 'The page never scrolls sideways (the document is no wider than the window).'],
   'no-clipped-cells': ['fail', 'No cell, panel, field or button holds text wider than itself (a name cut with an ellipsis is meant).'],
   'nothing-past-window': ['fail', `No visible element extends past the window's right edge by more than ${THRESHOLDS.edgeTolerance} px.`],
@@ -68,23 +69,27 @@ export const RULES = Object.freeze({
 });
 
 /* The severity of rule `rule` ('fail' or 'warn'); throws for a rule that does not exist, so a typo cannot hide a finding. */
-export function severityOf(rule) {
-  if (!RULES[rule]) {
+export function severityOf(rule: string): Severity {
+  const entry = RULES[rule];
+  if (!entry) {
     throw new Error(`unknown rule "${rule}"`);
   }
-  return RULES[rule][0];
+  return entry[0];
 }
 
 /* The rules as a Markdown table. */
-export function rulesMarkdown() {
+export function rulesMarkdown(): string {
   const lines = Object.entries(RULES).map(([id, [severity, text]]) => `| ${id} | ${severity} | ${text} |`);
   return `| Rule | Severity | What it checks |\n| --- | --- | --- |\n${lines.join('\n')}\n`;
 }
 
 /* A collector of findings: `add(rule, detail, where, severity)` files one by the rule's severity (or `severity`, for a rule
    that warns on a lesser case, such as rows-visible). `where` names the part of the page. `list` holds {rule, severity, detail, where}. */
-export function makeFindings() {
-  const list = [];
+export function makeFindings(): {
+  list: Finding[];
+  add: (rule: string, detail: string, where?: string, severity?: Severity) => void;
+} {
+  const list: Finding[] = [];
   return {
     list,
     add(rule, detail, where = '', severity = severityOf(rule)) {
@@ -95,8 +100,8 @@ export function makeFindings() {
 
 /* `items` ({t: top}) split into rows: items whose tops are within `gap` of the row's first one share a row. Rows come
    top to bottom, each row's items left to right when they have `l`. */
-export function groupRows(items, gap = THRESHOLDS.rowGap) {
-  const rows = [];
+export function groupRows<Item extends { t: number; l?: number }>(items: readonly Item[], gap: number = THRESHOLDS.rowGap): Item[][] {
+  const rows: { top: number; items: Item[] }[] = [];
   for (const item of [...items].sort((a, b) => a.t - b.t || (a.l ?? 0) - (b.l ?? 0))) {
     const row = rows.find(candidate => Math.abs(candidate.top - item.t) <= gap);
     if (row) {
@@ -109,16 +114,20 @@ export function groupRows(items, gap = THRESHOLDS.rowGap) {
 }
 
 /* The number of rows `controls` sit in. */
-export function rowCount(controls) {
+export function rowCount(controls: readonly Control[]): number {
   return groupRows(controls).length;
 }
 
 /* The controls that sit past an edge of their container: [{id, container, by}] with `by` the px beyond the nearest edge.
    A container that scrolls on its own, and a control with no container, are skipped. */
-export function findOutside(controls, containers, tolerance = THRESHOLDS.outsideTolerance) {
-  const found = [];
+export function findOutside(
+  controls: readonly Control[],
+  containers: readonly Container[],
+  tolerance: number = THRESHOLDS.outsideTolerance,
+): { id: string; container: string; by: number }[] {
+  const found: { id: string; container: string; by: number }[] = [];
   for (const control of controls) {
-    const container = containers[control.c];
+    const container = containers[control.c ?? -1];
     if (!container || container.scrolls) {
       continue;
     }
@@ -132,8 +141,8 @@ export function findOutside(controls, containers, tolerance = THRESHOLDS.outside
 
 /* Whether control `index` has control `other` among the controls around it (one holds the other: a button with a label
    inside, a field with its box). */
-function isAround(controls, index, other) {
-  for (let at = controls[index].up; at !== undefined && at >= 0; at = controls[at].up) {
+function isAround(controls: readonly Control[], index: number, other: number): boolean {
+  for (let at = controls[index]?.up; at !== undefined && at >= 0; at = controls[at]?.up) {
     if (at === other) {
       return true;
     }
@@ -142,12 +151,15 @@ function isAround(controls, index, other) {
 }
 
 /* The pairs of controls that overlap by more than `tolerance` px both ways: [[idA, idB], ...]. A control and one around it are not a pair, and neither is a pair with a control that is positioned over its field on purpose (`overlay`). */
-export function findOverlaps(controls, tolerance = THRESHOLDS.overlapTolerance) {
-  const pairs = [];
+export function findOverlaps(controls: readonly Control[], tolerance: number = THRESHOLDS.overlapTolerance): [string, string][] {
+  const pairs: [string, string][] = [];
   for (let first = 0; first < controls.length; first++) {
     for (let second = first + 1; second < controls.length; second++) {
       const a = controls[first];
       const b = controls[second];
+      if (!a || !b) {
+        continue;
+      }
       const across = Math.min(a.r, b.r) - Math.max(a.l, b.l);
       const down = Math.min(a.b, b.b) - Math.max(a.t, b.t);
       if (across <= tolerance || down <= tolerance) {
@@ -166,15 +178,19 @@ export function findOverlaps(controls, tolerance = THRESHOLDS.overlapTolerance) 
 }
 
 /* The labels ({id, lines: the lines their text takes}) with more than one line. */
-export function findWrappedLabels(labels) {
+export function findWrappedLabels(labels: readonly { id: string; lines: number }[]): string[] {
   return labels.filter(label => label.lines > 1).map(label => label.id);
 }
 
 /* Problems among boxes: boxes that share a row (their vertical ranges overlap by at least half of the shorter one) must
    be as high as each other (`heightTolerance`) and start at the same height (`topTolerance`). Returns
    [{ids, kind: 'height' | 'top', spread}] with the spread in px. */
-export function findBoxRowProblems(boxes, heightTolerance = THRESHOLDS.boxHeightTolerance, topTolerance = THRESHOLDS.boxTopTolerance) {
-  const rows = [];
+export function findBoxRowProblems(
+  boxes: readonly NamedBox[],
+  heightTolerance: number = THRESHOLDS.boxHeightTolerance,
+  topTolerance: number = THRESHOLDS.boxTopTolerance,
+): { ids: string[]; kind: 'height' | 'top'; spread: number }[] {
+  const rows: NamedBox[][] = [];
   for (const box of [...boxes].sort((a, b) => a.t - b.t)) {
     const row = rows.find(candidate =>
       candidate.some(other => Math.min(box.b, other.b) - Math.max(box.t, other.t) >= Math.min(box.b - box.t, other.b - other.t) / 2),
@@ -185,7 +201,7 @@ export function findBoxRowProblems(boxes, heightTolerance = THRESHOLDS.boxHeight
       rows.push([box]);
     }
   }
-  const problems = [];
+  const problems: { ids: string[]; kind: 'height' | 'top'; spread: number }[] = [];
   for (const row of rows.filter(items => items.length > 1)) {
     const heights = row.map(box => box.b - box.t);
     const tops = row.map(box => box.t);
@@ -204,15 +220,24 @@ export function findBoxRowProblems(boxes, heightTolerance = THRESHOLDS.boxHeight
 
 /* From a series of widths widening ({width, rows: {scope: row count}}, in any order), the places where a scope got more
    rows at a larger width: [{scope, from: {width, rows}, to: {width, rows}}]. Only neighbouring widths are compared. */
-export function rowsIncreaseWhenWidening(series) {
+export function rowsIncreaseWhenWidening(series: readonly { width: number; rows: Record<string, number> }[]): {
+  scope: string;
+  from: { width: number; rows: number };
+  to: { width: number; rows: number };
+}[] {
   const sorted = [...series].sort((a, b) => a.width - b.width);
-  const found = [];
+  const found: { scope: string; from: { width: number; rows: number }; to: { width: number; rows: number } }[] = [];
   for (let at = 1; at < sorted.length; at++) {
-    for (const scope of Object.keys(sorted[at].rows)) {
-      const before = sorted[at - 1].rows[scope];
-      const after = sorted[at].rows[scope];
-      if (before !== undefined && after > before) {
-        found.push({ scope, from: { width: sorted[at - 1].width, rows: before }, to: { width: sorted[at].width, rows: after } });
+    const previous = sorted[at - 1];
+    const current = sorted[at];
+    if (!previous || !current) {
+      continue;
+    }
+    for (const scope of Object.keys(current.rows)) {
+      const before = previous.rows[scope];
+      const after = current.rows[scope];
+      if (before !== undefined && after !== undefined && after > before) {
+        found.push({ scope, from: { width: previous.width, rows: before }, to: { width: current.width, rows: after } });
       }
     }
   }
@@ -220,7 +245,7 @@ export function rowsIncreaseWhenWidening(series) {
 }
 
 /* The controls of a scope as one text per row ("a+b / c"), the shape of the layout without sizes. */
-export function rowShape(controls) {
+export function rowShape(controls: readonly Control[]): string {
   return groupRows(controls)
     .map(row => row.map(control => control.id).join('+'))
     .join(' / ');
@@ -229,8 +254,13 @@ export function rowShape(controls) {
 /* The differences between two measurements of one scope ({controls, height}) that should lay out alike: a different row
    shape, a different height of the scope, and each control present in both that moved or resized by more than
    `tolerance`. Returns a list of short texts; empty when they match. */
-export function compareScopes(first, second, tolerance = THRESHOLDS.moveTolerance, commonOnly = false) {
-  const differences = [];
+export function compareScopes(
+  first: ScopeShape,
+  second: ScopeShape,
+  tolerance: number = THRESHOLDS.moveTolerance,
+  commonOnly = false,
+): string[] {
+  const differences: string[] = [];
   // a menu that opens inside the scope adds controls: only the controls both measures have are compared
   const secondIds = new Set(second.controls.map(control => control.id));
   const firstIds = new Set(first.controls.map(control => control.id));
@@ -243,7 +273,7 @@ export function compareScopes(first, second, tolerance = THRESHOLDS.moveToleranc
     return differences;
   }
   if (Math.abs((first.height ?? 0) - (second.height ?? 0)) > tolerance) {
-    differences.push(`height ${Math.round(first.height)} against ${Math.round(second.height)} px`);
+    differences.push(`height ${Math.round(first.height ?? 0)} against ${Math.round(second.height ?? 0)} px`);
   }
   // down from the scope's own top, so a scope that moved as a whole (another header above it) is not a change
   const firstTop = first.rect?.t ?? 0;
@@ -266,19 +296,27 @@ export function compareScopes(first, second, tolerance = THRESHOLDS.moveToleranc
 }
 
 /* The differences between two whole probes' scopes ({name: scope}), as texts that name the scope. */
-export function compareProbes(first, second, scopeNames, tolerance = THRESHOLDS.moveTolerance, commonOnly = false) {
+export function compareProbes(
+  first: { scopes: Record<string, ScopeShape> },
+  second: { scopes: Record<string, ScopeShape> },
+  scopeNames: readonly string[],
+  tolerance: number = THRESHOLDS.moveTolerance,
+  commonOnly = false,
+): string[] {
   return scopeNames.flatMap(name => {
-    if (!first.scopes[name] || !second.scopes[name]) {
-      return first.scopes[name] || second.scopes[name] ? [`${name} is not on both pages`] : [];
+    const firstScope = first.scopes[name];
+    const secondScope = second.scopes[name];
+    if (!firstScope || !secondScope) {
+      return firstScope || secondScope ? [`${name} is not on both pages`] : [];
     }
-    return compareScopes(first.scopes[name], second.scopes[name], tolerance, commonOnly).map(text => `${name}: ${text}`);
+    return compareScopes(firstScope, secondScope, tolerance, commonOnly).map(text => `${name}: ${text}`);
   });
 }
 
 /* What the page's measures say about the discrete layout, as one text: the row shape of every scope, whether the page
    scrolls sideways and how many labels wrap or cells clip. Two widths with the same key lay out alike; the sweep looks for
    the widths where the key changes. */
-export function layoutKey(probe) {
+export function layoutKey(probe: KeyedProbe): string {
   const shapes = Object.entries(probe.scopes).map(([name, scope]) => `${name}=${rowShape(scope.controls)}`);
   return JSON.stringify({
     shapes,
@@ -290,20 +328,31 @@ export function layoutKey(probe) {
   });
 }
 
+/* The parsed layout key (layoutKey): the row shapes of the scopes and the counts. */
+type LayoutKey = {
+  shapes: string[];
+  hscroll?: boolean;
+  wraps: number;
+  clipped: number;
+  lines: unknown;
+  bar: string;
+};
+
 /* A value of a layout key as text: an object as JSON. */
-const asText = value => (value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value));
+const asText = (value: unknown): string => (value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value));
 
 /* What changed between two probes' layout keys, as short texts: the scopes whose row shape differs and the counts. */
-export function describeKeyChange(before, after) {
-  const a = JSON.parse(layoutKey(before));
-  const b = JSON.parse(layoutKey(after));
-  const changes = [];
+export function describeKeyChange(before: KeyedProbe, after: KeyedProbe): string[] {
+  const a: LayoutKey = JSON.parse(layoutKey(before));
+  const b: LayoutKey = JSON.parse(layoutKey(after));
+  const changes: string[] = [];
   a.shapes.forEach((shape, at) => {
-    if (shape !== b.shapes[at]) {
-      changes.push(`${shape.split('=')[0]}: ${shape.split('=').slice(1).join('=')} -> ${b.shapes[at].split('=').slice(1).join('=')}`);
+    const other = b.shapes[at] ?? '';
+    if (shape !== other) {
+      changes.push(`${shape.split('=')[0]}: ${shape.split('=').slice(1).join('=')} -> ${other.split('=').slice(1).join('=')}`);
     }
   });
-  for (const key of ['hscroll', 'wraps', 'clipped', 'lines', 'bar']) {
+  for (const key of ['hscroll', 'wraps', 'clipped', 'lines', 'bar'] as const) {
     if (JSON.stringify(a[key]) !== JSON.stringify(b[key])) {
       changes.push(`${key}: ${asText(a[key])} -> ${asText(b[key])}`);
     }
@@ -312,14 +361,22 @@ export function describeKeyChange(before, after) {
 }
 
 /* The rows of a scope per name ({scope: row count}), for `rowsIncreaseWhenWidening`. */
-export function rowCounts(probe) {
+export function rowCounts(probe: { scopes: Record<string, ScopeShape> }): Record<string, number> {
   return Object.fromEntries(Object.entries(probe.scopes).map(([name, scope]) => [name, rowCount(scope.controls)]));
 }
 
 /* The verdict on the gear rows under a pinned header: `visible` rows fully in view, `stack` px pinned in a window of
    `windowHeight` px. Returns [{rule, severity, detail}]. */
-export function judgeRowsVisible({ visible, stack, windowHeight }) {
-  const out = [];
+export function judgeRowsVisible({
+  visible,
+  stack,
+  windowHeight,
+}: {
+  visible: number;
+  stack: number;
+  windowHeight: number;
+}): { rule: string; severity: Severity; detail: string }[] {
+  const out: { rule: string; severity: Severity; detail: string }[] = [];
   if (visible < THRESHOLDS.minRowsFail) {
     out.push({
       rule: 'rows-visible',
@@ -339,8 +396,26 @@ export function judgeRowsVisible({ visible, stack, windowHeight }) {
 /* The verdict on an open menu or popover: its box ({top, bottom, left, right}), the window, the bottom edge of what is pinned
    at the top (`stack`, 0 for none) and `coveredPoints` (corners of the menu where another box is on top: it is cut off).
    Returns [{rule, detail}]. */
-export function judgeMenu({ top, bottom, left, right, windowWidth, windowHeight, stack = 0, coveredPoints = 0 }) {
-  const out = [];
+export function judgeMenu({
+  top,
+  bottom,
+  left,
+  right,
+  windowWidth,
+  windowHeight,
+  stack = 0,
+  coveredPoints = 0,
+}: {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+  windowWidth: number;
+  windowHeight: number;
+  stack?: number;
+  coveredPoints?: number;
+}): { rule: string; detail: string }[] {
+  const out: { rule: string; detail: string }[] = [];
   if (bottom > windowHeight + 1) {
     out.push({ rule: 'menu-inside-window', detail: `ends ${Math.round(bottom - windowHeight)} px below the window` });
   }
@@ -360,7 +435,19 @@ export function judgeMenu({ top, bottom, left, right, windowWidth, windowHeight,
 }
 
 /* The verdict on a dialog's box and whether it scrolls inside itself. Returns [{rule, detail}]. */
-export function judgeDialog({ top, bottom, height, windowHeight, scrolls }) {
+export function judgeDialog({
+  top,
+  bottom,
+  height,
+  windowHeight,
+  scrolls,
+}: {
+  top: number;
+  bottom: number;
+  height: number;
+  windowHeight: number;
+  scrolls: boolean;
+}): { rule: string; detail: string }[] {
   if ((top < 0 || bottom > windowHeight + 1) && !scrolls) {
     return [{ rule: 'dialog-fits', detail: `${Math.round(height)} px dialog in a ${windowHeight} px window, not scrolling` }];
   }

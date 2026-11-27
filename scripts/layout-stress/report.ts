@@ -2,14 +2,78 @@
    the breakpoint table. Pure: it turns the run's data into text. */
 import { STRESS_ITEM_LEVEL, STRESS_LEVEL } from './build.ts';
 import { RULES } from './rules.ts';
+import type { StressOptions } from './options.ts';
+
+/* The result of one window of one screen, browser and setup. */
+export type WindowResult = {
+  browser: string;
+  setup: string;
+  screen: string;
+  window: string;
+  setups: { physical: string; scale: number }[];
+  fonts?: boolean;
+  findings: { rule: string; severity: string }[];
+};
+
+/* A finding of a run, with the columns the runner adds (`window`: the window or the range of widths it was found in). */
+export type ReportFinding = {
+  rule: string;
+  severity: string;
+  screen: string;
+  view?: string;
+  setup: string;
+  browser: string;
+  where: string;
+  detail: string;
+  window?: string;
+};
+
+/* Findings of one kind in one place, with the windows they appear in. */
+export type FindingGroup = {
+  rule: string;
+  severity: string;
+  screen: string;
+  view: string | undefined;
+  setup: string;
+  browser: string;
+  where: string;
+  detail: string;
+  windows: string[];
+};
+
+/* What a run collected, as renderReport takes it. */
+export type RunData = {
+  options: Pick<StressOptions, 'browsers' | 'quick'>;
+  screens: readonly { id: string; label: string; waiting?: string }[];
+  waiting: readonly { id: string; label: string; waiting?: string }[];
+  setups: readonly { id: string; label: string }[];
+  windows: readonly unknown[];
+  heights: readonly number[];
+  findings: readonly ReportFinding[];
+  knownLines: readonly string[];
+  staleLines: readonly string[];
+  breakpoints: {
+    browser: string;
+    setup: string;
+    screen: string;
+    view: string;
+    height: number;
+    changes: { at: number; changes: string[] }[];
+    measured: number;
+  }[];
+  windowResults: readonly WindowResult[];
+  browserNotes: readonly { browser: string; error: string }[];
+  seconds: number;
+  pageFonts: boolean | null;
+};
 
 /* `text` safe to put in HTML. */
-export function escapeHtml(text) {
+export function escapeHtml(text: unknown): string {
   return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 /* A list of window or width labels as short text: the first `limit`, then the number left. */
-export function shortList(items, limit = 5) {
+export function shortList(items: readonly string[], limit = 5): string {
   return items.length <= limit ? items.join(', ') : `${items.slice(0, limit).join(', ')} and ${items.length - limit} more`;
 }
 
@@ -17,12 +81,12 @@ export function shortList(items, limit = 5) {
    [{rule, severity, screen, view, setup, browser, where, detail, windows: [labels]}], failures first. The detail is that of
    the first window in numeric order (the numbers differ from window to window). The windows run at the same time and report
    in the order they finish, so the findings are sorted by window first: the same page gives the same rows on every run. */
-export function groupFindings(findings) {
-  const groups = new Map();
+export function groupFindings(findings: readonly ReportFinding[]): FindingGroup[] {
+  const groups = new Map<string, FindingGroup>();
   const byWindow = [...findings].sort((a, b) => String(a.window).localeCompare(String(b.window), 'en', { numeric: true }));
   for (const item of byWindow) {
     const key = [item.rule, item.screen, item.view, item.setup, item.browser, item.where].join('|');
-    const group = groups.get(key) ?? {
+    const group: FindingGroup = groups.get(key) ?? {
       rule: item.rule,
       severity: item.severity,
       screen: item.screen,
@@ -33,7 +97,7 @@ export function groupFindings(findings) {
       detail: item.detail,
       windows: [],
     };
-    if (!group.windows.includes(item.window)) {
+    if (item.window !== undefined && !group.windows.includes(item.window)) {
       group.windows.push(item.window);
     }
     groups.set(key, group);
@@ -47,7 +111,10 @@ export function groupFindings(findings) {
 }
 
 /* The windows of one screen and setup in one browser, as table rows: {window, covers, fails, warns, rules}. */
-export function windowRows(windowResults, { browser, screen, setup }) {
+export function windowRows(
+  windowResults: readonly WindowResult[],
+  { browser, screen, setup }: { browser: string; screen: string; setup: string },
+): { window: string; covers: string; fails: number; warns: number; rules: string[] }[] {
   return windowResults
     .filter(item => item.browser === browser && item.screen === screen && item.setup === setup)
     .map(item => ({
@@ -69,7 +136,7 @@ code{background:#142023;padding:1px 4px;border-radius:3px}ul{margin:4px 0}li{mar
 `;
 
 /* The whole report. `run` is what index.ts collected. */
-export function renderReport(run) {
+export function renderReport(run: RunData): string {
   const {
     options,
     waiting,
@@ -87,7 +154,7 @@ export function renderReport(run) {
   } = run;
   const fails = findings.filter(item => item.severity === 'fail').length;
   const warns = findings.filter(item => item.severity === 'warn').length;
-  const html = [];
+  const html: string[] = [];
   html.push(`<!doctype html><meta charset="utf-8"><title>Layout stress report</title><style>${STYLE}</style>`);
   html.push('<h1>Layout stress report</h1>');
   html.push(

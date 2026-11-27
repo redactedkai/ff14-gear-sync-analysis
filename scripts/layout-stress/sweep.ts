@@ -1,18 +1,23 @@
 /* The width sweep of one view: one page is reached once and resized from 960 to 2560 px (a coarse step, then each change
    bisected to 1 px, breakpoints.ts). It gives the breakpoint table, the rules judged at every width, `widening-adds-rows`,
    and `resize-equals-fresh` (the resized page against a page loaded at the same width, and against itself narrowing). */
+import type { Browser, Page } from 'playwright';
 import { findChangePoints } from './breakpoints.ts';
-import { judgeProbe, measureAgain, reachAndMeasure } from './checks.ts';
+import { firstLine, judgeProbe, measureAgain, reachAndMeasure } from './checks.ts';
 import { SWEEP_FROM, SWEEP_STEP, SWEEP_TO } from './matrix.ts';
 import { compareProbes, describeKeyChange, layoutKey, makeFindings, rowCounts, rowsIncreaseWhenWidening } from './rules.ts';
 import { openPage, settle } from './session.ts';
+import type { Finding, FixtureSetup, Probe, Setup, View } from './types.ts';
 
 /* How many widths of the sweep are also loaded fresh and compared: every change point and its neighbour below, and
    every `FRESH_EVERY`th coarse width. */
 const FRESH_EVERY = 8;
 
+/* A finding of a sweep: with `widths`, the range of widths it happens in, and `count`, how many widths, for a rule judged at every width. */
+export type SweepFinding = Finding & { widths?: [number, number]; count?: number };
+
 /* Sets the window to `width` x `height` and measures the view again once the layout has settled. */
-async function measureAt(page, view, width, height) {
+async function measureAt(page: Page, view: View, width: number, height: number): Promise<Probe> {
   await page.setViewportSize({ width, height });
   await settle(page);
   return measureAgain(page, view);
@@ -21,8 +26,32 @@ async function measureAt(page, view, width, height) {
 /* Sweeps `view` of `screen` at window height `height`. `fixtures`: as in checks.ts. Returns
    {changes: [{at, changes}], measured, findings}: the findings are `widening-adds-rows`, `resize-equals-fresh` and the
    page rules at every width, each with the range of widths it happens in (`widths: [first, last]`, `count`). */
-export async function sweepView({ browser, file, view, fixtures, setup, height, step = SWEEP_STEP, from = SWEEP_FROM, to = SWEEP_TO }) {
-  const { fixture, failWrites } = fixtures[view.fixture];
+export async function sweepView({
+  browser,
+  file,
+  view,
+  fixtures,
+  setup,
+  height,
+  step = SWEEP_STEP,
+  from = SWEEP_FROM,
+  to = SWEEP_TO,
+}: {
+  browser: Browser;
+  file: string;
+  view: View;
+  fixtures: Record<string, FixtureSetup>;
+  setup: Setup;
+  height: number;
+  step?: number;
+  from?: number;
+  to?: number;
+}): Promise<{ changes: { at: number; changes: string[] }[]; measured: number; findings: SweepFinding[] }> {
+  const chosen = fixtures[view.fixture];
+  if (!chosen) {
+    throw new Error(`unknown fixture ${view.fixture}`);
+  }
+  const { fixture, failWrites } = chosen;
   const open = { browser, file, height, fixture, failWrites, setup };
   const { context, page, errors } = await openPage(browser, { ...open, width: from });
   const found = makeFindings();
@@ -40,13 +69,14 @@ export async function sweepView({ browser, file, view, fixtures, setup, height, 
     });
 
     // the page rules at every width measured, grouped: one finding per rule and place with its range of widths
-    const groups = new Map();
+    const groups = new Map<string, SweepFinding>();
     for (const { width, result: probe } of result.series) {
       for (const item of judgeProbe(probe, view.id)) {
         const key = `${item.rule}|${item.where}|${item.detail.replace(/[\d.]+/g, '#')}`;
-        const group = groups.get(key) ?? { ...item, widths: [width, width], count: 0 };
-        group.widths = [Math.min(group.widths[0], width), Math.max(group.widths[1], width)];
-        group.count++;
+        const group: SweepFinding = groups.get(key) ?? { ...item, widths: [width, width], count: 0 };
+        const [firstWidth, lastWidth] = group.widths ?? [width, width];
+        group.widths = [Math.min(firstWidth, width), Math.max(lastWidth, width)];
+        group.count = (group.count ?? 0) + 1;
         groups.set(key, group);
       }
     }
@@ -65,11 +95,12 @@ export async function sweepView({ browser, file, view, fixtures, setup, height, 
     // the downward pass over the coarse widths: the same layout as going up
     const byWidth = new Map(result.series.map(({ width, result: probe }) => [width, probe]));
     const coarse = result.series.map(item => item.width).filter(width => (width - from) % step === 0 || width === to);
-    const downDifferences = [];
+    const downDifferences: string[] = [];
     for (const width of [...coarse].reverse()) {
       const down = await measureAt(page, view, width, height);
-      if (layoutKey(down) !== layoutKey(byWidth.get(width))) {
-        downDifferences.push(`${width} px: ${describeKeyChange(byWidth.get(width), down).join('; ')}`);
+      const up = byWidth.get(width);
+      if (up && layoutKey(down) !== layoutKey(up)) {
+        downDifferences.push(`${width} px: ${describeKeyChange(up, down).join('; ')}`);
       }
     }
     if (downDifferences.length) {
@@ -87,8 +118,8 @@ export async function sweepView({ browser, file, view, fixtures, setup, height, 
         freshWidths.add(width);
       }
     });
-    const scopeNames = Object.keys(result.series[0].result.scopes);
-    const freshDifferences = [];
+    const scopeNames = Object.keys(result.series[0]?.result.scopes ?? {});
+    const freshDifferences: string[] = [];
     for (const width of [...freshWidths].sort((a, b) => a - b)) {
       const fresh = await openPage(browser, { ...open, width });
       try {
@@ -121,7 +152,7 @@ export async function sweepView({ browser, file, view, fixtures, setup, height, 
       findings: [...found.list.map(item => ({ ...item, view: view.id })), ...grouped],
     };
   } catch (error) {
-    found.add('check-completed', `${view.id} sweep: ${error.message.split('\n')[0]}`, view.id);
+    found.add('check-completed', `${view.id} sweep: ${firstLine(error)}`, view.id);
     return { changes: [], measured: 0, findings: found.list.map(item => ({ ...item, view: view.id })) };
   } finally {
     await context.close();
