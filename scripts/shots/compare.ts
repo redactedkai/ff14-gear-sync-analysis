@@ -24,10 +24,10 @@ if (folders.length !== 2) {
 const [dirA, dirB] = folders.map(dir => resolve(dir));
 const threshold = numberOption('threshold', 2);
 
-const pngNames = dir => readdirSync(dir).filter(name => name.endsWith('.png'));
+const pngNames = (dir: string): string[] => readdirSync(dir).filter(name => name.endsWith('.png'));
 const namesA = pngNames(dirA);
 const namesB = new Set(pngNames(dirB));
-const report = [];
+const report: string[] = [];
 for (const name of namesB) {
   if (!namesA.includes(name)) {
     report.push(`${name}: missing in ${dirA}`);
@@ -37,11 +37,16 @@ for (const name of namesB) {
 /* In the page: decode two PNGs (base64) and compare them. Returns {size} when the sizes differ, else {count, box,
    maxDiff}: the pixels with a channel difference above `limit`, their bounding box [x0, y0, x1, y1] (null when none)
    and the largest channel difference of any pixel. */
-async function diffInPage([pngA, pngB, limit]) {
-  const decode = async base64 => {
+async function diffInPage([pngA, pngB, limit]: [string, string, number]): Promise<
+  { size: string } | { count: number; box: number[] | null; maxDiff: number }
+> {
+  const decode = async (base64: string) => {
     const bitmap = await createImageBitmap(await (await fetch(`data:image/png;base64,${base64}`)).blob());
     const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
     const context = canvas.getContext('2d');
+    if (!context) {
+      throw new Error('no 2d canvas context');
+    }
     context.drawImage(bitmap, 0, 0);
     return { width: bitmap.width, height: bitmap.height, data: context.getImageData(0, 0, bitmap.width, bitmap.height).data };
   };
@@ -90,11 +95,12 @@ for (const name of namesA) {
     identical++;
     continue;
   }
-  const result = await page.evaluate(diffInPage, [bytesA.toString('base64'), bytesB.toString('base64'), threshold]);
-  if (result.size) {
+  const pair: [string, string, number] = [bytesA.toString('base64'), bytesB.toString('base64'), threshold];
+  const result = await page.evaluate(diffInPage, pair);
+  if ('size' in result) {
     report.push(`${name}: size ${result.size}`);
   } else if (result.count) {
-    report.push(`${name}: ${result.count} px differ, box ${result.box.join(',')}, max channel difference ${result.maxDiff}`);
+    report.push(`${name}: ${result.count} px differ, box ${(result.box ?? []).join(',')}, max channel difference ${result.maxDiff}`);
   } else {
     identical++;
   }

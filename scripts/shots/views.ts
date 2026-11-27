@@ -2,7 +2,29 @@
    tests/visual/ (the baselines CI compares). Each view is a saved state to open the page with and the clicks that lead to
    what it shows. */
 
+import type { BrowserContext, Page } from 'playwright';
+import type { SlotType } from '../../src/core/types.ts';
+import type { SavedSheet } from '../../src/ui/sheets/saved-types.ts';
 import { STORE_KEY } from '../../src/ui/store-key.ts';
+
+declare global {
+  interface Window {
+    /* Set by scrollToTopAndSettle's wait: the last measured layout and how many frames in a row it stayed the same. */
+    __shotLayout?: { key: string; still: number };
+  }
+}
+
+/* A saved state a view opens with: the page's settings (the shape of src/ui/state.ts), and `sheets`, the sheet records to
+   save beside them. */
+export type ViewState = Record<string, unknown> & { tab?: string; mathTab?: string; sheets?: SavedSheet[] };
+
+/* One view: the saved state it opens with (null: none), the steps that lead to it, and the options of its shot. */
+export type View = {
+  state: ViewState | null;
+  steps: (page: Page) => Promise<void>;
+  keepHover?: boolean;
+  maxDiffPixels?: number;
+};
 
 // time for the page to redraw after a click or a state change, before the next step
 export const SETTLE_MS = 450;
@@ -19,13 +41,13 @@ const CORNER_NOISE_PX = 16;
 const STILL_FRAMES = 3;
 
 /* Saved states the views start from (the shape of src/ui/state.ts; restoreState fills in the rest). */
-const SAGE = { job: 'SGE', cap: 123, sync: true, level: 100, tab: 'browse', mathTab: 'piece' };
-const WARRIOR = { job: 'WAR', cap: 123, sync: true, level: 90, tab: 'browse', mathTab: 'piece' };
-const BLUE_MAGE = { job: 'BLU', cap: 123, sync: true, level: 80, tab: 'browse', mathTab: 'piece' };
+const SAGE: ViewState = { job: 'SGE', cap: 123, sync: true, level: 100, tab: 'browse', mathTab: 'piece' };
+const WARRIOR: ViewState = { job: 'WAR', cap: 123, sync: true, level: 90, tab: 'browse', mathTab: 'piece' };
+const BLUE_MAGE: ViewState = { job: 'BLU', cap: 123, sync: true, level: 80, tab: 'browse', mathTab: 'piece' };
 
 /* A saved Sage sheet (the shape src/ui/sheets/storage.ts reads): level 100, synced to 123, one set of crafted item level
    115 pieces with the weapon, hands and feet rows empty and every other row pinned, and an empty second set. */
-const SAGE_ROWS = [
+const SAGE_ROWS: ([SlotType] | [SlotType, number])[] = [
   ['weapon'],
   ['offhand'],
   ['head', 10880],
@@ -39,7 +61,7 @@ const SAGE_ROWS = [
   ['ring', 11054],
   ['ring', 11054],
 ];
-const SAGE_SHEET = {
+const SAGE_SHEET: SavedSheet = {
   v: 1,
   id: 's_sage',
   name: 'Bahamut T13 Healer',
@@ -75,22 +97,22 @@ const SAGE_SHEET = {
   createdAt: 0,
   updatedAt: 0,
 };
-const SHEETS = { tab: 'sheets', sheets: [SAGE_SHEET] };
+const SHEETS: ViewState = { tab: 'sheets', sheets: [SAGE_SHEET] };
 
 // the set page's head row (the row's index in the table) and its first materia chip
 const HEAD_CHIP = '[data-chip="2:0"]';
 
 /* Waits SETTLE_MS for the page to redraw; returns a promise. `page` is a Playwright page. */
-export const settle = page => page.waitForTimeout(SETTLE_MS);
+export const settle = (page: Page): Promise<void> => page.waitForTimeout(SETTLE_MS);
 
 /* Click `selector`, then let the page redraw. */
-async function clickAndSettle(page, selector) {
+async function clickAndSettle(page: Page, selector: string): Promise<void> {
   await page.click(selector);
   await settle(page);
 }
 
 /* Open the seeded sheet's set named `set` from the sheet manager. */
-async function openSet(page, set = 'Mine') {
+async function openSet(page: Page, set = 'Mine'): Promise<void> {
   await clickAndSettle(page, '#sh-list a.sname');
   await page.locator('#sh-sets a.sname', { hasText: set }).click();
   await page.waitForSelector('#sh-gear');
@@ -98,7 +120,7 @@ async function openSet(page, set = 'Mine') {
 }
 
 /* On a set page: press Auto-fill and wait for its result. */
-async function fill(page) {
+async function fill(page: Page): Promise<void> {
   await page.click('#sh-fill');
   await page.waitForSelector('#sh-discard', { timeout: FILL_TIMEOUT_MS });
   await settle(page);
@@ -109,7 +131,7 @@ const noSteps = async () => {};
 /* Each view: the saved state it opens with (null: nothing saved; `sheets` lists sheet records to save beside it) and
    the steps that lead to it. `keepHover`: the steps end on a hover the shot shows, so the mouse stays where it is.
    `maxDiffPixels`: how many pixels the baseline may differ by (default 0; tests/visual only). */
-export const VIEWS = {
+export const VIEWS: Record<string, View> = {
   '01-sheets-empty': { state: null, steps: noSteps },
   '02-sheets-manager': { state: SHEETS, steps: noSteps },
   '03-sheet-page': { state: SHEETS, steps: page => clickAndSettle(page, '#sh-list a.sname') },
@@ -258,21 +280,24 @@ const NO_MOTION_CSS =
 
 /* The localStorage entries (pairs of key and JSON text) that make a page open in `state`, a view's saved state: the
    settings, then each sheet record and the sheet order. Empty for no saved state. */
-function seedRecords(state) {
+function seedRecords(state: ViewState | null): [string, string][] {
   if (!state) {
     return [];
   }
   const { sheets = [], ...settings } = state;
-  return [
-    [STORE_KEY, JSON.stringify(settings)],
-    ...sheets.map(sheet => [`${STORE_KEY}:sheet:${sheet.id}`, JSON.stringify(sheet)]),
-    ...(sheets.length ? [[`${STORE_KEY}:sheets`, JSON.stringify({ v: 1, order: sheets.map(sheet => sheet.id) })]] : []),
-  ];
+  const records: [string, string][] = [[STORE_KEY, JSON.stringify(settings)]];
+  for (const sheet of sheets) {
+    records.push([`${STORE_KEY}:sheet:${sheet.id}`, JSON.stringify(sheet)]);
+  }
+  if (sheets.length) {
+    records.push([`${STORE_KEY}:sheets`, JSON.stringify({ v: 1, order: sheets.map(sheet => sheet.id) })]);
+  }
+  return records;
 }
 
 /* Before a page opens in `context`: turns off animations from the first paint and seeds the view's saved state (once, so
    a reload inside the steps keeps what the page saved). */
-export async function prepareContext(context, view) {
+export async function prepareContext(context: BrowserContext, view: View): Promise<void> {
   await context.addInitScript(css => {
     document.addEventListener('DOMContentLoaded', () => {
       const style = document.createElement('style');
@@ -295,11 +320,11 @@ export async function prepareContext(context, view) {
 
 /* Waits until the note after an action (the toast of the page, `#sh-toast`) has cleared itself: a timed note in a shot would
    make the shot depend on timing. Returns a promise; `page` is a Playwright page. */
-async function waitForNoNote(page) {
+async function waitForNoNote(page: Page): Promise<void> {
   await page.waitForFunction(
     () => {
       const note = document.querySelector('#sh-toast');
-      return !note || note.textContent.trim() === '';
+      return !note || (note.textContent ?? '').trim() === '';
     },
     null,
     { timeout: NOTE_TIMEOUT_MS },
@@ -312,7 +337,7 @@ async function waitForNoNote(page) {
    its target into view) draws the sticky parts (the table header, the sub-tab and controls bar) at the scroll offset, so
    the page looks torn; and Zag shows a popover a frame before it places it. Returns a promise; `page` is a Playwright
    page. */
-async function scrollToTopAndSettle(page) {
+async function scrollToTopAndSettle(page: Page): Promise<void> {
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForFunction(
     stillFrames => {
@@ -344,9 +369,9 @@ async function scrollToTopAndSettle(page) {
    of antialiasing differed between two runs of one commit (the set page's header and column names, most often with a dialog
    open and four workers busy). A box with no sticky position has one way to be drawn. Call it with the window at the top,
    after the last step. Returns a promise; `page` is a Playwright page. */
-async function leaveStickyPartsInPlace(page) {
+async function leaveStickyPartsInPlace(page: Page): Promise<void> {
   await page.evaluate(() => {
-    for (const element of document.querySelectorAll('*')) {
+    for (const element of document.querySelectorAll<HTMLElement>('*')) {
       if (getComputedStyle(element).position === 'sticky') {
         element.style.position = 'relative';
         element.style.inset = 'auto';
@@ -357,7 +382,7 @@ async function leaveStickyPartsInPlace(page) {
 
 /* On a page that has just loaded: waits for the fonts, runs the view's steps, waits out any timed note, scrolls to the
    top, and leaves the pointer off everything, so the page is ready for its shot. */
-export async function openView(page, view) {
+export async function openView(page: Page, view: View): Promise<void> {
   await page.evaluate(() => document.fonts.ready);
   await settle(page);
   await view.steps(page);
@@ -371,7 +396,7 @@ export async function openView(page, view) {
     await settle(page);
     await page.mouse.move(1, 1);
     await page.evaluate(() => {
-      for (const table of document.querySelectorAll('table[data-col]')) {
+      for (const table of document.querySelectorAll<HTMLElement>('table[data-col]')) {
         table.dataset.col = '';
       }
     });
@@ -383,7 +408,7 @@ export async function openView(page, view) {
 
 /* The address a view opens at: the page's file URL plus the hash of its tab (src/ui/router/routes.ts; a bare address
    opens Sheets whatever tab the saved state names). */
-export function viewUrl(pageUrl, view) {
+export function viewUrl(pageUrl: string, view: View): string {
   const { tab, mathTab = 'piece' } = view.state ?? {};
   if (tab === 'browse') {
     return `${pageUrl}#/gear`;

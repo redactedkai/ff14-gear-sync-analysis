@@ -25,29 +25,37 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
+import type { Browser, BrowserContext } from 'playwright';
 import { buildReleasePage } from '../build/build.ts';
 import { flag, numberOption, option } from '../perf/args.mjs';
 import { VIEWS, openView, prepareContext, viewUrl } from './views.ts';
+import type { View } from './views.ts';
 
 const WIDTHS = [1440, 960];
-const SCHEMES = ['light', 'dark'];
+const SCHEMES = ['light', 'dark'] as const;
+
+/* One shot to take: a view at a width in a colour scheme. */
+type Shot = { name: string; view: View; width: number; scheme: (typeof SCHEMES)[number] };
 const VIEWPORT_HEIGHT = 900;
 
-const outDir = option('out');
-if (!outDir) {
+const outOption = option('out');
+if (!outOption) {
   console.error('error: --out <dir> is required (see the header of scripts/shots/shots.ts)');
   process.exit(1);
 }
+const outDir: string = outOption;
 // the page shot: --page, or one built here as the live page looks (dist/ is left as it is)
-let pagePath;
-if (option('page')) {
-  pagePath = resolve(option('page'));
+const pageOption = option('page');
+let pagePath: string;
+if (pageOption) {
+  pagePath = resolve(pageOption);
 } else {
   pagePath = resolve(outDir, 'page.html');
   await buildReleasePage(pagePath);
   console.log(`built ${pagePath}`);
 }
-const onlyPattern = option('only') ? new RegExp(option('only')) : null;
+const onlyOption = option('only');
+const onlyPattern = onlyOption ? new RegExp(onlyOption) : null;
 const workerCount = numberOption('workers', 4);
 const webFonts = flag('web-fonts');
 
@@ -55,10 +63,10 @@ if (readFileSync(pagePath, 'utf8').includes('class="build-badge"')) {
   console.warn('warning: the page carries the DEV badge; build it with GITHUB_REF_NAME=main to compare across branches');
 }
 
-const errors = [];
+const errors: string[] = [];
 
 /* One shot: a fresh context at `width` in `scheme`, the view's saved state, its steps, then the PNG. */
-async function shoot(browserInstance, { name, view, width, scheme }) {
+async function shoot(browserInstance: Browser, { name, view, width, scheme }: Shot): Promise<void> {
   const context = await browserInstance.newContext({
     viewport: { width, height: VIEWPORT_HEIGHT },
     colorScheme: scheme,
@@ -76,7 +84,7 @@ async function shoot(browserInstance, { name, view, width, scheme }) {
 }
 
 /* The page part of shoot: open, wait for fonts, run the steps, then take the PNG. */
-async function shootInContext(context, { name, view, width, scheme }) {
+async function shootInContext(context: BrowserContext, { name, view, width, scheme }: Shot): Promise<void> {
   const page = await context.newPage();
   page.on('pageerror', error => errors.push(`${name} ${width} ${scheme}: ${error.message}`));
   await page.goto(viewUrl(pathToFileURL(pagePath).href, view));
@@ -90,7 +98,7 @@ async function shootInContext(context, { name, view, width, scheme }) {
 }
 
 // every view at every width and scheme, shot by a few workers in parallel
-const shots = [];
+const shots: Shot[] = [];
 for (const [name, view] of Object.entries(VIEWS)) {
   if (onlyPattern && !onlyPattern.test(name)) {
     continue;
@@ -109,7 +117,9 @@ await Promise.all(
     while (next < shots.length) {
       const shot = shots[next++];
       // a step that fails (a selector gone after a change) costs that shot only
-      await shoot(browser, shot).catch(error => errors.push(`${shot.name} ${shot.width} ${shot.scheme}: ${error.message.split('\n')[0]}`));
+      await shoot(browser, shot).catch((error: unknown) =>
+        errors.push(`${shot.name} ${shot.width} ${shot.scheme}: ${String(error instanceof Error ? error.message : error).split('\n')[0]}`),
+      );
     }
   }),
 );
