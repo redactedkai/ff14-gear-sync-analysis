@@ -1,13 +1,13 @@
 // Across the tabs: every tab for each job at 960 px.
 
-import { JOBS, NARROW, HAS_OFFHAND, shot } from '../../lib/constants.mjs';
-import { DEFAULT_EXCLUDE } from '../../lib/core-worker.mjs';
-import { coreGear, coreKeys } from '../../lib/core.mjs';
-import { check, checkNoBadText, expect } from '../../lib/expect.mjs';
-import { FILL_SHEET } from '../../lib/fixtures.mjs';
-import { hasHScroll, runFill, setJob, showMath, showTab } from '../../lib/nav.mjs';
-import { checkSyncCaps, checkTotals } from '../../lib/shared-checks.mjs';
-import { expectMealEmpty, openSet, seedSheet } from '../../lib/sheets.mjs';
+import { JOBS, NARROW, HAS_OFFHAND, shot } from '../../lib/constants.ts';
+import { DEFAULT_EXCLUDE } from '../../lib/core-worker.ts';
+import { coreGear, coreKeys } from '../../lib/core.ts';
+import { check, checkNoBadText, expect } from '../../lib/expect.ts';
+import { FILL_SHEET } from '../../lib/fixtures.ts';
+import { hasHScroll, runFill, setJob, showMath, showTab } from '../../lib/nav.ts';
+import { checkSyncCaps, checkTotals } from '../../lib/shared-checks.ts';
+import { expectMealEmpty, openSet, seedSheet } from '../../lib/sheets.ts';
 
 /* The level caps of the jobs that stop below 100 (CLAUDE.md: BLU 80, BST 50); every other walked job has 100. */
 const JOB_LEVEL_CAP = { BST: 50, BLU: 80 };

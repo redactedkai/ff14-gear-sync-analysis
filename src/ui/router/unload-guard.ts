@@ -5,7 +5,7 @@
 import { STORE_KEY } from '../store-key.ts';
 
 /* The dev flag's localStorage key (in the STORE_KEY family): the value '1' turns the guard off. The smoke test sets it before
-   every page start (tests/e2e/lib/init-scripts.mjs), so its many reloads are not held; the step that checks the guard sets
+   every page start (tests/e2e/lib/init-scripts.ts), so its many reloads are not held; the step that checks the guard sets
    '0' (a value this module does not read as off) to have it on. A person never needs it. */
 export const UNLOAD_GUARD_OFF_KEY = `${STORE_KEY}:no-unload-guard`;
 

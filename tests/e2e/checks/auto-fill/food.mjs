@@ -1,13 +1,13 @@
 // The Auto-fill settings dialog: Food and the best meal.
 
 import { DIALOG_SHEET, DIALOG_SYNC, expectSavedFill } from './dialog.mjs';
-import { STORE_KEY, shot } from '../../lib/constants.mjs';
-import { coreRecipe } from '../../lib/core.mjs';
-import { check, checkNoBadText, expect, poll } from '../../lib/expect.mjs';
-import { runFill, setNumber } from '../../lib/nav.mjs';
-import { checkTotals } from '../../lib/shared-checks.mjs';
-import { expectApplyCount, expectMealEmpty, openSet, seedSheet } from '../../lib/sheets.mjs';
-import { pickOption } from '../../lib/select.mjs';
+import { STORE_KEY, shot } from '../../lib/constants.ts';
+import { coreRecipe } from '../../lib/core.ts';
+import { check, checkNoBadText, expect, poll } from '../../lib/expect.ts';
+import { runFill, setNumber } from '../../lib/nav.ts';
+import { checkTotals } from '../../lib/shared-checks.ts';
+import { expectApplyCount, expectMealEmpty, openSet, seedSheet } from '../../lib/sheets.ts';
+import { pickOption } from '../../lib/select.ts';
 
 /** Food in the Auto-fill settings: switched on, Auto-fill picks the meal with the core's numbers (every stat of the Total row,
  * meal included), the Food row names it, and the Take boxes agree with what Apply does: one per changed row and one for

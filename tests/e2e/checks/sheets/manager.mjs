@@ -1,9 +1,9 @@
 // The Sheets tab: the sheet manager.
 
-import { NARROW, STORE_KEY, shot } from '../../lib/constants.mjs';
-import { check, checkNoBadText, expect, focusInsideLayer, poll, same } from '../../lib/expect.mjs';
-import { hasHScroll, setNumber, waitReady, waitSaved } from '../../lib/nav.mjs';
-import { figuresRadio, rowAction, sheetNames } from '../../lib/sheets.mjs';
+import { NARROW, STORE_KEY, shot } from '../../lib/constants.ts';
+import { check, checkNoBadText, expect, focusInsideLayer, poll, same } from '../../lib/expect.ts';
+import { hasHScroll, setNumber, waitReady, waitSaved } from '../../lib/nav.ts';
+import { figuresRadio, rowAction, sheetNames } from '../../lib/sheets.ts';
 
 /** A saved sheet record for White Mage holding one set with the Ironworks Magitek Cane (item level 120, a White Mage
  * weapon no other healer can wear) in its weapon row, pinned: written straight to storage, since the step needs only the

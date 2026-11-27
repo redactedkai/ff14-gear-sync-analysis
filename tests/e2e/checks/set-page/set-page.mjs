@@ -1,10 +1,10 @@
 // A set page: its table and the guard on leaving the Sheets tab with a draft.
 
-import { NARROW, STORE_KEY, shot } from '../../lib/constants.mjs';
-import { check, checkNoBadText, expect } from '../../lib/expect.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { hasHScroll, waitReady, waitSaved, waitStateSaved } from '../../lib/nav.mjs';
-import { expectApplyCount, openSageSet, openSet, seedSheet, reloadAtSheets } from '../../lib/sheets.mjs';
+import { NARROW, STORE_KEY, shot } from '../../lib/constants.ts';
+import { check, checkNoBadText, expect } from '../../lib/expect.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { hasHScroll, waitReady, waitSaved, waitStateSaved } from '../../lib/nav.ts';
+import { expectApplyCount, openSageSet, openSet, seedSheet, reloadAtSheets } from '../../lib/sheets.ts';
 
 /** Leaving the Sheets tab by a tab link while a set page has a draft asks first, with the set page's own dialog:
  * Keep editing stays on the set page, Discard and leave opens the tab asked for. */

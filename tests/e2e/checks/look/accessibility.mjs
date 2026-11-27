@@ -1,9 +1,9 @@
 // Accessibility rules (axe-core) on every main screen and on the open menus and dialogs, dark scheme.
 
 import { openViewSet, viewSheets } from './screens.mjs';
-import { axeViolations, splitKnown } from '../../lib/axe.mjs';
-import { check, expect, stepRecord } from '../../lib/expect.mjs';
-import { seedSheets } from '../../lib/sheets.mjs';
+import { axeViolations, splitKnown } from '../../lib/axe.ts';
+import { check, expect, stepRecord } from '../../lib/expect.ts';
+import { seedSheets } from '../../lib/sheets.ts';
 
 // TODO: each entry goes when the page is fixed: names for the drag handles, an h4 before the materia menu title, a <main> around
 // the page, and the visible text inside the two aria-labels.

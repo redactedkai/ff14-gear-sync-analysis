@@ -1,7 +1,7 @@
 /* The test fixtures of the stories: Playwright's `test` plus two things it lacks.
    - A page error or a console error fails the test (Playwright reports neither by itself, and `mount()` does not reject
      when a Lit render throws later). A test that expects an error says so with the annotation ALLOW_PAGE_ERROR.
-   - `axe()` runs axe-core on the mounted story, injected the way tests/e2e/lib/axe.mjs does. */
+   - `axe()` runs axe-core on the mounted story, injected the way tests/e2e/lib/axe.ts does. */
 import { test as base, expect } from 'playwright/test';
 import { readFileSync } from 'node:fs';
 import { frameDelayFromEnv, lateFramesScript } from '../e2e/lib/late-frames.ts';

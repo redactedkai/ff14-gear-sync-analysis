@@ -1,8 +1,8 @@
-// The numbers from src/core, asked of the worker thread in core-worker.mjs.
+// The numbers from src/core, asked of the worker thread in core-worker.ts.
 
 import { Worker } from 'node:worker_threads';
 
-// The numbers the page must show come from src/core (lib/core-worker.mjs), computed in a worker thread.
+// The numbers the page must show come from src/core (lib/core-worker.ts), computed in a worker thread.
 export let coreWorker;
 
 const coreCalls = new Map(); // key -> promise of the result: a call made twice is computed once
@@ -10,7 +10,7 @@ const coreCalls = new Map(); // key -> promise of the result: a call made twice 
 let coreId = 0;
 
 export function startCore() {
-  coreWorker = new Worker(new URL('./core-worker.mjs', import.meta.url));
+  coreWorker = new Worker(new URL('./core-worker.ts', import.meta.url));
   coreWorker.on('message', ({ id, result, error }) => {
     const call = coreCalls.get(id);
     if (error) {
@@ -26,7 +26,7 @@ export function startCore() {
   });
 }
 
-/** `fn` of core-worker.mjs in the worker, with JSON-able `args`. */
+/** `fn` of core-worker.ts in the worker, with JSON-able `args`. */
 export function core(fn, ...args) {
   const key = JSON.stringify([fn, args]);
   if (!coreCalls.has(key)) {

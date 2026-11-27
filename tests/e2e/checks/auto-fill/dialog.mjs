@@ -1,12 +1,12 @@
 // The Auto-fill settings dialog (the gear icon on a set page): the sheet and the helpers its checks share.
 
-import { ACTIVITY_KEYS, STORE_KEY } from '../../lib/constants.mjs';
-import { DEFAULT_EXCLUDE } from '../../lib/core-worker.mjs';
-import { check, expect, placedByZag, poll } from '../../lib/expect.mjs';
-import { FILL_SHEET } from '../../lib/fixtures.mjs';
-import { runFill } from '../../lib/nav.mjs';
-import { expectSelectValue } from '../../lib/select.mjs';
-import { checkTotals } from '../../lib/shared-checks.mjs';
+import { ACTIVITY_KEYS, STORE_KEY } from '../../lib/constants.ts';
+import { DEFAULT_EXCLUDE } from '../../lib/core-worker.ts';
+import { check, expect, placedByZag, poll } from '../../lib/expect.ts';
+import { FILL_SHEET } from '../../lib/fixtures.ts';
+import { runFill } from '../../lib/nav.ts';
+import { expectSelectValue } from '../../lib/select.ts';
+import { checkTotals } from '../../lib/shared-checks.ts';
 
 export const DIALOG_SYNC = { cap: null, sync: false, level: 100 };
 

@@ -4,10 +4,10 @@
 
 import { LEVEL_TEXT, rangeOnly } from '../../../../src/ui/level-cap.ts';
 import { SYNC_CHIP_TEXT } from '../../../../src/ui/views/sync-explainer.ts';
-import { check, expect, poll } from '../../lib/expect.mjs';
-import { afterFrames, setJob, setNumber, showMath, showTab, waitReady, waitSaved } from '../../lib/nav.mjs';
-import { setUpShared } from '../../lib/setup.mjs';
-import { pickOption } from '../../lib/select.mjs';
+import { check, expect, poll } from '../../lib/expect.ts';
+import { afterFrames, setJob, setNumber, showMath, showTab, waitReady, waitSaved } from '../../lib/nav.ts';
+import { setUpShared } from '../../lib/setup.ts';
+import { pickOption } from '../../lib/select.ts';
 
 /** The window the later steps expect after a step that resized it. */
 const DEFAULT_WINDOW = { width: 1000, height: 900 };

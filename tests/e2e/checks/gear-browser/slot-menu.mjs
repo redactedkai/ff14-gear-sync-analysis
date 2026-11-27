@@ -1,8 +1,8 @@
 // Gear browser: the Slot menu on the title line, one round bar with the name search.
 
 import { ANY_SLOT_LABEL } from '../../../../src/ui/elements/gear-browser/slot-menu-names.ts';
-import { check, expect } from '../../lib/expect.mjs';
-import { chooseSlot, fillBrowser, showTab } from '../../lib/nav.mjs';
+import { check, expect } from '../../lib/expect.ts';
+import { chooseSlot, fillBrowser, showTab } from '../../lib/nav.ts';
 
 /** The Slot menu on the real page: the open menu stays above the table's sticky header after the pointer lit a row (the story has
  * no table; every row, the ones over the header included, is still the top element at its centre). The menu's width, border, keys,

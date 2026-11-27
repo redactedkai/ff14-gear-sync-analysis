@@ -1,9 +1,9 @@
 // A set page: clicks and keys that come right after each other (a double-click on Apply, Escape as the leave question opens).
 
-import { NARROW } from '../../lib/constants.mjs';
-import { check, expect } from '../../lib/expect.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { expectApplyCount, openSet, seedSheet } from '../../lib/sheets.mjs';
+import { NARROW } from '../../lib/constants.ts';
+import { check, expect } from '../../lib/expect.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { expectApplyCount, openSet, seedSheet } from '../../lib/sheets.ts';
 
 /** How long, in ms, to wait for a second Auto-fill that a double-click might have started. */
 const SECOND_FILL_WAIT_MS = 1500;

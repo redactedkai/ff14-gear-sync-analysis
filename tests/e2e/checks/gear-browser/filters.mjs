@@ -1,10 +1,10 @@
 // Gear browser: rings, the expansion filter, the Paladin off-hand.
 
-import { shot } from '../../lib/constants.mjs';
-import { coreRings } from '../../lib/core.mjs';
-import { check, expect } from '../../lib/expect.mjs';
-import { afterFrames, browserRows, fillBrowser, setJob, setNumber, showTab, waitSaved } from '../../lib/nav.mjs';
-import { setUpShared } from '../../lib/setup.mjs';
+import { shot } from '../../lib/constants.ts';
+import { coreRings } from '../../lib/core.ts';
+import { check, expect } from '../../lib/expect.ts';
+import { afterFrames, browserRows, fillBrowser, setJob, setNumber, showTab, waitSaved } from '../../lib/nav.ts';
+import { setUpShared } from '../../lib/setup.ts';
 
 // Gear browser rings window: [job, item level from, item level to, equip level up to].
 const RINGS_WINDOW = ['SGE', 140, 150, 60];

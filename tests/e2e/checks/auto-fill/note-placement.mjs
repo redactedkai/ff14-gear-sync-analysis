@@ -1,9 +1,9 @@
 // The "?" note of the Auto-fill settings' Spare points switch: it is fixed to the window (a Zag popover, <gsa-rank-note>), so it
 // follows its button when the page scrolls or the window is resized.
 
-import { check, expect, placedByZag, poll } from '../../lib/expect.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { openSageSet, seedSheet } from '../../lib/sheets.mjs';
+import { check, expect, placedByZag, poll } from '../../lib/expect.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { openSageSet, seedSheet } from '../../lib/sheets.ts';
 
 /** The note's box and its button's, in px of the window, rounded. */
 const noteAndButton = pg =>

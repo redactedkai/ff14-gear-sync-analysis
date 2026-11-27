@@ -1,8 +1,8 @@
 // Where the menus of a set page's table sit against the pinned headings: a Black Mage set synced to item level 40 with a
 // draft (the Apply bar makes the pinned header tall), the Weapon row's piece menu (356 pieces) and a materia menu.
 
-import { check, expect, poll } from '../../lib/expect.mjs';
-import { expectApplyCount, openSet, seedSheet } from '../../lib/sheets.mjs';
+import { check, expect, poll } from '../../lib/expect.ts';
+import { expectApplyCount, openSet, seedSheet } from '../../lib/sheets.ts';
 import { edgeSheet } from '../sheets/edges.mjs';
 
 const WINDOW = { width: 960, height: 720 }; // the narrowest window; the page scrolls here with a draft

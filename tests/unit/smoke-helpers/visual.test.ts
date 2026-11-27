@@ -1,5 +1,5 @@
-/* The smoke test's contrast arithmetic and token reader (tests/e2e/lib/visual.mjs), so a wrong formula cannot make the
-   theme checks in smoke.mjs pass or fail wrongly. Expected values are the WCAG's: black on white is 21:1, #777777 on white
+/* The smoke test's contrast arithmetic and token reader (tests/e2e/lib/visual.ts), so a wrong formula cannot make the
+   theme checks in smoke.ts pass or fail wrongly. Expected values are the WCAG's: black on white is 21:1, #777777 on white
    is 4.48:1 and #767676 on white 4.54:1 (the usual "darkest gray that passes AA" pair, https://webaim.org/resources/
    contrastchecker/), large text starts at 18 pt, or 14 pt bold. */
 import { test } from 'node:test';
@@ -17,7 +17,7 @@ import {
   shownColors,
   tokenColor,
   tokensFor,
-} from '../../e2e/lib/visual.mjs';
+} from '../../e2e/lib/visual.ts';
 
 const near = (got: number, want: number, tolerance = 0.005): void =>
   assert.ok(Math.abs(got - want) <= tolerance, `${got} is not ${want} +/- ${tolerance}`);

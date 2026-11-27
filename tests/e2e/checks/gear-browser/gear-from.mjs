@@ -1,9 +1,9 @@
 // A set page: the "Gear categories" menu.
 
-import { ACTIVITY_KEYS } from '../../lib/constants.mjs';
-import { DEFAULT_EXCLUDE } from '../../lib/core-worker.mjs';
-import { check, expect, same } from '../../lib/expect.mjs';
-import { checkFromMenu, fromMenuFit, openFrom, setFrom, showTab, ticked, waitSaved } from '../../lib/nav.mjs';
+import { ACTIVITY_KEYS } from '../../lib/constants.ts';
+import { DEFAULT_EXCLUDE } from '../../lib/core-worker.ts';
+import { check, expect, same } from '../../lib/expect.ts';
+import { checkFromMenu, fromMenuFit, openFrom, setFrom, showTab, ticked, waitSaved } from '../../lib/nav.ts';
 
 /** The browser's "Gear categories": the default boxes ticked, the button reads "11 of 20", the menu (tabs with the boxes' texts, one size
  * at every width from 960 px, inside the window; checkFromMenu) works; the market board switch off says so on the button, and the

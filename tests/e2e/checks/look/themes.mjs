@@ -1,11 +1,11 @@
 // Dark mode and light mode.
 
 import { openViewSet, viewSheets } from './screens.mjs';
-import { shot } from '../../lib/constants.mjs';
-import { check, expect, same, stepRecord } from '../../lib/expect.mjs';
-import { runFill, setNumber } from '../../lib/nav.mjs';
-import { seedSheets } from '../../lib/sheets.mjs';
-import { judge, parseComputed, probeText, probeTheme, readStyles, tokenColor, tokensFor } from '../../lib/visual.mjs';
+import { shot } from '../../lib/constants.ts';
+import { check, expect, same, stepRecord } from '../../lib/expect.ts';
+import { runFill, setNumber } from '../../lib/nav.ts';
+import { seedSheets } from '../../lib/sheets.ts';
+import { judge, parseComputed, probeText, probeTheme, readStyles, tokenColor, tokensFor } from '../../lib/visual.ts';
 
 /** Probes of the theme checks: `named` are `{ name, selector }` elements whose text must reach WCAG AA (an `optional` one may be
  * missing); `surfaces` are `{ name, selector, token }` elements whose background is the token's color. */

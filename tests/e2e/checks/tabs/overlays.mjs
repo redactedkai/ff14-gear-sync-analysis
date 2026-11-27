@@ -1,10 +1,10 @@
 // The menus and popovers of the page share one overlay manager (ui/overlays.ts): Escape closes the topmost one with the focus back on its
 // button, a press outside or Tab out closes it, ArrowDown opens it, one is open at a time, and a change of screen closes every one.
 
-import { check, expect, poll } from '../../lib/expect.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { focusedId, showMath, showTab } from '../../lib/nav.mjs';
-import { rowAction, seedSheet } from '../../lib/sheets.mjs';
+import { check, expect, poll } from '../../lib/expect.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { focusedId, showMath, showTab } from '../../lib/nav.ts';
+import { rowAction, seedSheet } from '../../lib/sheets.ts';
 
 /** Waits until the focus is on the element with id `id` (the manager puts it back on the opener at once; a frame can pass first). */
 const focusIsOn = (pg, id, what) =>

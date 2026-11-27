@@ -1,12 +1,12 @@
 // The test domains: every file of src/ and scripts/ belongs to one domain (a part of the product a maintainer changes in
-// one sitting), and so does every file of tests/. scripts/test.mjs runs one domain's tests, tests/e2e/smoke.mjs one
+// one sitting), and so does every file of tests/. scripts/test.mjs runs one domain's tests, tests/e2e/smoke.ts one
 // domain's browser checks, and tests/unit/scripts/test.domains.test.ts fails when a file has no domain or two.
 //
 // Which domain is a test in?
 //   - A unit test follows its module: tests/unit/ui/views/gcd.test.js mirrors src/ui/views/gcd.ts, so it takes that file's
 //     domain (a `.concern` after the module name is dropped: core/formulas.sync-clamp.test.ts mirrors core/formulas.ts).
 //     Nothing to register. A test that mirrors no module goes in a domain's `tests` list below.
-//   - A smoke step names its domain in tests/e2e/groups.mjs, by what the step checks (not by the folder of its file).
+//   - A smoke step names its domain in tests/e2e/groups.ts, by what the step checks (not by the folder of its file).
 //   - A Python generator test (tests/data/) is `data`.
 //   - A helper or support file is listed in the `tests` of the domain whose reference or data it holds; a general one is `tooling`.
 // A new file of src/ or scripts/ must match a `src` pattern here; a test file that is in none fails the guard.
@@ -70,7 +70,7 @@ export const DOMAINS = {
       'src/ui/views/set-suggestion.ts',
       'scripts/perf/browser.mjs',
     ],
-    tests: ['tests/e2e/checks/auto-fill/**', 'tests/e2e/lib/{core,core-worker,init-scripts}.mjs'],
+    tests: ['tests/e2e/checks/auto-fill/**', 'tests/e2e/lib/{core,core-worker,init-scripts}.ts'],
   },
   'set-page': {
     title: "A gear set's page: rows, hand edits, pins, menus, totals",
@@ -100,7 +100,7 @@ export const DOMAINS = {
       'src/ui/{test-data.ts,test-sheets.json}',
       'src/styles/sheets.css',
     ],
-    tests: ['tests/e2e/checks/sheets/**', 'tests/e2e/lib/{sheets,fixtures}.mjs', 'tests/unit/helpers/sheet-fixtures.ts'],
+    tests: ['tests/e2e/checks/sheets/**', 'tests/e2e/lib/{sheets,fixtures}.ts', 'tests/unit/helpers/sheet-fixtures.ts'],
   },
   'gear-browser': {
     title: 'The Gear browser tab and its filter menus',
@@ -110,7 +110,7 @@ export const DOMAINS = {
       'src/ui/views/gear.ts',
       'src/styles/gear-browser.css',
     ],
-    tests: ['tests/e2e/checks/gear-browser/**', 'tests/e2e/lib/columns.mjs', 'tests/unit/styles/gear-column-tint.test.ts'],
+    tests: ['tests/e2e/checks/gear-browser/**', 'tests/e2e/lib/columns.ts', 'tests/unit/styles/gear-column-tint.test.ts'],
   },
   'math-page': {
     title: 'How the math works: Piece stats, Substat tiers, GCD',
@@ -141,7 +141,7 @@ export const DOMAINS = {
     ],
     tests: [
       'tests/e2e/checks/{settings,saved-state,startup,tabs}/**',
-      'tests/e2e/lib/{setup,shared-checks,select}.mjs',
+      'tests/e2e/lib/{setup,shared-checks,select}.ts',
       'tests/unit/ui/views/level-sync.test.js',
       'tests/unit/startup-failure.test.ts',
       'tests/unit/helpers/{fuzz,views}.ts',
@@ -154,8 +154,8 @@ export const DOMAINS = {
     src: ['src/styles/{base,controls,entry,fallbacks,footer,layout,menus,tokens}.css', 'scripts/shots/**'],
     tests: [
       'tests/e2e/checks/look/**',
-      'tests/e2e/lib/axe.mjs',
-      'tests/e2e/lib/visual.mjs',
+      'tests/e2e/lib/axe.ts',
+      'tests/e2e/lib/visual.ts',
       'tests/visual/**',
       'tests/unit/styles/theme-tokens.test.ts',
       'tests/unit/styles/layers.test.ts',
@@ -170,8 +170,8 @@ export const DOMAINS = {
       'tests/domains.mjs',
       // the component stories: the gallery, the fixtures, the config and the stories of every element (one folder per domain)
       'tests/stories/**',
-      'tests/e2e/{smoke,groups}.mjs',
-      'tests/e2e/lib/{constants,expect,nav}.mjs',
+      'tests/e2e/{smoke,groups}.ts',
+      'tests/e2e/lib/{constants,expect,nav}.ts',
       'tests/e2e/lib/{late-frames,layer-wait}.ts',
       'tests/e2e/lib/page-globals.d.ts',
       'tests/unit/helpers/common.ts',

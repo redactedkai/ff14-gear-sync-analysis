@@ -1,12 +1,12 @@
 // A set page: Auto-fill with no Worker, and over every real piece a healer can wear.
 
-import { coreGear, coreRecipe } from '../../lib/core.mjs';
-import { check, checkNoBadText, expect } from '../../lib/expect.mjs';
-import { FILL_SHEET } from '../../lib/fixtures.mjs';
-import { afterFrames, runFill } from '../../lib/nav.mjs';
-import { checkTotals } from '../../lib/shared-checks.mjs';
-import { openSet, seedSheet } from '../../lib/sheets.mjs';
-import { pickOption } from '../../lib/select.mjs';
+import { coreGear, coreRecipe } from '../../lib/core.ts';
+import { check, checkNoBadText, expect } from '../../lib/expect.ts';
+import { FILL_SHEET } from '../../lib/fixtures.ts';
+import { afterFrames, runFill } from '../../lib/nav.ts';
+import { checkTotals } from '../../lib/shared-checks.ts';
+import { openSet, seedSheet } from '../../lib/sheets.ts';
+import { pickOption } from '../../lib/select.ts';
 
 /** A set page's Auto-fill when its worker cannot run (ui/solver.ts workerSolver's fallback, main.js): the search runs on the
  * page's thread with the core's numbers and its result can be applied; the Gear to search line and a changed goal are

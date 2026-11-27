@@ -1,10 +1,10 @@
 // The Sheets tab: the flag in the Copy sheet dialog's Item level label line (a lowered cap, text that is no cap).
 
-import { NARROW } from '../../lib/constants.mjs';
-import { expect } from '../../lib/expect.mjs';
-import { pieceSheet } from '../../lib/fixtures.mjs';
-import { seedSheet } from '../../lib/sheets.mjs';
-import { capLineShape, checkCapLineStable } from '../../lib/shared-checks.mjs';
+import { NARROW } from '../../lib/constants.ts';
+import { expect } from '../../lib/expect.ts';
+import { pieceSheet } from '../../lib/fixtures.ts';
+import { seedSheet } from '../../lib/sheets.ts';
+import { capLineShape, checkCapLineStable } from '../../lib/shared-checks.ts';
 
 // the New and Copy sheet dialog's cap field: its label line, the two inputs, and the boxes beside it
 const DIALOG_CAP = {

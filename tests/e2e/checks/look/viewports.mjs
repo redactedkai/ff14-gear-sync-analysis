@@ -1,11 +1,11 @@
 // The five viewports, and the rules that switch at a width.
 
 import { openViewSet, viewSheets } from './screens.mjs';
-import { shot } from '../../lib/constants.mjs';
-import { check, expect, placedByZag, poll, stepRecord } from '../../lib/expect.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { hasHScroll, runFill, showMath } from '../../lib/nav.mjs';
-import { expectPieceEmpty, openSageSet, seedSheet, seedSheets, sheetNames } from '../../lib/sheets.mjs';
+import { shot } from '../../lib/constants.ts';
+import { check, expect, placedByZag, poll, stepRecord } from '../../lib/expect.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { hasHScroll, runFill, showMath } from '../../lib/nav.ts';
+import { expectPieceEmpty, openSageSet, seedSheet, seedSheets, sheetNames } from '../../lib/sheets.ts';
 
 /** Rules that switch at a width, each with a window one pixel either side (testing.md section 3.1): the set page's column
  * widths (72 px for the stat columns up to 1099 px, 80 from 1100), and Piece stats' two panels (one column up to 1299 px,

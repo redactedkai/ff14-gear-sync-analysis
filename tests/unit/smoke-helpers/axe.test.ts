@@ -1,8 +1,8 @@
-/* The smoke test's handling of axe-core findings (tests/e2e/lib/axe.mjs): which elements count as known, which violations
+/* The smoke test's handling of axe-core findings (tests/e2e/lib/axe.ts): which elements count as known, which violations
    stay new, and which known entries matched. The violations are shaped as axeViolations returns them. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { splitKnown } from '../../e2e/lib/axe.mjs';
+import { splitKnown } from '../../e2e/lib/axe.ts';
 
 const violation = (rule: string, targets: string[]) => ({ rule, impact: 'serious', help: `${rule} help`, targets });
 

@@ -1,9 +1,9 @@
 // A set page's Stat Total row: its item level cell is the average item level of the worn pieces.
 
-import { NARROW } from '../../lib/constants.mjs';
-import { check, expect } from '../../lib/expect.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { expectApplyCount, openSet, seedSheet } from '../../lib/sheets.mjs';
+import { NARROW } from '../../lib/constants.ts';
+import { check, expect } from '../../lib/expect.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { expectApplyCount, openSet, seedSheet } from '../../lib/sheets.ts';
 
 /** The Sage set "Mine" (eight pieces of item level 115, no weapon, no hands or feet) shows ~77 in the Stat Total row's item
  * level cell (the tilde marks an average; the cell's aria-label is "Average item level 77"): 8 x 115 = 920, over 12 slots = 76.67,

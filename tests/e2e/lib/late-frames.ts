@@ -2,7 +2,7 @@
    moves the focus a frame after a key, so a test that reads too early passes on a fast machine and fails on a CI runner whose
    frames come late. `lateFramesScript` delays every `requestAnimationFrame` callback of the page by a number of milliseconds.
    It is opt-in: the stories read STORIES_FRAME_DELAY_MS, the smoke test SMOKE_FRAME_DELAY_MS (tests/stories/fixtures.ts,
-   tests/e2e/smoke.mjs; both off by default, 40 reproduces the failures seen on GitHub's Linux runner). */
+   tests/e2e/smoke.ts; both off by default, 40 reproduces the failures seen on GitHub's Linux runner). */
 
 /* The delay in ms that the environment variable `name` asks for, 0 when it is unset or not a positive number. */
 export function frameDelayFromEnv(name: string): number {

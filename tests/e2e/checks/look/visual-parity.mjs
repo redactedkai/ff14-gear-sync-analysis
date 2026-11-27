@@ -5,9 +5,9 @@
 // dialog's width) are the baselines' now (tests/visual: 02-sheets-manager, 03-sheet-page, 04-set-page, 05-set-fill-result,
 // 07-set-pick-menu, 29-sheets-delete-question, 31-set-settings-popover; both widths, dark). The Copy dialog is in no baseline view.
 
-import { check, expect } from '../../lib/expect.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { seedSheet } from '../../lib/sheets.mjs';
+import { check, expect } from '../../lib/expect.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { seedSheet } from '../../lib/sheets.ts';
 
 /** The computed value of a design token's colour (read through a probe element, so it holds in either theme), and the computed
  * `properties` of the first element matching `selector`, joined by spaces. */

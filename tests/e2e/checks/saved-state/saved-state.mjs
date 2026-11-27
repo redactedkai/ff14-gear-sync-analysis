@@ -2,8 +2,8 @@
 
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { DEFAULT_CAP, DEFAULT_JOB, DEFAULT_LEVEL, OUT, PAGE, STORE_KEY } from '../../lib/constants.mjs';
-import { check, checkNoBadText, expect, same, stepRecord } from '../../lib/expect.mjs';
+import { DEFAULT_CAP, DEFAULT_JOB, DEFAULT_LEVEL, OUT, PAGE, STORE_KEY } from '../../lib/constants.ts';
+import { check, checkNoBadText, expect, same, stepRecord } from '../../lib/expect.ts';
 import {
   browserRows,
   currentJob,
@@ -18,8 +18,8 @@ import {
   ticked,
   waitReady,
   waitSaved,
-} from '../../lib/nav.mjs';
-import { pickOption } from '../../lib/select.mjs';
+} from '../../lib/nav.ts';
+import { pickOption } from '../../lib/select.ts';
 
 /** Build a non-default state (job, cap, sync off, level, browser filters, Gear categories boxes and market board switch, Piece
  * stats slot and item level, How the math works open), reload, and every part comes back: the inputs and the open tab.

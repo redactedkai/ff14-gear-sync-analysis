@@ -9,10 +9,10 @@
 // a Playwright click would scroll an off-screen link into view first (the page would then really be somewhere else), and a
 // click on a link that is on screen is the one the player can make.
 
-import { check, expect } from '../../lib/expect.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { afterFrames } from '../../lib/nav.mjs';
-import { seedSheets } from '../../lib/sheets.mjs';
+import { check, expect } from '../../lib/expect.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { afterFrames } from '../../lib/nav.ts';
+import { seedSheets } from '../../lib/sheets.ts';
 
 /** How many times each path is run in each configuration: a loss that happened 1 run in 15 shows up here. */
 const ROUNDS = 20;

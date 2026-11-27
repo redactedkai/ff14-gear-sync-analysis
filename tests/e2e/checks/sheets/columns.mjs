@@ -1,9 +1,9 @@
 // The Sheets tab's tables: the columns of a sheet's list of gear sets keep their width.
 
-import { COLUMN_WINDOWS, columnsDiffer, measureColumns } from '../../lib/columns.mjs';
-import { check, expect } from '../../lib/expect.mjs';
-import { waitReady } from '../../lib/nav.mjs';
-import { figuresRadio, seedSheets, reloadAtSheets } from '../../lib/sheets.mjs';
+import { COLUMN_WINDOWS, columnsDiffer, measureColumns } from '../../lib/columns.ts';
+import { check, expect } from '../../lib/expect.ts';
+import { waitReady } from '../../lib/nav.ts';
+import { figuresRadio, seedSheets, reloadAtSheets } from '../../lib/sheets.ts';
 import { edgeSheet } from './edges.mjs';
 
 /* A sheet of `job` with two empty gear sets. */

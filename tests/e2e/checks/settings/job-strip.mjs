@@ -1,9 +1,9 @@
 // Settings panel: the job strip under the tabs.
 
-import { NARROW } from '../../lib/constants.mjs';
-import { check, expect } from '../../lib/expect.mjs';
-import { afterFrames, hasHScroll, pickJob, setCap, setJob, setNumber, showTab } from '../../lib/nav.mjs';
-import { SHARED_SETUP } from '../../lib/setup.mjs';
+import { NARROW } from '../../lib/constants.ts';
+import { check, expect } from '../../lib/expect.ts';
+import { afterFrames, hasHScroll, pickJob, setCap, setJob, setNumber, showTab } from '../../lib/nav.ts';
+import { SHARED_SETUP } from '../../lib/setup.ts';
 
 /** The strip's gap under the tab bar, in px (on the Gear browser). */
 const STRIP_GAP_UNDER_TABS = 18;

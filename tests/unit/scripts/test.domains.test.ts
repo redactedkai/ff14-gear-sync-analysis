@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { GROUPS } from '../../e2e/groups.mjs';
+import { GROUPS } from '../../e2e/groups.ts';
 import {
   DOMAINS,
   DOMAIN_NAMES,
@@ -73,8 +73,8 @@ test('domains: every smoke step names a domain of the registry', () => {
 });
 
 test("domains: a smoke step's file is in the folder of its step's domain (the domain's `tests` list)", () => {
-  // each check function's file, from the import lines of groups.mjs, then each `step(checkX, 'domain')` call
-  const source = readFileSync(`${ROOT}/tests/e2e/groups.mjs`, 'utf8');
+  // each check function's file, from the import lines of groups.ts, then each `step(checkX, 'domain')` call
+  const source = readFileSync(`${ROOT}/tests/e2e/groups.ts`, 'utf8');
   const fileOf = new Map();
   for (const [, names, path] of source.matchAll(/import \{([^}]+)\} from '\.\/(checks\/[^']+)'/g)) {
     for (const name of names
@@ -85,7 +85,7 @@ test("domains: a smoke step's file is in the folder of its step's domain (the do
     }
   }
   const calls = [...source.matchAll(/step\((\w+), '([\w-]+)'\)/g)];
-  assert.ok(calls.length > 40, `only ${calls.length} step calls found in groups.mjs`);
+  assert.ok(calls.length > 40, `only ${calls.length} step calls found in groups.ts`);
   const problems = calls.flatMap(([, name, domain]) => {
     const file = fileOf.get(name);
     if (!file) {

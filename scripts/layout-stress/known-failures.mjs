@@ -1,6 +1,6 @@
 /* Findings the page has not fixed yet. A listed finding is printed as `KNOWN FAILURE (...)` and does not fail the run;
    the run fails when a listed finding stops happening, so the list is emptied as the page is fixed (the same mechanism as
-   KNOWN_LOW_CONTRAST and KNOWN_MENU_OVERFLOW in tests/e2e/smoke.mjs).
+   KNOWN_LOW_CONTRAST and KNOWN_MENU_OVERFLOW in tests/e2e/smoke.ts).
 
    An entry is {rule, screen, view?, setup?, browser?, note} and matches a finding with that rule on that screen, and on
    that view, setup and browser when the entry names them. `note` says what the finding is, for the line. */

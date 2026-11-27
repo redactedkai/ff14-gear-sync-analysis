@@ -1,9 +1,9 @@
 // An Auto-fill suggestion on a job with a 2H weapon or a 1H weapon plus a shield (White Mage): the Off-hand row's Take box.
 
-import { check, expect } from '../../lib/expect.mjs';
-import { pieceSheet } from '../../lib/fixtures.mjs';
-import { runFill } from '../../lib/nav.mjs';
-import { openSet, seedSheet } from '../../lib/sheets.mjs';
+import { check, expect } from '../../lib/expect.ts';
+import { pieceSheet } from '../../lib/fixtures.ts';
+import { runFill } from '../../lib/nav.ts';
+import { openSet, seedSheet } from '../../lib/sheets.ts';
 
 const TIDAL_WAVE_BUCKLER = 7823; // White Mage, item level 100, equip level 50
 const TIDAL_WAVE_WAND = 7818; // White Mage, item level 100, one-handed

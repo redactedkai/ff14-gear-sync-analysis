@@ -1,7 +1,7 @@
 // Saved sheets the checks seed into localStorage.
 
 import { edgeSheet } from '../checks/sheets/edges.mjs';
-import { DEFAULT_EXCLUDE } from './core-worker.mjs';
+import { DEFAULT_EXCLUDE } from './core-worker.ts';
 
 export const FILL_SHEET = {
   v: 1,

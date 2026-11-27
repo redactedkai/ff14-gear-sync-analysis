@@ -1,7 +1,7 @@
 // The "?" note of a Substat tiers column: it sits under the pinned math bar when the page scrolls.
 
-import { check, expect, placedByZag, poll } from '../../lib/expect.mjs';
-import { showMath } from '../../lib/nav.mjs';
+import { check, expect, placedByZag, poll } from '../../lib/expect.ts';
+import { showMath } from '../../lib/nav.ts';
 
 /** The pinned parts of the page (the math bar) the note `#t-pop` is drawn over: their names. */
 const pinnedPartsUnderNote = pg =>

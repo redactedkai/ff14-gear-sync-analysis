@@ -1,8 +1,8 @@
 // How the math works: Piece stats.
 
-import { check, expect } from '../../lib/expect.mjs';
-import { openPieceMenus, setNumber, showMath, tableRows } from '../../lib/nav.mjs';
-import { pickOption } from '../../lib/select.mjs';
+import { check, expect } from '../../lib/expect.ts';
+import { openPieceMenus, setNumber, showMath, tableRows } from '../../lib/nav.ts';
+import { pickOption } from '../../lib/select.ts';
 
 /** Opens Piece stats' "Stat budget analysis, step by step" if it is closed. */
 async function openSteps(pg) {

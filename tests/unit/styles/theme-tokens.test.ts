@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { readStyles } from '../../../scripts/build/styles.mjs';
-import { readThemeTokens } from '../../e2e/lib/visual.mjs';
+import { readThemeTokens } from '../../e2e/lib/visual.ts';
 import { findLiteralColors } from '../helpers/css-colors.ts';
 
 const SRC = new URL('../../../src/', import.meta.url);

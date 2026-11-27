@@ -1,9 +1,9 @@
 // The Sheets tab: the forms and the cap.
 
-import { NARROW, STORE_KEY } from '../../lib/constants.mjs';
-import { check, expect, poll } from '../../lib/expect.mjs';
-import { focusedId, hasHScroll, setNumber, waitSaved } from '../../lib/nav.mjs';
-import { seedSheet } from '../../lib/sheets.mjs';
+import { NARROW, STORE_KEY } from '../../lib/constants.ts';
+import { check, expect, poll } from '../../lib/expect.ts';
+import { focusedId, hasHScroll, setNumber, waitSaved } from '../../lib/nav.ts';
+import { seedSheet } from '../../lib/sheets.ts';
 
 /** The Sheets tab's dialogs and menus as a user types into them: New sheet shows the range texts (1–100, 1–795) and the
  * default name for the job, a blank name is refused with its reason at the Name label, the box stays empty, and the dialog stays

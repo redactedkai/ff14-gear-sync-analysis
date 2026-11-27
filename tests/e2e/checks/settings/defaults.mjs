@@ -1,10 +1,10 @@
 // Settings panel: defaults, the cap field, job switch, level caps.
 
 import { DEFAULT_ROUTE, titleOf } from '../../../../src/ui/router/routes.ts';
-import { DEFAULT_CAP, DEFAULT_JOB, DEFAULT_LEVEL } from '../../lib/constants.mjs';
-import { check, expect } from '../../lib/expect.mjs';
-import { browserRows, fieldValue, pickJob, setJob, setNumber, showTab, waitSaved } from '../../lib/nav.mjs';
-import { setUpShared } from '../../lib/setup.mjs';
+import { DEFAULT_CAP, DEFAULT_JOB, DEFAULT_LEVEL } from '../../lib/constants.ts';
+import { check, expect } from '../../lib/expect.ts';
+import { browserRows, fieldValue, pickJob, setJob, setNumber, showTab, waitSaved } from '../../lib/nav.ts';
+import { setUpShared } from '../../lib/setup.ts';
 
 /** Switching job takes effect at once (nothing is lost but the job-specific choices, so the page does not ask): the
  * gear browser sorted by Critical Hit stays so on a job with the same stat, and goes back to item level when the stat

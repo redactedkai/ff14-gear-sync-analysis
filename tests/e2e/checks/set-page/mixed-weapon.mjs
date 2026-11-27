@@ -2,9 +2,9 @@
 // The rows of the set at each level, a pinned shield kept by Auto-fill and a cloak over a head are the unit tests'
 // (views/set-rows, sheets/saved-set, sheets/fill.mixed-weapon, sheets/set-edits.covering).
 
-import { check, expect } from '../../lib/expect.mjs';
-import { pieceSheet } from '../../lib/fixtures.mjs';
-import { expectApplyCount, openSet, seedSheet } from '../../lib/sheets.mjs';
+import { check, expect } from '../../lib/expect.ts';
+import { pieceSheet } from '../../lib/fixtures.ts';
+import { expectApplyCount, openSet, seedSheet } from '../../lib/sheets.ts';
 
 const TIDAL_WAVE_BUCKLER = 7823; // White Mage, item level 100, equip level 50
 const TIDAL_WAVE_WAND = 7818; // White Mage, item level 100, one-handed

@@ -1,9 +1,9 @@
 // The Auto-fill settings popover's layout: the Goal part's controls sit on the columns of the Gear to search part's.
 
-import { check, expect, placedByZag, poll } from '../../lib/expect.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { openSageSet, openSet, seedSheet, seedSheets } from '../../lib/sheets.mjs';
-import { pickOption } from '../../lib/select.mjs';
+import { check, expect, placedByZag, poll } from '../../lib/expect.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { openSageSet, openSet, seedSheet, seedSheets } from '../../lib/sheets.ts';
+import { pickOption } from '../../lib/select.ts';
 
 const ALIGN_TOLERANCE_PX = 1;
 // the field and popover heights must not move at all (a pixel is a visible jump)

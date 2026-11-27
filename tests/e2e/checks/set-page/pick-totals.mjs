@@ -2,11 +2,11 @@
 // finds for the same set. The stories prove the menus send their pick (materia-menu.spec, food-menu.spec) and the unit tests prove
 // the stones and the totals; this proves the page wires one to the other.
 
-import { check, expect, poll } from '../../lib/expect.mjs';
-import { coreSet } from '../../lib/core.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { checkTotals } from '../../lib/shared-checks.mjs';
-import { expectApplyCount, expectMealEmpty, openSageSet, seedSheet } from '../../lib/sheets.mjs';
+import { check, expect, poll } from '../../lib/expect.ts';
+import { coreSet } from '../../lib/core.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { checkTotals } from '../../lib/shared-checks.ts';
+import { expectApplyCount, expectMealEmpty, openSageSet, seedSheet } from '../../lib/sheets.ts';
 
 /** The seeded Sage sheet's item level sync, as the core takes it (the sheet's own: level 100, item level sync 123). */
 const SAGE_SYNC = { cap: SET_SHEET.sync.cap, sync: SET_SHEET.sync.on, level: SET_SHEET.level };

@@ -1,10 +1,10 @@
 // The Sheets tab: the sheet manager and a sheet's page, edge cases.
 
-import { NARROW, STORE_KEY } from '../../lib/constants.mjs';
-import { check, expect, same } from '../../lib/expect.mjs';
-import { FILL_SHEET } from '../../lib/fixtures.mjs';
-import { hasHScroll, setNumber } from '../../lib/nav.mjs';
-import { seedSheets, sheetNames } from '../../lib/sheets.mjs';
+import { NARROW, STORE_KEY } from '../../lib/constants.ts';
+import { check, expect, same } from '../../lib/expect.ts';
+import { FILL_SHEET } from '../../lib/fixtures.ts';
+import { hasHScroll, setNumber } from '../../lib/nav.ts';
+import { seedSheets, sheetNames } from '../../lib/sheets.ts';
 
 /* A saved sheet of one empty set, named "Mine", for `job` at `level` (the sheet tests that need only a sheet of a job). */
 export const edgeSheet = (id, name, job, level, sync) => ({

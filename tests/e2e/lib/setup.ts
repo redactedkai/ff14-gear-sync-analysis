@@ -1,7 +1,7 @@
 // The shared setup every group but the fresh ones starts from.
 
-import { expect } from './expect.mjs';
-import { readPanel, setCap, setJob, setNumber } from './nav.mjs';
+import { expect } from './expect.ts';
+import { readPanel, setCap, setJob, setNumber } from './nav.ts';
 
 export const SHARED_SETUP = { job: 'SGE', sync: true, cap: '123', level: '50' };
 

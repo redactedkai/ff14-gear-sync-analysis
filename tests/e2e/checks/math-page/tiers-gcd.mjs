@@ -1,9 +1,9 @@
 // How the math works: Substat tiers and GCD.
 
-import { NARROW, shot } from '../../lib/constants.mjs';
-import { check, checkNoBadText, expect } from '../../lib/expect.mjs';
-import { hasHScroll, setCap, setJob, setNumber, showMath } from '../../lib/nav.mjs';
-import { setUpShared } from '../../lib/setup.mjs';
+import { NARROW, shot } from '../../lib/constants.ts';
+import { check, checkNoBadText, expect } from '../../lib/expect.ts';
+import { hasHScroll, setCap, setJob, setNumber, showMath } from '../../lib/nav.ts';
+import { setUpShared } from '../../lib/setup.ts';
 
 // How the math works, Substat tiers. Sage at level 100 (SUB 420, MAIN 440): Spell Speed 624 is in AkhMorning's 2.47 s tier, which
 // starts at 613 on the panel (gear speed 193; validation.md section 5).

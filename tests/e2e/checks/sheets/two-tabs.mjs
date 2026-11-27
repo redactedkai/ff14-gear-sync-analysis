@@ -1,9 +1,9 @@
 // The Sheets tab in two browser tabs.
 
-import { PAGE, STORE_KEY } from '../../lib/constants.mjs';
-import { check, expect, same, stepRecord } from '../../lib/expect.mjs';
-import { newPage, waitReady } from '../../lib/nav.mjs';
-import { rowAction, sheetNames } from '../../lib/sheets.mjs';
+import { PAGE, STORE_KEY } from '../../lib/constants.ts';
+import { check, expect, same, stepRecord } from '../../lib/expect.ts';
+import { newPage, waitReady } from '../../lib/nav.ts';
+import { rowAction, sheetNames } from '../../lib/sheets.ts';
 
 /** Open the New sheet dialog from the manager (empty or not), pick `job`, type `name`, and create: the new sheet's page opens. */
 async function createSheetByHand(page, job, name) {

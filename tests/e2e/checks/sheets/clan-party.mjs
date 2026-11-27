@@ -1,11 +1,11 @@
 // The Sheets tab: a sheet's Race / Clan and Party bonus boxes.
 
-import { NARROW } from '../../lib/constants.mjs';
-import { check, expect, poll } from '../../lib/expect.mjs';
-import { pieceSheet } from '../../lib/fixtures.mjs';
-import { hasHScroll } from '../../lib/nav.mjs';
-import { pickOption } from '../../lib/select.mjs';
-import { seedSheet } from '../../lib/sheets.mjs';
+import { NARROW } from '../../lib/constants.ts';
+import { check, expect, poll } from '../../lib/expect.ts';
+import { pieceSheet } from '../../lib/fixtures.ts';
+import { hasHScroll } from '../../lib/nav.ts';
+import { pickOption } from '../../lib/select.ts';
+import { seedSheet } from '../../lib/sheets.ts';
 
 // Warrior (a Strength job), one gear set holding the Ironworks head piece (game id 9901), level 100, no item level sync
 const WAR_SHEET = pieceSheet('s_clan', 'Clan check', 'WAR', 2, 9901, []);

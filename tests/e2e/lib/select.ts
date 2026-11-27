@@ -1,7 +1,7 @@
 // Drives the page's selects (<gsa-select>, elements/shared/select.ts) as a person does: press the button, press an option. A select is
 // named by its button's id (`#p-slot`); its list is `#p-slot-list`, its chosen value is the button's `data-value`.
 
-import { expect, placedByZag } from './expect.mjs';
+import { expect, placedByZag } from './expect.ts';
 
 /** The list of the select whose button is `selector`. */
 const listOf = selector => `${selector}-list`;

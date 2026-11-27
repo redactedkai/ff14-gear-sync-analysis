@@ -1,10 +1,10 @@
 // A set page's table: the columns keep their width whatever the set holds.
 
-import { COLUMN_WINDOWS, columnsDiffer, measureColumns } from '../../lib/columns.mjs';
-import { check, expect } from '../../lib/expect.mjs';
-import { FILL_SHEET, SET_SHEET } from '../../lib/fixtures.mjs';
-import { waitReady } from '../../lib/nav.mjs';
-import { seedSheets, reloadAtSheets } from '../../lib/sheets.mjs';
+import { COLUMN_WINDOWS, columnsDiffer, measureColumns } from '../../lib/columns.ts';
+import { check, expect } from '../../lib/expect.ts';
+import { FILL_SHEET, SET_SHEET } from '../../lib/fixtures.ts';
+import { waitReady } from '../../lib/nav.ts';
+import { seedSheets, reloadAtSheets } from '../../lib/sheets.ts';
 
 /** A set page's number columns (item level and each stat) have the same width in a filled set and an empty one, and every
  * stat column is as wide as the others, at 960, 1280 and 2560 px; the Stat Total row's four-digit numbers (the filled

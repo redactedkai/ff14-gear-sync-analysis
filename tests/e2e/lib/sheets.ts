@@ -1,9 +1,9 @@
 // Helpers that seed saved sheets into localStorage, open a set, and read the sheet list.
 
-import { STORE_KEY } from './constants.mjs';
-import { expect } from './expect.mjs';
-import { SET_SHEET } from './fixtures.mjs';
-import { waitReady, waitStateSaved } from './nav.mjs';
+import { STORE_KEY } from './constants.ts';
+import { expect } from './expect.ts';
+import { SET_SHEET } from './fixtures.ts';
+import { waitReady, waitStateSaved } from './nav.ts';
 
 /** Store `sheet` (a saved sheet, the shape src/ui/sheets/storage.ts reads) as the only one, and reload on it. */
 export async function seedSheet(pg, sheet) {

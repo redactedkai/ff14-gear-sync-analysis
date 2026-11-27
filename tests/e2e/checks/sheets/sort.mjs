@@ -1,9 +1,9 @@
 // The Sheets tab: a sheet's set list sorted by a column heading.
 
-import { NARROW } from '../../lib/constants.mjs';
-import { check, same } from '../../lib/expect.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { figuresRadio, seedSheet, sheetNames } from '../../lib/sheets.mjs';
+import { NARROW } from '../../lib/constants.ts';
+import { check, same } from '../../lib/expect.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { figuresRadio, seedSheet, sheetNames } from '../../lib/sheets.ts';
 
 /* A saved Sage sheet of three sets with different totals, saved in this order: "Mid" (3 pieces), "Low" (1 piece) and "High"
    (all 12 rows of SET_SHEET's set). Best first is High, Mid, Low; worst first Low, Mid, High: neither is the saved order. */

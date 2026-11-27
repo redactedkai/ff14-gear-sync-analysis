@@ -3,12 +3,12 @@
 import { ANY_SLOT_LABEL, slotButtonName } from '../../../../src/ui/elements/gear-browser/slot-menu-names.ts';
 import { SCROLL_KEY } from '../../../../src/ui/router/scroll-storage.ts';
 import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.ts';
-import { STORE_KEY } from '../../lib/constants.mjs';
-import { check, expect, poll } from '../../lib/expect.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { afterFrames, waitSaved } from '../../lib/nav.mjs';
-import { expectSelectValue } from '../../lib/select.mjs';
-import { expectApplyCount, openSageSet, seedSheet, seedSheets } from '../../lib/sheets.mjs';
+import { STORE_KEY } from '../../lib/constants.ts';
+import { check, expect, poll } from '../../lib/expect.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { afterFrames, waitSaved } from '../../lib/nav.ts';
+import { expectSelectValue } from '../../lib/select.ts';
+import { expectApplyCount, openSageSet, seedSheet, seedSheets } from '../../lib/sheets.ts';
 
 /** The address (its hash) of the page now. */
 const hashOf = pg => pg.evaluate(() => location.hash);

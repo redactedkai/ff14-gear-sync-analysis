@@ -1,10 +1,10 @@
 // A set page: the edit lock while an Auto-fill runs, and where focus goes.
 
-import { shot } from '../../lib/constants.mjs';
-import { check, expect, poll } from '../../lib/expect.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { focusedId, runFill } from '../../lib/nav.mjs';
-import { openSageSet, seedSheet } from '../../lib/sheets.mjs';
+import { shot } from '../../lib/constants.ts';
+import { check, expect, poll } from '../../lib/expect.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { focusedId, runFill } from '../../lib/nav.ts';
+import { openSageSet, seedSheet } from '../../lib/sheets.ts';
 
 /** The edit lock while an Auto-fill runs, on the real page (docs/engineering/sheets.md): leaving the running set page by "Leave and
  * cancel the Auto-fill" opens the sheet's page with every control on again (level, item level, IL Sync, New set, Edit, Copy,

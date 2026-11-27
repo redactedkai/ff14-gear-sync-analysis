@@ -2,10 +2,10 @@
 // the saved state.
 
 import { allExpansions } from '../checks/gear-browser/filters.mjs';
-import { ACTIVITY_KEYS_BY_SECTION, ACTIVITY_LABEL, ACTIVITY_SECTION, NAV_TIMEOUT, STORE_KEY, TIMEOUT } from './constants.mjs';
-import { check, expect, placedByZag, poll, same } from './expect.mjs';
+import { ACTIVITY_KEYS_BY_SECTION, ACTIVITY_LABEL, ACTIVITY_SECTION, NAV_TIMEOUT, STORE_KEY, TIMEOUT } from './constants.ts';
+import { check, expect, placedByZag, poll, same } from './expect.ts';
 import { afterTwoFramesAndATask } from './layer-wait.ts';
-import { selectValue } from './select.mjs';
+import { selectValue } from './select.ts';
 
 /** A new page of `context` with the smoke test's timeouts: TIMEOUT for any wait, NAV_TIMEOUT for loads and reloads. */
 export async function newPage(context) {

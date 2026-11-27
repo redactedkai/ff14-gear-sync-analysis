@@ -1,9 +1,9 @@
 // Across the tabs: level sync.
 
-import { NARROW, shot } from '../../lib/constants.mjs';
-import { check, checkNoBadText, expect } from '../../lib/expect.mjs';
-import { browserRows, fillBrowser, hasHScroll, setCap, setJob, setNumber, showMath, showTab } from '../../lib/nav.mjs';
-import { pickOption } from '../../lib/select.mjs';
+import { NARROW, shot } from '../../lib/constants.ts';
+import { check, checkNoBadText, expect } from '../../lib/expect.ts';
+import { browserRows, fillBrowser, hasHScroll, setCap, setJob, setNumber, showMath, showTab } from '../../lib/nav.ts';
+import { pickOption } from '../../lib/select.ts';
 
 // Level sync: level 100 healer head pieces at item level 780 or more, at synced level 90 (item level sync off), are
 // capped at the item level 660 head values; Mind 248 and the head substat cap 184 come from ItemLevel row 660 x 85 per

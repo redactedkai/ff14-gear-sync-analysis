@@ -41,7 +41,7 @@ export const STORE_KEY = 'ilvl-stat-lab-v4'; // localStorage key of the saved st
 // Defaults owe nothing to any player's setup: no job chosen, no sync cap (sync off), level 100.
 export const [DEFAULT_JOB, DEFAULT_CAP, DEFAULT_LEVEL] = ['PLD', '', '100'];
 
-// The "Gear categories" boxes in ACTIVITIES order (src/core/item-format.json); DEFAULT_EXCLUDE (lib/core-worker.mjs) are left out by
+// The "Gear categories" boxes in ACTIVITIES order (src/core/item-format.json); DEFAULT_EXCLUDE (lib/core-worker.ts) are left out by
 // default.
 const ACTIVITIES = JSON.parse(readFileSync(new URL('../../../src/core/item-format.json', import.meta.url), 'utf8')).activities;
 export const ACTIVITY_KEYS = ACTIVITIES.map(a => a.key);

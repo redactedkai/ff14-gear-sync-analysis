@@ -1,10 +1,10 @@
 // The overmeld odds in a set page's materia menu.
 
-import { NARROW, shot } from '../../lib/constants.mjs';
-import { check, checkNoBadText, expect, same } from '../../lib/expect.mjs';
-import { pieceSheet } from '../../lib/fixtures.mjs';
-import { hasHScroll } from '../../lib/nav.mjs';
-import { openSet, seedSheets } from '../../lib/sheets.mjs';
+import { NARROW, shot } from '../../lib/constants.ts';
+import { check, checkNoBadText, expect, same } from '../../lib/expect.ts';
+import { pieceSheet } from '../../lib/fixtures.ts';
+import { hasHScroll } from '../../lib/nav.ts';
+import { openSet, seedSheets } from '../../lib/sheets.ts';
 
 /** The overmeld odds in a set page's materia menu (docs/mechanics/materia.md): an overmeld slot's menu has an "odds" row with
  * one figure per grade column, a guaranteed slot's has none, and a piece that cannot be high quality says its odds are

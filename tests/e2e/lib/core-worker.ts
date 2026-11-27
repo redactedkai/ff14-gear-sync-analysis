@@ -1,5 +1,5 @@
 /* What the page must show, computed from src/core directly (the core is checked against a brute force over every
-loadout in tests/unit). Run in a worker thread by lib/core.mjs: each call takes up to a second of synchronous work, which
+loadout in tests/unit). Run in a worker thread by lib/core.ts: each call takes up to a second of synchronous work, which
 would otherwise stall every page the smoke test is driving. */
 
 import { isMainThread, parentPort } from 'node:worker_threads';

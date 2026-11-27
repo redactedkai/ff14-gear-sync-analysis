@@ -1,8 +1,8 @@
 // The Off-hand choice of the Gear browser's Slot menu and the Piece stats Slot menu, by job.
 
-import { check, expect } from '../../lib/expect.mjs';
-import { setJob, showMath, showTab } from '../../lib/nav.mjs';
-import { selectOptions } from '../../lib/select.mjs';
+import { check, expect } from '../../lib/expect.ts';
+import { setJob, showMath, showTab } from '../../lib/nav.ts';
+import { selectOptions } from '../../lib/select.ts';
 
 /** For White Mage and Black Mage the Gear browser's Slot menu and Piece stats' Slot menu list the Off-hand; for Sage they do not. */
 export async function checkOffhandPills(pg) {

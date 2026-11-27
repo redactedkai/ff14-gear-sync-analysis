@@ -1,5 +1,5 @@
-/* Waits that run inside the page and that the stories (tests/stories/layers.ts) and the smoke test (tests/e2e/lib/expect.mjs,
-   nav.mjs) share: each is handed to `evaluate`, so it must not use anything outside its own body. */
+/* Waits that run inside the page and that the stories (tests/stories/layers.ts) and the smoke test (tests/e2e/lib/expect.ts,
+   nav.ts) share: each is handed to `evaluate`, so it must not use anything outside its own body. */
 
 /* Resolves when the element's box has not moved for 3 frames in a row (a layer still being moved to its anchor, or one that Zag
    has placed once and moves again, is not settled). Frames are counted, never timed, so a runner whose frames come late waits as

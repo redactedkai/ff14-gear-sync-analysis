@@ -6,9 +6,9 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.ts';
-import { OUT, PAGE_PATH, STORE_KEY } from '../../lib/constants.mjs';
-import { check, expect } from '../../lib/expect.mjs';
-import { afterFrames, newPage } from '../../lib/nav.mjs';
+import { OUT, PAGE_PATH, STORE_KEY } from '../../lib/constants.ts';
+import { check, expect } from '../../lib/expect.ts';
+import { afterFrames, newPage } from '../../lib/nav.ts';
 
 // where the app's script begins: the first <script> after the style (a later "<script>" is text inside the bundle)
 const APP_SCRIPT_START = html => html.indexOf('<script>', html.indexOf('</style>')) + '<script>'.length;

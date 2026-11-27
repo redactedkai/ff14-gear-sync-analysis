@@ -1,9 +1,9 @@
 // The Sheets tab: a click on a row of the sheet list or of a sheet's gear sets opens it.
 
-import { NARROW } from '../../lib/constants.mjs';
-import { check, expect, same } from '../../lib/expect.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { seedSheets, sheetNames } from '../../lib/sheets.mjs';
+import { NARROW } from '../../lib/constants.ts';
+import { check, expect, same } from '../../lib/expect.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { seedSheets, sheetNames } from '../../lib/sheets.ts';
 
 /* A saved Sage sheet of three gear sets saved in this order: "Alpha" (all 12 rows, with a note), "Beta" (no pieces) and
    "Gamma" (3 pieces). Sorted by main stat, best first, the order is Alpha, Gamma, Beta: not the saved one. */

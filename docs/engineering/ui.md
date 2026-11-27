@@ -326,7 +326,7 @@ Notes:
 
 ## 7. Corner radii
 
-One radius, 4 px, for every box, field, button, table, menu and dialog. There is no radius token: each rule in `src/styles/` writes `4px`. Exceptions are round on purpose: switch tracks (12 px) and knobs (50%), radio buttons and rank badges (50%), the ? help buttons (50%), origin pills, the Food menu's stat pills and the Gear browser's search bar, clear button and Reset button (999 px; the Slot button is square on its right side, inside the bar), and the 2 px items (range tracks, the search mark, legend swatches). The smoke step `checkRadii` (`tests/e2e/smoke.mjs`, table `RADII`) measures each surface below in the browser, so a rule that drifts fails it.
+One radius, 4 px, for every box, field, button, table, menu and dialog. There is no radius token: each rule in `src/styles/` writes `4px`. Exceptions are round on purpose: switch tracks (12 px) and knobs (50%), radio buttons and rank badges (50%), the ? help buttons (50%), origin pills, the Food menu's stat pills and the Gear browser's search bar, clear button and Reset button (999 px; the Slot button is square on its right side, inside the bar), and the 2 px items (range tracks, the search mark, legend swatches). The smoke step `checkRadii` (`tests/e2e/smoke.ts`, table `RADII`) measures each surface below in the browser, so a rule that drifts fails it.
 
 | Surface | Radius |
 | --- | --- |

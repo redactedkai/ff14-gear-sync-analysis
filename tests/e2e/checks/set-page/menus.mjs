@@ -1,11 +1,11 @@
 // The pick menu and the Food menu of a set page.
 
 import assert from 'node:assert';
-import { shot } from '../../lib/constants.mjs';
-import { check, checkNoBadText, expect, poll } from '../../lib/expect.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { hasHScroll } from '../../lib/nav.mjs';
-import { expectApplyCount, expectMealEmpty, expectPieceEmpty, openSageSet, seedSheet } from '../../lib/sheets.mjs';
+import { shot } from '../../lib/constants.ts';
+import { check, checkNoBadText, expect, poll } from '../../lib/expect.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { hasHScroll } from '../../lib/nav.ts';
+import { expectApplyCount, expectMealEmpty, expectPieceEmpty, openSageSet, seedSheet } from '../../lib/sheets.ts';
 
 /** Longest main-thread task allowed while a set page's piece menu or Food menu opens and draws its rows, at 4x slower CPU
  * (ms), on a machine as fast as the one it was measured on (CALIBRATION_REFERENCE_MS); a slower or busier machine gets a

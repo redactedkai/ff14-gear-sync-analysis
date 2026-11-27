@@ -3,10 +3,10 @@
 // menu's fit in the window are `tests/stories/gear-browser/gear-categories.spec.ts`'s; what is checked here is which pieces the page
 // counts (Sage's top gear by box) and what moves the numbers.
 
-import { ACTIVITY_KEYS } from '../../lib/constants.mjs';
-import { check, expect, poll, same } from '../../lib/expect.mjs';
-import { setJob, showTab } from '../../lib/nav.mjs';
-import { openSet, seedSheet } from '../../lib/sheets.mjs';
+import { ACTIVITY_KEYS } from '../../lib/constants.ts';
+import { check, expect, poll, same } from '../../lib/expect.ts';
+import { setJob, showTab } from '../../lib/nav.ts';
+import { openSet, seedSheet } from '../../lib/sheets.ts';
 import { DIALOG_SHEET } from '../auto-fill/dialog.mjs';
 
 /** Sage's gear of item level 790 to 795 (the highest there is) by box: the Savage set (nine armor pieces and the weapon) and the

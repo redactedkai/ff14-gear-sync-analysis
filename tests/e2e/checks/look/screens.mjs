@@ -1,8 +1,8 @@
 // The Sheets screens for the theme and viewport checks.
 
 import { edgeSheet } from '../sheets/edges.mjs';
-import { FILL_SHEET, pieceSheet } from '../../lib/fixtures.mjs';
-import { openSet } from '../../lib/sheets.mjs';
+import { FILL_SHEET, pieceSheet } from '../../lib/fixtures.ts';
+import { openSet } from '../../lib/sheets.ts';
 
 const VIEW_STONES = [
   { stat: 'crit', grade: 12 },

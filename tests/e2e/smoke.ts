@@ -18,13 +18,13 @@ Expected values come from outside the code under test where possible:
 
 Layout: this file is the runner. lib/ holds the helpers (expect, navigation, the shared setup, saved sheets, the worker
 thread that computes numbers from src/core, the init scripts). checks/<folder>/ holds the checks: the
-folder is named for the step's domain (tests/domains.mjs; the app's are settings, saved-state, tabs and startup). groups.mjs lists GROUPS, the
+folder is named for the step's domain (tests/domains.mjs; the app's are settings, saved-state, tabs and startup). groups.ts lists GROUPS, the
 steps in the order they run.
 
 The steps run in groups, in parallel: each group gets a fresh browser context (so its own saved state) and page, set to
 the shared setup (SHARED_SETUP: Sage, sync to 123, level 50), and runs its steps one after the other (see GROUPS).
 Before each step that uses the shared setup, the runner checks it and names the step before if that one left it
-changed. The numbers from src/core are computed in a worker thread (lib/core-worker.mjs), so the pages are never kept
+changed. The numbers from src/core are computed in a worker thread (lib/core-worker.ts), so the pages are never kept
 waiting. Failures are printed in step order.
 
 Setup once: npm install && npx playwright install chromium
@@ -43,14 +43,14 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { UNLOAD_GUARD_OFF_KEY } from '../../src/ui/router/unload-guard.ts';
 import { parseDomains } from '../domains.mjs';
-import { GROUPS } from './groups.mjs';
-import { OUT, PAGE, PAGE_PATH, WORKERS, shot } from './lib/constants.mjs';
-import { coreWorker, startCore } from './lib/core.mjs';
-import { stepRecord } from './lib/expect.mjs';
-import { NO_UNLOAD_GUARD } from './lib/init-scripts.mjs';
+import { GROUPS } from './groups.ts';
+import { OUT, PAGE, PAGE_PATH, WORKERS, shot } from './lib/constants.ts';
+import { coreWorker, startCore } from './lib/core.ts';
+import { stepRecord } from './lib/expect.ts';
+import { NO_UNLOAD_GUARD } from './lib/init-scripts.ts';
 import { frameDelayFromEnv, lateFramesScript } from './lib/late-frames.ts';
-import { newPage, waitReady } from './lib/nav.mjs';
-import { setUpShared, sharedSetupChanges } from './lib/setup.mjs';
+import { newPage, waitReady } from './lib/nav.ts';
+import { setUpShared, sharedSetupChanges } from './lib/setup.ts';
 
 /** One group on a new page. Returns what it found: the page and console errors and the failed checks, in order. */
 async function runGroup(browser, group) {

@@ -1,9 +1,9 @@
 // The saved settings (Gear browser filters, Stat Allocation) in two browser tabs.
 
-import { PAGE, STORE_KEY } from '../../lib/constants.mjs';
-import { check, stepRecord } from '../../lib/expect.mjs';
-import { fieldValue, newPage, showMath, showTab, waitReady, waitSaved } from '../../lib/nav.mjs';
-import { pickOption } from '../../lib/select.mjs';
+import { PAGE, STORE_KEY } from '../../lib/constants.ts';
+import { check, stepRecord } from '../../lib/expect.ts';
+import { fieldValue, newPage, showMath, showTab, waitReady, waitSaved } from '../../lib/nav.ts';
+import { pickOption } from '../../lib/select.ts';
 
 /** The saved settings as another browser tab finds them in the shared storage. */
 const stored = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), STORE_KEY);

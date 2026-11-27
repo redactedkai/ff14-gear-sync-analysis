@@ -6,11 +6,11 @@
 // here is what no view draws: the breadcrumb menu (the baselines draw none open), the scrollbar thumbs (a full-page shot draws no
 // scrollbar) and the stuck column-name row (the shots draw sticky parts in place, so its arc is never stuck).
 
-import { PAGE } from '../../lib/constants.mjs';
-import { check, expect, sleep } from '../../lib/expect.mjs';
-import { FILL_SHEET, SET_SHEET } from '../../lib/fixtures.mjs';
-import { newPage, waitReady } from '../../lib/nav.mjs';
-import { seedSheets } from '../../lib/sheets.mjs';
+import { PAGE } from '../../lib/constants.ts';
+import { check, expect, sleep } from '../../lib/expect.ts';
+import { FILL_SHEET, SET_SHEET } from '../../lib/fixtures.ts';
+import { newPage, waitReady } from '../../lib/nav.ts';
+import { seedSheets } from '../../lib/sheets.ts';
 
 const FOUR = '4px 4px 4px 4px'; // the one radius: fields, buttons, panels, tables, menus, dialogs
 

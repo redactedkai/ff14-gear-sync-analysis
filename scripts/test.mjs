@@ -165,7 +165,7 @@ function run(command, args, env = {}) {
 
 // Prints the selection of each domain, as the run would take it.
 async function listSelection(options) {
-  const { GROUPS } = await import('../tests/e2e/groups.mjs');
+  const { GROUPS } = await import('../tests/e2e/groups.ts');
   for (const name of options.domains) {
     const stepsHere = GROUPS.flatMap(group => group.steps).filter(step => step.domain === name).length;
     const groupsHere = GROUPS.filter(group => group.steps.some(step => step.domain === name)).length;
@@ -191,7 +191,7 @@ async function runSmoke(options) {
     const result = await esbuild.build(build.esbuildOptions());
     build.writePage(result.outputFiles, join(privateFolder, 'index.html'));
     const domainArgs = options.domainsGiven ? ['--domain', options.domains.join(',')] : [];
-    return run(process.execPath, ['tests/e2e/smoke.mjs', ...domainArgs], {
+    return run(process.execPath, ['tests/e2e/smoke.ts', ...domainArgs], {
       SMOKE_PAGE: join(privateFolder, 'index.html'),
       SMOKE_OUT: join(privateFolder, 'out'),
     });

@@ -1,9 +1,9 @@
 // Checks several screens run: the totals of a set, the sync caps of a job.
 
-import { CAPS_123, CAPS_123_2H_WEAPON, HAS_OFFHAND } from './constants.mjs';
-import { check, expect } from './expect.mjs';
-import { hasHScroll, setNumber, showMath } from './nav.mjs';
-import { pickOption, selectOptions } from './select.mjs';
+import { CAPS_123, CAPS_123_2H_WEAPON, HAS_OFFHAND } from './constants.ts';
+import { check, expect } from './expect.ts';
+import { hasHScroll, setNumber, showMath } from './nav.ts';
+import { pickOption, selectOptions } from './select.ts';
 
 /** The Total row's cells of the open set page against `totals` (coreRecipe's: the character panel's numbers). */
 export async function checkTotals(pg, what, totals, stats = Object.keys(totals)) {

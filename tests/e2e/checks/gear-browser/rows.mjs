@@ -1,9 +1,9 @@
 // Gear browser: the table's rows always show the page's own rows (the rows are kept between a sort, a page, a slot, a
 // filter or a job change, and only their bindings change).
 
-import { check, expect } from '../../lib/expect.mjs';
-import { browserRows, chooseSlot, fillBrowser, setJob, showTab } from '../../lib/nav.mjs';
-import { SHARED_SETUP } from '../../lib/setup.mjs';
+import { check, expect } from '../../lib/expect.ts';
+import { browserRows, chooseSlot, fillBrowser, setJob, showTab } from '../../lib/nav.ts';
+import { SHARED_SETUP } from '../../lib/setup.ts';
 
 /* Installed in the page: window.__rowsMismatch() describes the first way the table's rows differ from the Gear browser element's
    `view.shown` (the rows the table should show), or '' when they match. Every row is read the way the template binds it:

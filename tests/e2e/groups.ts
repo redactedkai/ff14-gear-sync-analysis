@@ -79,7 +79,7 @@ import {
 import { checkStoresSealed } from './checks/tabs/facades.mjs';
 import { checkBackAfterBackAndForward, checkBackAfterQuickClick, checkBackAfterScriptScroll } from './checks/tabs/routing-quick-clicks.mjs';
 import { walkJob } from './checks/tabs/walk.mjs';
-import { FAILING_WORKER, HOLD_SOLVE, NO_WORKER, SLOW_COUNT } from './lib/init-scripts.mjs';
+import { FAILING_WORKER, HOLD_SOLVE, NO_WORKER, SLOW_COUNT } from './lib/init-scripts.ts';
 
 // A step: its name, the function that runs it, and its domain (a key of DOMAINS in tests/domains.mjs: the part of the
 // product the step checks, named by what its comment says; the folder of its file does not decide). A step that

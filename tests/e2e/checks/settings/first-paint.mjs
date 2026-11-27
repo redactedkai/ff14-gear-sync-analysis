@@ -1,10 +1,10 @@
 // First paint.
 
-import { STORE_KEY } from '../../lib/constants.mjs';
-import { check, expect, same } from '../../lib/expect.mjs';
-import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { waitReady, waitSaved } from '../../lib/nav.mjs';
-import { openSageSet } from '../../lib/sheets.mjs';
+import { STORE_KEY } from '../../lib/constants.ts';
+import { check, expect, same } from '../../lib/expect.ts';
+import { SET_SHEET } from '../../lib/fixtures.ts';
+import { waitReady, waitSaved } from '../../lib/nav.ts';
+import { openSageSet } from '../../lib/sheets.ts';
 
 const FIRST_PAINT_PROBE = () => {
   const frames = [];

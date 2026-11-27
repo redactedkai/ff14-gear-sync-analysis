@@ -1,9 +1,9 @@
 // Gear browser: pages, columns that stay, column hover.
 
-import { columnsDiffer, measureColumns } from '../../lib/columns.mjs';
-import { check, expect, same } from '../../lib/expect.mjs';
-import { browserRows, chooseSlot, fillBrowser, setCap, setJob, showTab, waitReady } from '../../lib/nav.mjs';
-import { SHARED_SETUP } from '../../lib/setup.mjs';
+import { columnsDiffer, measureColumns } from '../../lib/columns.ts';
+import { check, expect, same } from '../../lib/expect.ts';
+import { browserRows, chooseSlot, fillBrowser, setCap, setJob, showTab, waitReady } from '../../lib/nav.ts';
+import { SHARED_SETUP } from '../../lib/setup.ts';
 
 /** The browser's page line (owner's pick P1 a, 2026-10-20): Next and a page number show other rows and scroll the
  * table's box to its first row; a slot choice or a sort goes back to page 1; the line keeps its place (and the table its

@@ -14,7 +14,7 @@
     "test:fast": "node scripts/test.mjs --fast",
     "test:full": "node --test \"tests/unit/**/*.test.js\" \"tests/unit/**/*.test.ts\" \"tests/sweep/*.test.js\"",
     "test:py": "node scripts/py.mjs -m unittest discover -s tests/data -p \"test_*.py\"",
-    "test:smoke": "node tests/e2e/smoke.mjs",
+    "test:smoke": "node tests/e2e/smoke.ts",
     "test:model": "node scripts/test.mjs --domain model",
     "test:data": "node scripts/test.mjs --domain data --py",
     "test:solver": "node scripts/test.mjs --domain solver",

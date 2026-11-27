@@ -10,12 +10,12 @@ import {
   openFillSettings,
   searchLine,
 } from './dialog.mjs';
-import { ACTIVITY_KEYS, shot } from '../../lib/constants.mjs';
-import { coreGear, coreRecipe } from '../../lib/core.mjs';
-import { check, checkNoBadText, expect, poll, same } from '../../lib/expect.mjs';
-import { runFill, setNumber, ticked, waitReady } from '../../lib/nav.mjs';
-import { openSet, seedSheet, reloadAtSheets } from '../../lib/sheets.mjs';
-import { pickOption, selectOptions } from '../../lib/select.mjs';
+import { ACTIVITY_KEYS, shot } from '../../lib/constants.ts';
+import { coreGear, coreRecipe } from '../../lib/core.ts';
+import { check, checkNoBadText, expect, poll, same } from '../../lib/expect.ts';
+import { runFill, setNumber, ticked, waitReady } from '../../lib/nav.ts';
+import { openSet, seedSheet, reloadAtSheets } from '../../lib/sheets.ts';
+import { pickOption, selectOptions } from '../../lib/select.ts';
 
 /** The checked radio of the Target GCD mode (value exact or min). */
 const MODE_CHECKED = '#sh-settings-dialog input[name="s-gcd-mode"]:checked';
