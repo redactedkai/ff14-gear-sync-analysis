@@ -259,7 +259,7 @@ export function gearView(job: JobContext, sync: SyncSettings, browse: BrowseFiel
     countText: all.length ? matchCount(all.length) : 'No matches',
     page: pageShown,
     pageCount,
-    pageButtons: Object.freeze(pageButtons.map(Object.freeze)),
+    pageButtons: Object.freeze(pageButtons.map(button => Object.freeze(button))),
     prevPage: pageShown > 1 ? pageShown - 1 : null,
     nextPage: pageShown < pageCount ? pageShown + 1 : null,
     // how many pieces each "Gear categories" box holds for the job and the other filters ({box key: count}, activityCounts;
