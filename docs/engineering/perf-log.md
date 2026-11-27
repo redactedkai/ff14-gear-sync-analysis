@@ -140,11 +140,11 @@ Since 2026-10-19 the page's searches run in a Web Worker (audit 16 R8; [architec
   - Sage at level 100 with the defaults: 31 → 18 ms, and 140 → 105 ms at 4×.
 - **Opening a piece menu (Sage, head slot, 311 rows).** Drawing the first rows and the rest in steps ([architecture.md, section 3](architecture.md#3-the-ui-pattern)) showed the menu after about 36 ms instead of 149 ms at normal speed, with no task over 50 ms. Measured on a prototype of the stepped menu, not on the built page.
 - **4× and 6× slower** are not a slow device's for the search itself: Chrome's CPU throttle slows the page's main thread, and the worker much less. So "Solved in" at those rates is lower than a slow device would show.
-- **Sizes.** The page grows by the worker's code, about 83 kB; the data is not copied ([data-pipeline.md, section 8](data-pipeline.md#8-building-the-page)). The page's heap drops by 5 to 7 MB (Paladin 31.6 → 24.8 MB, Sage 29.8 → 24.8 MB), since the job's gear now lives in the worker's own heap, which `browser.mjs` does not count.
+- **Sizes.** The page grows by the worker's code, about 83 kB; the data is not copied ([data-pipeline.md, section 8](data-pipeline.md#8-building-the-page)). The page's heap drops by 5 to 7 MB (Paladin 31.6 → 24.8 MB, Sage 29.8 → 24.8 MB), since the job's gear now lives in the worker's own heap, which `browser.ts` does not count.
 
 ### 3.2 The inlined database at page open
 
-Build sizes and page-open timing for [data-pipeline.md, section 8](data-pipeline.md#8-building-the-page), which also explains the `JSON.parse` loading. `scripts/perf/db-parse.mjs` times Chromium from a mark just before the page's script to one just after; median of 7 runs, 2026-10-19, a 12-thread desktop.
+Build sizes and page-open timing for [data-pipeline.md, section 8](data-pipeline.md#8-building-the-page), which also explains the `JSON.parse` loading. `scripts/perf/db-parse.ts` times Chromium from a mark just before the page's script to one just after; median of 7 runs, 2026-10-19, a 12-thread desktop.
 
 | CPU | Item database as an object literal (before) | As `JSON.parse` (the page) | The page's whole script, before → after |
 | --- | ---: | ---: | ---: |
@@ -432,10 +432,10 @@ Measured with Node 22.23.2 on the owner's Windows PC, median of 5 runs, includin
 
 | Concept | File |
 | --- | --- |
-| The quick benchmark and the full sweep (`npm run perf`, `npm run perf:full`) | `scripts/perf/bench.mjs`, with the workloads in `scripts/perf/workloads.mjs` |
-| Hostile pools, memory, per-step timing, comparing versions | `scripts/perf/adversarial.mjs`, `memory.mjs`, `split.mjs`, `compare.mjs` |
-| The Target GCD sweep | `scripts/perf/target-gcd-sweep.mjs` |
-| The page in Chromium (`npm run perf:browser`) | `scripts/perf/browser.mjs` |
-| The inlined database at page open | `scripts/perf/db-parse.mjs` |
+| The quick benchmark and the full sweep (`npm run perf`, `npm run perf:full`) | `scripts/perf/bench.ts`, with the workloads in `scripts/perf/workloads.ts` |
+| Hostile pools, memory, per-step timing, comparing versions | `scripts/perf/adversarial.ts`, `memory.ts`, `split.ts`, `compare.ts` |
+| The Target GCD sweep | `scripts/perf/target-gcd-sweep.ts` |
+| The page in Chromium (`npm run perf:browser`) | `scripts/perf/browser.ts` |
+| The inlined database at page open | `scripts/perf/db-parse.ts` |
 | The tier ranking sweeps | one-off scripts; no committed script (the settings are listed in sections 4.1, 5.1 and 6.2) |
 | The current timing tables | [optimizer.md, section 8](optimizer.md#8-correctness-and-performance), [tier-ranking.md, section 8](tier-ranking.md#8-performance), [data-pipeline.md, section 8](data-pipeline.md#8-building-the-page) |

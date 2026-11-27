@@ -10,7 +10,7 @@ the HTML parser reading the script's text and V8 parsing, compiling and running 
 Each run is a fresh browser context with a comment that makes the script text unique, so V8's compilation cache never
 serves an earlier run. CPU throttle 1x (this machine), 4x and 6x (Chrome DevTools' slow-device emulation).
 
-Run: npm run build && node scripts/perf/db-parse.mjs [--runs 7] [--rates 1,4,6]
+Run: npm run build && node scripts/perf/db-parse.ts [--runs 7] [--rates 1,4,6]
 Pages and results are written to scripts/perf/out/db-parse/ (gitignored).
 */
 
@@ -20,7 +20,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as esbuild from 'esbuild';
 import { chromium } from 'playwright';
 import { BROWSER_TARGETS, jsonParseData } from '../build/build.ts';
-import { listOption, numberOption } from './args.mjs';
+import { listOption, numberOption } from './args.ts';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const ITEMS = resolve(ROOT, 'src', 'data', 'items.json');

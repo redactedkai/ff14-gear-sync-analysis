@@ -1,7 +1,7 @@
 /* Where one optimize() run spends its time: a replica of buildCandidates (src/core/optimizer/candidates.ts) with a timer
    per phase, then the real search. A drift guard checks the replica's candidate lists equal the real ones on every run,
    so a change to candidates.ts that the replica misses fails loudly instead of timing the wrong code.
-   node scripts/perf/split.mjs [--job SGE] [--sync "cap 660"] [--target <the job's speed key> --tb crit,det] [--melds] [--repeats 20] */
+   node scripts/perf/split.ts [--job SGE] [--sync "cap 660"] [--target <the job's speed key> --tb crit,det] [--melds] [--repeats 20] */
 import { performance } from 'node:perf_hooks';
 import { SLOT_TYPES } from '../../src/core/constants.ts';
 import { WD_KEY, weaponDamage } from '../../src/core/damage-defense.ts';
@@ -11,8 +11,8 @@ import { buildCandidates, makeScorer, pruneDominated, rankedKeys, vectorDims } f
 import { effStats, itemSyncIlvl } from '../../src/core/piece.ts';
 import { branchAndBound } from '../../src/core/optimizer/search.ts';
 import { NODE_LIMIT } from '../../src/core/recipe.ts';
-import { flag, listOption, numberOption, option } from './args.mjs';
-import { fullPool, job as ctx, SYNCS } from './workloads.mjs';
+import { flag, listOption, numberOption, option } from './args.ts';
+import { fullPool, job as ctx, SYNCS } from './workloads.ts';
 
 const job = ctx(option('job', 'SGE'));
 const sync = SYNCS.find(s => s.label === option('sync', 'off'));
@@ -115,7 +115,7 @@ const real = buildCandidates(job, pool, sync, { target, tiebreak }, { melds });
 const mine = replica();
 const sig = c => c.posList.map(l => l.map(a => `${a.item.id}:${Object.values(a.eff).join(',')}`).join(';')).join('|');
 if (real.slotList.join() !== mine.slotList.join() || sig(real) !== sig(mine)) {
-  console.error('DRIFT: the replica no longer matches buildCandidates; update split.mjs');
+  console.error('DRIFT: the replica no longer matches buildCandidates; update split.ts');
   process.exit(1);
 }
 

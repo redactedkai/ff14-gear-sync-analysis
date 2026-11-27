@@ -232,7 +232,7 @@ function itemVersions(
    `sorted`: every beater of a candidate comes before it in arr (buildCandidates sorts by score, then stat sum, ties in
    pool order). Then B is compared with the kept candidates only: since the kept beaters always have enough copies (see
    above), that drops exactly the same candidates, and the kept list is much shorter than arr. buildCandidates always
-   passes sorted; the unsorted mode is the reference that scripts/perf/compare.mjs and the tests check it against. */
+   passes sorted; the unsorted mode is the reference that scripts/perf/compare.ts and the tests check it against. */
 export function pruneDominated(arr: readonly Candidate[], dims: readonly string[], slotsOfType: number, sorted = false): Candidate[] {
   const keep: Candidate[] = [];
   for (let i = 0; i < arr.length; i++) {

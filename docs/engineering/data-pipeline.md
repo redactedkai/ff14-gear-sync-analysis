@@ -700,7 +700,7 @@ The generated files' sizes were measured 2026-10-19 (after `f87daf6`) on datamin
 
 **What the inlined database costs at page open.** The page's one script carries every data file as a `JSON.parse` call on one string. The build's `jsonParseData` plugin (`scripts/build/build.ts`) loads each `src/data/*.json` import that way, compacted, instead of as the object literal esbuild writes for a JSON import. So the page loads data as data, as Node and the tests do, and browsers parse JSON faster than the same object as JavaScript (owner's decision).
 
-`scripts/perf/db-parse.mjs` times it in Chromium, from a mark just before the script to one just after (the HTML parser reading the text, then V8 parsing, compiling and running it), on pages of its own. Current timings (median of 7 runs, 2026-10-19, a 12-thread desktop; `npm run build && node scripts/perf/db-parse.mjs`; the object-literal comparison and the earlier runs are in the [performance log, section 3.2](perf-log.md#32-the-inlined-database-at-page-open)):
+`scripts/perf/db-parse.ts` times it in Chromium, from a mark just before the script to one just after (the HTML parser reading the text, then V8 parsing, compiling and running it), on pages of its own. Current timings (median of 7 runs, 2026-10-19, a 12-thread desktop; `npm run build && node scripts/perf/db-parse.ts`; the object-literal comparison and the earlier runs are in the [performance log, section 3.2](perf-log.md#32-the-inlined-database-at-page-open)):
 
 | CPU | Item database as `JSON.parse` (the page) | The page's whole script, with the worker |
 | --- | ---: | ---: |
@@ -713,7 +713,7 @@ Notes:
 - **Size:** the page grew by about 3.6 kB (the string's escaped quotes), 2,975,005 bytes on a `dev` build.
 - **The worker** ([architecture.md, section 9](architecture.md#9-the-optimizers-worker)) adds only its code: it gets the data as the page's own strings (each data module also exports its text) and parses them on its own thread, so the database is still in the page once. Its timings are in the [performance log, section 3.2](perf-log.md#32-the-inlined-database-at-page-open).
 - **The rest of the script** (the libraries, the page code and what runs when the script loads) still takes more than the database itself.
-- **Run it** with `npm run build && node scripts/perf/db-parse.mjs` (`--runs`, `--rates`); pages and results go to `scripts/perf/out/db-parse/` (gitignored).
+- **Run it** with `npm run build && node scripts/perf/db-parse.ts` (`--runs`, `--rates`); pages and results go to `scripts/perf/out/db-parse/` (gitignored).
 
 ## 9. Updating after a game patch
 

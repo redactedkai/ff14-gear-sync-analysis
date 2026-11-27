@@ -17,7 +17,7 @@ Chrome's CPU throttle slows the page's main thread; the worker's search is slowe
 are not a slow device's.
 Each at CPU throttle 1x (this machine), 4x and 6x (Chrome DevTools' slow-device emulation).
 
-Run: npm run build && node scripts/perf/browser.mjs [--runs 5] [--jobs PLD,SGE] [--rates 1,4,6] [--page file.html]
+Run: npm run build && node scripts/perf/browser.ts [--runs 5] [--jobs PLD,SGE] [--rates 1,4,6] [--page file.html]
 --page times another build of the page (a copy of dist/index.html), for a before and after run back to back.
 */
 
@@ -29,7 +29,7 @@ import { makeJobContext } from '../../src/core/job-context.ts';
 import { DEFAULT_EXCLUDE } from '../../src/ui/job-sync-panel.ts';
 import { SET_ROW_SLOTS } from '../../src/ui/sheets/storage.ts';
 import { STORE_KEY } from '../../src/ui/store-key.ts';
-import { listOption, numberOption, option } from './args.mjs';
+import { listOption, numberOption, option } from './args.ts';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PAGE = pathToFileURL(resolve(option('page') ?? resolve(ROOT, 'dist', 'index.html'))).href;

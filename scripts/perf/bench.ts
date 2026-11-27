@@ -1,5 +1,5 @@
-/* Times optimize() over the workloads in workloads.mjs and checks the budgets (docs/engineering/optimizer.md, section 8).
-   node scripts/perf/bench.mjs [--workload W1|X|OFULL] [--jobs SGE,WAR] [--quick] [--repeats N] [--strict]
+/* Times optimize() over the workloads in workloads.ts and checks the budgets (docs/engineering/optimizer.md, section 8).
+   node scripts/perf/bench.ts [--workload W1|X|OFULL] [--jobs SGE,WAR] [--quick] [--repeats N] [--strict]
    Writes one JSON row per run to scripts/perf/out/<workload>.jsonl and prints a summary.
    Exits 1 when a run was truncated or took more than 1,000 nodes; timing budget misses are printed as information,
    and exit 1 only with --strict.
@@ -11,8 +11,8 @@ import { withActivities } from '../../src/core/items.ts';
 import { meldCacheStats } from '../../src/core/meld.ts';
 import { optimize } from '../../src/core/optimizer/index.ts';
 import { NODE_LIMIT } from '../../src/core/recipe.ts';
-import { flag, listOption, numberOption, option } from './args.mjs';
-import { excludeMasks, fullPool, JOB_IDS, job as ctx, objectivesFull, objectivesLite, SYNCS } from './workloads.mjs';
+import { flag, listOption, numberOption, option } from './args.ts';
+import { excludeMasks, fullPool, JOB_IDS, job as ctx, objectivesFull, objectivesLite, SYNCS } from './workloads.ts';
 
 const workload = option('workload', 'W1');
 const repeats = numberOption('repeats', 2);
@@ -150,7 +150,7 @@ const off = summary(
   rows.filter(r => !r.melds),
 );
 
-// worst runs, for follow-up with split.mjs
+// worst runs, for follow-up with split.ts
 const worst = [...rows].sort((a, b) => b.warm - a.warm).slice(0, 5);
 console.log('\nslowest (warm):');
 worst.forEach(r => {

@@ -6,13 +6,13 @@
    Part 2, forced stall: a speed minimum (engine only; the page has no control for it) on a synthetic pool built so the
    search runs into the page's 700k node limit; timed cold (first in the process) and warm.
    Exits 1 when a part 1 run is truncated; part 2 is meant to truncate.
-   node scripts/perf/adversarial.mjs [--pools 2000] [--climb 400] [--seed 1] */
+   node scripts/perf/adversarial.ts [--pools 2000] [--climb 400] [--seed 1] */
 import { performance } from 'node:perf_hooks';
 import { mkItem } from '../../src/core/items.ts';
 import { optimize } from '../../src/core/optimizer/index.ts';
 import { NODE_LIMIT } from '../../src/core/recipe.ts';
-import { numberOption } from './args.mjs';
-import { fullPool, job as ctx, rng } from './workloads.mjs';
+import { numberOption } from './args.ts';
+import { fullPool, job as ctx, rng } from './workloads.ts';
 
 const nPools = numberOption('pools', 2000);
 const nClimb = numberOption('climb', 400);

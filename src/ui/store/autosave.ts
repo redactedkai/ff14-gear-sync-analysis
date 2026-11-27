@@ -53,7 +53,7 @@ export function startAutosave(store: AppStore, options: AutosaveOptions = {}): A
     waiting = false;
     const started = performance.now();
     const json = JSON.stringify(persisted(store.state));
-    performance.measure('save', { start: started }); // read by scripts/perf/browser.mjs
+    performance.measure('save', { start: started }); // read by scripts/perf/browser.ts
     if (json === lastWritten) {
       return;
     }

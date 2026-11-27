@@ -9,7 +9,7 @@ The shots are deterministic: Google Fonts are blocked (the page's fallback fonts
 awaited, CSS animations and transitions are off, the mouse is moved to the page's top-left corner and the tables'
 hovered column cleared before each shot (a leftover hover once lit a table column; views that show a hover keep it).
 In a few shots a few dozen antialiased edge pixels (round buttons, a menu's edge) can be 1/255 apart between runs,
-which compare.mjs's default threshold allows.
+which compare.ts's default threshold allows.
 
 Without --page, it builds the page from src/ itself into <dir>/page.html, as the live page looks (no DEV badge or
 footer branch line, which would differ between branches: scripts/build/build.ts, buildReleasePage), and leaves
@@ -27,7 +27,7 @@ import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 import type { Browser, BrowserContext } from 'playwright';
 import { buildReleasePage } from '../build/build.ts';
-import { flag, numberOption, option } from '../perf/args.mjs';
+import { flag, numberOption, option } from '../perf/args.ts';
 import { VIEWS, openView, prepareContext, viewUrl } from './views.ts';
 import type { View } from './views.ts';
 

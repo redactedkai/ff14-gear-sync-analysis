@@ -1,5 +1,5 @@
 /* Command line options shared by the perf scripts, all in one style: `--name value` options and bare `--name` flags.
-   For example `node scripts/perf/bench.mjs --jobs SGE,WAR --repeats 3 --quick`. */
+   For example `node scripts/perf/bench.ts --jobs SGE,WAR --repeats 3 --quick`. */
 
 /* The text after `--name`, or `dflt` when the option is not given. */
 export function option(name, dflt = null) {

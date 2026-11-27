@@ -413,7 +413,7 @@ Tier ranking's searches hold two or three stats near their most, often with a sp
 
 The shortfall filter also runs on Target GCD searches (their speed minimum).
 
-With no minimums the search is the one above. Against the search before this change (2026-10-16), the plain optimizer gave the same results with the same node counts in 5,580 runs (`scripts/perf/compare.mjs --quick`). Target GCD gave the same results in 2,045 runs of each mode, with slightly fewer nodes (198,473 against 199,862 in "exactly" mode) from the shortfall filter.
+With no minimums the search is the one above. Against the search before this change (2026-10-16), the plain optimizer gave the same results with the same node counts in 5,580 runs (`scripts/perf/compare.ts --quick`). Target GCD gave the same results in 2,045 runs of each mode, with slightly fewer nodes (198,473 against 199,862 in "exactly" mode) from the shortfall filter.
 
 ## 6. Melds in the search
 
@@ -532,7 +532,7 @@ Today's figures, each with its date and the command that reproduces it. Earlier 
 | --- | --- | --- | --- |
 | Quick benchmark (6 jobs, 7,884 runs), median, melds off / on | 12.7 / 19.0 ms | 2026-10-17 | `npm run perf` |
 | The same, largest search, melds off / on | 310 / 458 nodes | 2026-10-17 | `npm run perf` |
-| Target GCD, a new GCD for the same goal, median / slowest | 5 ms / 1,075 ms | 2026-10-16 | `node scripts/perf/target-gcd-sweep.mjs` |
+| Target GCD, a new GCD for the same goal, median / slowest | 5 ms / 1,075 ms | 2026-10-16 | `node scripts/perf/target-gcd-sweep.ts` |
 | The page, Paladin: main thread blocked from the first Auto-fill on, longest (0: no task over 50 ms) | 0 ms | 2026-11-10 | `npm run perf:browser -- --runs 2 --rates 1,4 --jobs PLD,SGE` |
 
 Most of a run is building the candidate lists (syncing, melds, vectors, pruning: about 90%), not the search.
@@ -567,7 +567,7 @@ A **test** runs with `npm test`; a **probe** is a one-off measurement for the do
 - **Known values.** Generic item level 475 gear synced to 123 gives 296 Spell Speed, a 2.22 s GCD at level 50.
 - **Exhaustive search with melds.** Random pools of real pieces (some meldable, some synced), against a reference that enumerates every stone placement on its own ([materia.md](../mechanics/materia.md)).
 - **Target GCD against the exhaustive search.** Both modes with melds, on small real pools with Unique rings, two-handed weapons, shields and the A Realm Reborn tank pieces that cover several slots (Flanchards, Herklaedi). GCDs slower than the free result (the drift case) are included. With food and haste, the reference finds each meal's band by scanning every gear speed, with no use of the engine's band arithmetic.
-- **Target GCD sweep.** Not a committed test (`node scripts/perf/target-gcd-sweep.mjs`); details in the [performance log, section 6.1](perf-log.md#61-target-gcd-sweep). Every 4th run without food is solved again by the plain search, and each job and sync setting adds four small random pools checked by the exhaustive search. The tables for blocked slots are checked against the exhaustive search in `npm test` with `lazyTables: 0`, since small pools never reach 2,000 nodes.
+- **Target GCD sweep.** Not a committed test (`node scripts/perf/target-gcd-sweep.ts`); details in the [performance log, section 6.1](perf-log.md#61-target-gcd-sweep). Every 4th run without food is solved again by the plain search, and each job and sync setting adds four small random pools checked by the exhaustive search. The tables for blocked slots are checked against the exhaustive search in `npm test` with `lazyTables: 0`, since small pools never reach 2,000 nodes.
 - **Melds against xivgear.** Meld caps, stones, sync decisions and the target after melds ([materia.md, section 3](../mechanics/materia.md#3-checks)). The target matches once xivgear's 2-point overcap allowance is lifted.
 - **Real gear, exact optimum.** Not a committed test. 22 jobs (measured before Beastmaster was added) × 35 item level windows $[\ell, \ell + 40]$ for $\ell = 100, 120, \dots, 780$ × sync on and off at cap 123 × every stat as target. Reference: with one target and no constraints, the best gear set is just the best item per slot (best ring pair respecting copies).
 
@@ -581,14 +581,14 @@ The exhaustive and constraint tests run with `npm test`. If a change to scoring,
 
 The runs of these scripts, with their dates, are in the [performance log](perf-log.md).
 
-The workloads live in `scripts/perf/workloads.mjs`, the budgets in `bench.mjs` and `memory.mjs`.
+The workloads live in `scripts/perf/workloads.ts`, the budgets in `bench.ts` and `memory.ts`.
 
 - **Workloads:**
   - W1: every job with its full pool, sync settings, levels, melds on and off and about 40 objectives;
   - X: all the Gear categories box settings of `excludeMasks` (none left out, the default nine, each of those nine back on, and others);
   - OFULL: every target with every first and second tiebreak;
-  - adversarial pools (`adversarial.mjs`): near-ties, a Unique ring storm, blocking pieces, huge stats, a forced 700,000-node truncation.
-- **Budgets.** `bench.mjs` exits 1 when a run is truncated or takes more than 1,000 nodes: those are counts, the same on every PC. It prints the timing budgets' misses as information only (timing matters only above about 1 s); `--strict` makes a timing miss exit 1 too. `adversarial.mjs` exits 1 when a hostile pool run is truncated; its forced stall is meant to reach the limit and only prints a note when it no longer does (with the speed tables it stops after a few dozen nodes).
+  - adversarial pools (`adversarial.ts`): near-ties, a Unique ring storm, blocking pieces, huge stats, a forced 700,000-node truncation.
+- **Budgets.** `bench.ts` exits 1 when a run is truncated or takes more than 1,000 nodes: those are counts, the same on every PC. It prints the timing budgets' misses as information only (timing matters only above about 1 s); `--strict` makes a timing miss exit 1 too. `adversarial.ts` exits 1 when a hostile pool run is truncated; its forced stall is meant to reach the limit and only prints a note when it no longer does (with the speed tables it stops after a few dozen nodes).
 
 | Metric | Budget |
 | --- | --- |
@@ -597,13 +597,13 @@ The workloads live in `scripts/perf/workloads.mjs`, the budgets in `bench.mjs` a
 | Melds off, 95th percentile | 30 ms |
 | Nodes per run | 1,000 |
 | Truncated runs | 0 |
-| Second identical sweep (`memory.mjs`) | 0 new meld memo entries, 1 MB of heap |
+| Second identical sweep (`memory.ts`) | 0 new meld memo entries, 1 MB of heap |
 
 - **Known misses on this PC** (per the owner's rule, timing matters only above about 1 s):
   - the first call and the node count: 83.9 ms and 1,209 nodes in the [full sweep](perf-log.md#81-every-jobs-full-pool). `npm run perf` stayed within 1,000 nodes on 2026-10-19, 458 at most, and a sweep over 1,000 now exits 1;
   - the timing budgets after the [item level floor drop](perf-log.md#71-item-level-floor-15).
 - **If a budget fails,** try in this order, each keeping results identical: profile; fix the hot path; cache candidate lists across runs; bound the meld memo. (The last item, a Web Worker, is done: [the page with a Web Worker](perf-log.md#31-the-page-with-a-web-worker); it keeps the page responsive, it does not make a search faster.)
-- **`compare.mjs`** checks that a faster version gives the same answers. Copy `src/` of the old commit to `<dir>/src` (outside the repo, or under the gitignored `scripts/perf/out/baseline/<label>`; it aborts if `items.json` differs), then run `node scripts/perf/compare.mjs --baseline <dir> [--quick] [--nodes-may-differ]`. Both copies get the same item objects. Picks, totals and truncation must be byte-equal, and so must node counts unless the search was meant to change; `--quick` runs four jobs.
+- **`compare.ts`** checks that a faster version gives the same answers. Copy `src/` of the old commit to `<dir>/src` (outside the repo, or under the gitignored `scripts/perf/out/baseline/<label>`; it aborts if `items.json` differs), then run `node scripts/perf/compare.ts --baseline <dir> [--quick] [--nodes-may-differ]`. Both copies get the same item objects. Picks, totals and truncation must be byte-equal, and so must node counts unless the search was meant to change; `--quick` runs four jobs.
 
 ## 9. Known behaviours and limits
 
@@ -653,7 +653,7 @@ Several gear sets can have exactly the same ranked totals: weapon damage, the ta
 | Page use: the job's gear, Gear categories, node limit, the solve, result | `src/core/recipe.ts`, `src/core/session.ts`, `src/core/items.ts`, `src/ui/solve.ts`, `src/ui/sheets/fill.ts`, `src/ui/elements/gear-browser/filter-menu-model.ts` (functions in note 2 below the table) |
 | Page timing marks (`fill`, `save`) | `src/ui/elements/set-page/fill-run.ts`, `fill-settings-edit.ts`, `src/main.js` |
 | Dated benchmark runs | `docs/engineering/perf-log.md` |
-| Stress-test scripts | `scripts/perf/` (`bench.mjs`, `split.mjs`, `adversarial.mjs`, `browser.mjs`, `db-parse.mjs`, `compare.mjs`, `memory.mjs`, `workloads.mjs`, `target-gcd-sweep.mjs`) |
+| Stress-test scripts | `scripts/perf/` (`bench.ts`, `split.ts`, `adversarial.ts`, `browser.ts`, `db-parse.ts`, `compare.ts`, `memory.ts`, `workloads.ts`, `target-gcd-sweep.ts`) |
 | Tests | `tests/unit/core/optimizer/index.test.js`, `tests/unit/core/optimizer/index.exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/core/optimizer/index.speed-limits.test.js`, `tests/unit/core/target-gcd.test.ts`, `tests/unit/core/target-gcd.exhaustive.test.ts`, `tests/unit/core/optimizer/index.stat-minimums.test.js`, `tests/unit/core/optimizer/regain.test.js`, `tests/unit/core/recipe.ties.test.ts` (ties, see Ties above) |
 
 Notes on the table:

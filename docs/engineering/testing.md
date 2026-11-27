@@ -472,10 +472,10 @@ Notes on the pass/fail commands:
 Notes on the measurements and checks run by hand (none is part of `npm run check`):
 
 - **The `perf` commands** are performance measurements, not pass/fail tests. They write one JSON row per run to `scripts/perf/out/` (gitignored) and print a summary against the budgets. The results are in the [performance log](perf-log.md), and the current timings in [optimizer.md, section 8](optimizer.md#current-timings).
-  - `db-parse.mjs` times how long Chromium takes to read and run the inlined item database at page open (results in [perf-log.md, section 3.2](perf-log.md#32-the-inlined-database-at-page-open)).
-  - Two more scripts there are run by hand. `split.mjs` times each step of one run. `compare.mjs` checks that a faster version gives exactly the results of a fresh copy of `src/` from the old commit. You make that copy yourself, outside the repo or under the gitignored `scripts/perf/out/`. How to run it, the budgets and what to do when one fails are in [optimizer.md, section 8](optimizer.md#what-the-perf-scripts-measure).
-  - Every perf script takes its options the same way, `--name value` or a bare `--flag` (`scripts/perf/args.mjs`).
-- **`target-gcd-sweep.mjs`** runs Target GCD (a wanted global cooldown, which the optimizer turns into a speed range) over a large grid:
+  - `db-parse.ts` times how long Chromium takes to read and run the inlined item database at page open (results in [perf-log.md, section 3.2](perf-log.md#32-the-inlined-database-at-page-open)).
+  - Two more scripts there are run by hand. `split.ts` times each step of one run. `compare.ts` checks that a faster version gives exactly the results of a fresh copy of `src/` from the old commit. You make that copy yourself, outside the repo or under the gitignored `scripts/perf/out/`. How to run it, the budgets and what to do when one fails are in [optimizer.md, section 8](optimizer.md#what-the-perf-scripts-measure).
+  - Every perf script takes its options the same way, `--name value` or a bare `--flag` (`scripts/perf/args.ts`).
+- **`target-gcd-sweep.ts`** runs Target GCD (a wanted global cooldown, which the optimizer turns into a speed range) over a large grid:
   - every job;
   - every sync setting of the other scripts but cap 795 (it syncs nothing, so it repeats no sync);
   - the page's default "Gear categories" boxes;

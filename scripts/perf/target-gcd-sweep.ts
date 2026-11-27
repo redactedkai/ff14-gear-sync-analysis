@@ -1,5 +1,5 @@
 /* Target GCD sweep (not part of `check`): the real engine (src/core/target-gcd.ts) on every job x sync setting
-   (workloads.mjs SYNCS) x goals (every substat but speed, plus the main stat as a stress case) with no, one or two
+   (workloads.ts SYNCS) x goals (every substat but speed, plus the main stat as a stress case) with no, one or two
    tiebreaks x GCD targets spread from the job's no-speed GCD (with its haste) down to the fastest the gear reaches, so
    GCDs slower than the free result (the drift case) are in, x both modes x food off and "Best for the goal". The pool
    is every wearable piece minus the page's default exclusions (Savage, Ultimate, PvP); melds on; no node limit.
@@ -8,7 +8,7 @@
      must give the same score or also find nothing;
    - per task, small random pools against the exhaustive reference (tests/unit/helpers/exhaustive.js), which shares
      no code with meld versions, pruning or the search.
-   node scripts/perf/target-gcd-sweep.mjs [--workers 5] [--jobs SGE,WAR] [--resume]
+   node scripts/perf/target-gcd-sweep.ts [--workers 5] [--jobs SGE,WAR] [--resume]
    --resume keeps the rows already in the output and runs only the job x sync tasks missing from it (a task's rows are
    written together, so a task is either there whole or not at all).
    Writes scripts/perf/out/target-gcd-sweep.jsonl (one row per run) and prints progress and a summary. */
@@ -19,8 +19,8 @@ import { Worker, isMainThread, parentPort } from 'node:worker_threads';
 const ROOT = new URL('../../', import.meta.url).href;
 
 if (isMainThread) {
-  const { JOB_IDS, SYNCS } = await import('./workloads.mjs');
-  const { flag, listOption, numberOption } = await import('./args.mjs');
+  const { JOB_IDS, SYNCS } = await import('./workloads.ts');
+  const { flag, listOption, numberOption } = await import('./args.ts');
   const nWorkers = numberOption('workers', 5);
   const jobs = listOption('jobs', JOB_IDS);
   mkdirSync(new URL('./out/', import.meta.url), { recursive: true });
@@ -76,7 +76,7 @@ if (isMainThread) {
   summary(all, (Date.now() - t0) / 1000);
 } else {
   const { performance } = await import('node:perf_hooks');
-  const { fullPool, job: ctx, rng, SYNCS } = await import('./workloads.mjs');
+  const { fullPool, job: ctx, rng, SYNCS } = await import('./workloads.ts');
   const { withActivities } = await import(`${ROOT}src/core/items.ts`);
   const { DEFAULT_EXCLUDE } = await import(`${ROOT}src/ui/job-sync-panel.ts`);
   const { optimize, solve } = await import(`${ROOT}src/core/optimizer/index.ts`);

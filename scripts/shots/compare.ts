@@ -13,7 +13,7 @@ Exits 1 when any file differs.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
-import { numberOption } from '../perf/args.mjs';
+import { numberOption } from '../perf/args.ts';
 
 // the two folders: the first two arguments that are not an option or an option's value
 const folders = process.argv.slice(2).filter((arg, at, args) => !arg.startsWith('--') && !args[at - 1]?.startsWith('--'));

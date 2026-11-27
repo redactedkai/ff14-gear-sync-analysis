@@ -99,7 +99,7 @@ export class PageFill {
         return;
       }
       const { result, ms } = await solver.request<SolveAnswer>(request);
-      // the search's own time, not the wait for the worker's reply; read by scripts/perf/browser.mjs
+      // the search's own time, not the wait for the worker's reply; read by scripts/perf/browser.ts
       if (Number.isFinite(ms)) {
         performance.measure('fill', { start: performance.now() - ms, duration: ms });
       }
