@@ -11,3 +11,7 @@ line-ending = "lf"
 [tool.ruff.lint]
 # pyflakes, pycodestyle errors/warnings, import order, bugbear, pyupgrade
 select = ["F", "E", "W", "I", "B", "UP"]
+
+[tool.pyrefly]
+# The data scripts and their tests import their neighbours by bare name.
+search-path = ["scripts/data", "tests/data"]
