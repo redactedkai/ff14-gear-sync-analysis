@@ -838,6 +838,8 @@ Note: appending to `stats` keeps the existing positions' meaning. Add the stat t
 
   Every stop in the generators has at least one such test.
 
+  **Property tests** (Hypothesis, deterministic, on the same fixtures): shuffling the input rows of the item, meal and gear group generators does not change the output; an unknown code, category, activity or hand-kept id stops with `SchemaError`; a row is left out only by the selection rules of section 4.1; generated JSON parses back to the same data, as LF text with a final newline. `test_bad_rows.py` adds one bad row per remaining stop and a test of `summary.main()`.
+
   Run from the command line, the generator exits with status 1 and a one-line message.
 
 **Format tests** (Node, on the real generated data):
