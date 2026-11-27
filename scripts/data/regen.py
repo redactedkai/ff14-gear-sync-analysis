@@ -58,27 +58,29 @@ src, edits = read_clone(CSV, provenance.REPO, 'data', 'csv')
 patch_src, _patch_edits = read_clone(PATCHES_DIR, provenance.PATCHES_REPO, 'patch list', 'patchlist.json')
 prov = ['--source-commit', src['commit'], '--source-date', src['date']]
 patch_prov = ['--source-commit', patch_src['commit'], '--source-date', patch_src['date']]
-py = sys.executable
+# The Python steps run with UTF-8 input and output whatever the console's code page is (a Windows console is cp1252), so an
+# item name outside it cannot crash a generator's print. Their output is decoded as UTF-8 below.
+py = [sys.executable, '-X', 'utf8']
 DATA = ROOT / 'scripts' / 'data'
 OUT = ROOT / 'src' / 'data'
 work = tempfile.TemporaryDirectory()
 REPORT = str(Path(work.name) / 'items-report.json')  # the item generator's counts, for the summary step
 STEPS = [
-    ('Generating the item level table', [py, str(DATA / 'gen_item_level.py'), str(CSV), str(OUT / 'item-level.json'), *prov]),
-    ('Generating the item database', [py, str(DATA / 'gen_items.py'), str(CSV), str(OUT / 'items.json'), *prov, '--report', REPORT]),
+    ('Generating the item level table', [*py, str(DATA / 'gen_item_level.py'), str(CSV), str(OUT / 'item-level.json'), *prov]),
+    ('Generating the item database', [*py, str(DATA / 'gen_items.py'), str(CSV), str(OUT / 'items.json'), *prov, '--report', REPORT]),
     # which jobs share gear (Copy sheet), from the item database made above
-    ('Generating the gear groups', [py, str(DATA / 'gen_gear_groups.py'), str(OUT / 'items.json'), str(OUT / 'gear-groups.json')]),
-    ('Generating the food table', [py, str(DATA / 'gen_food.py'), str(CSV), str(OUT / 'food.json'), *prov]),
-    ('Generating the job icons', [py, str(DATA / 'gen_job_icons.py')]),
+    ('Generating the gear groups', [*py, str(DATA / 'gen_gear_groups.py'), str(OUT / 'items.json'), str(OUT / 'gear-groups.json')]),
+    ('Generating the food table', [*py, str(DATA / 'gen_food.py'), str(CSV), str(OUT / 'food.json'), *prov]),
+    ('Generating the job icons', [*py, str(DATA / 'gen_job_icons.py')]),
     # the patch each sheet's game data belongs to (the sheet manager): the release day of every patch
-    ('Generating the patch table', [py, str(DATA / 'gen_patches.py'), str(PATCHLIST), str(OUT / 'patches.json'), *patch_prov]),
+    ('Generating the patch table', [*py, str(DATA / 'gen_patches.py'), str(PATCHLIST), str(OUT / 'patches.json'), *patch_prov]),
     # the most speed per level comes from the optimizer (JavaScript), over the item and food tables made above
     ('Generating the most speed per level', ['node', str(DATA / 'gen_max_speed.mjs'), str(OUT / 'max-speed.json')]),
     # src/data/summary.json: counts compared with the last run, CSV blob ids, and a docs/data-changelog.md line for a
     # new commit (not for an edited clone, whose data should not be committed)
     (
         'Comparing the counts with the last run',
-        [py, str(DATA / 'summary.py'), str(CSV), REPORT, *(['--no-changelog'] if edits else [])],
+        [*py, str(DATA / 'summary.py'), str(CSV), REPORT, *(['--no-changelog'] if edits else [])],
     ),
     ('Building the page', ['node', str(ROOT / 'scripts' / 'build' / 'build.mjs')]),
 ]
@@ -86,8 +88,9 @@ STEPS = [
 for _label, cmd in progress.steps(STEPS, label=lambda s: s[0]):
     # stdout is held back so a progress bar stays intact, then shown: the item generator's drop report, the counts
     # that moved and any warning (the build's file size is dropped). Errors go to stderr as they happen.
-    p = subprocess.run(cmd, stdout=subprocess.PIPE, text=True, check=False)  # a failure is reported below, after the output
-    if cmd[0] == py and p.stdout.strip():
+    is_python = cmd[0] == sys.executable
+    p = subprocess.run(cmd, stdout=subprocess.PIPE, text=True, encoding='utf-8' if is_python else None, check=False)
+    if is_python and p.stdout.strip():
         progress.note(p.stdout.rstrip())
     if p.returncode:
         sys.exit(p.returncode)
