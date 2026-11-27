@@ -180,7 +180,7 @@ test('New sheet in the caret menu opens its dialog over the manager and the redr
   addSheet(sheets);
   model.follow();
   assert.equal(sheets.screen, 'sheet');
-  model.onSwitchPick({ kind: 'new', opener: { isConnected: true, focus() {} } });
+  model.onSwitchPick({ kind: 'new', id: null, opener: { isConnected: true, focus() {} } });
   assert.equal(sheets.screen, 'sheets', 'the manager is behind the dialog');
   assert.equal(model.dialogs.isOpen, true);
   model.follow();
@@ -200,7 +200,7 @@ test('New sheet in the caret menu opens no dialog while the leave question holds
     asked.push(move);
     return true;
   });
-  model.onSwitchPick({ kind: 'new', opener: { isConnected: true, focus() {} } });
+  model.onSwitchPick({ kind: 'new', id: null, opener: { isConnected: true, focus() {} } });
   assert.equal(asked.length, 1, 'the leave question was asked');
   assert.equal(sheets.screen, 'set', 'still on the set page');
   assert.equal(model.dialogs.isOpen, false);
