@@ -3,7 +3,7 @@
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { DEFAULT_CAP, DEFAULT_JOB, DEFAULT_LEVEL, OUT, PAGE, STORE_KEY } from '../../lib/constants.ts';
-import { check, checkNoBadText, expect, same, stepRecord } from '../../lib/expect.ts';
+import { check, checkNoBadText, currentRecord, expect, same } from '../../lib/expect.ts';
 import {
   browserRows,
   currentJob,
@@ -20,11 +20,12 @@ import {
   waitSaved,
 } from '../../lib/nav.ts';
 import { pickOption } from '../../lib/select.ts';
+import type { Page } from 'playwright';
 
 /** Build a non-default state (job, cap, sync off, level, browser filters, Gear categories boxes and market board switch, Piece
  * stats slot and item level, How the math works open), reload, and every part comes back: the inputs and the open tab.
  * Nothing like a gear pool is saved. */
-export async function checkReloadPersists(pg) {
+export async function checkReloadPersists(pg: Page) {
   const [job, lo, hi, lvl] = ['DRG', 130, 135, 50]; // not the default job, a different role from the other checks
   await setJob(pg, job);
   await fillBrowser(pg, lo, hi, lvl);
@@ -99,7 +100,7 @@ const BAD_STORAGE = [
 /** Invalid JSON or an old save with a broken gear pool: the page loads with the default settings
  * and no JS error. The bad value is written from a separate blank page (same file:// storage), so no pending save of
  * this page can overwrite it before the load. */
-export async function checkCorruptedStorage(pg) {
+export async function checkCorruptedStorage(pg: Page) {
   const blank = resolve(OUT, 'blank.html'); // written by main()
   for (const [what, raw] of BAD_STORAGE) {
     const usable = what === 'an old save with a broken pool'; // only that case stores a valid job
@@ -108,10 +109,10 @@ export async function checkCorruptedStorage(pg) {
     if (usable) {
       Object.assign(defaults, { '#b-min': '', '#b-lvl': '100' });
     }
-    const errors = stepRecord.getStore().errors;
+    const errors = currentRecord().errors;
     const nErrors = errors.length;
     await pg.goto(pathToFileURL(blank).href);
-    await pg.evaluate(([k, v]) => localStorage.setItem(k, v), [STORE_KEY, raw]);
+    await pg.evaluate(([k, v]) => localStorage.setItem(k, v), [STORE_KEY, raw] as const);
     await pg.goto(PAGE);
     await waitReady(pg);
     await expect(pg.locator('#tab-sheets')).toBeVisible(); // the page opens the first tab: a saved tab is not read
@@ -135,14 +136,14 @@ export async function checkCorruptedStorage(pg) {
 
 /** Reset to defaults asks with the browser's own dialog: Cancel keeps everything, OK brings back the default job and empties the
  * filter. (Every default it restores is `app-actions`'s.) */
-export async function checkReset(pg) {
+export async function checkReset(pg: Page) {
   await setJob(pg, 'SGE');
   await setCap(pg, '130'); // a cap level 50 allows (135 at most)
   await fillBrowser(pg, 100, '', 100);
   await pg.fill('#b-q', 'Ring');
   await waitSaved(pg, "s => s.browse.q === 'Ring' && +s.browse.min === 100"); // typed filters commit after a short wait
-  const messages = [];
-  const answer = accept =>
+  const messages: string[] = [];
+  const answer = (accept: boolean) =>
     pg.once('dialog', d => {
       messages.push(d.message());
       return accept ? d.accept() : d.dismiss();

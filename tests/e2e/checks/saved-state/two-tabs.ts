@@ -1,36 +1,39 @@
 // The saved settings (Gear browser filters, Stat Allocation) in two browser tabs.
 
 import { PAGE, STORE_KEY } from '../../lib/constants.ts';
-import { check, stepRecord } from '../../lib/expect.ts';
+import { check, currentRecord } from '../../lib/expect.ts';
 import { fieldValue, newPage, showMath, showTab, waitReady, waitSaved } from '../../lib/nav.ts';
 import { pickOption } from '../../lib/select.ts';
+import type { Page } from 'playwright';
 
 /** The saved settings as another browser tab finds them in the shared storage. */
-const stored = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), STORE_KEY);
+const stored = (page: Page) => page.evaluate((key: string) => JSON.parse(localStorage.getItem(key) ?? 'null'), STORE_KEY);
 
 /** Count the storage events `page` hears from now on (a save by another tab of the same storage raises one), so a step can
  * wait until the other tab's save has reached this tab and only then check that this tab did not change. */
-const listenForStorageEvents = page =>
-  page.evaluate(key => {
-    window.__storageEvents = 0;
+const listenForStorageEvents = (page: Page) =>
+  page.evaluate((key: string) => {
+    let heard = 0;
+    window.__storageEvents = heard;
     window.addEventListener('storage', event => {
       if (event.key === key) {
-        window.__storageEvents++;
+        heard++;
+        window.__storageEvents = heard;
       }
     });
   }, STORE_KEY);
 
 /** Wait until `page` has heard `count` storage events of the settings key since listenForStorageEvents. */
-const waitForStorageEvents = (page, count) => page.waitForFunction(wanted => window.__storageEvents >= wanted, count);
+const waitForStorageEvents = (page: Page, count: number) => page.waitForFunction(wanted => (window.__storageEvents ?? 0) >= wanted, count);
 
 /** Open the Gear browser (its own panel) and read the Item level "min" box. */
-async function browserFrom(page) {
+async function browserFrom(page: Page) {
   await showTab(page, 'browse', true);
   return fieldValue(page, '#b-min');
 }
 
 /** Open Stat Allocation and read its slot and item level boxes: [slot, item level]. */
-async function pieceBoxes(page) {
+async function pieceBoxes(page: Page) {
   await showMath(page, 'piece');
   return [await fieldValue(page, '#p-slot'), await fieldValue(page, '#p-ilvl')];
 }
@@ -47,8 +50,8 @@ async function pieceBoxes(page) {
  *      still shows its own "min" until it reloads, and then shows B's whole: no "min", B's slot.
  *   3. B types an item level in Stat Allocation and it is saved; A, which has heard of it and not changed, types a "max" and saves:
  *      the stored item level is A's (empty), B's is lost, and the stored "max" and B's slot are kept. B reloads and finds A's whole. */
-export async function checkTwoTabsSettings(pg) {
-  const rec = stepRecord.getStore();
+export async function checkTwoTabsSettings(pg: Page) {
+  const rec = currentRecord();
   const other = await newPage(pg.context());
   other.on('pageerror', e => rec.errors.push(`page error (second tab): ${e.message ?? e}`));
   other.on('console', m => {
