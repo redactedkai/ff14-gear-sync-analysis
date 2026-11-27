@@ -1,6 +1,6 @@
 {
   // Types only: nothing is emitted (esbuild builds the page, Node strips types for the tests). The JavaScript files stay
-  // unchecked (checkJs off): src/main.js, src/startup-failure.js, the scripts and most unit tests; a .ts file that imports one reads its inferred types.
+  // unchecked (checkJs off): src/main.js, src/startup-failure.js and the tests and scripts not yet converted to .ts; a .ts file that imports one reads its inferred types.
   "compilerOptions": {
     "target": "ES2023",
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
@@ -19,6 +19,7 @@
     "resolveJsonModule": true,
     "skipLibCheck": true
   },
-  // xg_sync_test.ts runs inside xivgear's own checkout against their types, so it is left out
-  "include": ["src/**/*.ts", "tests/**/*.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts", "scripts/**/*.ts"],
+  // xg_sync_test.ts runs inside xivgear's own checkout against their types, so it is left out; the rest is build output
+  "exclude": ["**/node_modules/**", "scripts/validate/xivgear/xg_sync_test.ts", "scripts/validate/out/**", "scripts/perf/out/**", "tests/stories/out/**", "tests/e2e/out/**"]
 }

@@ -288,6 +288,7 @@ Notes:
   - seeded random numbers, item lookup by name, store-shaped state, and values typed in from outside sources such as the `BaseParam` slot shares and AkhMorning's level table (`common.js`);
   - the tier ranking reference with its random cases, shared with the long sweep in `tests/sweep/` (`tier-reference.js`);
   - the view tests' store-shaped state with sync at 123 and a set's recipe, their small real-gear pools and an Auto-fill's solve (`views.js`);
+  - the fake kit: complete typed stand-ins for browser objects, built without a cast (`fakes.ts`: `fakeStorage`, `quotaError`);
   - saved sheets of real items for the Sheets tests (`sheet-fixtures.js`);
   - a set page's session bound to a real store with a stand-in for its element and solver stand-ins (`set-page-bind.js`);
   - pin lists for the pinned search tests (`pins.js`);
