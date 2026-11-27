@@ -201,12 +201,12 @@ export function evaluateSet(
       label = 'Ring ' + ringN;
     }
     if (!w.item) {
-      const cover = worn.find(o => o.item && slotInfo(job, o.item).blocks.includes(w.piece.slot));
+      const cover = worn.find((o): o is WornPiece => o.item !== null && slotInfo(job, o.item).blocks.includes(w.piece.slot));
       return {
         slot: w.piece.slot,
         label,
         item: null,
-        blockedBy: (cover as WornPiece | undefined)?.item.name ?? '',
+        blockedBy: cover?.item.name ?? '',
       };
     }
     if (w.piece.slot !== 'ring') {

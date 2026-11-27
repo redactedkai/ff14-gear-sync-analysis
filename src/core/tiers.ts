@@ -5,7 +5,7 @@
      tick, not per mille); Skill/Spell Speed by its GCD (speed.ts).
    The character's base value of each stat cancels out of these formulas, so the tier depends on the gear points alone.
    Food is not counted: it would move every total. Main stats and Vitality have no tiers here. */
-import { isOneOf } from './guards.ts';
+import { isOneOf, last, mustHave } from './guards.ts';
 import { BASE_GCD_MS, gcdFor, gcdTierAt } from './speed.ts';
 import { levelParams } from './level-params.ts';
 import { statBase } from './base-stats.ts';
@@ -13,20 +13,12 @@ import type { DimKey, JobContext, StatKey } from './types.ts';
 
 /* The kinds of effect a stat has (EFFECTS). */
 export type EffectKind = 'rate' | 'onCrit' | 'dmgHeal' | 'dmgTaken' | 'mp' | 'gcd';
-/* One effect of a stat: its kind and its step (null for speed's GCD). */
-interface Effect {
-  readonly kind: EffectKind;
-  readonly step: number | null;
-}
+/* One effect of a stat: its kind and its step. Speed's GCD has no step (null); every other kind has one. */
+type Effect = { readonly kind: Exclude<EffectKind, 'gcd'>; readonly step: number } | { readonly kind: 'gcd'; readonly step: null };
 /* The tier a gear value falls in: its start and the start of the next tier (null for the last), in gear points. */
 interface TierSpan {
   start: number;
   next: number | null;
-}
-/* An effect that has a step: every one but speed's GCD. The code reads a step only where the effect is not the GCD. */
-interface SteppedEffect {
-  readonly kind: EffectKind;
-  readonly step: number;
 }
 /* One row of tierLadder: a tier on the panel scale, its values as text and which of them changed at its start. */
 export interface TierRow {
@@ -138,7 +130,11 @@ export function statTier(
   if (effects == null) {
     return null;
   }
-  const { kind, step } = effects[0] as SteppedEffect;
+  const first = effects[0];
+  if (first.kind === 'gcd') {
+    return null;
+  }
+  const { kind, step } = first;
   const { div } = levelParams(level);
   // the effect in per mille (MP for Piety), and the fewest points that give it and the next one: the smallest g with
   // floor(step x g / div) >= tier, and >= tier + 1
@@ -159,7 +155,11 @@ function tierAt(effects: readonly Effect[], g: number, level: number, haste: num
   const { div } = levelParams(level);
   let start = 0,
     next = Infinity;
-  for (const { step } of effects as readonly SteppedEffect[]) {
+  for (const effect of effects) {
+    if (effect.kind === 'gcd') {
+      continue;
+    }
+    const { step } = effect;
     const tier = Math.floor((step * g) / div);
     start = Math.max(start, Math.ceil((tier * div) / step));
     next = Math.min(next, Math.ceil(((tier + 1) * div) / step));
@@ -216,8 +216,8 @@ export function tierLadder(
   const base = statBase(job, stat, level);
   const { div } = levelParams(level);
   const valuesAt = (g: number) =>
-    (effects as readonly SteppedEffect[]).map(({ kind, step }) =>
-      effectText(kind, stat, kind === 'gcd' ? gcdFor(g, level, BASE_GCD_MS, haste) : Math.floor((step * g) / div)),
+    effects.map(effect =>
+      effectText(effect.kind, stat, effect.kind === 'gcd' ? gcdFor(g, level, BASE_GCD_MS, haste) : Math.floor((effect.step * g) / div)),
     );
 
   // 1. the value's tier, up to `near` tiers below it and above it, then more on one side for the rows the other lacks;
@@ -226,8 +226,12 @@ export function tierLadder(
   const gear = Math.min(gearMost, Math.max(0, Math.floor(total) - base));
   const tiers: TierSpan[] = [tierAt(effects, near === Infinity ? 0 : gear, level, haste)];
   const lower = () => tiers.unshift(tierAt(effects, tiers[0].start - 1, level, haste));
-  const canHigher = () => (tiers.at(-1) as TierSpan).next != null && ((tiers.at(-1) as TierSpan).next as number) <= gearMost;
-  const higher = () => tiers.push(tierAt(effects, (tiers.at(-1) as TierSpan).next as number, level, haste));
+  const lastTier = () => last(tiers, 'tier list');
+  const canHigher = () => {
+    const { next } = lastTier();
+    return next != null && next <= gearMost;
+  };
+  const higher = () => tiers.push(tierAt(effects, mustHave(lastTier().next, 'start of the next tier'), level, haste));
   for (let k = 0; k < near && tiers[0].start > 0; k++) {
     lower();
   }
@@ -240,8 +244,9 @@ export function tierLadder(
   while (tiers.length < 2 * near + 1 && tiers[0].start > 0) {
     lower();
   }
-  if (gearMost !== Infinity && (tiers.at(-1) as TierSpan).next != null && ((tiers.at(-1) as TierSpan).next as number) > gearMost) {
-    (tiers.at(-1) as TierSpan).next = null;
+  const top = lastTier();
+  if (gearMost !== Infinity && top.next != null && top.next > gearMost) {
+    top.next = null;
   }
 
   // 2. each tier on the panel scale, with its values and which of them changed at its start

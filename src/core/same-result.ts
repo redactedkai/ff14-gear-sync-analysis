@@ -108,8 +108,10 @@ export function sameResult(
           meld: p.meld ?? null,
           blocks: slotInfo(job, p.item).blocks,
           copies: p.item.copies || 1,
+          score: 0,
+          sum: 0,
           fixed: true,
-        } as Candidate,
+        },
       ];
     }
     const others = shown.filter((_, j) => j !== i);
@@ -207,7 +209,7 @@ function sumOf(job: JobContext, picks: readonly { item?: unknown; eff?: Eff }[])
   for (const p of picks) {
     if (p.item) {
       for (const s of dims) {
-        t[s] += (p.eff as Eff)[s] || 0;
+        t[s] += p.eff?.[s] || 0;
       }
     }
   }

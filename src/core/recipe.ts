@@ -17,7 +17,7 @@
 
    Pins are no part of a recipe either: they are the set's own pieces and meal that a solve must keep (runRecipe's
    `pins`; pinProblems). A set's pinned rows are pins, the other rows are what the solve fills. */
-import { must, present } from './guards.ts';
+import { last, must, mustHave, present } from './guards.ts';
 import { allMeals, bestFood, foodChoices } from './food.ts';
 import { activityCounts, allocatedRelic, filterGear, gearFilter, itemRoutes, poolItemById, wearable, withActivities } from './items.ts';
 import { buildCandidates, fixedCandidate, optimize, pinProblem } from './optimizer/index.ts';
@@ -209,10 +209,10 @@ export function resolvePins(job: JobContext, sync: Sync, pins: Pins | null | und
     } else if (allocatedRelic(job, item)) {
       reason = 'relic';
     }
-    if (reason) {
+    if (item && !reason) {
+      fixed.push(fixedCandidate(job, item, piece.stones ?? [], sync));
+    } else if (reason) {
       problems.push({ index, reason });
-    } else {
-      fixed.push(fixedCandidate(job, item as PoolItem, piece.stones ?? [], sync));
     }
   });
   if (!problems.length && pinProblem(fixed)) {
@@ -226,7 +226,7 @@ export function resolvePins(job: JobContext, sync: Sync, pins: Pins | null | und
 }
 
 /* Whether `pins` (runRecipe's) keep anything: a piece or a meal. */
-export function hasPins(pins: Pins | null | undefined): boolean {
+export function hasPins(pins: Pins | null | undefined): pins is Pins {
   return Boolean(pins?.pieces?.length || pins?.meal);
 }
 
@@ -331,8 +331,8 @@ export function runRecipe(
     ...(hasPins(pins)
       ? {
           pins: Object.freeze({
-            pieces: Object.freeze((pins as Pins).pieces.map(p => Object.freeze({ ...p }))),
-            meal: (pins as Pins).meal ?? null,
+            pieces: Object.freeze(pins.pieces.map(p => Object.freeze({ ...p }))),
+            meal: pins.meal ?? null,
           }),
         }
       : {}),
@@ -383,9 +383,10 @@ export function runRecipe(
   // one, the gear first and the meal after (it never changes which gear wins)
   let res: GcdSuccess | GcdFailure | TierRankSuccess | TierRankFailure | SolveResult;
   let food: FoodChoice | null;
+  let held: TierRankSuccess['held'] = [];
   const byTier = recipe.byTier !== false;
   if (byTier) {
-    res = rankByTier(job, pool, sync, {
+    const ranked = rankByTier(job, pool, sync, {
       ...goal,
       food: searchMeal(foodOn, picked),
       nodeLimit: NODE_LIMIT,
@@ -393,12 +394,14 @@ export function runRecipe(
       gcd: asked ?? undefined,
       mode: recipe.gcdMode,
     });
-    if (!res.ok) {
-      return failed(res);
+    if (!ranked.ok) {
+      return failed(ranked);
     }
-    food = (res as TierRankSuccess).food;
+    res = ranked;
+    food = ranked.food;
+    held = ranked.held;
   } else if (asked != null) {
-    res = optimizeGcd(job, pool, sync, {
+    const timed = optimizeGcd(job, pool, sync, {
       ...goal,
       mode: recipe.gcdMode,
       gcd: asked,
@@ -406,10 +409,11 @@ export function runRecipe(
       nodeLimit: NODE_LIMIT,
       level,
     });
-    if (!res.ok) {
-      return failed(res);
+    if (!timed.ok) {
+      return failed(timed);
     }
-    food = (res as GcdSuccess).food;
+    res = timed;
+    food = timed.food;
   } else {
     res = optimize(job, pool, sync, { ...goal, nodeLimit: NODE_LIMIT });
     if (!res.ok) {
@@ -449,8 +453,8 @@ export function runRecipe(
     const keys = [recipe.target, recipe.tb, recipe.tb2].filter(Boolean);
     const all = allMeals(job);
     const best = picked ? bestFood(job, foodChoices(job), gearTotals, level, keys) : food;
-    const tagged = sameMeals(job, gearTotals, best as FoodChoice, all, { level, haste: hastePct, goal: recipe.target }, keys);
-    meals = { searched: food, best, tagged, shown: picked ?? (tagged.at(-1) as FoodChoice), picked: Boolean(picked) };
+    const tagged = sameMeals(job, gearTotals, mustHave(best, 'best meal'), all, { level, haste: hastePct, goal: recipe.target }, keys);
+    meals = { searched: food, best, tagged, shown: picked ?? last(tagged, 'tagged meals'), picked: Boolean(picked) };
   }
 
   return Object.freeze({
@@ -462,7 +466,7 @@ export function runRecipe(
       gcd: asked != null ? gcdFacts(res) : null,
       picks,
       options: same.map(r => r.options),
-      held: byTier ? (res as TierRankSuccess).held : [],
+      held,
       synced: sync.sync || pool.some(i => itemSyncIlvl(i, sync) != null),
       food: meals,
     },

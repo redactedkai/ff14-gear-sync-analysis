@@ -2,7 +2,7 @@
    Today's stat keys are the game's own (constants.ts STAT_LABEL). Saved data from before that holds position keys, which
    named a place in the job's stat list: `main` (the main stat), `spd` (the speed stat), `spec` (the special substat). */
 
-import { fromKeys } from './guards.ts';
+import { fromKeys, isOneOf, keysOf } from './guards.ts';
 import type { JobContext, PerStat, StatKey } from './types.ts';
 
 /* The old position keys and the JobContext field that holds the game key at that position. */
@@ -22,7 +22,7 @@ function positionOf(job: JobContext, key: string): PositionField | null {
    comes back unchanged (a key the job lacks, which every reader already drops). Reading is tolerant: the old names
    never equal a game key, so a saved value of either kind is understood. */
 export function currentStatKey(job: JobContext, key: string): string {
-  const field = Object.hasOwn(OLD_POSITION_KEY_FIELDS, key) ? OLD_POSITION_KEY_FIELDS[key as keyof typeof OLD_POSITION_KEY_FIELDS] : null;
+  const field = isOneOf(keysOf(OLD_POSITION_KEY_FIELDS), key) ? OLD_POSITION_KEY_FIELDS[key] : null;
   return field && job[field] ? job[field] : key;
 }
 

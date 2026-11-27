@@ -16,7 +16,7 @@
    - Each substat on a piece is capped at the piece's own cap (capsFor at its own item level, slot share and stat
      factors); the overflow is lost, and a meld never lowers a stat that is already above the cap.
    - Only combat substats can be melded, never the main stat or Vitality. Every meld succeeds (owner's decision). */
-import { entriesOf, isOneOf } from './guards.ts';
+import { entriesOf, isOneOf, mustHave } from './guards.ts';
 import { MATERIA } from './tables.ts';
 import type { DimKey, JobContext, Meld, PerStat, PoolItem, StatKey, StatMap, Stone, StoneGroup, Sync } from './types.ts';
 
@@ -277,7 +277,7 @@ export function bestMeld(job: JobContext, item: PoolItem, keys: readonly DimKey[
   if (!m) {
     return null;
   }
-  return meldFromPlacement(m, bestPlacement(m) as Placement);
+  return meldFromPlacement(m, mustHave(bestPlacement(m), 'best meld placement'));
 }
 
 const versionMemo = new Map<string, Placement[]>();
