@@ -5,24 +5,27 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { browseItems, poolItemFromRow } from '../../../../src/core/items.ts';
 import { optimize } from '../../../../src/core/optimizer/index.ts';
+import type { DimKey, SlotType, Sync } from '../../../../src/core/types.ts';
+import { mustSolve } from '../../helpers/common.ts';
 import { exhaustive, gamePool, loadoutCount } from '../../helpers/exhaustive.ts';
 
 const war = makeJobContext('WAR');
 const sge = makeJobContext('SGE');
-const NOSYNC = { cap: 123, sync: false };
+const NOSYNC: Sync = { cap: 123, sync: false };
 
 /* Warrior real gear: every item a Warrior can equip at item level 130-135, equip level 50 or below. Six weapons
    (two at 135), two pieces per armor slot and four per accessory slot, all item level 130; four rings, two of
    them Unique. About 98,000 loadouts, so exhaustive() checks every answer. */
 const pool = gamePool(war, { ilvlMin: 130, ilvlMax: 135, lvlMax: 50 });
-const brute = (target, constraints) => exhaustive(war, pool, NOSYNC, { target, ...constraints });
+const brute = (target: DimKey, constraints: { spdMin?: number; spdMax?: number } = {}) => exhaustive(war, pool, NOSYNC, { target, ...constraints });
 
 test('the pool is what these tests need, and the unconstrained result matches brute force', () => {
   // a patch that changes the window fails here, not in a puzzling total below
-  const of = t => pool.filter(i => i.type === t);
+  const of = (t: SlotType) => pool.filter(i => i.type === t);
   assert.ok(of('weapon').length >= 2);
   assert.equal(Math.max(...of('weapon').map(i => i.ilvl)), 135);
-  for (const t of ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring']) {
+  const slotTypes: SlotType[] = ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring'];
+  for (const t of slotTypes) {
     assert.ok(of(t).length >= 2, t);
     assert.ok(
       of(t).every(i => i.ilvl === 130),
@@ -37,7 +40,7 @@ test('the pool is what these tests need, and the unconstrained result matches br
 });
 
 test('a speed minimum is honoured and changes the answer when binding', () => {
-  const free = optimize(war, pool, NOSYNC, { target: 'ten' });
+  const free = mustSolve(optimize(war, pool, NOSYNC, { target: 'ten' }));
   const spdMin = free.totals.sks + 10;
   const r = optimize(war, pool, NOSYNC, { target: 'ten', spdMin });
   assert.ok(r.ok);
@@ -47,7 +50,7 @@ test('a speed minimum is honoured and changes the answer when binding', () => {
 });
 
 test('an unreachable speed minimum -> ok:false', () => {
-  const most = optimize(war, pool, NOSYNC, { target: 'sks' }).totals.sks;
+  const most = mustSolve(optimize(war, pool, NOSYNC, { target: 'sks' })).totals.sks;
   assert.equal(brute('ten', { spdMin: most + 1 }), null);
   const r = optimize(war, pool, NOSYNC, { target: 'ten', spdMin: most + 1 });
   assert.equal(r.ok, false);
@@ -55,7 +58,7 @@ test('an unreachable speed minimum -> ok:false', () => {
 });
 
 test('a speed maximum is honoured', () => {
-  const free = optimize(war, pool, NOSYNC, { target: 'ten' });
+  const free = mustSolve(optimize(war, pool, NOSYNC, { target: 'ten' }));
   const spdMax = free.totals.sks - 1;
   const r = optimize(war, pool, NOSYNC, { target: 'ten', spdMax });
   assert.ok(r.ok);
@@ -65,7 +68,7 @@ test('a speed maximum is honoured', () => {
 });
 
 test('a speed range agrees with brute force', () => {
-  const most = optimize(war, pool, NOSYNC, { target: 'sks' }).totals.sks;
+  const most = mustSolve(optimize(war, pool, NOSYNC, { target: 'sks' })).totals.sks;
   for (const [spdMin, spdMax] of [
     [most - 20, most - 10],
     [most - 40, most - 30],

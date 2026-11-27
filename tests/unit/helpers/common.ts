@@ -8,7 +8,7 @@ import { makeJobContext } from '../../../src/core/job-context.ts';
 import { ITEMS, MAX_REAL } from '../../../src/core/tables.ts';
 import { restoreState } from '../../../src/ui/state.ts';
 import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.ts';
-import type { ItemRow, JobContext, PoolItem } from '../../../src/core/types.ts';
+import type { ItemRow, JobContext, PoolItem, SolveResult, SolveSuccess } from '../../../src/core/types.ts';
 import type { Recipe } from '../../../src/core/recipe.ts';
 import type { SavedState } from '../../../src/ui/state.ts';
 
@@ -127,4 +127,11 @@ export function labelled(svg: string, value: number | string, itemLevel: number 
 export function mustFind<Value>(value: Value | null | undefined, what: string): Value {
   assert.ok(value !== null && value !== undefined, `not found: ${what}`);
   return value;
+}
+
+/* `result` as the optimizer's success shape, or a failed test when the search found no loadout: the typed way to read `totals`
+   and `picks` of an optimize or solve result. */
+export function mustSolve(result: SolveResult): SolveSuccess {
+  assert.ok(result.ok, 'the search found no loadout');
+  return result;
 }

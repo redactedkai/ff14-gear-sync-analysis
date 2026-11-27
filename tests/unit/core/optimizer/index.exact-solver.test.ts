@@ -7,11 +7,15 @@ import { JOBS, SLOT_TYPES } from '../../../../src/core/constants.ts';
 import { jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { optimize } from '../../../../src/core/optimizer/index.ts';
-import { rng } from '../../helpers/common.ts';
+import type { JobContext, PoolItem, StatKey, Sync } from '../../../../src/core/types.ts';
+import { mustFind, mustSolve, rng } from '../../helpers/common.ts';
 import { lexCompare, solveExact } from '../../helpers/exact-solver.ts';
 
 /* Sync settings as the perf scripts use them: off, item level caps, level sync, and a duty's level with its cap. */
-const SYNCS = [
+/* A sync setting with a name for the failure message. */
+type LabelledSync = Sync & { label: string };
+
+const SYNCS: LabelledSync[] = [
   { label: 'off', cap: null, sync: false, level: 100 },
   ...[123, 530, 690].map(cap => ({ label: `cap ${cap}`, cap, sync: true, level: 100 })),
   ...[80].map(level => ({ label: `lvl ${level}`, cap: null, sync: false, level })),
@@ -22,8 +26,8 @@ const SYNCS = [
 ];
 
 /* A goal and up to two different tiebreaks, drawn from the job's stats. */
-function objective(job, rand) {
-  const pick = list => list[Math.floor(rand() * list.length)];
+function objective(job: JobContext, rand: () => number): { goal: StatKey; tiebreak: StatKey[] } {
+  const pick = (list: readonly StatKey[]): StatKey => list[Math.floor(rand() * list.length)];
   const goal = pick(job.stats);
   const rest = job.stats.filter(stat => stat !== goal);
   const tiebreak = [pick(rest), pick(rest)].filter((stat, i, all) => all.indexOf(stat) === i);
@@ -31,10 +35,10 @@ function objective(job, rand) {
 }
 
 /* Checks one optimizer run against the exact solver; the failure message names the case. */
-function assertSame(job, pool, sync, melds, rand) {
+function assertSame(job: JobContext, pool: readonly PoolItem[], sync: LabelledSync, melds: boolean, rand: () => number): void {
   const { goal, tiebreak } = objective(job, rand);
-  const want = solveExact(job, pool, sync, goal, tiebreak, melds);
-  const got = optimize(job, pool, sync, { target: goal, tiebreak, melds });
+  const want = mustFind(solveExact(job, pool, sync, goal, tiebreak, melds), 'an exact solution');
+  const got = mustSolve(optimize(job, pool, sync, { target: goal, tiebreak, melds }));
   const gotRanked = want.ranked.map(key => got.totals[key] ?? 0);
   const label = `${job.jobId} ${sync.label} melds ${melds} goal ${goal} tiebreak ${tiebreak}`;
   assert.ok(!got.truncated, `${label}: truncated`);
@@ -58,7 +62,7 @@ test('melds on: the same on a reduced pool (the top 14 of each slot type by item
   for (const { id } of JOBS) {
     const job = makeJobContext(id);
     const full = jobGear(job);
-    const pool = [];
+    const pool: PoolItem[] = [];
     for (const type of SLOT_TYPES) {
       const items = full.filter(item => item.type === type).sort((a, b) => b.ilvl - a.ilvl);
       pool.push(...items.slice(0, 14));
