@@ -1,7 +1,7 @@
 /* ESLint for the Lit templates, next to Biome. Biome lints and formats every file but cannot read the markup inside
    html`...` templates; ESLint with eslint-plugin-lit and eslint-plugin-lit-a11y does, and only for the Lit elements
    (src/ui/elements/**). Biome keeps formatting and the plain JavaScript rules, so no ESLint core rule is switched on here
-   and no rule is on in both tools. `npm run lint:lit` runs it; the test tests/unit/scripts/lint-lit.test.js proves the
+   and no rule is on in both tools. `npm run lint:lit` runs it; the test tests/unit/scripts/lint-lit.test.ts proves the
    config still loads both plugins by linting the fixture below. */
 import lit from 'eslint-plugin-lit';
 import litA11y from 'eslint-plugin-lit-a11y';

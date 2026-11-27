@@ -196,7 +196,7 @@ async function inEveryTheme(pg, screenName, seen) {
 /** The Sheets tab's key screens in dark and light (checks in inEveryTheme): the manager with three sheets, a sheet's page with
  * a lowered cap's note, a set page with an Auto-fill suggestion, its materia menu (an overmeld slot, with the odds row) and the New
  * sheet dialog with a field note and an error line. The stylesheet itself is checked for literal colors in
- * tests/unit/styles/theme-tokens.test.js. */
+ * tests/unit/styles/theme-tokens.test.ts. */
 export async function checkThemes(pg) {
   const seen = new Set(); // the known contrast findings that happened (KNOWN_LOW_CONTRAST), as "id|scheme"
   await seedSheets(pg, viewSheets());

@@ -138,7 +138,7 @@ The database matches of the tab's own filters, with synced stats; when it recomp
 - The table keeps its 50 rows between actions: a sort, a page, a slot, a filter or a job change rebinds them, so the table never empties and the page does not rebuild it. The HQ mark and the x2 mark follow the item at once (`hidden`); the rule is in [architecture.md, section 3](architecture.md#3-the-ui-pattern).
 - The browser's table has fixed column widths (`table-layout: fixed`; a width per column kind: Slot, Lv, Ilvl, each stat), so a sort or another page never moves a column. Slot is the first column, wide enough for its longest line (100 px; a piece of three or more slots, such as "Body + Hands + Legs + Feet", goes on two lines); the number columns hold a 4-digit value; Item takes the rest and cuts a long name with an ellipsis (the full text is the cell's title). Every sortable heading keeps room for its sort arrow, hidden until the column is the sorted one.
 - The column the table is sorted by has its number cells tinted in the soft accent (the Gear browser's, by a rule on the table's `data-sorted` key). Only the Gear browser tints the pointer's row and column or the sorted column; the gear sets list tints its row under the pointer only.
-- The column under the pointer is tinted (cells) and its heading takes the text colour, for every column but Item and Slot. The Gear browser element holds the column's key in `hotCol` and puts it, and the sorted column's key, on the table as `data-hot` and `data-sorted`; one CSS selector per column key (`set-page.css`; `tests/unit/styles/gear-column-tint.test.js` checks every key has one) pairs each with the cells of that column, so no cell carries a class for it (a binding on every cell made a sort 20 ms slower).
+- The column under the pointer is tinted (cells) and its heading takes the text colour, for every column but Item and Slot. The Gear browser element holds the column's key in `hotCol` and puts it, and the sorted column's key, on the table as `data-hot` and `data-sorted`; one CSS selector per column key (`set-page.css`; `tests/unit/styles/gear-column-tint.test.ts` checks every key has one) pairs each with the cells of that column, so no cell carries a class for it (a binding on every cell made a sort 20 ms slower).
 
 **Pages.**
 
@@ -349,7 +349,7 @@ The gear table draws its own outline so the stuck column-name row has real round
 
 ## 8. Stacking scale
 
-Every `z-index` in `src/styles/` names a `--z-*` token from `tokens.css` (`--z-row` 1 up to `--z-nested` 70; `--z-dialog` and `--z-toast` share 30). A unit test (`tests/unit/styles/z-index-scale.test.js`) fails on a bare number. A menu inside a library positioner (`[data-part="positioner"]`) is `position: static`, and the page scroll lock follows an open dialog (`.dlg[open]` or `.dlg[data-state="open"]`).
+Every `z-index` in `src/styles/` names a `--z-*` token from `tokens.css` (`--z-row` 1 up to `--z-nested` 70; `--z-dialog` and `--z-toast` share 30). A unit test (`tests/unit/styles/z-index-scale.test.ts`) fails on a bare number. A menu inside a library positioner (`[data-part="positioner"]`) is `position: static`, and the page scroll lock follows an open dialog (`.dlg[open]` or `.dlg[data-state="open"]`).
 
 ## Where this lives
 

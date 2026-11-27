@@ -1,6 +1,6 @@
 /* Helpers of the smoke test's look-and-layout checks (checkThemes, checkViewports in checks/look): the WCAG contrast
    arithmetic, the theme tokens read from src/styles/, and the in-page probes that read colors and boxes. No Playwright
-   import and nothing from the other smoke test files, so tests/unit/smoke-helpers/visual.test.js can check the arithmetic against the
+   import and nothing from the other smoke test files, so tests/unit/smoke-helpers/visual.test.ts can check the arithmetic against the
    WCAG's own published values.
 
    Where the expected values come from:

@@ -1,5 +1,5 @@
 /* The class-field trap: a field with an initializer next to `static properties` hides Lit's accessor. Three guards exist:
-   the lint rule lit/no-classfield-shadowing (tests/unit/scripts/lint-lit.test.js), Lit's development build, which throws
+   the lint rule lit/no-classfield-shadowing (tests/unit/scripts/lint-lit.test.ts), Lit's development build, which throws
    (this file), and tsconfig's useDefineForClassFields false for TypeScript elements (this file). */
 import { test, expect, ALLOW_PAGE_ERROR } from '../fixtures.ts';
 import type { ClassFieldTrap, TypeScriptField } from './broken-elements.story.js';

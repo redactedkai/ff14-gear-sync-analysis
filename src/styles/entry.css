@@ -1,4 +1,4 @@
-/* The page's stylesheet. Every rule is in a cascade layer (tests/unit/styles/layers.test.js), and a later layer beats an earlier
+/* The page's stylesheet. Every rule is in a cascade layer (tests/unit/styles/layers.test.ts), and a later layer beats an earlier
    one whatever the specificity, so a file never has to out-specify an earlier file:
    - tokens: the :root token blocks; base: the page, scrollbars, headings; controls: the bare inputs, selects and buttons;
    - components: the shared pieces, one sublayer per file; views: one sublayer per screen file; fallbacks: last.

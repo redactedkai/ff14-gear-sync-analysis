@@ -1,6 +1,6 @@
 // The test domains: every file of src/ and scripts/ belongs to one domain (a part of the product a maintainer changes in
 // one sitting), and so does every file of tests/. scripts/test.mjs runs one domain's tests, tests/e2e/smoke.mjs one
-// domain's browser checks, and tests/unit/scripts/test.domains.test.js fails when a file has no domain or two.
+// domain's browser checks, and tests/unit/scripts/test.domains.test.ts fails when a file has no domain or two.
 //
 // Which domain is a test in?
 //   - A unit test follows its module: tests/unit/ui/views/gcd.test.js mirrors src/ui/views/gcd.ts, so it takes that file's
@@ -110,7 +110,7 @@ export const DOMAINS = {
       'src/ui/views/gear.ts',
       'src/styles/gear-browser.css',
     ],
-    tests: ['tests/e2e/checks/gear-browser/**', 'tests/e2e/lib/columns.mjs', 'tests/unit/styles/gear-column-tint.test.js'],
+    tests: ['tests/e2e/checks/gear-browser/**', 'tests/e2e/lib/columns.mjs', 'tests/unit/styles/gear-column-tint.test.ts'],
   },
   'math-page': {
     title: 'How the math works: Piece stats, Substat tiers, GCD',
@@ -143,7 +143,7 @@ export const DOMAINS = {
       'tests/e2e/checks/{settings,saved-state,startup,tabs}/**',
       'tests/e2e/lib/{setup,shared-checks,select}.mjs',
       'tests/unit/ui/views/level-sync.test.js',
-      'tests/unit/startup-failure.test.js',
+      'tests/unit/startup-failure.test.ts',
       'tests/unit/helpers/{fuzz,views}.ts',
       'tests/unit/helpers/{stores,revision-reads}.ts',
       'tests/unit/ui/store/no-direct-writes.test.js',
@@ -157,9 +157,9 @@ export const DOMAINS = {
       'tests/e2e/lib/axe.mjs',
       'tests/e2e/lib/visual.mjs',
       'tests/visual/**',
-      'tests/unit/styles/theme-tokens.test.js',
-      'tests/unit/styles/layers.test.js',
-      'tests/unit/styles/z-index-scale.test.js',
+      'tests/unit/styles/theme-tokens.test.ts',
+      'tests/unit/styles/layers.test.ts',
+      'tests/unit/styles/z-index-scale.test.ts',
       'tests/unit/helpers/css-colors.ts',
     ],
   },
