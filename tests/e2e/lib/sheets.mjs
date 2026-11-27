@@ -28,6 +28,15 @@ export async function seedSheets(pg, sheets, broken = {}) {
   );
   await reloadAtSheets(pg);
   await waitReady(pg);
+
+  // the records must still be stored after the reload: if the browser dropped them, say so here, not as a missing list row
+  const lost = await pg.evaluate(
+    ([key, ids]) => ids.filter(id => localStorage.getItem(`${key}:sheet:${id}`) === null),
+    [STORE_KEY, [...sheets.map(s => s.id), ...Object.keys(broken)]],
+  );
+  if (lost.length > 0) {
+    throw new Error(`seedSheets: the browser lost the saved sheet records ${lost.join(', ')} across the reload`);
+  }
 }
 
 /** Reload the page on the Sheets list. The page reopens on the address it was left on (a sheet or set page stays open), so a check
