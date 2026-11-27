@@ -34,6 +34,7 @@ currentTomes, the short names of the two current tomestones (for the "Tomestones
 import argparse
 import json
 from collections import Counter
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, NamedTuple
 
@@ -44,6 +45,9 @@ from gear_sources import flags as gear_flags
 from item_format import (
     N_ITEM_PARAMS,
     WEAPON_TYPES,
+    ItemFormat,
+    Piece,
+    Row,
     SchemaError,
     check_bools,
     load_format,
@@ -220,7 +224,7 @@ def materia_table(csv_dir, fmt, items=None):
     return {'values': values, 'gate': gates, 'high': high, 'overmeld': overmeld}, decoys
 
 
-def damage_defense(row, fmt):
+def damage_defense(row: Row, fmt: ItemFormat) -> dict[str, int]:
     """{damagePhys, damageMag, defensePhys, defenseMag} of an Item.csv row (`damageDefense` in item-format.json): each
     entry's item column, plus its HQ bonus (the BaseParamSpecial pair naming the entry's BaseParam row) when the item
     can be HQ, as for stats. An empty value counts as 0 (rows without it leave it empty); any other value that is not
@@ -317,12 +321,13 @@ def has_crafter_gatherer_stat(row, params):
     return any(int(row[f'{col}[{i}]']) in params for col in ('BaseParam', 'BaseParamSpecial') for i in range(N_ITEM_PARAMS))
 
 
-def make_piece(row, fields, fmt):
+def make_piece(row: Row, fields: dict[str, Any], fmt: ItemFormat) -> Piece:
     """The kept piece of an Item.csv row (see select): `fields` holds what the rules worked out (slotCode, ilvl,
     jobMask, stats, kind, meld, flags); the rest is copied from the row. rarity and gameId are -1 when not a whole
     number, for check_pieces to report."""
     rarity_col, scaled = fmt['rarity']['itemColumn'], fmt['levelScaled']
     meld_slots, overmeld = fields['meld']
+    damage = damage_defense(row, fmt)
     return {
         'name': row['Name'],
         'slotCode': fields['slotCode'],
@@ -338,12 +343,15 @@ def make_piece(row, fields, fmt):
         'rarity': int(row[rarity_col]) if row[rarity_col].isdigit() else -1,
         'gameId': int(row['#']) if row['#'].isdigit() else -1,
         'scales': 1 if row[scaled['itemColumn']] == str(scaled['value']) else 0,
-        **damage_defense(row, fmt),
+        'damagePhys': damage['damagePhys'],
+        'damageMag': damage['damageMag'],
+        'defensePhys': damage['defensePhys'],
+        'defenseMag': damage['defenseMag'],
         'flags': fields['flags'],  # crafted / ultimate (gear_sources.FLAGS), for the categories
     }
 
 
-def check_pieces(kept, bad_kind, bad_meld, n_kinds, fmt):
+def check_pieces(kept: list[tuple[Row, Piece]], bad_kind: list[str], bad_meld: list[str], n_kinds: int, fmt: ItemFormat) -> None:
     """Raises SchemaError on a kept piece's field the page could not use: an item kind with no stat factor column
     (bad_kind), meld fields out of range (bad_meld), a rarity or row id that is not a whole number, a repeated row id,
     or a level-scaling value outside `levelScaled.known`. bad_kind and bad_meld: the names select() listed."""
@@ -380,13 +388,13 @@ class Selection(NamedTuple):
     dangling: {sheet: named rows whose EquipSlotCategory or ClassJobCategory id has no row there} (none today); they
       count as no slot or no job, and the drop report names them."""
 
-    kept: list
-    multi_slot: list
-    dropped: dict
-    dangling: Counter
+    kept: list[tuple[Row, Piece]]
+    multi_slot: list[str]
+    dropped: dict[str, int]
+    dangling: Counter[str]
 
 
-def select(csv_dir, items=None):
+def select(csv_dir: str | Path, items: list[Row] | None = None) -> Selection:
     """The gear the database keeps, and what each rule left out: a Selection. items: the Item.csv rows
     (read_item_sheet), read here when None."""
     csv_path = Path(csv_dir)
@@ -404,7 +412,10 @@ def select(csv_dir, items=None):
     flags = gear_flags(csv_path, items)
 
     # the rules, in DROP_RULES order: the first one a row fails leaves it out
-    kept, multi_slot, bad_kind, bad_meld = [], [], [], []
+    kept: list[tuple[Row, Piece]] = []
+    multi_slot: list[str] = []
+    bad_kind: list[str] = []
+    bad_meld: list[str] = []
     dropped = dict.fromkeys(DROP_RULES, 0)
     dangling = Counter()
     for row in items:
@@ -459,7 +470,18 @@ def select(csv_dir, items=None):
     return Selection(kept, multi_slot, dropped, dangling)
 
 
-def category_index(fmt):
+def with_routes(piece: Piece, routes: list[int], category: int) -> Piece:
+    """The piece with its route masks and category index added (the last two fields of a row)."""
+    return {**piece, 'routes': routes, 'category': category}
+
+
+def value_of(piece: Piece, field: str) -> object:
+    """The piece's value for the row field named `field` (an `itemRow.fields` name)."""
+    values: Mapping[str, object] = piece
+    return values[field]
+
+
+def category_index(fmt: ItemFormat) -> dict[str, int]:
     """{category key: its index in `category.list` of item-format.json}, the value of a row's category field. Raises
     SchemaError unless the list holds every category a kept piece can have (gear_categories.CATEGORIES minus LEFT_OUT)
     exactly once and nothing else, so a category added to gear_categories.py can't reach the page without a label."""
@@ -473,12 +495,11 @@ def category_index(fmt):
     return {k: i for i, k in enumerate(keys)}
 
 
-def main(csv_dir, out, source='detect', report=None):
+def main(csv_dir, out, source: provenance.SourceArg = 'detect', report=None):
     """source: provenance dict, None for unknown, or 'detect' to ask git about csv_dir. Only written as a header comment;
     the DATA_SOURCE constant lives in item-level.json. report: a path to write this run's counts to as JSON (the
     funnel, LEFT_OUT categories, dangling ids and inferred routes), for summary.py; regen.py passes one."""
-    if source == 'detect':
-        source = provenance.detect(csv_dir)
+    source = provenance.resolve(source, csv_dir)
     fmt = load_format()
     items = read_item_sheet(csv_dir)  # the largest sheet, read once and passed on
     selection = select(csv_dir, items)
@@ -495,7 +516,7 @@ def main(csv_dir, out, source='detect', report=None):
     # each kept piece's fields plus its routes and category, in the order of `itemRow.fields` (row_fields raises if the
     # format file's rowField entries disagree with that list)
     fields = list(row_fields(fmt))
-    pieces: list[dict[str, Any]] = [{**piece, 'routes': routes[r['#']], 'category': cat_index[cats[r['#']]]} for r, piece in kept]
+    pieces = [with_routes(piece, routes[r['#']], cat_index[cats[r['#']]]) for r, piece in kept]
     materia, _decoys = materia_table(csv_dir, fmt, items)
     # A job no item is left for means the job columns or their values changed shape (e.g. 'True' became '1').
     seen = 0
@@ -505,7 +526,7 @@ def main(csv_dir, out, source='detect', report=None):
     if absent:
         raise SchemaError(f'ClassJobCategory.csv: no item is wearable by {", ".join(absent)}. Did the job columns change?')
     pieces.sort(key=lambda p: (-p['ilvl'], p['slotCode'], p['name']))
-    rows = [[piece[f] for f in fields] for piece in pieces]
+    rows = [[value_of(piece, f) for f in fields] for piece in pieces]
     # {"_generated": notice, "source": provenance, "formatVersion": n, "materia": table, "currentTomes": names, "items": [rows]}, one item
     # row per line so a patch's diff lists the rows that changed
     doc = {

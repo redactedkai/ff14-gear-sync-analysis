@@ -24,7 +24,7 @@ from common import (
     run_quiet,
     stats,
 )
-from item_format import SchemaError, load_format, row_fields
+from item_format import CategoryEntry, SchemaError, load_format, row_fields
 
 
 class GenItemsTest(unittest.TestCase):
@@ -325,7 +325,7 @@ class GenItemsTest(unittest.TestCase):
         # a category with no label, a key gear_categories.py doesn't know, or a key listed twice stops the generator
         fmt = load_format()
         gen_items.category_index(fmt)
-        cases = {
+        cases: dict[str, list[CategoryEntry]] = {
             'missing': [c for c in fmt['category']['list'] if c['key'] != 'dungeon'],
             'unknown': [*fmt['category']['list'], {'key': 'raid_finder', 'label': 'Raid finder'}],
             'twice': [*fmt['category']['list'], {'key': 'raid', 'label': 'Raid'}],

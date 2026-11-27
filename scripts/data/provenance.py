@@ -8,17 +8,27 @@ so a fixture inside this project's own repo is not mistaken for game data.
 
 import json
 import subprocess
+from pathlib import Path
+from typing import Literal, TypedDict
 
 REPO = 'xivapi/ffxiv-datamining'
 PATCHES_REPO = 'xivapi/ffxiv-datamining-patches'
 
 
-def _git(csv_dir, *args):
+class Source(TypedDict):
+    """Where a generated file's data comes from: `repo` ("owner/name"), the full `commit` id and its ISO 8601 `date`."""
+
+    repo: str
+    commit: str
+    date: str
+
+
+def _git(csv_dir: str | Path, *args: str) -> str | None:
     r = subprocess.run(['git', '-C', str(csv_dir), *args], capture_output=True, text=True)
     return r.stdout.strip() if r.returncode == 0 else None
 
 
-def detect(csv_dir, repo=REPO):
+def detect(csv_dir: str | Path, repo: str = REPO) -> Source | None:
     """{'repo', 'commit', 'date'} for the clone of `repo` ("owner/name") containing csv_dir, or None. The clone's origin
     must be that repository exactly: ffxiv-datamining-patches is not ffxiv-datamining."""
     try:
@@ -34,7 +44,15 @@ def detect(csv_dir, repo=REPO):
     return make(commit, date, repo)
 
 
-def local_edits(csv_dir):
+SourceArg = Source | Literal['detect'] | None  # what a generator's `source` parameter takes: a record, none, or ask git
+
+
+def resolve(source: SourceArg, directory: str | Path, repo: str = REPO) -> Source | None:
+    """`source` itself, or what detect() finds for `directory` when it is 'detect'."""
+    return detect(directory, repo) if source == 'detect' else source
+
+
+def local_edits(csv_dir: str | Path) -> list[str] | None:
     """The tracked files changed in the clone containing csv_dir since its commit (git status --porcelain lines, for
     example ' M csv/en/Item.csv'), [] when it is clean, or None when git cannot tell. The provenance names the commit
     only, so data generated from an edited clone would claim to be that commit's."""
@@ -45,11 +63,11 @@ def local_edits(csv_dir):
     return [line for line in r.stdout.splitlines() if line.strip()] if r.returncode == 0 else None
 
 
-def make(commit, date, repo=REPO):
+def make(commit: str, date: str, repo: str = REPO) -> Source:
     return {'repo': repo, 'commit': commit, 'date': date}
 
 
-def note(source, repo=REPO):
+def note(source: Source | None, repo: str = REPO) -> str:
     """One-line notice naming the source commit, written as a generated JSON file's "_generated" field. `repo` is named
     when the commit is unknown (source None)."""
     if source is None:
@@ -62,7 +80,7 @@ def add_cli_args(parser):
     parser.add_argument('--source-date', help='datamining commit date, ISO 8601')
 
 
-def from_args(args):
+def from_args(args) -> SourceArg:
     """Provenance from --source-commit/--source-date, else detected from the CSV directory."""
     if args.source_commit:
         return make(args.source_commit, args.source_date)

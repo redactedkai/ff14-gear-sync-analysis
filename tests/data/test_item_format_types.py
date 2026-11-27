@@ -51,7 +51,9 @@ class ItemFormatTypesTest(unittest.TestCase):
 
     def test_only_comments_and_two_slot_keys_are_optional(self):
         """A missing key breaks a reader, so NotRequired is for the `_` comment keys and the two optional slot keys."""
-        classes = [c for c in vars(item_format).values() if typing.is_typeddict(c)]
+        classes = [
+            c for c in vars(item_format).values() if typing.is_typeddict(c) and c is not item_format.Piece
+        ]  # Piece is not in the file
         self.assertIn(ItemFormat, classes)
         for cls in classes:
             for key in cls.__optional_keys__:

@@ -101,10 +101,9 @@ def level_data(param_grow_csv):
     return [[int(rows[level][c]) for c in PARAM_GROW_COLUMNS] for level in range(1, top + 1)]
 
 
-def main(csv_dir, out, source='detect'):
+def main(csv_dir, out, source: provenance.SourceArg = 'detect'):
     """source: provenance dict, None for unknown, or 'detect' to ask git about csv_dir."""
-    if source == 'detect':
-        source = provenance.detect(csv_dir)
+    source = provenance.resolve(source, csv_dir)
     d = Path(csv_dir)
     fmt = load_format()
     check_slot_percents(d / 'BaseParam.csv', fmt)

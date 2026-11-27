@@ -23,7 +23,18 @@ from collections import Counter
 from pathlib import Path
 
 from gear_sources import CODE_LIMIT, FLAGS, ULTIMATE_TOTEMS, shop_listings
-from item_format import ACCESSORY_TYPES, WEAPON_TYPES, SchemaError, check_ids, load_format, read_csv, read_item_sheet, slot_codes
+from item_format import (
+    ACCESSORY_TYPES,
+    WEAPON_TYPES,
+    Piece,
+    Row,
+    SchemaError,
+    check_ids,
+    load_format,
+    read_csv,
+    read_item_sheet,
+    slot_codes,
+)
 
 # SubcategorySort % 1000 -> category, for gear. Verified codes only (docs/engineering/subcategory-sort-codes.md).
 CATEGORY_BY_CODE = {
@@ -136,7 +147,9 @@ def override_items(csv_dir, items):
     return out
 
 
-def categorize(csv_dir, kept, weapon_slots, items=None):
+def categorize(
+    csv_dir: str | Path, kept: list[tuple[Row, Piece]], weapon_slots: set[int], items: list[Row] | None = None
+) -> dict[str, str]:
     """{Item.csv id: category} for the kept gear (gen_items.select). weapon_slots: the database slot codes of weapons
     and shields. items: the Item.csv rows (read_item_sheet), read here when None. Raises SchemaError on a code with
     no known meaning."""
@@ -169,7 +182,7 @@ def categorize(csv_dir, kept, weapon_slots, items=None):
     return out
 
 
-def check(kept, cats):
+def check(kept: list[tuple[Row, Piece]], cats: dict[str, str]) -> list[str]:
     """Cross-checks between the categories and the shop/recipe flags. Returns a list of problems (empty when fine).
     A Savage armor piece or weapon without a dye slot means a shop that sells Savage gear also took a currency used for
     other gear (for example a Normal-raid token), which the shop-level currency rule would wrongly treat as Savage."""

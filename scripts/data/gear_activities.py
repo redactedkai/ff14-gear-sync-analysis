@@ -33,10 +33,12 @@ stops the run.
 """
 
 from collections import Counter, defaultdict
+from collections.abc import Collection, Iterable
 from pathlib import Path
+from typing import Literal
 
 from gear_sources import CODE_LIMIT, shop_listings
-from item_format import ACCESSORY_TYPES, SchemaError, check_bools, check_ids, load_format, read_csv, read_item_sheet, slot_codes
+from item_format import ACCESSORY_TYPES, Piece, Row, SchemaError, check_bools, check_ids, load_format, read_csv, read_item_sheet, slot_codes
 
 GIL, WOLF_MARK, MGP = 1, 25, 29
 FIXED_ITEMS = {GIL: 'Gil', WOLF_MARK: 'Wolf Mark', MGP: 'MGP'}  # item id -> expected name; their activities in activities_of
@@ -194,6 +196,17 @@ def box_bits():
     return {k: 1 << i for i, k in enumerate(keys)}, 1 << len(keys)
 
 
+# How an item can be got, from the game files (ways_in): ('activity', name) for a fixed activity, or ('shop', costs, gate)
+# for a SpecialShop listing, where each cost is ('activity', name) or ('item', id) and gate is 'quest', 'achievement'
+# or None (the listing needs a quest or an achievement first).
+Cost = tuple[Literal['activity'], str] | tuple[Literal['item'], int]
+Way = tuple[Literal['activity'], str] | tuple[Literal['shop'], tuple[Cost, ...], str | None]
+Ways = defaultdict[int, list[Way]]
+# A route: the activities a player must do all of to get the item. An item's routes: any one of them gets it.
+Route = frozenset[str]
+Routes = frozenset[Route]
+
+
 def check_names(names, table, what, table_name):
     """Raises SchemaError when an id of `table` ({id: (expected name, ...)}) names another item in Item.csv. The message
     names `table_name`, the table in this file to update."""
@@ -206,7 +219,7 @@ def is_id(value):
     return value.isdigit() and int(value) != 0
 
 
-def reward_ways(csv_path, ways):
+def reward_ways(csv_path: Path, ways: Ways) -> tuple[set[int], dict[int, int]]:
     """Adds the rewards and recipes to `ways` ({item id: [way]}, see ways_in): quest rewards (Quest.Reward,
     OptionalItemReward, QuestClassJobReward), achievement rewards, recipe results and Grand Company seal shop items.
     Returns (festival_quests, achievement_item) for the gil shops: the ids of seasonal event quests, and {achievement
@@ -235,7 +248,7 @@ def reward_ways(csv_path, ways):
     return festival_quests, achievement_item
 
 
-def gil_shop_ways(csv_path, ways, rebuys, festival_quests, achievement_item):
+def gil_shop_ways(csv_path: Path, ways: Ways, rebuys: set[int], festival_quests: set[int], achievement_item: dict[int, int]) -> None:
     """Adds the gil shop listings to `ways`: a seasonal event shop's listing is Event; a listing that needs a quest or
     an achievement is a Calamity Salvager rebuy (added to `rebuys`), whose way is the quest (Event for a seasonal event
     quest) or the achievement when that achievement gives the piece; any other listing is Vendor."""
@@ -314,7 +327,7 @@ def listing_gate(shop, k):
     return 'achievement' if shop[f'Item[{k}].AchievementUnlock'] not in ('', '0') else None
 
 
-def special_shop_ways(csv_path, ways, kept_ids, ilvl_of):
+def special_shop_ways(csv_path: Path, ways: Ways, kept_ids: Collection[int], ilvl_of: dict[int, int]) -> None:
     """Adds the SpecialShop listings to `ways` as ('shop', costs, gate) (see ways_in), leaving out the RETIRED_SHOPS
     and the retired tomestone listings (listing_costs). Raises SchemaError when a RETIRED_SHOPS id names another shop."""
     shops = read_csv(csv_path / 'SpecialShop.csv', ['#', 'Name', 'UseCurrencyType', 'Quest'])
@@ -331,21 +344,21 @@ def special_shop_ways(csv_path, ways, kept_ids, ilvl_of):
             ways[got].append(('shop', tuple(resolved), listing_gate(shop, k)))
 
 
-def ways_in(csv_dir, kept_ids, ilvl_of):
+def ways_in(csv_dir: str | Path, kept_ids: Collection[int], ilvl_of: dict[int, int]) -> tuple[Ways, set[int]]:
     """({item id: [way]}, rebuys) for every item. A way is ('activity', name) or ('shop', costs, gate): costs is a tuple
     of ('activity', name) and ('item', id); gate is 'quest', 'achievement' or None (the listing needs a quest or an
     achievement first). rebuys: the items a Calamity Salvager sells back. ilvl_of: {item id: item level}, for the
     retired tomestone listings."""
     csv_path = Path(csv_dir)
-    ways = defaultdict(list)
-    rebuys = set()
+    ways: Ways = defaultdict(list)
+    rebuys: set[int] = set()
     festival_quests, achievement_item = reward_ways(csv_path, ways)
     gil_shop_ways(csv_path, ways, rebuys, festival_quests, achievement_item)
     special_shop_ways(csv_path, ways, kept_ids, ilvl_of)
     return ways, rebuys
 
 
-def single(activity):
+def single(activity: str) -> Routes:
     """The routes of something got one way only: one route of one activity."""
     return frozenset({frozenset({activity})})
 
@@ -358,14 +371,24 @@ class RouteFinder:
     inferred_pieces, inferred_currencies: {item id: activity} of the kept pieces and currencies whose routes come from
     a fallback rule rather than the game files (no_way_in), for the report printed on every run."""
 
-    def __init__(self, ways, rebuys, category, slot_of, untradable, tome_slot, accessory_slots):
+    def __init__(
+        self,
+        ways: Ways,
+        rebuys: set[int],
+        category: dict[int, str],
+        slot_of: dict[int, int],
+        untradable: set[int],
+        tome_slot: dict[int, int],
+        accessory_slots: set[int],
+    ):
         self.ways, self.rebuys, self.category, self.slot_of = ways, rebuys, category, slot_of
         self.untradable, self.tome_slot, self.accessory_slots = untradable, tome_slot, accessory_slots
         self.currency_routes = {i: frozenset(frozenset(r) for r in rs) for i, (_, rs) in CURRENCIES.items()}
-        self.memo = {}
-        self.inferred_pieces, self.inferred_currencies = {}, {}
+        self.memo: dict[tuple[int, int], Routes] = {}
+        self.inferred_pieces: dict[int, str] = {}
+        self.inferred_currencies: dict[int, str] = {}
 
-    def activities_of(self, item, depth=0):
+    def activities_of(self, item: int, depth: int = 0) -> Routes:
         """The item's routes: a frozenset of frozensets of activities (empty: no way in at all)."""
         if (item, depth) in self.memo:
             return self.memo[(item, depth)]
@@ -383,7 +406,7 @@ class RouteFinder:
         self.memo[(item, depth)] = result
         return result
 
-    def resolve(self, item, depth):
+    def resolve(self, item: int, depth: int) -> Routes:
         """The routes through the item's ways in: every way to pay all the costs of each way, a gil or free listing
         behind a quest or an achievement counting as that quest or achievement. With no live way in: no_way_in."""
         found = set()
@@ -395,9 +418,9 @@ class RouteFinder:
             if depth >= MAX_DEPTH:
                 continue
             _, costs, gate = way
-            needs = {frozenset()}  # every way to pay all the costs: one route per cost, combined
-            for kind, value in costs:
-                options = {frozenset({value})} if kind == 'activity' else self.activities_of(value, depth + 1)
+            needs: set[Route] = {frozenset()}  # every way to pay all the costs: one route per cost, combined
+            for cost in costs:
+                options: Iterable[Route] = {frozenset({cost[1]})} if cost[0] == 'activity' else self.activities_of(cost[1], depth + 1)
                 needs = {have | option for have in needs for option in options}
             for need in needs:
                 if RETIRED in need:
@@ -408,7 +431,7 @@ class RouteFinder:
                 found.add(need or frozenset({'Vendor'}))
         return frozenset(found) if found else self.no_way_in(item, needs_retired, depth)
 
-    def no_way_in(self, item, needs_retired, depth=0):
+    def no_way_in(self, item: int, needs_retired: bool, depth: int = 0) -> Routes:
         """The routes of an item with no live way in (inferred, docs/engineering/data-pipeline.md, Sources): a kept
         piece takes KNOWN_SOURCE, Dungeon for an artifact accessory, or its category's DROP_ACTIVITY (retired, or Quest
         for a rebuy, in a MUST_HAVE_SOURCE category); a currency whose ways in all cost something retired is retired;
@@ -429,7 +452,7 @@ class RouteFinder:
             self.inferred_currencies[item] = activity
         return single(activity)
 
-    def kept_piece_fallback(self, item):
+    def kept_piece_fallback(self, item: int) -> str:
         """The one activity of a kept piece with no live way in (see no_way_in)."""
         cat = self.category[item]
         if item in KNOWN_SOURCE:
@@ -443,7 +466,7 @@ class RouteFinder:
                 return RETIRED
         return DROP_ACTIVITY[cat]
 
-    def buys_most(self, currency):
+    def buys_most(self, currency: int) -> str | None:
         """The category of the kept gear a currency buys most, or None (a tie goes to the first category counted)."""
         count = Counter(
             self.category[got]
@@ -496,7 +519,9 @@ class Boxes:
         return sorted(m for m in masks if not any(o != m and o & m == o for o in masks))
 
 
-def routes(csv_dir, kept, cats, items=None):
+def routes(
+    csv_dir: str | Path, kept: list[tuple[Row, Piece]], cats: dict[str, str], items: list[Row] | None = None
+) -> tuple[dict[str, list[int]], dict[str, Counter[str]]]:
     """(masks, inferred): masks is {Item.csv id (str): sorted list of route masks} for the kept gear (gen_items.select,
     LEFT_OUT categories removed); inferred is {'pieces': Counter, 'currencies': Counter} of the activities the
     fallback rules gave (RouteFinder.no_way_in), for inferred_report. cats: {Item.csv id (str): category}
@@ -506,9 +531,9 @@ def routes(csv_dir, kept, cats, items=None):
     csv_path = Path(csv_dir)
 
     # the sheets, and the hand-kept tables checked against them
-    items = {int(r['#']): r for r in read_item_sheet(csv_dir, items)}
-    check_bools(items.values(), ['IsUntradable'], 'Item.csv')
-    names = {i: r['Name'] for i, r in items.items()}
+    item_by_id = {int(r['#']): r for r in read_item_sheet(csv_dir, items)}
+    check_bools(item_by_id.values(), ['IsUntradable'], 'Item.csv')
+    names = {i: r['Name'] for i, r in item_by_id.items()}
     check_names(names, CURRENCIES, 'currency', 'CURRENCIES')
     check_names(names, KNOWN_SOURCE, 'known source', 'KNOWN_SOURCE')
     check_names(names, {i: (name,) for i, name in FIXED_ITEMS.items() if i != GIL}, 'fixed currency', 'FIXED_ITEMS')
@@ -524,15 +549,15 @@ def routes(csv_dir, kept, cats, items=None):
     tome_slot = {int(r['Item']): int(r['Tomestones']) for r in tome_rows if r['Item'] != '0'}
 
     # every item's ways in, then each kept piece's routes
-    ilvl_of = {i: int(r['LevelItem']) for i, r in items.items() if r['LevelItem'].isdigit()}
+    ilvl_of = {i: int(r['LevelItem']) for i, r in item_by_id.items() if r['LevelItem'].isdigit()}
     ways, rebuys = ways_in(csv_dir, set(category), ilvl_of)
-    untradable = {i for i, r in items.items() if r['IsUntradable'] == 'True'}
+    untradable = {i for i, r in item_by_id.items() if r['IsUntradable'] == 'True'}
     slot_of = {int(r['#']): piece['slotCode'] for r, piece in kept}
     accessory_slots = slot_codes(load_format(), ACCESSORY_TYPES)
     finder = RouteFinder(ways, rebuys, category, slot_of, untradable, tome_slot, accessory_slots)
 
     # the routes as box masks
-    tradeable = {i for i, r in items.items() if r['IsUntradable'] == 'False'}
+    tradeable = {i for i, r in item_by_id.items() if r['IsUntradable'] == 'False'}
     boxes = Boxes({int(r['#']): piece['equipLevel'] for r, piece in kept}, tradeable, names)
     masks = {str(item): boxes.masks(item, finder.activities_of(item)) for item in category}
     inferred = {'pieces': Counter(finder.inferred_pieces.values()), 'currencies': Counter(finder.inferred_currencies.values())}

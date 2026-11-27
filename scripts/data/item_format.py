@@ -204,6 +204,35 @@ class ItemFormat(TypedDict):
     food: FoodFormat
 
 
+class Piece(TypedDict):
+    """A kept piece of gear while the item database is built (gen_items.make_piece): the row's fields by their
+    `itemRow.fields` name, plus `flags` (gear_sources.FLAGS bits, for the categories, not written to items.json). `routes`
+    and `category` are added by gen_items.main once the routes and categories are known. The output rows stay plain
+    lists; this type is only for the in-memory step."""
+
+    name: str
+    slotCode: int
+    ilvl: int
+    equipLevel: int
+    jobMask: int
+    stats: str
+    unique: int
+    hq: int
+    kind: int
+    meldSlots: int
+    overmeld: int
+    rarity: int
+    gameId: int
+    scales: int
+    damagePhys: int
+    damageMag: int
+    defensePhys: int
+    defenseMag: int
+    flags: int
+    routes: NotRequired[list[int]]
+    category: NotRequired[int]
+
+
 class SchemaError(Exception):
     """The datamining CSVs no longer match what the generators and src/core/item-format.json expect."""
 

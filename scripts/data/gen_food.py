@@ -53,10 +53,9 @@ def meal_stats(food_row, stat_of, carried, vitality=None):
     return (out, vit) if any_sub else None
 
 
-def main(csv_dir, out, source='detect'):
+def main(csv_dir, out, source: provenance.SourceArg = 'detect'):
     """source: provenance dict, None for unknown, or 'detect' to ask git about csv_dir."""
-    if source == 'detect':
-        source = provenance.detect(csv_dir)
+    source = provenance.resolve(source, csv_dir)
     csv_path = Path(csv_dir)
     fmt = load_format()
     food = fmt['food']
