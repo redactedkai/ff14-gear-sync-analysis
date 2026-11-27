@@ -3,6 +3,7 @@
 import { ANY_SLOT_LABEL, slotButtonName } from '../../../../src/ui/elements/gear-browser/slot-menu-names.ts';
 import { SCROLL_KEY } from '../../../../src/ui/router/scroll-storage.ts';
 import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.ts';
+import { STORE_KEY } from '../../lib/constants.mjs';
 import { check, expect, poll } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
 import { afterFrames, waitSaved } from '../../lib/nav.mjs';
@@ -49,6 +50,29 @@ const typeAddress = (pg, hash) =>
     location.hash = address;
   }, hash);
 
+/** The sheet page (its list of gear sets) is shown. When it is not, the failure names what the page held: the address, the saved
+ * sheets' keys, the screen state and the page's last actions, since the "not found" screen that took its place on a CI runner left
+ * nothing else to go on. `where` says which move it follows. */
+async function expectSheetPageShown(pg, where) {
+  try {
+    await expect(pg.locator('#sh-sets')).toBeVisible();
+  } catch (e) {
+    const held = await pg
+      .evaluate(storeKey => {
+        const { sheets, log } = window.gsaDebug;
+        return {
+          hash: location.hash,
+          saved: Object.keys(localStorage).filter(key => key.startsWith(storeKey)),
+          screen: sheets.screen,
+          missing: sheets.missing,
+          actions: log.slice(-8),
+        };
+      }, STORE_KEY)
+      .catch(error => String(error.message ?? error));
+    throw new Error(`${e.message} (${where}; the page held ${JSON.stringify(held)})`);
+  }
+}
+
 /** Each screen has an address (the Gear browser and the math views may carry a query: the settings the page holds); Back and Forward move between them; a reload stays on the screen; the math views and the Gear
  * browser are addresses too; an address that names a sheet or gear set that is not saved shows "not found" and keeps its
  * address; an address that names nothing is the Sheets list; the page title names the screen. */
@@ -85,18 +109,18 @@ export async function checkRouting(pg) {
   await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 2, leftAt);
   await pg.goBack();
   await expectHash(pg, sheetHash, 'Back from the set page');
-  await expect(pg.locator('#sh-sets')).toBeVisible();
+  await expectSheetPageShown(pg, 'Back from the set page');
   await pg.goBack();
   await expectHash(pg, '#/sheets', 'Back from the sheet page');
   await expect(pg.locator('#sh-list')).toBeVisible();
   await pg.goForward();
   await expectHash(pg, sheetHash, 'Forward to the sheet page');
-  await expect(pg.locator('#sh-sets')).toBeVisible();
+  await expectSheetPageShown(pg, 'Forward to the sheet page');
 
   // a reload stays on the screen it was on
   await pg.reload();
   await expectHash(pg, sheetHash, 'a reload on the sheet page');
-  await expect(pg.locator('#sh-sets')).toBeVisible();
+  await expectSheetPageShown(pg, 'a reload on the sheet page');
   await expect(pg.locator('#sh-list')).toBeHidden();
 
   // the math views have addresses, and Back goes between them
@@ -129,7 +153,7 @@ export async function checkRouting(pg) {
   await expect(pg.locator('#sh-missing')).toBeVisible();
   await pg.click('#sh-missing-go');
   await expectHash(pg, sheetHash, 'up from a gear set that is not saved');
-  await expect(pg.locator('#sh-sets')).toBeVisible();
+  await expectSheetPageShown(pg, 'up from a gear set that is not saved');
 
   // an address that names nothing is the Sheets list
   await typeAddress(pg, '#/nothing/here');
