@@ -517,7 +517,7 @@ Notes:
 | Concept | File |
 | --- | --- |
 | Generated data (never edit by hand) | `src/data/item-level.json`, `src/data/items.json`, `src/data/food.json`, `src/data/job-icons.js`, `src/data/gear-groups.json`, `src/data/max-speed.json`, `src/data/summary.json` |
-| Data generators (`regen.py` runs them in order; the last, in Node, writes `max-speed.json`) | `scripts/data/gen_item_level.py`, `gen_items.py`, `gen_gear_groups.py`, `gen_food.py`, `gen_job_icons.py`, `gen_max_speed.mjs` |
+| Data generators (`regen.py` runs them in order; the last, in Node, writes `max-speed.json`) | `scripts/data/gen_item_level.py`, `gen_items.py`, `gen_gear_groups.py`, `gen_food.py`, `gen_job_icons.py`, `gen_max_speed.ts` |
 | Tables and limits derived from the data | `src/core/tables.ts` |
 | Jobs, role profiles, slots, slot shares, raw stat order | `src/core/constants.ts`, `src/core/item-format.json` |
 | Job context | `src/core/job-context.ts` (`makeJobContext`, its `mainKey`, `speedKey`, `specKey`, `activeSlotTypes`, `vitFactor` and `maxLevel`) |

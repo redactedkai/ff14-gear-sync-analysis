@@ -41,7 +41,7 @@ export const CURRENT_TOMES = Object.freeze([...(ITEMS_FILE.currentTomes ?? [])])
 // biome-ignore lint/plugin: the JSON rows are lists of text, numbers and lists; FoodRow is their real shape (tests/unit/core/tables.provenance.test.js, food.test.js read them through it)
 export const FOODS = FOOD_FILE.foods as unknown as readonly FoodRow[];
 /* MAX_SPEED: the most total speed (base + gear + food) any job can have at each level, [level 1, ..., MAX_LEVEL]: the
-   top of How the math works, GCD's speed slider (scripts/data/gen_max_speed.mjs: the best gear with melds, at any sync,
+   top of How the math works, GCD's speed slider (scripts/data/gen_max_speed.ts: the best gear with melds, at any sync,
    and the best HQ meal). */
 export const MAX_SPEED = Object.freeze([...MAX_SPEED_FILE.total]);
 /* MATERIA: the materia table, one entry per grade I to XII. values: what a grade adds to a combat substat; gate: the

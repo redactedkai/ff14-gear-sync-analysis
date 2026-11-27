@@ -18,7 +18,7 @@ import {
   speedPerStep,
   speedRange,
 } from '../../../../src/ui/views/gcd.ts';
-import { groupMaxSpeed, jobGroups } from '../../../../scripts/data/gen_max_speed.mjs';
+import { groupMaxSpeed, jobGroups } from '../../../../scripts/data/gen_max_speed.ts';
 import { hasNumber } from '../../helpers/common.ts';
 
 const ROWS = 2 * GCD_STEPS_NEAR + 1;
@@ -51,7 +51,7 @@ test('the stored most speed: one value per level, at least the base, and level 5
   assert.equal(
     Math.max(...groups.map(g => groupMaxSpeed(g, 50, truncated) ?? 0)),
     MAX_SPEED[49],
-    'regenerate: node scripts/data/gen_max_speed.mjs src/data/max-speed.json',
+    'regenerate: node scripts/data/gen_max_speed.ts src/data/max-speed.json',
   );
   // no search stopped at the generator's node limit, so 800 is the true most speed
   assert.deepEqual(truncated, []);

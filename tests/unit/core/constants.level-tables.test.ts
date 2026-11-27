@@ -1,7 +1,7 @@
 /* Every table keyed by character level reaches the level cap (MAX_LEVEL, the highest equip level in the item database).
    A data update that raises the cap (level 110, say) then fails here, naming the table to extend, instead of giving
    undefined and NaN on the page. LEVEL_MAIN, EXPANSIONS and HASTE are written by hand (src/core/constants.ts, src/core/base-stats.ts); PG and
-   MAX_SPEED are generated (scripts/data/gen_item_level.py, gen_max_speed.mjs). */
+   MAX_SPEED are generated (scripts/data/gen_item_level.py, gen_max_speed.ts). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { LEVEL_MAIN } from '../../../src/core/base-stats.ts';

@@ -1,8 +1,8 @@
 /* The most total speed (base + gear + food) any job can have at each level from 1 to the level cap (MAX_LEVEL, the
    highest equip level in the item database, as the page uses), for the speed slider on How the math works, GCD:
    src/data/max-speed.json. Run by regen.py after the item and food tables (it reads them through src/core).
-   Usage: node scripts/data/gen_max_speed.mjs <out.json>
-          node scripts/data/gen_max_speed.mjs --check <file.json>   (is the file's `inputs` hash still current?)
+   Usage: node scripts/data/gen_max_speed.ts <out.json>
+          node scripts/data/gen_max_speed.ts --check <file.json>   (is the file's `inputs` hash still current?)
 
    For each job, at each level up to its cap, the most gear speed is the best of three searches, with melds (the
    optimizer, target speed, weapon damage not first):
@@ -52,7 +52,7 @@ export function inputFiles() {
     .map(path => `src/core/${String(path).replaceAll('\\', '/')}`)
     .filter(isCoreInput);
   const data = ['src/data/items.json', 'src/data/food.json', 'src/data/item-level.json'];
-  return [...data, ...core, 'scripts/data/gen_max_speed.mjs'].sort();
+  return [...data, ...core, 'scripts/data/gen_max_speed.ts'].sort();
 }
 
 /* 'sha256:<hex>' over each input file's path and text (line endings as LF, so a Windows checkout hashes the same). */
@@ -126,7 +126,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const check = process.argv[2] === '--check';
   const out = process.argv[check ? 3 : 2];
   if (!out) {
-    console.error('Usage: node scripts/data/gen_max_speed.mjs <out.json> | --check <file.json>');
+    console.error('Usage: node scripts/data/gen_max_speed.ts <out.json> | --check <file.json>');
     process.exit(2);
   }
   if (check) {
@@ -143,7 +143,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     console.error(
       `error: ${truncated.length} search(es) stopped at NODE_LIMIT ${NODE_LIMIT}, so their most speed may be too low: ${list}.`,
     );
-    console.error('Raise NODE_LIMIT in scripts/data/gen_max_speed.mjs and run it again. Nothing was written.');
+    console.error('Raise NODE_LIMIT in scripts/data/gen_max_speed.ts and run it again. Nothing was written.');
     process.exit(1);
   }
   const doc = { source: levelFile.source ?? null, formatVersion: ITEM_FORMAT.formatVersion, inputs: inputsHash(), total };

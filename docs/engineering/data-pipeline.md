@@ -583,7 +583,7 @@ A meal whose `ItemFood` row is missing, or a kept stat whose HQ percent is not 1
 
 *How high can the GCD speed slider go?* A fourth generator, in JavaScript, answers it from the item and food tables and the optimizer.
 
-The GCD sub-tab's speed slider runs from the level's base to the most total speed (base + gear + food) any job can have at that level. `scripts/data/gen_max_speed.mjs` works it out with the optimizer and writes `src/data/max-speed.json`, one number per level from 1 to the level cap (the highest equip level in the item database, as the page computes it). It is JavaScript, so `regen.py` runs it with Node after the item and food tables.
+The GCD sub-tab's speed slider runs from the level's base to the most total speed (base + gear + food) any job can have at that level. `scripts/data/gen_max_speed.ts` works it out with the optimizer and writes `src/data/max-speed.json`, one number per level from 1 to the level cap (the highest equip level in the item database, as the page computes it). It is JavaScript, so `regen.py` runs it with Node after the item and food tables.
 
 For each job, at each level up to its cap, the most gear speed is the best of three searches with melds:
 
@@ -595,7 +595,7 @@ The HQ meal that adds the most speed goes on top. Jobs that wear the same pieces
 
 A search that stops at its node limit (2,000,000 nodes) may miss the true most speed. The generator then writes nothing, names each such search (jobs, level and case) and exits with status 1; raise its node limit and run it again. No search stops there today (**verified**: full run on `d9582a6`, 2026-10-19).
 
-The table depends on code as well as data: a change to the optimizer, sync or food code can change it while the source commit stays the same. The file therefore records `inputs`, a sha256 over the item, food and item level files, the shared format, every module under `src/core` and the generator itself (line endings counted as LF). `node scripts/data/gen_max_speed.mjs --check src/data/max-speed.json` recomputes it in under a second, without searching, and exits with status 1 when the file is stale; then regenerate. No test runs it, since most code changes leave the table as it is; the GCD view test re-derives level 50.
+The table depends on code as well as data: a change to the optimizer, sync or food code can change it while the source commit stays the same. The file therefore records `inputs`, a sha256 over the item, food and item level files, the shared format, every module under `src/core` and the generator itself (line endings counted as LF). `node scripts/data/gen_max_speed.ts --check src/data/max-speed.json` recomputes it in under a second, without searching, and exits with status 1 when the file is stale; then regenerate. No test runs it, since most code changes leave the table as it is; the GCD view test re-derives level 50.
 
 ### The patch table
 
@@ -750,7 +750,7 @@ Some test expectations are allowed to move after a patch and others must not; th
 | no drop activity for a category | `DROP_ACTIVITY` in `gear_activities.py` |
 | an unknown `SubcategorySort` code | `gear_categories.py`, see [subcategory-sort-codes.md](subcategory-sort-codes.md) |
 | hand-kept ids changed | the table it names: `CURRENCIES`, `KNOWN_SOURCE`, `FIXED_ITEMS`, `RETIRED_SHOPS`, `ITEM_OVERRIDES`, `CURRENCY_OVERRIDES` or `ULTIMATE_TOTEMS` |
-| a most-speed search stopped at its node limit | its node limit in `gen_max_speed.mjs` |
+| a most-speed search stopped at its node limit | its node limit in `gen_max_speed.ts` |
 
 A hand-kept id that changed means a patch reused it: find the item by its expected name in `Item.csv` and update the id.
 
@@ -926,7 +926,7 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Job icon generator | `scripts/data/gen_job_icons.py` |
 | Gear groups generator (which jobs share gear, for Copy sheet) | `scripts/data/gen_gear_groups.py` |
 | Patch table generator (each patch's release day, for the sheet manager's Patch column) | `scripts/data/gen_patches.py` (`patch_table`, `release_day`) |
-| Most speed per level generator (the GCD speed slider's top) | `scripts/data/gen_max_speed.mjs` |
+| Most speed per level generator (the GCD speed slider's top) | `scripts/data/gen_max_speed.ts` |
 | Source commit detection (per repository), the edited-clone check, the generated-file notice and the one-row-per-line writer | `scripts/data/provenance.py` (`detect`, `local_edits`, `note`, `json_lines`) |
 | Check `src/data/` against a fresh run of every generator (local) | `scripts/data/verify.py` (`npm run data:verify`) |
 | Regenerate everything; refuse an edited clone (`--allow-dirty`) | `scripts/data/regen.py` (`npm run data:update` runs fetch, then this) |

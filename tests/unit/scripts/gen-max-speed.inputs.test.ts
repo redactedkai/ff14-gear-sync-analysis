@@ -1,8 +1,8 @@
-/* The inputs hash of the max-speed table (scripts/data/gen_max_speed.mjs): the table depends on the code under src/core as well
+/* The inputs hash of the max-speed table (scripts/data/gen_max_speed.ts): the table depends on the code under src/core as well
    as on the data, so a stale table must show whichever kind of module changed. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { inputFiles, isCoreInput } from '../../../scripts/data/gen_max_speed.mjs';
+import { inputFiles, isCoreInput } from '../../../scripts/data/gen_max_speed.ts';
 import { listFiles } from '../../domains.ts';
 
 test('max-speed inputs: JavaScript, TypeScript and JSON files under src/core count, other files do not', () => {
@@ -18,7 +18,7 @@ test('max-speed inputs: every code and JSON file of src/core, the data files and
   const files = inputFiles();
   const core = listFiles('src/core').filter(path => /\.(js|ts|json)$/.test(path));
   assert.ok(core.length > 20, `only ${core.length} files under src/core`);
-  for (const path of [...core, 'src/data/items.json', 'src/data/food.json', 'src/data/item-level.json', 'scripts/data/gen_max_speed.mjs']) {
+  for (const path of [...core, 'src/data/items.json', 'src/data/food.json', 'src/data/item-level.json', 'scripts/data/gen_max_speed.ts']) {
     assert.ok(files.includes(path), `${path} is not hashed`);
   }
   assert.deepEqual(files, [...files].sort());

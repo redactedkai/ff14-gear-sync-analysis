@@ -8,9 +8,9 @@ Runs each generator into a temporary directory, the way regen.py does (the same 
 every file byte for byte with src/data/. Nothing in the project is written. Prints one line per file and exits 1 when a
 file differs, or when a data clone has local edits (the output would not be the named commit's data).
 
-The most-speed table (gen_max_speed.mjs) is an optimizer search of about five minutes that reads the item and food
+The most-speed table (gen_max_speed.ts) is an optimizer search of about five minutes that reads the item and food
 tables through src/core, and its `inputs` hash also covers the src/core code. So by default only its hash is checked
-(`gen_max_speed.mjs --check`), and a stale one is a warning, not a difference. --full runs the search too and compares
+(`gen_max_speed.ts --check`), and a stale one is a warning, not a difference. --full runs the search too and compares
 the file byte for byte (against the committed items.json and food.json, not the ones made here)."""
 
 import argparse
@@ -37,7 +37,7 @@ CSV = ROOT / 'data' / 'ffxiv-datamining' / 'csv' / 'en'
 PATCHES_DIR = ROOT / 'data' / 'ffxiv-datamining-patches'
 ICON_DIR = ROOT / 'data' / 'icons'
 COMMITTED = ROOT / 'src' / 'data'
-MAX_SPEED_SCRIPT = ROOT / 'scripts' / 'data' / 'gen_max_speed.mjs'
+MAX_SPEED_SCRIPT = ROOT / 'scripts' / 'data' / 'gen_max_speed.ts'
 MAX_DIFF_LINES = 6  # lines of a text difference shown per file
 
 

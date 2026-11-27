@@ -74,7 +74,7 @@ def build_steps(source: Source, patch_source: Source, edited: bool, report_path:
         # the patch each sheet's game data belongs to (the sheet manager): the release day of every patch
         ('Generating the patch table', [*PYTHON, str(DATA / 'gen_patches.py'), str(PATCHLIST), str(OUT / 'patches.json'), *patch_prov]),
         # the most speed per level comes from the optimizer (JavaScript), over the item and food tables made above
-        ('Generating the most speed per level', ['node', str(DATA / 'gen_max_speed.mjs'), str(OUT / 'max-speed.json')]),
+        ('Generating the most speed per level', ['node', str(DATA / 'gen_max_speed.ts'), str(OUT / 'max-speed.json')]),
         # src/data/summary.json: counts compared with the last run, CSV blob ids, and a docs/data-changelog.md line for a
         # new commit (not for an edited clone, whose data should not be committed)
         (
