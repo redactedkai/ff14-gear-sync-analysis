@@ -15,3 +15,4 @@ select = ["F", "E", "W", "I", "B", "UP"]
 [tool.pyrefly]
 # The data scripts and their tests import their neighbours by bare name.
 search-path = ["scripts/data", "tests/data"]
+python-version = "3.11"
