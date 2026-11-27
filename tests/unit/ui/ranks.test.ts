@@ -66,8 +66,10 @@ test('from every goal, every option offered leaves a goal with no repeat, Maximi
 });
 
 test('a swap says which rank changed and to what; no other rank changing says nothing', () => {
-  const name = stat => ({ mind: 'Mind', crit: 'Critical Hit', det: 'Determination' })[stat];
-  const note = (ranks, i, value) => rankSwapNote(ranks, i, value, withRank(ranks, i, value, healer), name);
+  const names: Record<string, string> = { mind: 'Mind', crit: 'Critical Hit', det: 'Determination' };
+  const name = (stat: string): string => names[stat] ?? stat;
+  const note = (ranks: (string | null)[], i: number, value: string) =>
+    rankSwapNote(ranks, i, value, withRank(ranks, i, value, healer), name);
   // the owner's case: Mind > Critical Hit, Critical Hit picked for Maximize
   assert.equal(note(['mind', 'crit', ''], 0, 'crit'), 'Tiebreak 1 changed to Mind (a stat holds one rank).');
   assert.equal(note(['mind', 'crit', 'det'], 1, 'det'), 'Tiebreak 2 changed to Critical Hit (a stat holds one rank).');

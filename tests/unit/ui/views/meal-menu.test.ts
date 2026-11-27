@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS } from '../../../../src/core/constants.ts';
 import { allMeals } from '../../../../src/core/food.ts';
+import { entriesOf } from '../../../../src/core/guards.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import {
   mealBestKeys,
@@ -18,8 +19,11 @@ import {
 } from '../../../../src/ui/views/meal-menu.ts';
 import { setMealMenuView } from '../../../../src/ui/views/set-meal-menu.ts';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
+import { mustFind } from '../../helpers/common.ts';
 import { sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
-import { makeApp, solveOf } from '../../helpers/views.ts';
+import { makeApp, okOf, solveOf } from '../../helpers/views.ts';
+import type { MealAdd, MealItem, MealMenu } from '../../../../src/ui/views/meal-menu.ts';
+import type { StatKey } from '../../../../src/core/types.ts';
 
 /* A Sage set: synced level 70, item level 375, Critical Hit > Determination > Mind, materia and food. On its gear Popoto
    Potage and Mollete (Critical Hit + Spell Speed) add the most Critical Hit the totals allow, +133 (under their 151
@@ -28,9 +32,11 @@ import { makeApp, solveOf } from '../../helpers/views.ts';
 test("Food menu on a Sage set: what each meal adds on the set's gear, chips and the Critical Hit sort", () => {
   const app = makeApp('SGE', { level: 70, cap: 375 });
   Object.assign(app.recipe, { target: 'crit', tb: 'det', tb2: 'mind', melds: true, food: true, byTier: true });
-  const { run, set } = solveOf(app);
-  assert.equal(run.status, 'ok');
-  const shown = allMeals(app.jobCtx).find(m => m.key === run.set.meal);
+  const { run, set } = okOf(solveOf(app));
+  const shown = mustFind(
+    allMeals(app.jobCtx).find(m => m.key === run.set.meal),
+    "the set's meal",
+  );
   const menu = mealMenu(app.jobCtx, 70, set.gear, shown);
   const all = menu.groups.flatMap(g => g.items);
   assert.equal(all.length, allMeals(app.jobCtx).length, 'every meal the job can use');
@@ -40,16 +46,29 @@ test("Food menu on a Sage set: what each meal adds on the set's gear, chips and 
     "the set's meal is marked",
   );
   for (const name of ['Popoto Potage', 'Mollete']) {
-    assert.equal(all.find(x => x.name === name).adds[0].text, 'CRT +133', name);
+    assert.equal(
+      nth(
+        mustFind(
+          all.find(x => x.name === name),
+          name,
+        ).adds,
+        0,
+      ).text,
+      'CRT +133',
+      name,
+    );
   }
-  const popcorn = all.find(x => x.name === 'Caramel Popcorn');
+  const popcorn = mustFind(
+    all.find(x => x.name === 'Caramel Popcorn'),
+    'Caramel Popcorn',
+  );
   assert.deepEqual(
     popcorn.adds.map(a => a.stat),
     ['det', 'crit', 'vit'],
     'its main stat first',
   );
-  assert.equal(popcorn.adds[1].value, 91);
-  assert.ok([125, 126].includes(popcorn.adds[0].value), popcorn.adds[0].text);
+  assert.equal(nth(popcorn.adds, 1).value, 91);
+  assert.ok([125, 126].includes(nth(popcorn.adds, 0).value), nth(popcorn.adds, 0).text);
   assert.ok(menu.pills.every(p => app.jobCtx.substats.includes(p.stat)));
 
   // no pill: the set's meal first, then every other meal, by expansion newest first, no chip, no Sort row
@@ -60,7 +79,7 @@ test("Food menu on a Sage set: what each meal adds on the set's gear, chips and 
     ['pick', 'Dawntrail', 'Endwalker', 'Shadowbringers', 'Stormblood', 'Heavensward', 'A Realm Reborn'],
   );
   assert.deepEqual(
-    none.groups[0].items.map(x => x.name),
+    nth(none.groups, 0).items.map(x => x.name),
     [shown.name],
     "the set's meal leads alone",
   );
@@ -77,36 +96,50 @@ test("Food menu on a Sage set: what each meal adds on the set's gear, chips and 
     both.groups.map(g => [g.key, g.label]),
     [['sorted', null]],
   );
-  const sorted = both.groups[0].items;
-  assert.equal(sorted[0].name, 'Caramel Popcorn');
+  const sorted = nth(both.groups, 0).items;
+  assert.equal(nth(sorted, 0).name, 'Caramel Popcorn');
   assert.ok(sorted.every(x => x.stats.includes('crit') && x.stats.includes('det')));
-  const crit = sorted.map(x => x.adds.find(a => a.stat === 'crit').value);
+  const crit = sorted.map(
+    x =>
+      mustFind(
+        x.adds.find(a => a.stat === 'crit'),
+        'a Critical Hit line',
+      ).value,
+  );
   assert.deepEqual(
     crit,
     [...crit].sort((a, b) => b - a),
   );
   assert.deepEqual(
-    sorted[0].line.map(a => a.hit),
+    nth(sorted, 0).line.map(a => a.hit),
     [true, true, false],
   );
 });
 
 /* The Food menu's filters on a hand-made list: Critical Hit + Determination, Critical Hit +
    Direct Hit, Spell Speed + Determination; each adds Vitality last. */
-const meal = (name, ilvl, adds) => ({
+/* The `index`th of a list the view has at least that many of. */
+const nth = <Item>(list: readonly Item[], index: number): Item => mustFind(list[index], `item ${index}`);
+const meal = (name: string, ilvl: number, adds: Partial<Record<StatKey, number>>): MealItem => ({
   key: name,
   name,
   ilvl,
-  stats: Object.keys(adds).filter(s => s !== 'vit'),
-  adds: Object.entries(adds).map(([stat, value]) => ({ stat, text: `${stat} +${value}`, value })),
+  label: name,
+  ilvlText: `i${ilvl}`,
+  stats: entriesOf(adds)
+    .map(([stat]) => stat)
+    .filter(stat => stat !== 'vit'),
+  adds: entriesOf(adds).map(([stat, value]): MealAdd => ({ stat, text: `${stat} +${value}`, value })),
   on: false,
+  onClass: '',
+  best: false,
 });
 const MEALS = [
   meal('Caramel Popcorn', 770, { det: 125, crit: 91, vit: 121 }),
   meal('Rroneek au Gratin', 770, { crit: 91, dh: 36, vit: 121 }),
   meal('Mate Cookie', 740, { sps: 36, det: 125, vit: 121 }),
 ];
-const filters = (stats, query = '') => ({ stats, query });
+const filters = (stats: StatKey[], query = '') => ({ stats, query });
 
 test('Food menu filters: every picked stat, every search word', () => {
   assert.equal(mealsPassing(MEALS, filters([])).length, 3);
@@ -125,7 +158,7 @@ test('Food menu filters: every picked stat, every search word', () => {
 });
 
 test("Food menu stat line: a meal's stats in its own order, a picked pill's stat marked, none with no pill", () => {
-  const { adds } = MEALS[0];
+  const { adds } = nth(MEALS, 0);
   assert.deepEqual(
     mealLine(adds, []).map(a => [a.stat, a.hit]),
     [
@@ -142,7 +175,7 @@ test("Food menu stat line: a meal's stats in its own order, a picked pill's stat
     mealLine(adds, ['crit', 'det']).map(a => a.hit),
     [true, true, false],
   );
-  assert.equal(mealLine(adds, ['crit'])[1].text, 'crit +91');
+  assert.equal(nth(mealLine(adds, ['crit']), 1).text, 'crit +91');
 });
 
 test('Food menu sort: by the points a meal adds, then the other picked stat, ties newest first; ILVL keeps the order', () => {
@@ -152,7 +185,7 @@ test('Food menu sort: by the points a meal adds, then the other picked stat, tie
     meal('C', 710, { det: 110, crit: 60, vit: 1 }),
     meal('D', 680, { det: 110, crit: 60, vit: 1 }),
   ];
-  const names = list => list.map(x => x.name);
+  const names = (list: readonly MealItem[]) => list.map(x => x.name);
   assert.deepEqual(names(sortMeals(items, 'ilvl', ['crit'])), ['A', 'B', 'C', 'D']);
   // one pill: Critical Hit, ties newest first
   assert.deepEqual(names(sortMeals(items, 'crit', ['crit'])), ['B', 'C', 'D', 'A']);
@@ -180,28 +213,32 @@ test('Food menu pills: greyed out only as a third, or when the list would be emp
 test('Food menu empty list: only a search empties the list, and Clear search brings meals back', () => {
   assert.equal(mealEmptyReason(MEALS, filters(['crit'])), null);
   const noMatch = mealEmptyReason(MEALS, filters(['crit'], 'xyz '));
-  assert.equal(noMatch.action, 'query');
-  assert.ok(noMatch.text.includes('xyz') && !noMatch.text.includes('xyz '), noMatch.text); // the query, trimmed
+  const reason = mustFind(noMatch, 'an empty-list reason');
+  assert.equal(reason.action, 'query');
+  assert.ok(reason.text.includes('xyz') && !reason.text.includes('xyz '), reason.text); // the query, trimmed
   // nothing to bring back (a state the menu cannot reach, or no meal at all): no line
   assert.equal(mealEmptyReason(MEALS, filters(['crit', 'sps'])), null);
   assert.equal(mealEmptyReason([], filters([], 'xyz')), null);
 });
 
 test('Food menu list: the pills and search narrow the list; the Sort row follows the picked pills', () => {
-  const menu = {
+  const pillStats: StatKey[] = ['crit', 'det', 'dh', 'sps'];
+  const menu: MealMenu = {
+    hasBest: false,
     groups: [
       { label: 'Dawntrail', items: MEALS.slice(0, 2) },
       { label: 'Endwalker', items: MEALS.slice(2) },
     ],
-    pills: ['crit', 'det', 'dh', 'sps'].map(stat => ({ stat, short: stat.toUpperCase(), label: stat })),
+    pills: pillStats.map(stat => ({ stat, short: stat.toUpperCase(), label: stat })),
   };
-  const view = (stats, query = '', sortBy = 'ilvl') => mealList(menu, { stats, query, sortBy });
-  const shown = v => v.groups.map(g => [g.key, g.items.map(x => x.name)]);
+  const view = (stats: StatKey[], query = '', sortBy: StatKey | 'ilvl' = 'ilvl') => mealList(menu, { stats, query, sortBy });
+  const shown = (v: ReturnType<typeof view>) => v.groups.map(g => [g.key, g.items.map(x => x.name)]);
   assert.deepEqual(shown(view(['dh'])), [['Dawntrail', ['Rroneek au Gratin']]]);
   const searched = view([], 'popoto');
   assert.deepEqual(shown(searched), []);
-  assert.equal(searched.empty.action, 'query');
-  assert.ok(searched.empty.text.includes('popoto'), searched.empty.text);
+  const emptied = mustFind(searched.empty, 'the empty-list reason');
+  assert.equal(emptied.action, 'query');
+  assert.ok(emptied.text.includes('popoto'), emptied.text);
   assert.equal(view([]).empty, null);
   // the Sort row: ILVL, then the picked stats in the pills' order, whatever order they were picked in
   assert.deepEqual(
@@ -219,22 +256,26 @@ test('Food menu list: the pills and search narrow the list; the Sort row follows
    the menu allows: a pill on or off (on only while mealPillOff allows it) and a search (none, one matching no meal, one
    word of a meal's name). In every state the pills leave a meal with no search, so an empty list always comes from the
    search, and Clear search brings meals back. */
+/* One state of the walk below: the pills picked and the search text. */
+type Walk = { stats: StatKey[]; query: string };
+
 test('Food menu: in every reachable state only a search empties the list, and Clear search brings meals back', () => {
   let states = 0;
   for (const { id: jobId } of JOBS) {
     const job = makeJobContext(jobId);
-    const items = allMeals(job).map(m => ({ key: m.key, name: m.name, stats: m.stats.map(x => x.stat) }));
+    const items = allMeals(job).map(m => ({ ...meal(m.name, m.ilvl, {}), key: m.key, stats: m.stats.map(x => x.stat) }));
     if (!items.length) {
       continue;
     }
     const pills = job.substats.filter(s => items.some(x => x.stats.includes(s)));
-    const words = [items[0], items[items.length >> 1], items.at(-1)].map(x => x.name.split(' ')[0].toLowerCase());
+    const words = [nth(items, 0), nth(items, items.length >> 1), nth(items, items.length - 1)].map(x =>
+      (x.name.split(' ')[0] ?? '').toLowerCase(),
+    );
     const queries = ['', 'zzzz', ...words];
-    const key = f => `${[...f.stats].sort().join()}|${f.query}`;
-    const seen = new Set();
-    const queue = [{ stats: [], query: '' }];
-    while (queue.length) {
-      const f = queue.pop();
+    const key = (f: Walk) => `${[...f.stats].sort().join()}|${f.query}`;
+    const seen = new Set<string>();
+    const queue: Walk[] = [{ stats: [], query: '' }];
+    for (let f = queue.pop(); f; f = queue.pop()) {
       const k = key(f);
       if (seen.has(k)) {
         continue;
@@ -268,10 +309,16 @@ test('Food menu: in every reachable state only a search empties the list, and Cl
 test('what the Food menu template shows is in the view: hover text, item level text, row class, chip classes', () => {
   const job = makeJobContext('SGE');
   const meals = allMeals(job);
-  const shown = meals.find(m => m.name === 'Popoto Potage');
+  const shown = mustFind(
+    meals.find(m => m.name === 'Popoto Potage'),
+    'Popoto Potage',
+  );
   const menu = mealMenu(job, 100, { mind: 0, vit: 0, crit: 0, det: 0, dh: 0, sps: 0, piety: 0 }, shown);
   const items = menu.groups.flatMap(g => g.items);
-  const potage = items.find(x => x.name === 'Popoto Potage');
+  const potage = mustFind(
+    items.find(x => x.name === 'Popoto Potage'),
+    'Popoto Potage',
+  );
   assert.equal(potage.ilvlText, `i${shown.ilvl}`);
   assert.equal(potage.onClass, 'on');
   assert.deepEqual(
@@ -302,7 +349,7 @@ test('every meal of every job has two or three stat lines, the most the template
 function tiedMeals() {
   const app = makeApp('SGE', {});
   Object.assign(app.recipe, { target: 'crit', food: true });
-  const food = solveOf(app).run.found.food;
+  const food = mustFind(okOf(solveOf(app)).run.found.food, 'the meals of the solve');
   return { app, keys: food.tagged.map(tied => tied.key), shown: food.shown };
 }
 
@@ -334,7 +381,13 @@ test('"best for goal": the saved tie list tags the meal of the set; the menu off
       .sort(),
     [...keys].sort(),
   );
-  assert.equal(off.find(x => x.key === shown.key).rowClass, 'on best');
+  assert.equal(
+    mustFind(
+      off.find(x => x.key === shown.key),
+      'the set meal',
+    ).rowClass,
+    'on best',
+  );
   // a pill no tagged meal has is off while the switch is on; a search with no tagged match says so and Clear brings them back
   const all = menu.groups.flatMap(g => g.items);
   const taggedStats = new Set(all.filter(x => x.best).flatMap(x => x.stats));
@@ -342,7 +395,10 @@ test('"best for goal": the saved tie list tags the meal of the set; the menu off
   if (lacking) {
     assert.equal(mealPillOff(all, lacking.stat, { stats: [], query: '', bestOnly: true }), true);
   }
-  const other = all.find(x => !x.best);
+  const other = mustFind(
+    all.find(x => !x.best),
+    'an untagged meal',
+  );
   assert.deepEqual(mealEmptyReason(all, { stats: [], query: other.name, bestOnly: true }), {
     text: `No meal matches "${other.name}".`,
     action: 'query',
@@ -356,19 +412,28 @@ test('"best for goal": a meal the set holds that is not tagged stays in the list
   const { keys } = tiedMeals();
   const probe = sageSet();
   const probeMenu = setMealMenuView(evaluateInSheet(sheetOf('SGE', [probe]), probe), probe, keys);
-  const untagged = probeMenu.groups.flatMap(g => g.items).find(x => !x.best);
+  const untagged = mustFind(
+    probeMenu.groups.flatMap(g => g.items).find(x => !x.best),
+    'an untagged meal',
+  );
   const set = sageSet({ meal: untagged.key });
   const menu = setMealMenuView(evaluateInSheet(sheetOf('SGE', [set]), set), set, mealBestKeys({ ...set, bestMeals: keys }));
   assert.equal(menu.hasBest, true, 'the switch is offered although the set holds an untagged meal');
   const on = mealList(menu, { stats: [], query: '', sortBy: 'ilvl', bestOnly: true }).groups.flatMap(g => g.items);
   assert.deepEqual(on.map(x => x.key).sort(), [...keys, untagged.key].sort());
-  assert.equal(on.find(x => x.key === untagged.key).rowClass, 'on');
+  assert.equal(
+    mustFind(
+      on.find(x => x.key === untagged.key),
+      'the held meal',
+    ).rowClass,
+    'on',
+  );
   // the held meal leads alone in its own group, switch on or off
   const groups = mealList(menu, { stats: [], query: '', sortBy: 'ilvl', bestOnly: true }).groups;
-  assert.deepEqual([groups[0].key, groups[0].label, groups[0].items.map(x => x.key)], ['pick', 'Your pick', [untagged.key]]);
+  assert.deepEqual([nth(groups, 0).key, nth(groups, 0).label, nth(groups, 0).items.map(x => x.key)], ['pick', 'Your pick', [untagged.key]]);
   assert.equal(groups.slice(1).flatMap(g => g.items).length, keys.length);
   const off = mealList(menu, { stats: [], query: '', sortBy: 'ilvl', bestOnly: false }).groups;
-  assert.deepEqual([off[0].key, off[0].items.map(x => x.key)], ['pick', [untagged.key]]);
+  assert.deepEqual([nth(off, 0).key, nth(off, 0).items.map(x => x.key)], ['pick', [untagged.key]]);
   assert.equal(off.flatMap(g => g.items).length, probeMenu.groups.flatMap(g => g.items).length, 'every meal is listed once');
   // a search the held meal does not match leaves it out
   const other = mealList(menu, { stats: [], query: 'zzz-no-such-meal', sortBy: 'ilvl', bestOnly: false }).groups;
@@ -388,10 +453,10 @@ test('"best for goal" on the Food row: the note; a meal not tagged, no meal or n
 });
 
 test('mealBestKeys: the saved list, whatever meal the set holds; a damaged value is none', () => {
-  assert.deepEqual(mealBestKeys({ meal: 'b', bestMeals: ['a', 'b'] }), ['a', 'b']);
-  assert.deepEqual(mealBestKeys({ meal: 'z', bestMeals: ['a', 'b'] }), ['a', 'b'], 'a meal picked by hand: the list stays');
-  assert.deepEqual(mealBestKeys({ meal: null, bestMeals: ['a'] }), ['a'], 'no food chosen');
+  assert.deepEqual(mealBestKeys({ ...sageSet({ meal: 'b' }), bestMeals: ['a', 'b'] }), ['a', 'b']);
+  assert.deepEqual(mealBestKeys({ ...sageSet({ meal: 'z' }), bestMeals: ['a', 'b'] }), ['a', 'b'], 'a meal picked by hand: the list stays');
+  assert.deepEqual(mealBestKeys({ ...sageSet(), bestMeals: ['a'] }), ['a'], 'no food chosen');
   for (const bestMeals of [undefined, null, 'a', [1], { a: 1 }]) {
-    assert.deepEqual(mealBestKeys({ meal: 'a', bestMeals }), []);
+    assert.deepEqual(mealBestKeys({ bestMeals }), []);
   }
 });

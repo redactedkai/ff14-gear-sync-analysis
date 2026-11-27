@@ -14,8 +14,8 @@ import {
 import { LOCKED_TEXT } from '../../../../../src/ui/sheets/store-shared.ts';
 import { inProcessSolver } from '../../../../../src/ui/solver.ts';
 import { makeSession } from '../../../../../src/core/session.ts';
-import { bind, heldSolver, lateSolver, refusingSolver, tick, twoToFill } from '../../../helpers/set-page-bind.ts';
-import { hasNumber } from '../../../helpers/common.ts';
+import { bind, heldSolver, lateSolver, refusingSolver, scriptedSolver, tick, twoToFill } from '../../../helpers/set-page-bind.ts';
+import { hasNumber, mustFind } from '../../../helpers/common.ts';
 import { sageSet } from '../../../helpers/sheet-fixtures.ts';
 import { MEAL_ROW_LABEL } from '../../../../../src/ui/sheets/saved-set.ts';
 import { makeJobContext } from '../../../../../src/core/job-context.ts';
@@ -26,7 +26,7 @@ const HANDS = 4;
 const FEET = 6;
 
 test('Auto-fill: a real search fills the unpinned rows; Take boxes choose what Apply saves; the page is locked meanwhile', async () => {
-  const { session, sheets, view, fillButton } = bind(twoToFill());
+  const { session, sheets, view, fillButton, openSet } = bind(twoToFill());
   await tick(); // the first piece count lands before a person presses the button
   assert.ok(hasNumber(fillButton().text, 4), fillButton().text);
   const running = session.fill.fill();
@@ -34,24 +34,29 @@ test('Auto-fill: a real search fills the unpinned rows; Take boxes choose what A
   assert.deepEqual(sheets.editSet('g_1', { name: 'x', description: '' }), { ok: false, error: LOCKED_TEXT });
   await running;
   assert.deepEqual([session.running, sheets.busy], [false, false]);
-  assert.ok(sheets.currentSet.fillSettings, 'the Auto-fill settings are saved with the first Auto-fill');
+  assert.ok(openSet().fillSettings, 'the Auto-fill settings are saved with the first Auto-fill');
   assert.equal(view().mode, 'suggestion');
-  assert.equal(view().suggest.total, 4, 'the weapon, the hands, the feet and the meal proposed (Food is on by default)');
+  assert.equal(
+    mustFind(view().suggest, 'the suggestion').total,
+    4,
+    'the weapon, the hands, the feet and the meal proposed (Food is on by default)',
+  );
 
   // locked: a piece cannot be changed, and a click on the table says why
   session.edits.pick(HEAD, null);
   assert.equal(session.draft, null);
-  session.fill.tableClick({ closest: () => null });
+  const clicked = { closest: () => null };
+  session.fill.tableClick(clicked);
   assert.equal(sheets.note, LOCKED_TABLE_TEXT);
 
   // decline the feet: the weapon, the hands and the meal are applied
   session.fill.setTake(FEET, false);
-  assert.equal(view().suggest.taken, 3, 'the weapon, the hands and the meal');
+  assert.equal(mustFind(view().suggest, 'the suggestion').taken, 3, 'the weapon, the hands and the meal');
   session.fill.applySuggestion();
   assert.equal(session.suggestion, null);
-  assert.notEqual(sheets.currentSet.pieces[HANDS].gameId, undefined);
-  assert.notEqual(sheets.currentSet.pieces[0].gameId, undefined);
-  assert.equal(sheets.currentSet.pieces[FEET].gameId, undefined);
+  assert.notEqual(openSet().pieces[HANDS]?.gameId, undefined);
+  assert.notEqual(openSet().pieces[0]?.gameId, undefined);
+  assert.equal(openSet().pieces[FEET]?.gameId, undefined);
   const appliedNote = sheets.note;
   assert.ok(appliedNote, 'Apply leaves a note');
 
@@ -59,19 +64,19 @@ test('Auto-fill: a real search fills the unpinned rows; Take boxes choose what A
   await session.fill.fill();
   assert.equal(view().mode, 'suggestion');
   session.fill.discardSuggestion();
-  assert.deepEqual([session.suggestion, sheets.currentSet.pieces[FEET].gameId], [null, undefined]);
+  assert.deepEqual([session.suggestion, openSet().pieces[FEET]?.gameId], [null, undefined]);
   assert.equal(sheets.note, RESULT_DISCARDED_TEXT);
 });
 
 test('Auto-fill: a failing solver shows "Auto-fill failed" on the page, frees the lock and applies nothing', async () => {
   const solver = refusingSolver(['solve']);
-  const { session, sheets, calls } = bind(twoToFill(), solver);
-  const before = JSON.stringify(sheets.currentSet.pieces);
+  const { session, sheets, calls, openSet } = bind(twoToFill(), solver);
+  const before = JSON.stringify(openSet().pieces);
   await session.fill.fill();
   assert.ok(session.fillLine.includes('worker crashed'), session.fillLine); // the solver's own error
   assert.deepEqual([session.running, sheets.busy, session.locked], [false, false, false]);
   assert.deepEqual([session.suggestion, session.draft], [null, null]);
-  assert.equal(JSON.stringify(sheets.currentSet.pieces), before, 'the saved set is untouched');
+  assert.equal(JSON.stringify(openSet().pieces), before, 'the saved set is untouched');
   assert.ok(
     calls.some(([name, method]) => name === 'cancel' && method === 'focus'),
     'Cancel took focus while it ran',
@@ -116,9 +121,9 @@ test('an Auto-fill cancelled by leaving the page touches no element: the page an
 
 test("Cancel: the page is idle at once, the set is untouched, the solver is told to stop this set's search", async () => {
   const solver = heldSolver();
-  const { session, sheets } = bind(twoToFill(), solver);
+  const { session, sheets, openSet } = bind(twoToFill(), solver);
   await tick(); // the first piece count lands before a person presses the button
-  const before = JSON.stringify(sheets.currentSet.pieces);
+  const before = JSON.stringify(openSet().pieces);
   const running = session.fill.fill();
   assert.deepEqual([session.running, sheets.busy], [true, true]);
   session.fill.cancelFill();
@@ -127,7 +132,7 @@ test("Cancel: the page is idle at once, the set is untouched, the solver is told
   assert.deepEqual(solver.cancelled, [['solve', 'g_1']]);
   await running; // the cancelled search's error is not a failure
   assert.deepEqual([session.fillLine, session.suggestion, session.draft], ['', null, null]);
-  assert.equal(JSON.stringify(sheets.currentSet.pieces), before);
+  assert.equal(JSON.stringify(openSet().pieces), before);
 
   // Cancel with nothing running does nothing; an Auto-fill after a Cancel runs again
   session.fill.cancelFill();
@@ -216,8 +221,8 @@ test('no pieces to search: the chip, the button title and the spoken line share 
   const { session, fillButton, noPiecesFlag } = bind(twoToFill());
   assert.equal(noPiecesFlag(), null, 'no count yet');
   // a count lands with the pool's size, through the store's actions as the solver's answer does
-  const landCount = searched => {
-    const id = session.pages.startCount(session.setId, 'test');
+  const landCount = (searched: number) => {
+    const id = mustFind(session.pages.startCount(session.setId, 'test'), 'a count id');
     session.pages.countLanded(session.setId, id, 'test', {
       countText: '',
       searched,
@@ -229,7 +234,7 @@ test('no pieces to search: the chip, the button title and the spoken line share 
   assert.equal(noPiecesFlag(), null, 'the pool holds pieces');
   landCount(0);
   assert.deepEqual(noPiecesFlag(), { short: NO_PIECES_SHORT, full: NO_PIECES_TEXT });
-  assert.equal(fillButton().title, noPiecesFlag().full, 'the button and the chip say the same sentence');
+  assert.equal(fillButton().title, mustFind(noPiecesFlag(), 'the flag').full, 'the button and the chip say the same sentence');
   assert.equal(fillButton().disabled, true);
 });
 
@@ -247,46 +252,27 @@ test('an Auto-fill pressed before the piece count lands waits for it: with no pi
 });
 
 test('a bad pin: the row the line names is unpinned and the unpin is saved, although the sheet is busy while the answer arrives', async () => {
-  const inner = inProcessSolver();
-  const badPinSolver = {
-    blocksPage: false,
-    cancel: () => false,
-    request: request =>
-      request.kind === 'solve'
-        ? Promise.resolve({
-            result: {
-              kind: 'badpin',
-              messages: [],
-              badPins: [{ index: 1, reason: 'wearable' }],
-            },
-            ms: 1,
-          })
-        : inner.request(request),
-  };
-  const { session, sheets, fillButton } = bind(sageSet({ pinned: { pieces: [2, 11], meal: false } }), badPinSolver);
+  const badPinSolver = scriptedSolver(() => ({
+    kind: 'badpin',
+    messages: [],
+    badPins: [{ index: 1, reason: 'wearable' }],
+  }));
+  const { session, sheets, fillButton, openSet } = bind(sageSet({ pinned: { pieces: [2, 11], meal: false } }), badPinSolver);
   await session.fill.fill();
   assert.ok(session.fillLine.includes('Ring 2'), session.fillLine);
-  assert.deepEqual(sheets.currentSet.pinned.pieces, [2], 'Ring 2 is no longer pinned in the saved set');
+  assert.deepEqual(openSet().pinned?.pieces, [2], 'Ring 2 is no longer pinned in the saved set');
   assert.equal(sheets.busy, false);
   // the line's promise holds: pressing Auto-fill again does not meet the same bad pin
   assert.equal(fillButton().disabled, false);
 });
 
 test('a bad meal pin: the meal is unpinned and the unpin is saved, so Auto-fill does not meet the same line again', async () => {
-  const inner = inProcessSolver();
-  const badMealSolver = {
-    blocksPage: false,
-    cancel: () => false,
-    request: request =>
-      request.kind === 'solve'
-        ? Promise.resolve({ result: { kind: 'badpin', messages: ['x'], badPins: [{ index: null, reason: 'meal' }] }, ms: 1 })
-        : inner.request(request),
-  };
-  const { session, sheets } = bind(sageSet({ pinned: { pieces: [2], meal: true } }), badMealSolver);
+  const badMealSolver = scriptedSolver(() => ({ kind: 'badpin', messages: ['x'], badPins: [{ index: null, reason: 'meal' }] }));
+  const { session, sheets, openSet } = bind(sageSet({ pinned: { pieces: [2], meal: true } }), badMealSolver);
   await session.fill.fill();
   assert.ok(session.fillLine.includes(MEAL_ROW_LABEL), session.fillLine);
-  assert.equal(sheets.currentSet.pinned.meal, false, 'the meal is no longer pinned in the saved set');
-  assert.deepEqual(sheets.currentSet.pinned.pieces, [2], 'the pinned piece stays');
+  assert.equal(openSet().pinned?.meal, false, 'the meal is no longer pinned in the saved set');
+  assert.deepEqual(openSet().pinned?.pieces, [2], 'the pinned piece stays');
   assert.equal(sheets.busy, false);
 });
 

@@ -6,10 +6,13 @@ import { PageSession } from '../../../src/ui/elements/set-page/session.ts';
 import { inProcessSolver } from '../../../src/ui/solver.ts';
 import { makeJobContext } from '../../../src/core/job-context.ts';
 import { fillButtonView, noPiecesFlag, setPageViews } from '../../../src/ui/views/set-page.ts';
+import { standsFor } from './dom-fakes.ts';
+import { mustFind } from './common.ts';
 import { fakeStorage, placed, sageSet, sheetOf } from './sheet-fixtures.ts';
 import { fakeFrames, stubElement } from './frames.ts';
 import type { ElementCall } from './frames.ts';
 import { createStores } from './stores.ts';
+import type { SolveAnswer } from '../../../src/ui/solve.ts';
 import type { Solver, SolverKind, SolverReply, SolverRequest } from '../../../src/ui/solver.ts';
 import type { SessionHost } from '../../../src/ui/elements/set-page/session-types.ts';
 import type { SavedGearSet } from '../../../src/ui/sheets/saved-types.ts';
@@ -83,7 +86,7 @@ export interface FakeHost extends SessionHost {
 }
 
 /* The Sage set `gearSet` saved in a sheet (made with `sheetOptions`: sheetOf's level, sync), its page open, and the session over it.
-   Returns {session, host (the element's stand-in: `isConnected` false is a page left), store, sheets, storage, solver, calls (what the page's elements recorded, as [name, method, argument]), view() (the
+   Returns {session, host (the element's stand-in: `isConnected` false is a page left), store, sheets, storage, solver, openSet() (the open set, saved; throws when none is open), calls (what the page's elements recorded, as [name, method, argument]), view() (the
    page's view now), mealMenu() (its Food menu), fillButton() (the Auto-fill button)}. */
 export function bind(
   gearSet: SavedGearSet = sageSet(),
@@ -121,6 +124,7 @@ export function bind(
     solver,
     calls,
     view,
+    openSet: () => mustFind(sheets.currentSet, 'the open set'),
     mealMenu: () => {
       view();
       return views.mealMenu();
@@ -160,6 +164,30 @@ export function refusingSolver(failing: SolverKind[], { blocksPage = false } = {
       return inner.request<Result>(request);
     },
     cancel: () => false,
+  };
+}
+/* A solver's reply with `result` as it is and the time `ms`. The result stands for the caller's `Result`, as the real solvers'
+   replies do (the kind of request fixes it). */
+export function solverReply<Result>(result: unknown, ms = 1): SolverReply<Result> {
+  const reply = { result, ms };
+  standsFor<SolverReply<Result>>(reply);
+  return reply;
+}
+
+/* The page's thread solver, except that a `solve` request `scripted` answers (with a SolveAnswer) is not run: the answer comes back as
+   the solver's own, in 1 ms. A request it answers `null` for goes to the real solver. */
+export function scriptedSolver(scripted: (request: SolverRequest) => SolveAnswer | null): Solver {
+  const inner = inProcessSolver();
+  return {
+    blocksPage: false,
+    cancel: () => false,
+    request<Result = unknown>(request: SolverRequest): Promise<SolverReply<Result>> {
+      const answer = request.kind === 'solve' ? scripted(request) : null;
+      if (!answer) {
+        return inner.request<Result>(request);
+      }
+      return Promise.resolve(solverReply<Result>(answer));
+    },
   };
 }
 export const tick = (): Promise<void> => new Promise(resolve => setTimeout(resolve));

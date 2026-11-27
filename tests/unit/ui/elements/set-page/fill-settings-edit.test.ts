@@ -9,7 +9,10 @@ import { makeSession } from '../../../../../src/core/session.ts';
 import { gearToSearchView } from '../../../../../src/ui/solve.ts';
 import { makeJobContext } from '../../../../../src/core/job-context.ts';
 import { bind, lateSolver, refusingSolver, tick, twoToFill } from '../../../helpers/set-page-bind.ts';
+import { mustFind } from '../../../helpers/common.ts';
+import { FakeInput, dispatchTo } from '../../../helpers/dom-fakes.ts';
 import { sageSet } from '../../../helpers/sheet-fixtures.ts';
+import type { FillSearchCriteria } from '../../../../../src/ui/sheets/saved-types.ts';
 
 const SGE = makeJobContext('SGE');
 
@@ -17,23 +20,24 @@ test('the Auto-fill settings cannot be edited while a result waits: the result s
   const { session, sheets, view } = bind(twoToFill());
   await session.fill.fill();
   assert.ok(session.suggestion);
-  const before = JSON.stringify(sheets.currentSet.fillSettings ?? null);
+  const before = JSON.stringify(mustFind(sheets.currentSet, 'the open set').fillSettings ?? null);
   const goalLine = view().goalLine;
   session.settings.setGoal(1, 'det');
-  session.settings.setGoalField('gcd', '2.40');
+  session.settings.setGoalField('gcd', 2.4);
   assert.ok(session.suggestion, 'the result is kept');
   assert.equal(sheets.note, '', 'no note');
-  assert.equal(JSON.stringify(sheets.currentSet.fillSettings ?? null), before, 'the settings are as they were');
+  assert.equal(JSON.stringify(mustFind(sheets.currentSet, 'the open set').fillSettings ?? null), before, 'the settings are as they were');
   assert.equal(view().goalLine, goalLine);
   // after Discard the same edit is taken
   session.fill.discardSuggestion();
   session.settings.setGoal(1, 'det');
-  assert.equal(sheets.currentSet.fillSettings.goal.tb, 'det');
+  assert.equal(mustFind(mustFind(sheets.currentSet, 'the open set').fillSettings, 'its settings').goal?.tb, 'det');
   assert.equal(view().goalLine, 'MND › DET');
 });
 
 // the first number of "searching 1,939 of 1,999 pieces"
-const searchedIn = countText => Number(countText.match(/^searching ([\d,]+)/)[1].replace(/,/g, ''));
+const searchedIn = (countText: string): number =>
+  Number(mustFind(countText.match(/^searching ([\d,]+)/), 'a count line')[1]?.replace(/,/g, ''));
 
 test('Gear to search line: a failing request shows in the line, and the next good one replaces it', async () => {
   const solver = refusingSolver(['gearToSearch']);
@@ -50,8 +54,9 @@ test('Gear to search: the line follows a change of the Auto-fill settings, with 
   const solverSession = makeSession();
   const { session } = bind(sageSet(), inProcessSolver(solverSession));
   await tick();
-  const start = [session.pageState.gearToSearch.countText, searchedIn(session.pageState.gearToSearch.countText)];
-  assert.match(start[0], /^searching [\d,]+ of [\d,]+ pieces$/);
+  const startText = session.pageState.gearToSearch.countText;
+  const startSearched = searchedIn(startText);
+  assert.match(startText, /^searching [\d,]+ of [\d,]+ pieces$/);
 
   session.settings.editFill(s => {
     s.searchCriteria.min = 600;
@@ -60,8 +65,8 @@ test('Gear to search: the line follows a change of the Auto-fill settings, with 
   const { sync, level } = evaluateInSheet(session.sheet, session.saved);
   const expected = gearToSearchView(SGE, sync, level, fillRecipe(session.fillSettings), solverSession);
   assert.equal(session.pageState.gearToSearch.countText, expected.countText);
-  assert.ok(searchedIn(session.pageState.gearToSearch.countText) < start[1], 'fewer pieces at item level 600 and up');
-  assert.equal(session.pageState.gearToSearch.countText.split(' of ')[1], start[0].split(' of ')[1], 'out of the same number of pieces');
+  assert.ok(searchedIn(session.pageState.gearToSearch.countText) < startSearched, 'fewer pieces at item level 600 and up');
+  assert.equal(session.pageState.gearToSearch.countText.split(' of ')[1], startText.split(' of ')[1], 'out of the same number of pieces');
 });
 
 test('Gear to search: when two requests are out, the older reply never replaces the newest line', async () => {
@@ -88,6 +93,8 @@ test('Gear categories piece counts: none before the first count lands, replaced 
     const { sync, level } = evaluateInSheet(session.sheet, session.saved);
     return gearToSearchView(SGE, sync, level, fillRecipe(session.fillSettings), solverSession).fromCounts;
   };
+  // read afresh each time: an assert on the property would otherwise narrow its type
+  const shownCounts = () => session.pageState.gearToSearch.fromCounts;
   // the request is out: no number yet (not 0)
   assert.equal(session.pageState.gearToSearch.fromCounts, null);
   await solver.held[0].answer();
@@ -103,7 +110,7 @@ test('Gear categories piece counts: none before the first count lands, replaced 
   await solver.held[1].answer();
   await tick();
   assert.deepEqual(session.pageState.gearToSearch.fromCounts, countsFor());
-  assert.ok(session.pageState.gearToSearch.fromCounts.crafted < first.crafted, 'fewer pieces at item level 700 and up');
+  assert.ok(mustFind(shownCounts(), 'the new counts').crafted < first.crafted, 'fewer pieces at item level 700 and up');
   // a box ticked or the market board switched: the numbers do not change, so they stay while the new answer is out
   const landed = session.pageState.gearToSearch.fromCounts;
   session.settings.setFilters({ exclude: [...session.settings.filters.exclude, 'crafted'], market: false });
@@ -115,10 +122,10 @@ test('Gear categories piece counts: none before the first count lands, replaced 
   session.settings.editFill(s => {
     s.searchCriteria.min = 700;
   });
-  await solver.held.at(-1).answer();
+  await mustFind(solver.held.at(-1), 'the newest request').answer();
   await tick();
   const newest = session.pageState.gearToSearch.fromCounts;
-  await solver.held.at(-2).answer();
+  await mustFind(solver.held.at(-2), 'the request before it').answer();
   await tick();
   assert.equal(session.pageState.gearToSearch.fromCounts, newest);
 });
@@ -178,15 +185,17 @@ test('Gear to search boxes: Equip level is held to the job level cap, the Item l
   const { session } = bind(sageSet());
   const { boxes } = session.settings;
   // a number typed past the bound and committed (Enter, leaving the box) moves to the nearest bound
-  for (const [key, typed] of [
+  const typedValues = [
     ['lvl', '150'],
     ['min', '900'],
     ['max', '900'],
-  ]) {
-    boxes[key].onChange({ target: { value: typed } });
+  ] as const;
+  for (const [key, typed] of typedValues) {
+    dispatchTo(new FakeInput(typed), boxes[key].onChange, new Event('change'));
   }
+  const keys: (keyof Pick<FillSearchCriteria, 'lvl' | 'min' | 'max'>)[] = ['lvl', 'min', 'max'];
   assert.deepEqual(
-    ['lvl', 'min', 'max'].map(key => session.fillSettings.searchCriteria[key]),
+    keys.map(key => session.fillSettings.searchCriteria[key]),
     [100, 795, 795],
   );
 });

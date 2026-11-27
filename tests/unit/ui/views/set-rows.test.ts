@@ -8,10 +8,30 @@ import { poolItemById } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { pieceName, rankBadges, setRowsView } from '../../../../src/ui/views/set-rows.ts';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.ts';
+import { mustFind } from '../../helpers/common.ts';
+import type { SavedGearSet, SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 import { SAGE_IDS, piece, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.ts';
 
 const sage = makeJobContext('SGE');
-const view = (sheet, set, options) => setRowsView(evaluateInSheet(sheet, set), set, options);
+const view = (sheet: SavedSheet, set: SavedGearSet, options: Parameters<typeof setRowsView>[2] = {}) =>
+  setRowsView(evaluateInSheet(sheet, set), set, options);
+type RowsView = ReturnType<typeof view>;
+/* The row of `slot` in the view. */
+const rowOf = (v: RowsView, slot: string) =>
+  mustFind(
+    v.rows.find(r => r.slot === slot),
+    `the ${slot} row`,
+  );
+/* The row of `slot`, which must hold a piece (not empty), so its cells and chips are there. */
+function wornRow(v: RowsView, slot: string) {
+  const row = rowOf(v, slot);
+  if (row.empty) {
+    throw new Error(`the ${slot} row is empty`);
+  }
+  return row;
+}
+/* The `index`th of a list the view has at least that many of. */
+const nth = <Item>(list: readonly Item[], index: number): Item => mustFind(list[index], `item ${index}`);
 
 test('Sage: 11 rows (no off-hand for a two-handed job), labels with the rings numbered, the saved row numbers kept', () => {
   const v = view(sheetOf('SGE', []), sageSet());
@@ -40,14 +60,14 @@ test('Sage: 11 rows (no off-hand for a two-handed job), labels with the rings nu
 
 test('a worn row: the name, the high-quality mark, item level, category, source and the stats of the item data', () => {
   const v = view(sheetOf('SGE', []), sageSet());
-  const body = v.rows.find(r => r.slot === 'body');
-  const item = poolItemById(sage, SAGE_IDS.body);
+  const body = wornRow(v, 'body');
+  const item = mustFind(poolItemById(sage, SAGE_IDS.body), 'the body piece');
   assert.deepEqual(
     [body.empty, body.name, body.hq, body.ilvl, body.target, body.ilvlText, body.gameId],
     [false, 'Rainbow Robe of Healing', true, 115, null, '115', SAGE_IDS.body],
   );
-  assert.equal(body.category.key, 'crafted');
-  assert.match(body.from, / · lvl \d+$/);
+  assert.equal(mustFind(body.category, 'the body piece category').key, 'crafted');
+  assert.match(mustFind(body.from, 'the body piece source'), / · lvl \d+$/);
   assert.deepEqual(
     body.cells.map(c => c.value),
     sage.stats.map(s => item.stats[s]),
@@ -59,7 +79,7 @@ test('a worn row: the name, the high-quality mark, item level, category, source 
 
 test('materia chips: slot text, overmeld slots, the locked slot behind an empty one and stones that add nothing', () => {
   const v = view(sheetOf('SGE', []), sageSet());
-  const head = v.rows.find(r => r.slot === 'head');
+  const head = wornRow(v, 'head');
   // five slots (3 + 2 with overmelding): three Critical Hit IV stones, then empty slots
   assert.deepEqual(
     head.chips.map(c => [c.index, c.text, c.empty, c.over, c.locked, c.fit, c.removed]),
@@ -73,15 +93,15 @@ test('materia chips: slot text, overmeld slots, the locked slot behind an empty 
   );
   // a piece without slots says so
   const old = view(sheetOf('SGE', []), { ...sageSet(), pieces: sageSet().pieces.map(p => (p.slot === 'ear' ? piece('ear', 8625) : p)) });
-  const ear = old.rows.find(r => r.slot === 'ear');
+  const ear = wornRow(old, 'ear');
   assert.deepEqual(ear.chips, []);
   assert.ok(ear.noChipsText.length > 0, 'the row says why it has no stones');
 });
 
 test('cap marks: Critical Hit 20 + 8 of 12 under a cap of 28 is at the cap with 32 before it; Piety, 28 of 28, is at its cap too; the main stat never is', () => {
   const v = view(sheetOf('SGE', []), sageSet());
-  const head = v.rows.find(r => r.slot === 'head');
-  const crit = head.cells[2];
+  const head = wornRow(v, 'head');
+  const crit = nth(head.cells, 2);
   assert.deepEqual([crit.value, crit.atCap, crit.beforeCap], [28, true, 32]);
   // Piety 28 equals its cap of 28 (no stone can add to it); the main stat equals its own cap on every piece and is never marked
   assert.deepEqual(
@@ -91,7 +111,7 @@ test('cap marks: Critical Hit 20 + 8 of 12 under a cap of 28 is at the cap with 
   assert.equal(v.anyAtCap, true);
   // without the stones Critical Hit is 20 of 28 and unmarked; Piety still is at its cap
   const plain = view(sheetOf('SGE', []), { ...sageSet(), pieces: sageSet().pieces.map(p => ({ ...p, stones: [] })) });
-  const bare = plain.rows.find(r => r.slot === 'head').cells[2];
+  const bare = nth(wornRow(plain, 'head').cells, 2);
   assert.deepEqual([bare.value, bare.atCap, bare.beforeCap], [20, false, null]);
 });
 
@@ -102,8 +122,8 @@ test('a synced piece: its target item level, stats cut to the cap, and its stone
     { stat: 'det', grade: 12 },
   ]);
   const set = { ...sageSet(), pieces: sageSet().pieces.map(p => (p.slot === 'weapon' ? weapon : p)) };
-  const synced = view(sheetOf('SGE', []), set).rows.find(r => r.slot === 'weapon');
-  const free = view(sheetOf('SGE', [], { sync: { on: false, cap: 795 } }), set).rows.find(r => r.slot === 'weapon');
+  const synced = wornRow(view(sheetOf('SGE', []), set), 'weapon');
+  const free = wornRow(view(sheetOf('SGE', [], { sync: { on: false, cap: 795 } }), set), 'weapon');
   assert.deepEqual([synced.ilvl, synced.target, synced.ilvlText], [790, 123, '790']);
   assert.deepEqual([free.target, free.ilvlText], [null, '790']);
   assert.deepEqual(
@@ -126,12 +146,13 @@ test('empty rows: "Choose a piece", a game id the data lacks, and a slot another
   const v = view(sheetOf('SGE', []), set);
   const weapon = v.rows[0];
   assert.deepEqual([weapon.empty, weapon.missing], [true, null]);
-  const body = v.rows.find(r => r.slot === 'body');
+  const body = rowOf(v, 'body');
   assert.equal(body.empty, true);
-  assert.ok(body.missing.includes('999999999'), body.missing); // the id the set holds
-  assert.equal(body.emptyText, body.missing);
+  const missing = mustFind(body.missing, 'the missing-item note');
+  assert.ok(missing.includes('999999999'), missing); // the id the set holds
+  assert.equal(body.emptyText, missing);
   assert.equal(pieceName(sage, set.pieces[3]), 'missing item 999999999');
-  assert.equal(pieceName(sage, { slot: 'head' }), null);
+  assert.equal(pieceName(sage, {}), null);
   assert.equal(pieceName(sage, set.pieces[2]), 'Rainbow Cap of Healing');
   // Woolen Cowl is a body piece that covers the head: the empty head row says so
   const cowl = {
@@ -140,27 +161,27 @@ test('empty rows: "Choose a piece", a game id the data lacks, and a slot another
       if (p.slot === 'body') {
         return piece('body', 3193);
       }
-      return p.slot === 'head' ? { slot: 'head' } : p;
+      return p.slot === 'head' ? { slot: 'head' as const } : p;
     }),
   };
   const covered = view(sheetOf('SGE', []), cowl);
-  const head = covered.rows.find(r => r.slot === 'head');
+  const head = rowOf(covered, 'head');
   assert.deepEqual(
     [head.empty, head.blockedBy, head.emptyText, head.coveredTitle],
     [true, 'Woolen Cowl', 'Unavailable', 'Covered by Woolen Cowl'],
   );
-  assert.equal(covered.rows.find(r => r.slot === 'body').label, 'Body + Head');
+  assert.equal(rowOf(covered, 'body').label, 'Body + Head');
 });
 
 test('a row under a covering piece is marked covered (its control is off): the Head under a cowl, the Off-hand under a 2H weapon', () => {
   const cowl = sageSet();
   cowl.pieces[2] = { slot: 'head' };
   cowl.pieces[3] = piece('body', 3193); // Woolen Cowl, as in the test above
-  const head = view(sheetOf('SGE', []), cowl).rows.find(r => r.slot === 'head');
+  const head = rowOf(view(sheetOf('SGE', []), cowl), 'head');
   assert.deepEqual([head.empty, head.covered, head.shieldNote], [true, true, null]);
   const cane = sageSet();
   cane.pieces[0] = piece('weapon', 9006);
-  const offhand = view(sheetOf('WHM', []), cane).rows.find(r => r.slot === 'offhand');
+  const offhand = rowOf(view(sheetOf('WHM', []), cane), 'offhand');
   assert.equal(offhand.covered, true);
   assert.equal(
     view(sheetOf('SGE', []), sageSet()).rows.some(r => r.covered),
@@ -173,7 +194,7 @@ test('an Off-hand row under a two-handed weapon carries the shield note; a cover
   const set = sageSet();
   set.pieces[0] = piece('weapon', 9006);
   const v = view(sheetOf('WHM', []), set);
-  const offhand = v.rows.find(r => r.slot === 'offhand');
+  const offhand = rowOf(v, 'offhand');
   assert.deepEqual(
     [offhand.empty, offhand.emptyText, offhand.shieldNote],
     [true, 'Unavailable', 'Only a one-handed weapon allows a shield.'],
@@ -193,7 +214,10 @@ test('pin flags come from the saved set: a pinned row that holds a piece; a pin 
   );
   // no meal: a pinned meal flag counts for nothing
   assert.equal(v.food.pinned, false);
-  const fed = view(sheetOf('SGE', []), sageSet({ pinned: { pieces: [], meal: true }, meal: allMeals(sage).at(-1).key }));
+  const fed = view(
+    sheetOf('SGE', []),
+    sageSet({ pinned: { pieces: [], meal: true }, meal: mustFind(allMeals(sage).at(-1), 'a meal').key }),
+  );
   assert.equal(fed.food.pinned, true);
 });
 
@@ -218,16 +242,17 @@ test('rank badges: 1 for the goal stat, 2 and 3 for the tiebreaks; none without 
 });
 
 test('the Food row: the meal, high quality, its item level and what it adds per stat; no meal and a missing meal', () => {
-  const meal = allMeals(sage).at(-1);
+  const meal = mustFind(allMeals(sage).at(-1), 'a meal');
   const v = view(sheetOf('SGE', []), sageSet({ meal: meal.key }));
   assert.deepEqual([v.food.empty, v.food.name, v.food.hq, v.food.ilvl, v.food.note], [false, meal.name, true, meal.ilvl, 'HQ']);
-  const touched = v.food.cells.filter(Boolean).map(c => c.stat);
+  const touched = v.food.cells.flatMap(c => (c ? [c.stat] : []));
   assert.deepEqual(touched.sort(), [...meal.stats.map(s => s.stat), ...(meal.vit ? ['vit'] : [])].sort());
-  assert.ok(v.food.cells.filter(Boolean).every(c => /^\+\d+$/.test(c.text)));
+  assert.ok(v.food.cells.every(c => c === null || /^\+\d+$/.test(c.text)));
   const none = view(sheetOf('SGE', []), sageSet()).food;
   assert.deepEqual([none.empty, none.cells.every(c => c === null)], [true, true]);
   const gone = view(sheetOf('SGE', []), sageSet({ meal: 'A meal from an older patch' })).food;
-  assert.ok(gone.emptyText.includes('A meal from an older patch'), gone.emptyText); // the meal the set holds
+  const goneText = mustFind(gone.emptyText, 'the missing-meal note');
+  assert.ok(goneText.includes('A meal from an older patch'), goneText); // the meal the set holds
 });
 
 test('changed rows and meal are flagged for the draft highlight', () => {

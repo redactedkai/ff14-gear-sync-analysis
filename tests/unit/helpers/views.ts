@@ -13,7 +13,7 @@ import { explainerItemLevel, explainerView, meldKeys } from '../../../src/ui/vie
 import { appState } from './common.ts';
 import type { TestAppState } from './common.ts';
 import { gamePool } from './exhaustive.js';
-import type { Recipe, RecipeChoices, RecipeResult, Pins } from '../../../src/core/recipe.ts';
+import type { Recipe, RecipeChoices, RecipeResult, RecipeSuccess, Pins } from '../../../src/core/recipe.ts';
 import type { JobContext, PoolItem, StatKey } from '../../../src/core/types.ts';
 import type { SetEvaluation } from '../../../src/core/set.ts';
 
@@ -63,6 +63,16 @@ export function solveOf(app: TestAppState, gear?: readonly PoolItem[], choices: 
     panel: stat => (evaluated().withFood[stat] ?? 0) + evaluated().base[stat],
     gearPanel: stat => (evaluated().gear[stat] ?? 0) + evaluated().base[stat],
   };
+}
+/* A solve that found a set: `solved` with `run` narrowed to RecipeSuccess and `set` to a SetEvaluation. Throws, naming
+   the status, when the run found none. */
+export type SolvedOk = Solved & { run: RecipeSuccess; set: SetEvaluation };
+export function okOf(solved: Solved): SolvedOk {
+  const { run, set } = solved;
+  if (run.status !== 'ok' || !set) {
+    throw new Error(`the solve found no set (${run.status})`);
+  }
+  return { ...solved, run, set };
 }
 /* The pool the solve searches for `app` (core/recipe.ts recipePool), from `gear` or the job's own. */
 export const poolOf = (app: TestAppState, gear?: readonly PoolItem[]) => recipePool(app.jobCtx, app.recipe, gear ?? gearOf(app.jobCtx));

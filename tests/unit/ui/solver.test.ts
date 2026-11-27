@@ -8,7 +8,10 @@ import { makeSession } from '../../../src/core/session.ts';
 import { evaluateSet } from '../../../src/core/set.ts';
 import { inProcessSolver, isCancelled, makeSolverHandler, solverRequest, workerSolver } from '../../../src/ui/solver.ts';
 import { gearToSearchView, solveView } from '../../../src/ui/solve.ts';
+import { mustFind } from '../helpers/common.ts';
+import { solverReply } from '../helpers/set-page-bind.ts';
 import { inputsOf, makeApp } from '../helpers/views.ts';
+import type { HandlerAnswer, Solver, SolverKind, SolverRequest, SolverWorker } from '../../../src/ui/solver.ts';
 
 /* Sage at item level 123, a set's Auto-fill settings with Food on. */
 const SGE = (() => {
@@ -17,33 +20,59 @@ const SGE = (() => {
   return inputsOf(app);
 })();
 
+/* A handler's answer that is not an error: {result, ms}. */
+function answered(answer: HandlerAnswer) {
+  if ('error' in answer) {
+    throw new Error(`the handler answered with an error: ${answer.error}`);
+  }
+  return answer;
+}
+
+/* The result of a `solve` answer that found a set. */
+function okResult(answer: HandlerAnswer) {
+  const { result } = answered(answer);
+  if (!('kind' in result) || result.kind !== 'ok') {
+    throw new Error('the answer is not a solve that found a set');
+  }
+  return result;
+}
+
+/* The result of a `solve` answer that held a pin the solve cannot keep. */
+function badPinResult(answer: HandlerAnswer) {
+  const { result } = answered(answer);
+  if (!('kind' in result) || result.kind !== 'badpin') {
+    throw new Error('the answer is not a bad pin');
+  }
+  return result;
+}
+
 test('solver handler: a solve and a Gear to search request give the view builders own results, cloned intact', () => {
   const session = makeSession();
   const handle = makeSolverHandler(session);
   const { job, sync, level, recipe } = SGE;
   // what postMessage does to the request and the reply: a structured clone
-  const solve = handle(structuredClone(solverRequest('solve', SGE)));
+  const solve = answered(handle(structuredClone(solverRequest('solve', SGE))));
+  const found = okResult(solve);
   assert.ok(solve.ms >= 0);
-  assert.equal(solve.result.kind, 'ok');
   assert.deepEqual(structuredClone(solve), solve);
   assert.deepEqual(solve.result, solveView(job, sync, level, recipe, session));
   // the reply carries the plain set and the recipe, so a sheet can keep the result
-  assert.deepEqual(solve.result.recipe, recipe);
-  const kept = evaluateSet(job, solve.result.set, sync, level);
-  assert.ok(kept.gear.mind > 0);
-  assert.notEqual(solve.result.set.meal, null, 'the food switch is on, so a meal is part of the set');
-  const side = handle(structuredClone(solverRequest('gearToSearch', SGE)));
+  assert.deepEqual(found.recipe, recipe);
+  const kept = evaluateSet(job, found.set, sync, level);
+  assert.ok((kept.gear.mind ?? 0) > 0);
+  assert.notEqual(found.set.meal, null, 'the food switch is on, so a meal is part of the set');
+  const side = answered(handle(structuredClone(solverRequest('gearToSearch', SGE))));
   assert.deepEqual(side.result, gearToSearchView(job, sync, level, recipe, session));
 });
 
 test('solver handler: pins reach the search; a throw comes back as {error}', () => {
   const handle = makeSolverHandler();
-  const first = handle(solverRequest('solve', SGE)).result;
-  const meal = first.set.meal;
+  const meal = okResult(handle(solverRequest('solve', SGE))).set.meal;
   // a pin the solve cannot keep (no piece has that game id) is answered as such, with the key and pins left off
-  const bad = handle(solverRequest('solve', SGE, { key: 'set-a', pins: { pieces: [{ slot: 'head', gameId: -1, stones: [] }], meal } }));
-  assert.equal(bad.result.kind, 'badpin');
-  assert.equal(bad.result.badPins[0].reason, 'missing');
+  const bad = badPinResult(
+    handle(solverRequest('solve', SGE, { key: 'set-a', pins: { pieces: [{ slot: 'head', gameId: -1, stones: [] }], meal } })),
+  );
+  assert.equal(bad.badPins[0]?.reason, 'missing');
   const broken = makeSolverHandler({
     gear: () => {
       throw new Error('no gear');
@@ -55,37 +84,89 @@ test('solver handler: pins reach the search; a throw comes back as {error}', () 
 test('in-process solver: answers at once and blocks the page; an error rejects', async () => {
   const solver = inProcessSolver();
   assert.equal(solver.blocksPage, true);
-  const { result } = await solver.request(solverRequest('gearToSearch', SGE));
+  const { result } = await solver.request<ReturnType<typeof gearToSearchView>>(solverRequest('gearToSearch', SGE));
   assert.match(result.countText, /^searching [\d,]+ of [\d,]+ pieces$/);
-  await assert.rejects(solver.request({ ...solverRequest('gearToSearch', SGE), jobId: 'SGE', recipe: null }));
+  // @ts-expect-error a request with no recipe is the failure under test
+  await assert.rejects(solver.request({ ...solverRequest('gearToSearch', SGE), recipe: null }));
 });
+
+/* What a fake worker keeps of a message posted to it: the id the worker solver gave it, its kind and the test's `mark`, and the names of all its fields. */
+interface Posted {
+  fields: string[];
+  id: number;
+  kind: string;
+  mark: unknown;
+}
+
+/* `message` read as what the worker solver posts (its id and the request); throws on anything else. */
+function postedOf(message: unknown): Posted {
+  if (typeof message === 'object' && message !== null && 'id' in message && typeof message.id === 'number' && 'kind' in message) {
+    return { fields: Object.keys(message), id: message.id, kind: String(message.kind), mark: 'mark' in message ? message.mark : undefined };
+  }
+  throw new Error('the worker was sent something that is not a request');
+}
+
+/* The test's `mark` of a request (the requests below carry one to tell them apart), or undefined. */
+const markOf = (posted: SolverRequest): unknown => ('mark' in posted ? posted.mark : undefined);
 
 /* A stand-in for the page's worker: keeps what is posted; reply(i, body) answers posted message i as the worker would,
    fail() fires its 'error' event. */
-function fakeWorker() {
-  const worker = {
+interface FakeWorker extends SolverWorker {
+  posted: Posted[];
+  terminated: boolean;
+  onmessage: ((event: MessageEvent) => void) | null;
+  onerror: ((event: ErrorEvent) => void) | null;
+  onmessageerror: ((event: MessageEvent) => void) | null;
+  /* Delivers a message `data` from the worker (the handler must be set). */
+  send(data: object): void;
+  reply(i: number, body: object): void;
+  fail(): void;
+}
+
+function fakeWorker(): FakeWorker {
+  const worker: FakeWorker = {
     posted: [],
     terminated: false,
     onmessage: null,
     onerror: null,
     onmessageerror: null,
-    postMessage(message) {
-      worker.posted.push(structuredClone(message));
+    postMessage(message: unknown) {
+      worker.posted.push(postedOf(structuredClone(message)));
     },
     terminate() {
       worker.terminated = true;
     },
+    send(data) {
+      mustFind(worker.onmessage, 'the message handler')(new MessageEvent('message', { data }));
+    },
     reply(i, body) {
-      worker.onmessage({ data: { id: worker.posted[i].id, ...body } });
+      worker.send({ id: mustFind(worker.posted[i], `posted message ${i}`).id, ...body });
     },
     fail() {
-      worker.onerror({ preventDefault() {} });
+      mustFind(worker.onerror, 'the error handler')(new ErrorEvent('error'));
     },
   };
   return worker;
 }
 
-const request = (kind, mark) => ({ kind, jobId: 'SGE', mark });
+/* A stand-in for the page thread's solver the worker solver falls back to: answers every request with "local <mark>" (what
+   `answer` returns for the request), after `onRequest` saw it. */
+function localSolver(
+  onRequest: (posted: SolverRequest) => void = () => {},
+  answer = (posted: SolverRequest) => `local ${markOf(posted)}`,
+): Solver {
+  return {
+    blocksPage: true,
+    cancel: () => false,
+    request<Result>(posted: SolverRequest) {
+      onRequest(posted);
+      return Promise.resolve(solverReply<Result>(answer(posted)));
+    },
+  };
+}
+
+/* A request with the test's `mark`, built on the Sage inputs; the mark rides along to the worker and back to the test. */
+const request = (kind: SolverKind, mark: number) => ({ ...solverRequest(kind, SGE), mark });
 
 test('worker solver: starts the worker on the first request; replies go to their request by id', async () => {
   let made = 0;
@@ -112,7 +193,7 @@ test('worker solver: starts the worker on the first request; replies go to their
   worker.reply(0, { result: 'view', ms: 5 });
   assert.deepEqual(await solve, { result: 'view', ms: 5 });
   assert.deepEqual(await side, { result: 'side', ms: 3 });
-  worker.onmessage({ data: { id: 999, result: 'unknown' } }); // no request with that id: ignored
+  worker.send({ id: 999, result: 'unknown' }); // no request with that id: ignored
   const failing = solver.request(request('gearToSearch', 3));
   worker.reply(2, { error: 'no gear' });
   await assert.rejects(failing, /no gear/);
@@ -121,8 +202,8 @@ test('worker solver: starts the worker on the first request; replies go to their
 test('worker solver: one request per kind in the worker; the newest waits and answers the ones it replaced', async () => {
   const worker = fakeWorker();
   const solver = workerSolver(() => worker);
-  const answers = [];
-  const ask = mark =>
+  const answers: [number, unknown][] = [];
+  const ask = (mark: number) =>
     solver.request(request('gearToSearch', mark)).then(reply => {
       answers.push([mark, reply.result]);
     });
@@ -149,12 +230,12 @@ test('worker solver: one request per kind in the worker; the newest waits and an
 });
 
 test('worker solver: no worker (creating it throws): every request runs on the page thread', async () => {
-  const handled = [];
+  const handled: unknown[] = [];
   const solver = workerSolver(
     () => {
       throw new Error('workers are blocked');
     },
-    () => ({ blocksPage: true, request: r => Promise.resolve({ result: `local ${r.mark}`, ms: 1 }).finally(() => handled.push(r.mark)) }),
+    () => localSolver(r => handled.push(markOf(r))),
   );
   assert.deepEqual(await solver.request(request('solve', 1)), { result: 'local 1', ms: 1 });
   assert.equal(solver.blocksPage, true);
@@ -164,16 +245,10 @@ test('worker solver: no worker (creating it throws): every request runs on the p
 
 test('worker solver: the worker fails: the requests not yet answered are asked again on the page thread', async () => {
   const worker = fakeWorker();
-  const handled = [];
+  const handled: unknown[] = [];
   const solver = workerSolver(
     () => worker,
-    () => ({
-      blocksPage: true,
-      request: r => {
-        handled.push(r.mark);
-        return Promise.resolve({ result: `local ${r.mark}`, ms: 1 });
-      },
-    }),
+    () => localSolver(r => handled.push(markOf(r))),
   );
   const a = solver.request(request('solve', 1));
   const b = solver.request(request('solve', 2)); // waiting behind 1
@@ -195,10 +270,10 @@ test('worker solver: a reply the page cannot read (messageerror) falls back like
   const worker = fakeWorker();
   const solver = workerSolver(
     () => worker,
-    () => ({ blocksPage: true, request: r => Promise.resolve({ result: `local ${r.mark}`, ms: 1 }) }),
+    () => localSolver(),
   );
   const a = solver.request(request('solve', 1));
-  worker.onmessageerror({ preventDefault() {} });
+  mustFind(worker.onmessageerror, 'the messageerror handler')(new MessageEvent('messageerror'));
   assert.equal(worker.terminated, true);
   assert.equal(worker.onmessageerror, null, 'the stopped worker has its handlers off');
   assert.deepEqual(await a, { result: 'local 1', ms: 1 });
@@ -208,8 +283,8 @@ test('worker solver: a reply the page cannot read (messageerror) falls back like
 test('worker solver: a request that cannot be posted rejects, and the next one still goes', async () => {
   const worker = fakeWorker();
   const solver = workerSolver(() => worker);
-  const proxy = new Proxy({}, {}); // a Proxy: not cloneable
-  await assert.rejects(solver.request({ kind: 'solve', recipe: proxy }), /could not be cloned/);
+  const proxy = new Proxy(SGE.recipe, {}); // a Proxy: not cloneable
+  await assert.rejects(solver.request({ ...request('solve', 1), recipe: proxy }), /could not be cloned/);
   const next = solver.request(request('solve', 2));
   worker.reply(0, { result: 'ok', ms: 1 });
   assert.deepEqual(await next, { result: 'ok', ms: 1 });
@@ -217,24 +292,29 @@ test('worker solver: a request that cannot be posted rejects, and the next one s
 
 /* Workers made by a worker solver, one fake per createWorker call (cancel starts a new one). */
 function fakeWorkers() {
-  const made = [];
+  const made: FakeWorker[] = [];
   return {
     made,
-    create: () => {
-      made.push(fakeWorker());
-      return made.at(-1);
+    /* The `index`th worker made. */
+    at: (index: number) => mustFind(made[index], `worker ${index}`),
+    create: (): FakeWorker => {
+      const worker = fakeWorker();
+      made.push(worker);
+      return worker;
     },
   };
 }
 
-const wasCancelled = error => isCancelled(error);
+const wasCancelled = (error: unknown) => isCancelled(error);
+/* An error that is a failure with the message `message`, not a cancel. */
+const failedWith = (message: string) => (error: unknown) => !isCancelled(error) && error instanceof Error && error.message === message;
 
 test('worker solver: cancel stops a running search: the worker is terminated, its callers get a cancelled error', async () => {
   const workers = fakeWorkers();
   const solver = workerSolver(workers.create);
   const running = solver.request(request('solve', 1));
   const waiting = solver.request(request('solve', 2)); // behind 1
-  const old = workers.made[0];
+  const old = workers.at(0);
   assert.equal(solver.cancel('solve'), true);
   assert.equal(old.terminated, true);
   assert.equal(workers.made.length, 2, 'a fresh worker is started at once');
@@ -244,7 +324,7 @@ test('worker solver: cancel stops a running search: the worker is terminated, it
   assert.equal(solver.blocksPage, false);
   // the next search goes to the new worker at once, not behind the cancelled one
   const next = solver.request(request('solve', 3));
-  const fresh = workers.made[1];
+  const fresh = workers.at(1);
   assert.deepEqual(
     fresh.posted.map(m => m.mark),
     [3],
@@ -260,14 +340,14 @@ test('worker solver: a request with no answer after the timeout fails, and a fre
   const solver = workerSolver(workers.create, undefined, { timeoutMs: 1000 });
   const hung = solver.request(request('solve', 1));
   t.mock.timers.tick(999);
-  assert.equal(workers.made[0].terminated, false);
+  assert.equal(workers.at(0).terminated, false);
   t.mock.timers.tick(1);
-  await assert.rejects(hung, error => !isCancelled(error) && error.message === 'no answer after 1 s');
-  assert.equal(workers.made[0].terminated, true);
+  await assert.rejects(hung, failedWith('no answer after 1 s'));
+  assert.equal(workers.at(0).terminated, true);
   assert.equal(workers.made.length, 2, 'a fresh worker is started at once');
   // an answered request's timer is cleared: no stop later
   const next = solver.request(request('solve', 2));
-  workers.made[1].reply(0, { result: 'for 2', ms: 1 });
+  workers.at(1).reply(0, { result: 'for 2', ms: 1 });
   assert.deepEqual(await next, { result: 'for 2', ms: 1 });
   t.mock.timers.tick(5000);
   assert.equal(workers.made.length, 2);
@@ -281,7 +361,7 @@ test("worker solver: cancel re-sends the other kind's unanswered requests to the
   const sideB = solver.request(request('gearToSearch', 3)); // waiting behind 2
   solver.cancel('solve');
   await assert.rejects(search, wasCancelled);
-  const fresh = workers.made[1];
+  const fresh = workers.at(1);
   // the newest of that kind is posted again, and answers both callers
   assert.deepEqual(
     fresh.posted.map(m => [m.kind, m.mark]),
@@ -298,12 +378,12 @@ test('worker solver: with nothing else pending, cancel asks the new worker the l
   const workers = fakeWorkers();
   const solver = workerSolver(workers.create);
   const side = solver.request(request('gearToSearch', 1));
-  workers.made[0].reply(0, { result: 'side 1', ms: 1 });
+  workers.at(0).reply(0, { result: 'side 1', ms: 1 });
   await side;
   const search = solver.request(request('solve', 2));
   solver.cancel('solve');
   await assert.rejects(search, wasCancelled);
-  const fresh = workers.made[1];
+  const fresh = workers.at(1);
   assert.deepEqual(
     fresh.posted.map(m => [m.kind, m.mark]),
     [['gearToSearch', 1]],
@@ -318,14 +398,14 @@ test('worker solver: with nothing else pending, cancel asks the new worker the l
 
 test('worker solver: cancel with no search in the worker, or after the fallback, only returns false', async () => {
   const workers = fakeWorkers();
-  const solver = workerSolver(workers.create, () => ({ blocksPage: true, request: () => Promise.resolve({ result: 'local', ms: 1 }) }));
+  const solver = workerSolver(workers.create, () => localSolver(undefined, () => 'local'));
   assert.equal(solver.cancel('solve'), false, 'no worker yet');
   const search = solver.request(request('solve', 1));
-  workers.made[0].reply(0, { result: 'done', ms: 1 });
+  workers.at(0).reply(0, { result: 'done', ms: 1 });
   await search;
   assert.equal(solver.cancel('solve'), false, 'the search was answered: nothing to stop');
-  assert.deepEqual([workers.made.length, workers.made[0].terminated], [1, false]);
-  workers.made[0].fail();
+  assert.deepEqual([workers.made.length, workers.at(0).terminated], [1, false]);
+  workers.at(0).fail();
   assert.equal(solver.blocksPage, true);
   const local = solver.request(request('solve', 2));
   assert.equal(solver.cancel('solve'), false, 'on the page thread there is nothing to stop');
@@ -343,7 +423,7 @@ test('worker solver: cancel when the new worker cannot be made: the other reques
       }
       return first;
     },
-    () => ({ blocksPage: true, request: r => Promise.resolve({ result: `local ${r.mark}`, ms: 1 }) }),
+    () => localSolver(),
   );
   const search = solver.request(request('solve', 1));
   const side = solver.request(request('gearToSearch', 2));
@@ -354,14 +434,11 @@ test('worker solver: cancel when the new worker cannot be made: the other reques
 });
 
 /* Caller keys (a gear set's id): a Sage item level 123 request as solverRequest builds it, with a key. */
-const keyed = (kind, key, mark) => ({
-  ...solverRequest(kind, { job: { jobId: 'SGE' }, sync: 123, level: 100, recipe: { goal: 'sps' } }, { key }),
-  mark,
-});
-const marks = worker => worker.posted.map(m => m.mark);
+const keyed = (kind: SolverKind, key: string, mark: string) => ({ ...solverRequest(kind, SGE, { key }), mark });
+const marks = (worker: FakeWorker) => worker.posted.map(m => m.mark);
 
 test('solverRequest: the key and the pins are added only when given', () => {
-  const inputs = { job: { jobId: 'SGE' }, sync: 123, level: 100, recipe: {} };
+  const inputs = SGE;
   const plain = solverRequest('solve', inputs);
   assert.deepEqual(['key' in plain, 'pins' in plain], [false, false]);
   const pins = { pieces: [], meal: null };
@@ -376,7 +453,7 @@ test("worker solver keys: two sets interleaved never get each other's result", a
   const b1 = solver.request(keyed('solve', 'b', 'b1')); // waits
   const a2 = solver.request(keyed('solve', 'a', 'a2')); // waits, beside b1: does not replace it
   assert.deepEqual(marks(worker), ['a1']);
-  assert.equal('key' in worker.posted[0], false, 'the key is not sent to the worker');
+  assert.equal(mustFind(worker.posted[0], 'the first message').fields.includes('key'), false, 'the key is not sent to the worker');
   worker.reply(0, { result: 'for a1', ms: 1 });
   assert.deepEqual(marks(worker), ['a1', 'b1'], 'b1 is next, in the order asked');
   worker.reply(1, { result: 'for b1', ms: 2 });
@@ -433,11 +510,11 @@ test('worker solver keys: a timeout rejects the stuck key, the other key is aske
   const other = solver.request(keyed('solve', 'b', 'b1'));
   t.mock.timers.tick(1000);
   for (const reply of [stuck, stuckLater]) {
-    await assert.rejects(reply, error => error.message === 'no answer after 1 s');
+    await assert.rejects(reply, failedWith('no answer after 1 s'));
   }
   assert.equal(workers.made.length, 2);
-  assert.deepEqual(marks(workers.made[1]), ['b1']);
-  workers.made[1].reply(0, { result: 'for b1', ms: 4 });
+  assert.deepEqual(marks(workers.at(1)), ['b1']);
+  workers.at(1).reply(0, { result: 'for b1', ms: 4 });
   assert.deepEqual(await other, { result: 'for b1', ms: 4 });
 });
 
@@ -448,8 +525,8 @@ test('worker solver keys: cancel with a key stops that key only; without one, ev
   const b = solver.request(keyed('solve', 'b', 'b1'));
   assert.equal(solver.cancel('solve', 'a'), true);
   await assert.rejects(a, wasCancelled);
-  assert.deepEqual(marks(workers.made[1]), ['b1'], 'b is asked of the new worker');
-  workers.made[1].reply(0, { result: 'for b1', ms: 1 });
+  assert.deepEqual(marks(workers.at(1)), ['b1'], 'b is asked of the new worker');
+  workers.at(1).reply(0, { result: 'for b1', ms: 1 });
   assert.equal((await b).result, 'for b1');
   assert.equal(solver.cancel('solve', 'b'), false, 'b was answered: nothing to stop');
 
@@ -463,16 +540,10 @@ test('worker solver keys: cancel with a key stops that key only; without one, ev
 
 test('worker solver keys: when the worker fails, each key is answered by the fallback with its own request', async () => {
   const worker = fakeWorker();
-  const asked = [];
+  const asked: unknown[] = [];
   const solver = workerSolver(
     () => worker,
-    () => ({
-      blocksPage: true,
-      request: req => {
-        asked.push(req.mark);
-        return Promise.resolve({ result: `local ${req.mark}`, ms: 1 });
-      },
-    }),
+    () => localSolver(req => asked.push(markOf(req))),
   );
   const a1 = solver.request(keyed('solve', 'a', 'a1'));
   const b1 = solver.request(keyed('solve', 'b', 'b1'));
@@ -494,10 +565,10 @@ test('worker solver keys: cancel of a key that only waits rejects it and leaves 
   assert.equal(solver.cancel('solve', 'b'), true);
   await assert.rejects(b, wasCancelled);
   assert.equal(workers.made.length, 1, 'no restart: the search in the worker goes on');
-  assert.equal(workers.made[0].terminated, false);
-  workers.made[0].reply(0, { result: 'for a1', ms: 1 });
-  assert.deepEqual(marks(workers.made[0]), ['a1', 'c1'], 'b1 is never posted');
-  workers.made[0].reply(1, { result: 'for c1', ms: 1 });
+  assert.equal(workers.at(0).terminated, false);
+  workers.at(0).reply(0, { result: 'for a1', ms: 1 });
+  assert.deepEqual(marks(workers.at(0)), ['a1', 'c1'], 'b1 is never posted');
+  workers.at(0).reply(1, { result: 'for c1', ms: 1 });
   assert.equal((await a).result, 'for a1');
   assert.equal((await c).result, 'for c1');
   assert.equal(solver.cancel('solve', 'b'), false, 'b is gone');
@@ -506,7 +577,7 @@ test('worker solver keys: cancel of a key that only waits rejects it and leaves 
 test('worker solver: a waiting request that cannot be posted rejects, and the ones behind it still go', async () => {
   const worker = fakeWorker();
   const solver = workerSolver(() => worker);
-  const proxy = new Proxy({}, {}); // a Proxy: not cloneable
+  const proxy = new Proxy(SGE.recipe, {}); // a Proxy: not cloneable
   const first = solver.request(keyed('solve', 'a', 'a1'));
   const broken = solver.request({ ...keyed('solve', 'b', 'b1'), recipe: proxy }); // waits, then fails to post
   const last = solver.request(keyed('solve', 'z', 'z1')); // waits behind it

@@ -6,20 +6,32 @@ import { ACTIVITIES } from '../../../src/core/constants.ts';
 import { mkItem } from '../../../src/core/items.ts';
 import { makeSession } from '../../../src/core/session.ts';
 import { gearToSearchView, searchCount, solveView } from '../../../src/ui/solve.ts';
-import { hasParts } from '../helpers/common.ts';
-import { gearOf, inputsOf, makeApp, solveOf, testSession, windowPool } from '../helpers/views.ts';
+import type { SolveAnswer } from '../../../src/ui/solve.ts';
+import type { SlotType } from '../../../src/core/types.ts';
+import type { Pins } from '../../../src/core/recipe.ts';
+import type { TestAppState } from '../helpers/common.ts';
+import { hasParts, mustFind } from '../helpers/common.ts';
+import { gearOf, inputsOf, makeApp, okOf, solveOf, testSession, windowPool } from '../helpers/views.ts';
 
-const solveOfApp = (app, session = testSession, pins = null) => {
+const solveOfApp = (app: TestAppState, session = testSession, pins: Pins | null = null): SolveAnswer => {
   const { job, sync, level, recipe } = inputsOf(app);
   return solveView(job, sync, level, recipe, session, pins);
 };
+
+/* Fails the test unless `answer` is of kind `kind`; TypeScript then reads it as that kind. */
+function assertKind<Kind extends SolveAnswer['kind']>(
+  answer: SolveAnswer,
+  kind: Kind,
+): asserts answer is Extract<SolveAnswer, { kind: Kind }> {
+  assert.equal(answer.kind, kind);
+}
 
 test('solveView: ok carries the plain set, the recipe and truncated; other kinds carry truncated only', () => {
   const app = makeApp('SGE');
   app.recipe.food = false;
   const ok = solveOfApp(app);
   assert.deepEqual(Object.keys(ok).sort(), ['bestMeals', 'kind', 'recipe', 'set', 'truncated']);
-  assert.equal(ok.kind, 'ok');
+  assertKind(ok, 'ok');
   assert.equal(ok.bestMeals, null, 'Food is off in this goal: no meal is tagged');
   assert.equal(ok.truncated, false);
   assert.deepEqual(structuredClone(ok), ok, 'clone-safe: the worker posts it');
@@ -36,28 +48,28 @@ test('solveView: with Food on, bestMeals are the meals tied for the best result 
     Object.assign(app.recipe, { target: 'crit', food: true });
     const { job, sync, recipe } = inputsOf(app);
     const ok = solveView(job, sync, level, recipe, testSession, null);
-    const found = solveOf(app).run.found.food;
-    assert.equal(ok.kind, 'ok');
+    const found = mustFind(okOf(solveOf(app)).run.found.food, 'the meals of the solve');
+    assertKind(ok, 'ok');
+    const bestMeals = mustFind(ok.bestMeals, 'the tagged meals');
     assert.deepEqual(
-      ok.bestMeals,
+      bestMeals,
       found.tagged.map(meal => meal.key),
       `level ${level}`,
     );
-    assert.ok(ok.bestMeals.length > 1, `level ${level}: a tie of several meals`);
-    assert.equal(ok.set.meal, ok.bestMeals.at(-1), 'the set holds the highest item level of them');
+    assert.ok(bestMeals.length > 1, `level ${level}: a tie of several meals`);
+    assert.equal(ok.set.meal, bestMeals.at(-1), 'the set holds the highest item level of them');
     assert.deepEqual(structuredClone(ok), ok);
   }
 });
 
 test('solveView: an error of the search becomes an error answer instead of a throw', () => {
   const app = makeApp('SGE');
-  const pool = ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring'].map(t =>
-    mkItem(t, t, 130, { sps: 9e5, mind: 9e5, vit: 9e5 }),
-  );
+  const slots: SlotType[] = ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring'];
+  const pool = slots.map(t => mkItem(t, t, 130, { sps: 9e5, mind: 9e5, vit: 9e5 }));
   Object.assign(app.recipe, { target: 'sps', tb: 'mind', tb2: 'vit' }); // tiebreaks make the scores large
   app.sync = false; // with sync on these stats would be clamped to normal values
   const v = solveOfApp(app, makeSession({ gear: () => pool }));
-  assert.equal(v.kind, 'error');
+  assertKind(v, 'error');
   assert.match(v.message, /too large/);
 });
 
