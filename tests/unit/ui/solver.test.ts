@@ -9,6 +9,7 @@ import { evaluateSet } from '../../../src/core/set.ts';
 import { inProcessSolver, isCancelled, makeSolverHandler, solverRequest, workerSolver } from '../../../src/ui/solver.ts';
 import { gearToSearchView, solveView } from '../../../src/ui/solve.ts';
 import { mustFind } from '../helpers/common.ts';
+import { errorEvent } from '../helpers/fakes.ts';
 import { solverReply } from '../helpers/set-page-bind.ts';
 import { answered, badPinResult, okResult } from '../helpers/solver-answers.ts';
 import { inputsOf, makeApp } from '../helpers/views.ts';
@@ -118,7 +119,7 @@ function fakeWorker(): FakeWorker {
       worker.send({ id: mustFind(worker.posted[i], `posted message ${i}`).id, ...body });
     },
     fail() {
-      mustFind(worker.onerror, 'the error handler')(new ErrorEvent('error'));
+      mustFind(worker.onerror, 'the error handler')(errorEvent());
     },
   };
   return worker;

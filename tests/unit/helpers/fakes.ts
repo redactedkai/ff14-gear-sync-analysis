@@ -112,10 +112,7 @@ export class FakeWorker<Sent extends { id: number }> extends EventTarget impleme
     if (!handler) {
       throw new Error('the worker has no onerror handler');
     }
-    handler.call(
-      this,
-      Object.assign(new Event('error', { cancelable: true }), { message: '', filename: '', lineno: 0, colno: 0, error: null }),
-    );
+    handler.call(this, errorEvent());
   }
 
   /* A reply the page cannot read: a 'messageerror' event. */
@@ -126,6 +123,12 @@ export class FakeWorker<Sent extends { id: number }> extends EventTarget impleme
     }
     handler.call(this, new MessageEvent('messageerror'));
   }
+}
+
+/* A cancelable 'error' event with the fields of an ErrorEvent. `new ErrorEvent(...)` is no global in Node 22 (the version CI
+   runs), so the event is built from Event, which every Node has. */
+export function errorEvent(): ErrorEvent {
+  return Object.assign(new Event('error', { cancelable: true }), { message: '', filename: '', lineno: 0, colno: 0, error: null });
 }
 
 /* `value` as the answer of a generic method whose caller picks the result type (a Solver's `request<Result>`): JSON.parse is
