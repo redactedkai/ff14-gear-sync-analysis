@@ -2,11 +2,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
+import { fakeFrames } from '../../helpers/frames.ts';
 import { createAppFacade, createStores } from '../../helpers/stores.ts';
 import { restoreOpen } from '../../helpers/common.ts';
 
 /* A store for `job` with the Gear browser open. */
-const storeFor = job => createAppFacade(restoreOpen({ job, tab: 'browse' }));
+const storeFor = (job: string) => createAppFacade(restoreOpen({ job, tab: 'browse' }));
 
 /* Roadmap A1: a job switch keeps every setting that is not tied to the job. */
 test('switching to another job keeps the settings the new job can use and resets the rest (audit 11 #2)', () => {
@@ -93,17 +94,13 @@ test('tabs: an unknown tab opens the Sheets tab; a math sub-view opens the math 
 });
 
 test('openTab: a newer request replaces one still waiting, so the older tab is never shown (Back while a tab opens)', async () => {
-  const frames = [];
-  const realRaf = globalThis.requestAnimationFrame;
-  globalThis.requestAnimationFrame = callback => frames.push(callback);
+  const frames = fakeFrames();
   try {
     const { app: store, store: raw } = createStores(restoreOpen({ job: 'PLD', tab: 'sheets' }));
     store.openTab('browse');
     store.openTab('sheets'); // the player went Back before the first frame
     assert.equal(store.pendingTab, 'sheets');
-    for (const frame of frames.splice(0)) {
-      frame();
-    }
+    frames.step();
     await new Promise(resolve => setTimeout(resolve, 10));
     // the older request never showed its tab: one tab was shown, by the newer request
     assert.deepEqual(
@@ -113,6 +110,6 @@ test('openTab: a newer request replaces one still waiting, so the older tab is n
     assert.equal(store.tab, 'sheets');
     assert.equal(store.pendingTab, null);
   } finally {
-    globalThis.requestAnimationFrame = realRaf;
+    frames.restore();
   }
 });

@@ -6,27 +6,27 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { sheetKey } from '../../../../src/ui/sheets/storage.ts';
 import { LOCKED_TEXT } from '../../../../src/ui/sheets/store-shared.ts';
-import { createSheetsFacade } from '../../helpers/stores.ts';
+import { createSheetsFacade, idOf, openSheetOf, savedSheet } from '../../helpers/stores.ts';
 import { fakeStorage, quotaError } from '../../helpers/sheet-fixtures.ts';
 
 /* A store over `storage` with a new Sage sheet open; the clock ticks 1 ms per call. */
 function openStore(storage = fakeStorage()) {
   let next = 0;
   const store = createSheetsFacade({ storage, now: () => 1762700000000 + ++next, makeId: prefix => `${prefix}${++next}` });
-  const { id } = store.createSheet({ name: 'Bahamut', job: 'SGE', level: 100, sync: { on: true, cap: 123 } });
+  const id = idOf(store.createSheet({ name: 'Bahamut', job: 'SGE', level: 100, sync: { on: true, cap: 123 } }));
   return { store, storage, id };
 }
 
 test('the clan and the party bonus are saved with the sheet and read back by a second store', () => {
   const { store, storage, id } = openStore();
   assert.deepEqual([store.setClan('Midlander').ok, store.setPartyRoles(5).ok], [true, true]);
-  assert.deepEqual([store.currentSheet.clan, store.currentSheet.partyRoles], ['Midlander', 5]);
-  const again = createSheetsFacade({ storage }).sheet(id);
+  assert.deepEqual([openSheetOf(store).clan, openSheetOf(store).partyRoles], ['Midlander', 5]);
+  const again = savedSheet(createSheetsFacade({ storage }), id);
   assert.deepEqual([again.clan, again.partyRoles], ['Midlander', 5]);
   // back to none: null for the clan, 0 for the roles
   store.setClan(null);
   store.setPartyRoles(0);
-  const none = createSheetsFacade({ storage }).sheet(id);
+  const none = savedSheet(createSheetsFacade({ storage }), id);
   assert.deepEqual([none.clan, none.partyRoles], [null, 0]);
 });
 
@@ -34,7 +34,7 @@ test('an unknown clan is no clan; party roles are held to a whole number from 0 
   const { store } = openStore();
   store.setClan('Midlander');
   store.setClan('Gridanian');
-  assert.equal(store.currentSheet.clan, null);
+  assert.equal(openSheetOf(store).clan, null);
   for (const [typed, held] of [
     ['3', 3],
     [9, 5],
@@ -43,7 +43,7 @@ test('an unknown clan is no clan; party roles are held to a whole number from 0 
     ['x', 0],
   ]) {
     store.setPartyRoles(typed);
-    assert.equal(store.currentSheet.partyRoles, held, String(typed));
+    assert.equal(openSheetOf(store).partyRoles, held, String(typed));
   }
 });
 
@@ -62,7 +62,7 @@ test('the edit lock refuses both and leaves the sheet as it was', () => {
   store.setBusy(true);
   assert.deepEqual(store.setClan('Midlander'), { ok: false, error: LOCKED_TEXT });
   assert.deepEqual(store.setPartyRoles(3), { ok: false, error: LOCKED_TEXT });
-  assert.deepEqual([store.currentSheet.clan, store.currentSheet.partyRoles], [null, 0]);
+  assert.deepEqual([openSheetOf(store).clan, openSheetOf(store).partyRoles], [null, 0]);
 });
 
 test('a full storage keeps the edit in memory and says so, like the other settings', () => {
@@ -76,18 +76,18 @@ test('a full storage keeps the edit in memory and says so, like the other settin
   failing.openSheet(id);
   const result = failing.setPartyRoles(4);
   assert.deepEqual([result.ok, result.reason], [false, 'quota']);
-  assert.equal(failing.currentSheet.partyRoles, 4);
+  assert.equal(openSheetOf(failing).partyRoles, 4);
   assert.notEqual(failing.saveMessage, '');
-  assert.equal(store.currentSheet.partyRoles, 0);
+  assert.equal(openSheetOf(store).partyRoles, 0);
 });
 
 test('the tagged best meals of the sets are kept (a level change drops them, a bonus does not)', () => {
   const { store } = openStore();
-  const { id } = store.newSet();
+  const id = idOf(store.newSet());
   store.updateSet(id, { bestMeals: ['a'] });
   store.setClan('Seeker of the Sun');
   store.setPartyRoles(2);
-  assert.deepEqual(store.currentSheet.sets[0].bestMeals, ['a']);
+  assert.deepEqual(openSheetOf(store).sets[0].bestMeals, ['a']);
   store.setLevel(90);
-  assert.equal(store.currentSheet.sets[0].bestMeals, null);
+  assert.equal(openSheetOf(store).sets[0].bestMeals, null);
 });

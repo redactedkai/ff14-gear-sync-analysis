@@ -11,7 +11,7 @@ import { join, relative } from 'node:path';
 const ROOT = join(import.meta.dirname, '..', '..', '..', '..');
 
 /* The files that read the facades: every .js, .ts and .html of src/ui (but the store's own folder), the page and main.js. */
-function sourceFiles(folder, found = []) {
+function sourceFiles(folder: string, found: string[] = []): string[] {
   for (const name of readdirSync(folder)) {
     const path = join(folder, name);
     if (statSync(path).isDirectory()) {
@@ -51,7 +51,7 @@ const WRITES = [
 ];
 
 test('no template or component writes to the app or sheets facade: every write is an action call', () => {
-  const found = [];
+  const found: string[] = [];
   for (const file of FILES) {
     const lines = readFileSync(file, 'utf8').split(/\r?\n/);
     lines.forEach((line, index) => {

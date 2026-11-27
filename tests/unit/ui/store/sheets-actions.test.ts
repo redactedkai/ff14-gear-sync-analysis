@@ -14,12 +14,15 @@ import {
   SHEET_GONE_TEXT,
   copiedNote,
 } from '../../../../src/ui/sheets/store-shared.ts';
-import { createSheetsFacade } from '../../helpers/stores.ts';
+import { createSheetsFacade, idOf, openSetOf, openSheetOf, savedSheet } from '../../helpers/stores.ts';
 import { FORM_FIELD, NEW_SHEET_CAP } from '../../../../src/ui/sheets/ops.ts';
+import type { LeaveMove } from '../../../../src/ui/store/sheets-actions.ts';
+import { mustFind } from '../../helpers/common.ts';
+import type { FakeStorage } from '../../helpers/fakes.ts';
 import { WHM_CANE, fakeStorage, piece, quotaError, sageSet, sheetOf } from '../../helpers/sheet-fixtures.ts';
 
 /* A store over `storage` with a clock that ticks 1 s per call and numbered ids. */
-function makeStore(storage = fakeStorage()) {
+function makeStore(storage: FakeStorage | null = fakeStorage()) {
   let clock = Date.UTC(2026, 10, 9, 12);
   let next = 0;
   return createSheetsFacade({ storage, now: () => (clock += 1000), makeId: prefix => `${prefix}${++next}` });
@@ -39,10 +42,10 @@ test('a new sheet: a job and a name are required; it goes to the top, is saved a
     ['UwU', 'Bahamut'],
   );
   // the level is held to Blue Mage's cap; an empty cap starts at the highest real item level
-  const blu = store.sheet(second.id);
+  const blu = savedSheet(store, idOf(second));
   assert.deepEqual([blu.level, blu.sync], [80, { on: false, cap: NEW_SHEET_CAP }]);
   assert.equal(NEW_SHEET_CAP, MAX_REAL);
-  assert.ok(storage.getItem(sheetKey(first.id)));
+  assert.ok(storage.getItem(sheetKey(idOf(first))));
   // a reload (a second store on the same storage) reads them back in the same order
   assert.deepEqual(
     makeStore(storage)
@@ -54,13 +57,13 @@ test('a new sheet: a job and a name are required; it goes to the top, is saved a
 
 test('screens: the manager, a sheet, a set; a gone sheet falls back to the manager', () => {
   const store = makeStore();
-  const { id } = store.createSheet(FIELDS);
+  const id = idOf(store.createSheet(FIELDS));
   store.openManager();
   assert.deepEqual([store.screen, store.currentSheet], ['sheets', null]);
   store.openSheet(id);
-  assert.equal(store.currentSheet.id, id);
+  assert.equal(openSheetOf(store).id, id);
   const set = store.newSet();
-  assert.deepEqual([store.screen, store.setId, store.currentSet.name], ['set', set.id, 'Set 1']);
+  assert.deepEqual([store.screen, store.setId, openSetOf(store).name], ['set', set.id, 'Set 1']);
   store.closeSet();
   assert.deepEqual([store.screen, store.setId, store.currentSet], ['sheet', null, null]);
   store.openSet('nope');
@@ -71,31 +74,31 @@ test('screens: the manager, a sheet, a set; a gone sheet falls back to the manag
 
 test('name and description: an empty name is refused and the old one kept; changes stamp updatedAt', () => {
   const store = makeStore();
-  const { id } = store.createSheet(FIELDS);
-  const before = store.sheet(id).updatedAt;
+  const id = idOf(store.createSheet(FIELDS));
+  const before = savedSheet(store, id).updatedAt;
   assert.deepEqual(store.editSheet(id, { name: '  ', description: 'x' }), { ok: false, error: EMPTY_NAME_TEXT, field: FORM_FIELD.name });
-  assert.equal(store.sheet(id).name, 'Bahamut');
+  assert.equal(savedSheet(store, id).name, 'Bahamut');
   assert.deepEqual(store.editSheet(id, { name: ' T13 ', description: ' Savage\nweek 2 ' }), { ok: true });
-  assert.deepEqual([store.sheet(id).name, store.sheet(id).description], ['T13', 'Savage\nweek 2']);
-  assert.ok(store.sheet(id).updatedAt > before);
+  assert.deepEqual([savedSheet(store, id).name, savedSheet(store, id).description], ['T13', 'Savage\nweek 2']);
+  assert.ok(savedSheet(store, id).updatedAt > before);
 });
 
 test('level and item level sync on the open sheet: applied at once, held to their ranges', () => {
   const store = makeStore();
   store.createSheet({ ...FIELDS, job: 'BST' });
   store.setLevel(70);
-  assert.equal(store.currentSheet.level, 50, "Beastmaster's level cap");
+  assert.equal(openSheetOf(store).level, 50, "Beastmaster's level cap");
   store.setLevel('');
-  assert.equal(store.currentSheet.level, 50, 'no number keeps the level');
+  assert.equal(openSheetOf(store).level, 50, 'no number keeps the level');
   // level 50 is Beastmaster's own level cap; the level limits the cap whatever the job: 135, the best gear made for it
   store.setCap(5000);
-  assert.equal(store.currentSheet.sync.cap, 135);
+  assert.equal(openSheetOf(store).sync.cap, 135);
   store.setSyncOn(false);
-  assert.deepEqual(store.currentSheet.sync, { on: false, cap: 135 }, 'the cap is kept while sync is off');
+  assert.deepEqual(openSheetOf(store).sync, { on: false, cap: 135 }, 'the cap is kept while sync is off');
   // a Sage at level 50: the same
   store.createSheet({ ...FIELDS, level: 50 });
   store.setCap(5000);
-  assert.equal(store.currentSheet.sync.cap, 135);
+  assert.equal(openSheetOf(store).sync.cap, 135);
 });
 
 test('gear sets: New set opens it; Copy goes next to the original; Edit sets name and notes; Delete asks nothing here', () => {
@@ -106,28 +109,28 @@ test('gear sets: New set opens it; Copy goes next to the original; Edit sets nam
   const b = store.newSet();
   store.closeSet();
   assert.deepEqual(
-    store.currentSheet.sets.map(s => s.name),
+    openSheetOf(store).sets.map(s => s.name),
     ['Set 1', 'Set 2'],
   );
-  const copy = store.copySet(a.id);
+  const copy = store.copySet(idOf(a));
   assert.deepEqual(
-    store.currentSheet.sets.map(s => s.name),
+    openSheetOf(store).sets.map(s => s.name),
     ['Set 1', 'Set 1 (1)', 'Set 2'],
   );
   assert.equal(store.screen, 'sheet', 'copying a set stays on the list');
   assert.ok(store.note.includes('Set 1 (1)'), store.note); // the new set's name
-  assert.deepEqual(store.editSet(copy.id, { name: '', description: '' }), { ok: false, error: EMPTY_NAME_TEXT, field: FORM_FIELD.name });
-  store.editSet(copy.id, { name: 'Mine', description: 'My own set\nwith a crafted body' });
-  assert.deepEqual([store.currentSheet.sets[1].name, store.currentSheet.sets[1].description], ['Mine', 'My own set\nwith a crafted body']);
+  assert.deepEqual(store.editSet(idOf(copy), { name: '', description: '' }), { ok: false, error: EMPTY_NAME_TEXT, field: FORM_FIELD.name });
+  store.editSet(idOf(copy), { name: 'Mine', description: 'My own set\nwith a crafted body' });
+  assert.deepEqual([openSheetOf(store).sets[1].name, openSheetOf(store).sets[1].description], ['Mine', 'My own set\nwith a crafted body']);
   // deleting from the list stays on the list; from the set's own page goes to the list
-  store.deleteSet(b.id);
+  store.deleteSet(idOf(b));
   assert.equal(store.screen, 'sheet');
-  store.openSet(a.id);
-  store.deleteSet(a.id);
+  store.openSet(idOf(a));
+  store.deleteSet(idOf(a));
   assert.equal(store.screen, 'sheet');
   assert.ok(store.note.includes('Set 1'), store.note);
   assert.deepEqual(
-    store.currentSheet.sets.map(s => s.name),
+    openSheetOf(store).sets.map(s => s.name),
     ['Mine'],
   );
 });
@@ -135,20 +138,20 @@ test('gear sets: New set opens it; Copy goes next to the original; Edit sets nam
 test('updateSet: the set page saves pieces, pins and the meal through it', () => {
   const store = makeStore();
   store.createSheet(FIELDS);
-  const { id } = store.newSet();
+  const id = idOf(store.newSet());
   const pieces = sageSet().pieces;
   assert.deepEqual(store.updateSet(id, { pieces, pinned: { pieces: [2], meal: false } }), { ok: true });
-  assert.deepEqual(store.currentSet.pieces, pieces);
+  assert.deepEqual(openSetOf(store).pieces, pieces);
   const gone = store.updateSet('nope', {});
   assert.deepEqual([gone.ok, gone.error !== ''], [false, true]);
 });
 
 test('Copy sheet: asks to accept clearing pieces the job cannot wear, then lands on the manager with the copy on top', () => {
   const store = makeStore();
-  const { id } = store.createSheet({ ...FIELDS, job: 'WHM', name: 'White' });
+  const id = idOf(store.createSheet({ ...FIELDS, job: 'WHM', name: 'White' }));
   const set = store.newSet();
   const pieces = sageSet().pieces.map((row, i) => (i === 0 ? piece('weapon', WHM_CANE) : row));
-  store.updateSet(set.id, { pieces, pinned: { pieces: [0], meal: false } });
+  store.updateSet(idOf(set), { pieces, pinned: { pieces: [0], meal: false } });
   const fields = { name: 'Astro', job: 'AST', level: 90, sync: { on: true, cap: 660 } };
   assert.deepEqual(
     store.copySheet(id, fields),
@@ -159,9 +162,9 @@ test('Copy sheet: asks to accept clearing pieces the job cannot wear, then lands
   assert.equal(copied.ok, true);
   assert.deepEqual([store.screen, store.list().sheets[0].id], ['sheets', copied.id]);
   assert.equal(store.note, copiedNote('Astro')); // the new name only: the cleared pieces are not counted
-  const copy = store.sheet(copied.id);
+  const copy = savedSheet(store, idOf(copied));
   assert.deepEqual(
-    [copy.job, copy.level, copy.sync, copy.sets[0].pieces[0], copy.sets[0].pinned.pieces],
+    [copy.job, copy.level, copy.sync, copy.sets[0]?.pieces[0], copy.sets[0]?.pinned?.pieces],
     ['AST', 90, { on: true, cap: 660 }, { slot: 'weapon' }, []],
   );
   assert.deepEqual(store.copySheet(id, { ...fields, name: ' ' }, true), { ok: false, error: EMPTY_NAME_TEXT, field: FORM_FIELD.name });
@@ -171,7 +174,7 @@ test('Copy sheet: asks to accept clearing pieces the job cannot wear, then lands
 
 test('a sheet that is gone is refused with no field: the reason is about the sheet, not a box', () => {
   const store = makeStore();
-  const { id } = store.createSheet(FIELDS);
+  const id = idOf(store.createSheet(FIELDS));
   store.deleteSheet(id);
   const gone = { ok: false, error: SHEET_GONE_TEXT };
   assert.deepEqual(store.editSheet(id, { name: 'x', description: '' }), gone);
@@ -184,12 +187,12 @@ test('deleting a sheet: from its page goes to the manager; from the manager stay
   const store = makeStore(storage);
   const a = store.createSheet(FIELDS);
   const b = store.createSheet({ ...FIELDS, name: 'Other' });
-  store.deleteSheet(b.id);
+  store.deleteSheet(idOf(b));
   assert.equal(store.screen, 'sheets');
   assert.ok(store.note.includes('Other'), store.note);
-  assert.equal(storage.getItem(sheetKey(b.id)), null);
+  assert.equal(storage.getItem(sheetKey(idOf(b))), null);
   store.openManager();
-  store.deleteSheet(a.id);
+  store.deleteSheet(idOf(a));
   assert.equal(store.screen, 'sheets');
   assert.deepEqual(makeStore(storage).list().sheets, []);
 });
@@ -223,14 +226,14 @@ test('reordering: a drop moves the row and saves the order; the keyboard says wh
   assert.equal(store.stepSet(1, -1), 0);
   store.moveSet(0, 1);
   assert.deepEqual(
-    store.currentSheet.sets.map(s => s.name),
+    openSheetOf(store).sets.map(s => s.name),
     ['Set 1', 'Set 2'],
   );
 });
 
 test('while an Auto-fill runs every edit is refused; opening screens still works', () => {
   const store = makeStore();
-  const { id } = store.createSheet(FIELDS);
+  const id = idOf(store.createSheet(FIELDS));
   store.setBusy(true);
   const refused = { ok: false, error: LOCKED_TEXT };
   assert.deepEqual(store.createSheet(FIELDS), refused);
@@ -249,25 +252,25 @@ test('while an Auto-fill runs every edit is refused; opening screens still works
 test('a full storage: the edit stays in memory with the message, and survives a reload until a save works', () => {
   const storage = fakeStorage();
   const store = makeStore(storage);
-  const { id } = store.createSheet(FIELDS);
+  const id = idOf(store.createSheet(FIELDS));
   storage.failWith = quotaError();
   const result = store.editSheet(id, { name: 'Renamed', description: '' });
   assert.deepEqual(result, { ok: true });
   assert.equal(store.saveMessage, QUOTA_MESSAGE);
-  assert.equal(store.sheet(id).name, 'Renamed');
+  assert.equal(savedSheet(store, id).name, 'Renamed');
   store.openSheet(id); // reads storage again
-  assert.equal(store.sheet(id).name, 'Renamed', 'the unsaved edit is kept');
+  assert.equal(savedSheet(store, id).name, 'Renamed', 'the unsaved edit is kept');
   storage.failWith = null;
   store.setLevel(90);
   assert.equal(store.saveMessage, '');
-  assert.equal(makeStore(storage).sheet(id).name, 'Renamed');
+  assert.equal(savedSheet(makeStore(storage), id).name, 'Renamed');
 });
 
 test('a full storage on a reorder: the order stays in memory with the message, and survives a reload until a save works', () => {
   const storage = fakeStorage();
   const store = makeStore(storage);
-  const a = store.createSheet({ ...FIELDS, name: 'A' }).id;
-  const b = store.createSheet({ ...FIELDS, name: 'B' }).id;
+  const a = idOf(store.createSheet({ ...FIELDS, name: 'A' }));
+  const b = idOf(store.createSheet({ ...FIELDS, name: 'B' }));
   store.openManager();
   assert.deepEqual(
     store.list().sheets.map(s => s.name),
@@ -304,9 +307,9 @@ test('a full storage on a reorder: the order stays in memory with the message, a
 test('no storage at all: sheets live in memory; a record that cannot be read is listed and can be deleted', () => {
   const memory = makeStore(null);
   assert.equal(memory.list().available, false);
-  const { id } = memory.createSheet(FIELDS);
+  const id = idOf(memory.createSheet(FIELDS));
   memory.openManager();
-  assert.equal(memory.sheet(id).name, 'Bahamut');
+  assert.equal(savedSheet(memory, id).name, 'Bahamut');
 
   const storage = fakeStorage();
   saveSheet(sheetOf('SGE', [], { id: 's_ok' }), storage);
@@ -325,8 +328,8 @@ test('no storage at all: sheets live in memory; a record that cannot be read is 
    the store asks its leave guard first, on a set page only, and the move runs again once answered. */
 test('leaving a set page asks its leave guard first; other screens never ask', () => {
   const store = makeStore();
-  const { id } = store.createSheet(FIELDS);
-  const asked = [];
+  const id = idOf(store.createSheet(FIELDS));
+  const asked: LeaveMove[] = [];
   let hold = true;
   store.setLeaveGuard(move => {
     asked.push(move);
@@ -336,7 +339,7 @@ test('leaving a set page asks its leave guard first; other screens never ask', (
   assert.equal(asked.length, 0, 'not on a set page');
   store.openSheet(id);
   store.newSet();
-  const setId = store.setId;
+  const setId = mustFind(store.setId, 'the open set id');
   assert.equal(store.screen, 'set');
   for (const leave of [() => store.closeSet(), () => store.openManager(), () => store.openSheet(id)]) {
     leave();
@@ -345,7 +348,7 @@ test('leaving a set page asks its leave guard first; other screens never ask', (
   store.openSet(setId);
   assert.equal(asked.length, 3, 'the set already open is no move');
   hold = false;
-  asked[0]();
+  mustFind(asked[0], 'the first held move')();
   assert.deepEqual([store.screen, store.setId], ['sheet', null], 'the held move, run once answered');
 });
 
@@ -355,17 +358,17 @@ test('the cap follows the level: lowered when typed, when the level changes, whe
   const store = makeStore();
   store.createSheet({ ...FIELDS, level: 70, sync: { on: true, cap: 300 } });
   assert.deepEqual(store.setCap(500), { ok: true, lowered: { from: 500, to: 405, level: 70 } });
-  assert.equal(store.currentSheet.sync.cap, 405);
+  assert.equal(openSheetOf(store).sync.cap, 405);
   assert.deepEqual(store.setCap(500).lowered, { from: 500, to: 405, level: 70 }, 'typed again: nothing to save, the note again');
   assert.deepEqual(store.setLevel(50), { ok: true, lowered: { from: 405, to: 135, level: 50 } });
-  assert.equal(store.currentSheet.sync.cap, 135);
+  assert.equal(openSheetOf(store).sync.cap, 135);
   assert.deepEqual(store.setLevel(70), { ok: true, lowered: null }, 'never raised');
-  assert.equal(store.currentSheet.sync.cap, 135);
+  assert.equal(openSheetOf(store).sync.cap, 135);
   store.setSyncOn(false);
   store.setCap(700);
-  assert.deepEqual(store.currentSheet.sync, { on: false, cap: 700 }, 'kept while sync is off');
+  assert.deepEqual(openSheetOf(store).sync, { on: false, cap: 700 }, 'kept while sync is off');
   assert.deepEqual(store.setSyncOn(true).lowered, { from: 700, to: 405, level: 70 });
-  assert.deepEqual(store.currentSheet.sync, { on: true, cap: 405 });
+  assert.deepEqual(openSheetOf(store).sync, { on: true, cap: 405 });
   // at level 100 the ceiling is the highest real item level
   store.setLevel(100);
   assert.deepEqual(store.setCap(900).lowered, { from: 900, to: MAX_REAL, level: 100 });
@@ -373,10 +376,10 @@ test('the cap follows the level: lowered when typed, when the level changes, whe
 
 test('New sheet and Copy sheet: a cap above what the level allows is lowered', () => {
   const store = makeStore();
-  const { id } = store.createSheet({ ...FIELDS, level: 70, sync: { on: true, cap: 500 } });
-  assert.deepEqual(store.sheet(id).sync, { on: true, cap: 405 });
+  const id = idOf(store.createSheet({ ...FIELDS, level: 70, sync: { on: true, cap: 500 } }));
+  assert.deepEqual(savedSheet(store, id).sync, { on: true, cap: 405 });
   const copied = store.copySheet(id, { name: 'Lv 50', job: 'SGE', level: 50, sync: { on: true, cap: 405 } });
-  assert.deepEqual([store.sheet(copied.id).level, store.sheet(copied.id).sync], [50, { on: true, cap: 135 }]);
+  assert.deepEqual([savedSheet(store, idOf(copied)).level, savedSheet(store, idOf(copied)).sync], [50, { on: true, cap: 135 }]);
 });
 
 test('a saved sheet whose level or cap is out of range is repaired as it is read', () => {
@@ -385,7 +388,7 @@ test('a saved sheet whose level or cap is out of range is repaired as it is read
   saveSheet(sheetOf('BLU', [], { id: 's_lvl', level: 95, sync: { on: true, cap: 2000 } }), storage);
   saveSheet(sheetOf('SGE', [], { id: 's_off', level: 70, sync: { on: false, cap: 500 } }), storage);
   const store = makeStore(storage);
-  const read = id => [store.sheet(id).level, store.sheet(id).sync];
+  const read = (id: string) => [savedSheet(store, id).level, savedSheet(store, id).sync];
   assert.deepEqual(read('s_cap'), [70, { on: true, cap: 405 }]);
   assert.deepEqual(read('s_lvl'), [80, { on: true, cap: capCeiling(80) }], "Blue Mage's level cap, then that level's ceiling");
   assert.deepEqual(read('s_off'), [70, { on: false, cap: 500 }], 'kept while sync is off');
@@ -407,11 +410,11 @@ test('a change of the sheet level keeps the pinned shield of a White Mage set', 
     }
     return i === 1 ? piece('offhand', TIDAL_WAVE_BUCKLER) : { slot: row.slot };
   });
-  store.updateSet(set.id, { pieces, pinned: { pieces: [1], meal: false } });
+  store.updateSet(idOf(set), { pieces, pinned: { pieces: [1], meal: false } });
   for (const level of [50, 100]) {
     store.setLevel(level);
-    assert.equal(store.currentSheet.level, level);
-    const kept = store.currentSheet.sets[0];
-    assert.deepEqual([kept.pieces[1].gameId, kept.pinned.pieces], [TIDAL_WAVE_BUCKLER, [1]], `level ${level}`);
+    assert.equal(openSheetOf(store).level, level);
+    const kept = openSheetOf(store).sets[0];
+    assert.deepEqual([kept.pieces[1].gameId, kept.pinned?.pieces], [TIDAL_WAVE_BUCKLER, [1]], `level ${level}`);
   }
 });
