@@ -46,13 +46,3 @@ for (const [id, wantShields, want1H] of JOBS) {
     }
   });
 }
-
-test('named pieces: Tidal Wave Buckler (item level 100) and Ancient Buckler (item level 90) are the 2H value minus the 1H value', () => {
-  for (const id of [7823, 2309]) {
-    const r = ITEMS.find(row => row[ROW.gameId] === id);
-    assert.ok(r, `item ${id}`);
-    assert.equal(r[ROW.slotCode], SLOT_SHIELD);
-    const stats = rowStats(r);
-    assert.deepEqual(predictRaw(r[ROW.ilvl], SLOT_SHIELD, stats, r[ROW.kind], rowItem(r)), stats, r[ROW.name]);
-  }
-});

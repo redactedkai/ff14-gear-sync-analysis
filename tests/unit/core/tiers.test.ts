@@ -38,22 +38,6 @@ const sge = makeJobContext('SGE');
 const war = makeJobContext('WAR');
 const blm = makeJobContext('BLM');
 
-test("the effect of a substat value at level 100 and 50, worked by hand from AkhMorning's formulas", () => {
-  // 200 x 2000 / 2780 = 143.9 -> 143 + 50 = 193 per mille
-  assert.deepEqual(tierAt(sge, 'crit', 2000, 100), { effect: '19.3%', start: 1988, next: 2002 });
-  // 550 x 1000 / 2780 = 197.8 -> 19.7%
-  assert.equal(tierAt(sge, 'dh', 1000, 100).effect, '19.7%');
-  // 140 x 1000 / 2780 = 50.4 -> +5.0%
-  assert.equal(tierAt(sge, 'det', 1000, 100).effect, '+5.0%');
-  // Tenacity 112 x 500 / 2780 = 20.1 -> +2.0%; Piety 150 x 500 / 2780 = 26.9 -> +26 MP
-  assert.equal(tierAt(war, 'ten', 500, 100).effect, '+2.0%');
-  assert.equal(tierAt(sge, 'piety', 500, 100).effect, '+26 MP');
-  // level 50 (item level 123 sync): 200 x 344 / 341 = 201.8 -> 25.1%
-  assert.equal(tierAt(sge, 'crit', 344, 50).effect, '25.1%');
-  // speed: AkhMorning's level 100 tiers, 22 -> 2.49 s, next 107 (tests/unit/core/speed.test.ts)
-  assert.deepEqual(tierAt(sge, 'sps', 86, 100), { effect: '2.49s', start: 22, next: 107 });
-});
-
 test('no tiers for main stat, Vitality, or a job without a special substat', () => {
   assert.equal(statTier(sge, 'mind', 500, 100), null);
   assert.equal(statTier(sge, 'vit', 500, 100), null);

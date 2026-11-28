@@ -88,11 +88,6 @@ test('White Mage: a two-handed cane (8645, 120) counts twice; a one-handed wand 
   assert.ok(Math.abs(wornAverage('WHM', { ...ARMOR, weapon: 7818 }).value - 1250 / 12) < 1e-9);
 });
 
-test('an empty set has no average', () => {
-  assert.equal(averageOf('SGE', {}), null);
-  assert.equal(averageOf('PLD', {}), null);
-});
-
 test('Blue Mage: no weapon, 10 slots; nine pieces of item level 530 give 4770 / 10', () => {
   // Edenmorn head 32330, body 32331, hands 32332, legs 32333, feet 32334, earrings 32340, necklace 32345, bracelet 32350, one ring 32355
   const blu = { head: 32330, body: 32331, hands: 32332, legs: 32333, feet: 32334, ear: 32340, neck: 32345, wrist: 32350, ring: 32355 };

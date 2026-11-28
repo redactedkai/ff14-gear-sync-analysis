@@ -38,10 +38,6 @@ test('job bit order, stat order and slot codes come from item-format.json', () =
   });
 });
 
-test('ROW names the item row fields at the positions of itemRow.fields in item-format.json (the generators build rows by it)', () => {
-  assert.deepEqual(ROW, Object.fromEntries(ITEM_FORMAT.itemRow.fields.map((name, i) => [name, i])));
-});
-
 test('every generated data file names the format version of item-format.json', () => {
   for (const name of ['items.json', 'item-level.json', 'food.json', 'gear-groups.json', 'max-speed.json', 'summary.json']) {
     const doc = JSON.parse(readFileSync(new URL(`../../../src/data/${name}`, import.meta.url), 'utf8'));

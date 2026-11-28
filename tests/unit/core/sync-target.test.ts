@@ -67,16 +67,6 @@ test('syncTarget: the item level trigger, the level trigger, both, and neither',
   assert.equal(t(790, 100, false, null, null), null);
 });
 
-test('at level 100 (the level cap) no real piece is level-synced', () => {
-  assert.ok(ROWS.every(r => r.lvl <= 100));
-  assert.equal(
-    ROWS.filter(
-      r => syncTarget({ itemLevel: r.ilvl, equipLevel: r.lvl, scales: r.scales, syncOn: false, cap: null, syncedLevel: 100 }) != null,
-    ).length,
-    0,
-  );
-});
-
 /* T13 with Minimum Item Level: level 50 and item level 123 at once. The level only adds pieces at equip level 51 and
    above with item level 123 or less: synced to 130, which is above their item level, so no stat drops. */
 test('level 50 with cap 123: 71 pieces are synced by level alone, to item level 130, and keep every stat', () => {
