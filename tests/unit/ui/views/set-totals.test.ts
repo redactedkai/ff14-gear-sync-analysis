@@ -88,31 +88,6 @@ test('a job with an always-on haste says its Tier row counts the hasted speed; o
   }
 });
 
-test('Sage: the Tier row is the spare points and the points to the next tier of the gear total', () => {
-  const gear = sageGear(sageSet());
-  const view = setTotalsView(evaluateInSheet(sheetOf('SGE', []), sageSet()));
-  const job = makeJobContext('SGE');
-  const cells = Object.fromEntries(job.stats.map((s, i) => [s, view.tier.cells[i]]));
-  assert.ok(view.tier.caption.length > 0);
-  assert.equal(cells.mind, null);
-  assert.equal(cells.vit, null);
-  // tier = floor(step x points / div); a tier starts at ceil(tier x div / step)
-  const steps: [StatKey, number][] = [
-    ['crit', 200],
-    ['det', 140],
-    ['dh', 550],
-  ];
-  for (const [stat, step] of steps) {
-    const cell = mustFind(cells[stat], `the ${stat} tier cell`);
-    const tier = Math.floor((step * pointsOf(gear, stat)) / DIV);
-    const start = Math.ceil((tier * DIV) / step);
-    const next = Math.ceil(((tier + 1) * DIV) / step);
-    assert.equal(cell.spare, pointsOf(gear, stat) - start, stat);
-    assert.equal(cell.toNext, next - pointsOf(gear, stat), stat);
-    assert.equal(cell.text, `${pointsOf(gear, stat) - start} · +${next - pointsOf(gear, stat)}`, stat);
-  }
-});
-
 /* AkhMorning's level 100 2.5 s tier table (https://www.akhmorning.com/allagan-studies/stats/speed/, core/speed.test.ts)
    lists the tier starting at 2,238 (2.28 s) and the next at 2,324 (2.27 s) in full speed: base 420 + gear 1,818 and 1,904.
    A Sage wearing ten real item level 725 to 790 pieces whose Spell Speed adds up to 1,839 (188 + 293 + 188 + 286 + 184

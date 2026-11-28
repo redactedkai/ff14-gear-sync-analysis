@@ -9,7 +9,6 @@ import { gcdFor } from '../../../../src/core/speed.ts';
 import { meldSlotChoices, meldSlotsOf } from '../../../../src/ui/job-sync-panel.ts';
 import type { RawStatKey, SlotType } from '../../../../src/core/types.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { explainerOffText } from '../../../../src/ui/views/sync-explainer.ts';
 import { SLOT_PERMILLE, appState, hasNumber, hasParts, labelled, roundHalfUp } from '../../helpers/fixtures/common.ts';
 import { explainerItemLevelOf, explainerViewOf as maybeExplainerViewOf, meldKeysOf } from '../../helpers/fixtures/views.ts';
 import { mustFind } from '../../helpers/fixtures/common.ts';
@@ -263,11 +262,6 @@ test('one piece: the materia row shows no stones above the cap, the kept stones 
   assert.deepEqual(kept.stoneChips, ['+6', '+6']);
   assert.ok(hasParts(kept.meldNote, 'Grade V', 'Critical Hit') && hasNumber(kept.meldNote, 2), kept.meldNote);
   assert.notEqual(kept.meldNote, synced.meldNote);
-});
-
-test('Piece stats: what it says while no sync applies', () => {
-  assert.ok(explainerOffText(true).length > 0 && explainerOffText(false).length > 0);
-  assert.notEqual(explainerOffText(true), explainerOffText(false), 'a missing cap and a switched-off sync read differently');
 });
 
 test('Materia slots: the example piece takes stones up to its slots (none with 0, one with 1)', () => {

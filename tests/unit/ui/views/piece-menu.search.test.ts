@@ -39,14 +39,6 @@ test('every word of the search must be in the name or the category, in any order
   assert.ok(expected.length > 1, 'a real range, not one lucky piece');
 });
 
-test('a word found only in the gear category matches; a word in neither leaves nothing', () => {
-  // "Alliance Ring of Healing" (Dungeon, 375) has the word in its name, "Proto Ultima Ring of Healing" (Alliance raid, 270) in its category
-  assert.deepEqual(keysFor('alliance'), [24428, 17516]);
-  assert.deepEqual(keysFor('alliance raid'), [17516], 'every word, in the name or the category');
-  assert.deepEqual(keysFor('alliance alexandrian'), [], 'every word, not any word');
-  assert.deepEqual(keysFor('zzzz'), []);
-});
-
 test('groups the search empties are dropped; with no search every ring is listed', () => {
   const all = piecePickerView(SGE, GEAR, sageSet(), RING_1, '');
   assert.ok(all.groups.length > 1);

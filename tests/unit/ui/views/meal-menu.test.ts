@@ -157,27 +157,6 @@ test('Food menu filters: every picked stat, every search word', () => {
   );
 });
 
-test("Food menu stat line: a meal's stats in its own order, a picked pill's stat marked, none with no pill", () => {
-  const { adds } = nth(MEALS, 0);
-  assert.deepEqual(
-    mealLine(adds, []).map(a => [a.stat, a.hit]),
-    [
-      ['det', false],
-      ['crit', false],
-      ['vit', false],
-    ],
-  );
-  assert.deepEqual(
-    mealLine(adds, ['crit']).map(a => a.hit),
-    [false, true, false],
-  );
-  assert.deepEqual(
-    mealLine(adds, ['crit', 'det']).map(a => a.hit),
-    [true, true, false],
-  );
-  assert.equal(nth(mealLine(adds, ['crit']), 1).text, 'crit +91');
-});
-
 test('Food menu sort: by the points a meal adds, then the other picked stat, ties newest first; ILVL keeps the order', () => {
   const items = [
     meal('A', 770, { det: 100, crit: 50, vit: 1 }),

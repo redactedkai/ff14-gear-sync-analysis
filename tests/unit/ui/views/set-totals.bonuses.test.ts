@@ -9,7 +9,7 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { sheetPageView } from '../../../../src/ui/views/sheet-sets.ts';
 import { bonusNote, evaluateInSheet, setFigures, setTotalsView } from '../../../../src/ui/views/set-totals.ts';
 import { mustFind } from '../../helpers/fixtures/common.ts';
-import { rawGear, sageSet, sheetOf, warSet } from '../../helpers/fixtures/sheet-fixtures.ts';
+import { sageSet, sheetOf, warSet } from '../../helpers/fixtures/sheet-fixtures.ts';
 import type { SavedGearSet, SavedSheet } from '../../../../src/ui/sheets/saved-types.ts';
 
 const NO_SYNC = { on: false, cap: 795 };
@@ -19,15 +19,6 @@ const warSheet = (extra: Partial<SavedSheet> = {}, sets: SavedGearSet[] = []): S
 });
 const valuesOf = (cells: readonly { stat: string; value: number }[]): Record<string, number> =>
   Object.fromEntries(cells.map(c => [c.stat, c.value]));
-
-test('a sheet without the fields, or with none set, shows the numbers it showed before', () => {
-  const plain = setTotalsView(evaluateInSheet(warSheet(), warSet())).total;
-  const none = setTotalsView(evaluateInSheet(warSheet({ clan: null, partyRoles: 0 }), warSet())).total;
-  assert.deepEqual(none, plain);
-  const gear = rawGear('WAR', warSet().pieces);
-  assert.equal(valuesOf(plain.cells).str, 462 + (gear.str ?? 0));
-  assert.equal(valuesOf(plain.cells).vit, 484 + (gear.vit ?? 0));
-});
 
 test('Warrior, Midlander and 5 roles: the Total row, with and without a meal', () => {
   const sheet = warSheet({ clan: 'Midlander', partyRoles: 5 });

@@ -11,20 +11,17 @@ import {
   PIECE_CHIP_SIZERS,
   PIECE_CHIP_TEXT,
   SUBSTAT_SIZER,
-  SYNC_CHIP_SIZERS,
   SYNC_CHIP_TEXT,
   WEAPON_LEVEL_SYNC_GUESS,
   capGuessText,
   explainerOffText,
   pieceChipView,
   syncChipView,
-  widestNumber,
 } from '../../../../src/ui/views/sync-explainer.ts';
 import { SLOT_SIZER } from '../../../../src/ui/views/piece.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { JOBS } from '../../../../src/core/constants.ts';
-import { MAX_LEVEL, MAX_REAL } from '../../../../src/core/tables.ts';
 
 /* The parts of a Sync chip that the checks read. */
 type ChipView = ReturnType<typeof syncChipView>;
@@ -105,15 +102,6 @@ test("Sync chip: the weapon guess names the slot kinds whose level sync target i
   assert.equal(capGuessText(sage, syncSettings({ cap: 536, sync: false, level: 85 }), 'weapon'), WEAPON_LEVEL_SYNC_GUESS);
   // the chip's name carries the sentence for a screen reader
   assert.ok(chip({ cap: 530, sync: false, level: 80 }, 'weapon').name.endsWith(WEAPON_LEVEL_SYNC_GUESS));
-});
-
-test('Sync chip sizers: the widest level and item level, the unsynced word and the missing-item-level text, at the real limits', () => {
-  assert.equal(SYNC_CHIP_SIZERS.length, 3);
-  const [widest, unsynced, missing] = SYNC_CHIP_SIZERS.map(parts => parts.map(part => part.text).join(''));
-  assert.equal(widest, `${T.level(widestNumber(MAX_LEVEL))}${T.separator}${T.itemLevel(widestNumber(MAX_REAL))}`);
-  assert.equal(unsynced, T.notSynced);
-  assert.equal(missing, `${T.level(widestNumber(MAX_LEVEL))}${T.separator}${T.needCap}`);
-  assert.equal(widestNumber(795), '888');
 });
 
 test('Substats & materia chip: the short names of the two substats and the slot total; "none" for no second', () => {

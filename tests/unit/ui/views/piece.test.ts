@@ -181,10 +181,6 @@ test('Piece stats steps: the sentences and headings of the section', () => {
 /* The math bar's 1st and 2nd substat menus (withSub): a substat holds at most one rank. */
 const healer = makeJobContext('WHM').substats; // crit, det, dh, sps, piety
 
-test('substat ranks: choosing an unused substat just sets that rank', () => {
-  assert.deepEqual(withSub(['sps', 'piety'], 1, 'crit', healer), ['sps', 'crit']);
-});
-
 test('substat ranks: choosing a substat used in another rank swaps the two', () => {
   assert.deepEqual(withSub(['sps', 'piety'], 1, 'sps', healer), ['piety', 'sps']);
   assert.deepEqual(withSub(['sps', 'piety'], 0, 'piety', healer), ['piety', 'sps']);

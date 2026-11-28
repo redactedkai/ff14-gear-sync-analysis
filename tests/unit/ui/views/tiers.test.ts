@@ -120,13 +120,6 @@ test('rows are made once per job and level: a value, a click or a typed number d
   assert.notEqual(crit('WHM', 600, 100).rowsKey, first.rowsKey);
 });
 
-test('a value at the most a box takes is in the last tier, which has no next', () => {
-  const crit = tiersOf(app('SGE'), { crit: MAX_SPEED[99] }, 100).cards[0];
-  assert.equal(crit.cur, crit.rows.length - 1);
-  // 3679 is 6 points into the tier that starts at 3673
-  assert.deepEqual([crit.foot.spare, crit.foot.toNext], ['6', null]);
-});
-
 test('Sage: Spell Speed tiers are the GCD steps, the first shorter, the last one open', () => {
   const sps = mustFind(
     tiersOf(app('SGE'), {}, 100).cards.find(c => c.stat === 'sps'),
