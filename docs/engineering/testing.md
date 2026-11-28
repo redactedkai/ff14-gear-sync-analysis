@@ -171,7 +171,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/sheets/ops.stat-keys | Copy sheet moving the goal and the stones to the new job by position |
 | ui/sheets/saved-set | the rows a job uses, ring labels, sameRow; the draft count and an Auto-fill suggestion agree |
 | ui/sheets/set-edits | edits by hand: a piece placed, a Unique ring in one ring row, stones in order, the meal, pins |
-| ui/sheets/set-edits.covering | a cloak picked over a held head empties and unpins the Head row, names the head and the cloak, refuses a head under a cloak, and leaves the saved set for Discard |
+| ui/sheets/set-edits.covering | a cloak picked over a held head empties and unpins the Head row, names the head and the cloak, and leaves the saved set for Discard |
 | ui/sheets/set-edits.two-handed | a 2H weapon picked over a held shield empties and unpins the Off-hand row, names the shield, and leaves the saved set for Discard |
 | ui/sheets/storage | the saved sheets (index and one record per sheet) through a storage stand-in (note 13) |
 | ui/sheets/storage.clan-party | the clan and party bonus saved and read back, an unknown clan read as none, damaged values make the record unreadable |

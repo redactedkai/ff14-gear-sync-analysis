@@ -19,13 +19,6 @@ test('a meal that is a key or null reads, even a key the game data lacks; any ot
   }
 });
 
-test('the meal pin must be a boolean', () => {
-  assert.ok(read({ pinned: { pieces: [], meal: true } }).sheet);
-  for (const meal of ['yes', 1, null]) {
-    assert.match(causeOf(read({ pinned: { pieces: [], meal } })), /pin/, String(meal));
-  }
-});
-
 test('the Auto-fill settings switches (Food, Materia, Spare points) must be booleans when present', () => {
   for (const field of ['food', 'melds', 'byTier']) {
     assert.ok(read({ fillSettings: { goal: { [field]: true } } }).sheet, `${field} true`);

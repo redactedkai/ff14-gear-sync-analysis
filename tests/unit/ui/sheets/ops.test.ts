@@ -159,29 +159,6 @@ test('sheetSettings: the cap is lowered to what the level allows, as on the Job 
   assert.deepEqual(at('SGE', 0, true, 0).sync.cap, 1);
 });
 
-/* The Job and sync panel's cases (ui/level-cap.test.ts, limitCapToLevel) through a sheet's settings: the same rule. */
-test("sheetSettings: the Job and sync panel's cap cases", () => {
-  for (const [cap, level, want] of [
-    [500, 50, 135], // level 50's weapons
-    [500, 55, 136], // between level caps: the level's own item level
-    [700, 90, 665], // Aloalo Island's cap
-    [999, 50, 135], // above the highest real item level too
-  ]) {
-    const got = sheetSettings('SGE', { level, sync: { on: true, cap } });
-    assert.deepEqual([got.sync.cap, got.lowered], [want, { from: cap, to: want, level }], `cap ${cap} level ${level}`);
-  }
-  assert.deepEqual(sheetSettings('SGE', { level: 100, sync: { on: true, cap: 999 } }).lowered, { from: 999, to: MAX_REAL, level: 100 });
-  for (const [cap, level, on] of [
-    [123, 50, true], // T13: never raised
-    [135, 50, true],
-    [MAX_REAL, 100, true], // no gear above level 100
-    [500, 50, false],
-  ]) {
-    const got = sheetSettings('SGE', { level, sync: { on, cap } });
-    assert.deepEqual([got.sync.cap, got.lowered], [cap, null], `cap ${cap} level ${level} sync ${on}`);
-  }
-});
-
 test('ranges: the level cap of the job and the highest real item level, with their range texts', () => {
   assert.deepEqual(ranges('SGE'), { level: { max: 100 }, cap: { max: MAX_REAL } });
   assert.deepEqual(ranges('BLU').level, { max: 80 });

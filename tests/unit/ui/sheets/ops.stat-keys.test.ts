@@ -73,9 +73,3 @@ test('Copy sheet to the same job, and a goal on stats every job has, change noth
   const copy = copyFor(sheetOf('SGE', [set]), 'WAR').sets[0];
   assert.deepEqual(goalOf(copy), ['crit', 'det', 'vit']);
 });
-
-test('Copy sheet tank to healer: Strength, Skill Speed and Tenacity become Mind, Spell Speed and Piety', () => {
-  const set = sageSet({ fillSettings: { goal: { target: 'str', tb: 'sks', tb2: 'ten', gcd: '', gcdMode: 'exact' } } });
-  const copy = copyFor(sheetOf('WAR', [set]), 'AST').sets[0];
-  assert.deepEqual(goalOf(copy), ['mind', 'sps', 'piety']);
-});

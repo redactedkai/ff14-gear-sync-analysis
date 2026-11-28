@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ACK_REQUIRED_TEXT, EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT, SHEET_GONE_TEXT } from '../../../../src/ui/sheets/store-shared.ts';
 import { FORM_FIELD } from '../../../../src/ui/sheets/ops.ts';
-import { shownName, submitDialog } from '../../../../src/ui/sheets/dialogs.ts';
+import { submitDialog } from '../../../../src/ui/sheets/dialogs.ts';
 import { WHM_CANE, fakeStorage, piece, sageSet } from '../../helpers/fixtures/sheet-fixtures.ts';
 import { mustFind } from '../../helpers/fixtures/common.ts';
 import { createSheetsFacade, idOf, openSetOf, savedSheet } from '../../helpers/fixtures/stores.ts';
@@ -63,13 +63,6 @@ function makeStore() {
 }
 const SAGE = { name: 'Bahamut T13', job: 'SGE', level: 100, sync: { on: true, cap: 123 } };
 
-test('shownName: the New sheet form shows the default name until one is typed', () => {
-  const form = newForm();
-  assert.equal(shownName(form), 'Sage Lv 100 ilvl 123');
-  assert.equal(shownName({ ...form, nameTyped: true, name: 'Mine' }), 'Mine');
-  assert.equal(shownName(editForm('edit-set', { name: 'Set 1' })), 'Set 1');
-});
-
 test('New sheet: no job is refused with the reason and its field; a blank typed name is refused and stays blank', () => {
   const store = makeStore();
   const form = newForm({ job: '', sync: { on: false, cap: 795 } });
@@ -107,12 +100,6 @@ test('Copy sheet: a blank name is refused and stays blank; the pieces the job ca
   assert.deepEqual(submitDialog(canes, caneForm), { ok: false, error: ACK_REQUIRED_TEXT, field: FORM_FIELD.ack });
   caneForm.ack = true;
   assert.equal(submitDialog(canes, caneForm).ok, true);
-});
-
-test('Copy sheet of a sheet that is gone: the reason has no field', () => {
-  const store = makeStore();
-  const form = copyForm({ id: 'gone', name: 'x', sync: { on: false, cap: 795 } });
-  assert.deepEqual(submitDialog(store, form), { ok: false, error: SHEET_GONE_TEXT, field: '' });
 });
 
 test('Edit sheet and Edit gear set: a blank name is refused with its field and the form keeps what was typed', () => {

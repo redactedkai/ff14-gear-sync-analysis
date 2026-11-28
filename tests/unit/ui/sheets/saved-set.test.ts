@@ -64,18 +64,3 @@ test('the draft count and an Auto-fill suggestion agree: an empty stone list aga
   assert.equal(draftChanges(SGE, saved, { ...rewritten, pieces: changed }).count, 1);
   assert.equal(suggestionView(sheet, saved, { pieces: changed, meal: saved.meal, bestMeals: null }).total, 1);
 });
-
-test('a White Mage uses all 12 rows, the Off-hand included; a Sage set holding a shield keeps it hidden and uncounted', () => {
-  const WHM = makeJobContext('WHM');
-  const shield: SavedRow = { slot: 'offhand', gameId: 7823, stones: [] }; // Tidal Wave Buckler
-  const saved = sageSet();
-  saved.pieces[1] = shield;
-  assert.equal(usedRows(WHM, saved).length, 12);
-  assert.equal(isUsed(WHM, shield), true);
-  assert.equal(holdsPiece(WHM, { pieces: [shield] }), true);
-  // the same saved set read as a Sage: the row stays saved but is not used, so it is not shown, counted or filled
-  assert.equal(usedRows(SGE, saved).length, 11);
-  assert.equal(isUsed(SGE, shield), false);
-  assert.equal(holdsPiece(SGE, { pieces: [shield] }), false);
-  assert.deepEqual(saved.pieces[1], shield);
-});

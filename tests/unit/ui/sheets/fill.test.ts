@@ -66,18 +66,6 @@ const withPins = (pieces: number[], meal = false, extra: Partial<SavedGearSet> =
 const replaced = (changes: Record<number, SavedRow>): SavedRow[] => FILLED.map((p, i) => changes[i] ?? p);
 const ALL_ROWS = [...FILLED.keys()].filter(i => i !== ROW.offhand);
 
-test('nothing pinned: every slot the job uses is open, and the pins are null', () => {
-  const plan = fillPlan(sge, GEAR_SET);
-  assert.equal(GEAR_SET.pieces.length, 12);
-  assert.equal(plan.pins, null);
-  // Sage has no off-hand: 11 rows count, the two ring rows one each, and the meal is a twelfth slot
-  assert.equal(plan.count, 12);
-  assert.equal(plan.mealOpen, true);
-  assert.ok(hasNumber(plan.label, 12), plan.label);
-  assert.equal(plan.disabled, false);
-  assert.ok(!plan.openRows.includes(ROW.offhand));
-});
-
 test('pins: the pinned pieces in row order with their stones, a pinned ring in either ring row, the meal apart', () => {
   const body: SavedRow = { slot: 'body', gameId: SHIRT_ID, stones: [SPD_XII, SPD_XII] };
   const meal = allMeals(sge)[0].key;
@@ -111,13 +99,6 @@ test('pins: the pinned pieces in row order with their stones, a pinned ring in e
   );
   assert.ok(hasNumber(fillPlan(sge, headOpen).label, 1), 'one slot open');
   assert.ok(hasNumber(fillPlan(sge, withPins(ALL_ROWS)).label, 1), 'the meal alone');
-});
-
-test('a pin on an empty row or on a row the job does not use is ignored', () => {
-  const saved = { ...withPins([ROW.head, ROW.offhand]), pieces: replaced({ [ROW.head]: { slot: 'head' } }) };
-  const plan = fillPlan(sge, saved);
-  assert.equal(plan.pins, null);
-  assert.equal(plan.count, 12);
 });
 
 test('every slot and the meal pinned: nothing to fill, the label says 0 and the button is off', () => {

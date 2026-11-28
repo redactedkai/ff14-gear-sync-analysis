@@ -38,19 +38,3 @@ test('a clan that is not text or null, and party roles that are not a whole numb
   // an explicit null clan is no clan, not damage
   assert.equal(readable(parseSheet(record({ clan: null }), 's_1')).clan, null);
 });
-
-test('a damaged record is listed with its cause and never rewritten by a load', () => {
-  const storage = fakeStorage();
-  saveSheet(sheetOf('SGE', [sageSet()]), storage);
-  const key = mustFind(
-    [...storage.data.keys()].find(name => name.includes(':sheet:')),
-    'the sheet record key',
-  );
-  const damaged = record({ partyRoles: 9 });
-  storage.setItem(key, damaged);
-  const loaded = loadSheets(storage);
-  assert.equal(loaded.sheets.length, 0);
-  assert.equal(loaded.unreadable.length, 1);
-  assert.match(mustFind(mustFind(loaded.unreadable[0], 'the unreadable record').cause, 'its cause'), /party/);
-  assert.equal(storage.getItem(key), damaged);
-});

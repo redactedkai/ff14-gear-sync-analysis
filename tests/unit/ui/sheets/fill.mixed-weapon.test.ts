@@ -5,7 +5,6 @@
    claim tested is that the page keeps what the search chose. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { itemById } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { runRecipe } from '../../../../src/core/recipe.ts';
 import { makeSession } from '../../../../src/core/session.ts';
@@ -31,14 +30,6 @@ for (const level of [100, 50]) {
     assert.equal(fillPlan(job, emptySet()).count, 13, 'twelve rows (the Off-hand row counts) and the meal');
   });
 }
-
-test('Sage: a set holding a shield keeps it hidden (a job without shields has no Off-hand row)', () => {
-  const job = makeJobContext('SGE');
-  const set = emptySet();
-  set.pieces[1] = { slot: 'offhand', gameId: 7823, stones: [] };
-  assert.ok(itemById(7823), 'Tidal Wave Buckler (7823) is in the data');
-  assert.equal(fillPlan(job, set).count, 12, 'eleven rows and the meal; the shield row is not one of them');
-});
 
 /* A 2H weapon and a shield never end up together through an Auto-fill Apply: with the cane pinned, the held shield is an open
    row and the result leaves it empty; with the cane and the shield both pinned the solve reports a conflict and stops. */

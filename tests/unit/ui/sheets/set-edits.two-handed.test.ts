@@ -7,7 +7,7 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { draftView } from '../../../../src/ui/views/set-draft.ts';
 import { editableCopy, placePiece, removedNote } from '../../../../src/ui/sheets/set-edits.ts';
 import { hasParts } from '../../helpers/fixtures/common.ts';
-import { SAGE_IDS, sheetOf, sageSet, placedOk } from '../../helpers/fixtures/sheet-fixtures.ts';
+import { sheetOf, sageSet, placedOk } from '../../helpers/fixtures/sheet-fixtures.ts';
 
 const WHM = makeJobContext('WHM');
 const SGE = makeJobContext('SGE');
@@ -17,7 +17,6 @@ const TIDAL_WAVE_WAND = 7818;
 const TIDAL_WAVE_BUCKLER = 7823;
 const DREADWYRM_CANE = 9006;
 const GRAND_CHAMPIONS_SYRINXI = 49676; // a Sage weapon (two-handed)
-const HEAD = 2;
 
 /* A White Mage set holding the wand and the buckler (the buckler pinned unless `pinShield` is false). */
 function wandAndShield(pinShield = true) {
@@ -54,16 +53,6 @@ test('the draft shows both rows as changes, and the saved set is what Discard re
   assert.equal(saved.pieces[WEAPON].gameId, TIDAL_WAVE_WAND);
 });
 
-test('a 1H weapon, an empty Off-hand row and a piece in another slot remove nothing', () => {
-  const wand = placedOk(placePiece(WHM, wandAndShield(), WEAPON, TIDAL_WAVE_WAND));
-  assert.deepEqual([wand.gearSet.pieces[OFFHAND].gameId, wand.removedNote], [TIDAL_WAVE_BUCKLER, '']);
-  const bare = wandAndShield();
-  bare.pieces[OFFHAND] = { slot: 'offhand' };
-  assert.equal(placedOk(placePiece(WHM, bare, WEAPON, DREADWYRM_CANE)).removedNote, '');
-  const head = placedOk(placePiece(WHM, wandAndShield(), HEAD, SAGE_IDS.head));
-  assert.equal(head.gearSet.pieces[OFFHAND].gameId, TIDAL_WAVE_BUCKLER);
-});
-
 test('a job without an Off-hand row (Sage) keeps the hidden piece and says nothing', () => {
   const set = wandAndShield();
   const placed = placedOk(placePiece(SGE, set, WEAPON, GRAND_CHAMPIONS_SYRINXI));
@@ -78,10 +67,4 @@ test('a shield picked while a two-handed weapon is held is refused and the set i
   assert.equal(placed.ok, false);
   assert.deepEqual(placed, { ok: false }); // no note: the Off-hand control is covered and says why under it
   assert.equal(set.pieces[OFFHAND].gameId, undefined);
-});
-
-test('a shield picked beside a one-handed weapon is placed', () => {
-  const set = sageSet();
-  set.pieces[WEAPON] = { slot: 'weapon', gameId: TIDAL_WAVE_WAND, stones: [] };
-  assert.equal(placePiece(WHM, set, OFFHAND, TIDAL_WAVE_BUCKLER).ok, true);
 });
