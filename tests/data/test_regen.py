@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import unittest
+from pathlib import Path
 from subprocess import CompletedProcess
 
 import common  # noqa: F401  (puts scripts/data on sys.path, so this comes before the generator imports)
@@ -21,22 +22,31 @@ class RegenTest(unittest.TestCase):
     def steps(self, edited: bool = False) -> list[tuple[str, list[str]]]:
         return regen.build_steps(SOURCE, PATCH_SOURCE, edited, 'report.json')
 
-    def test_steps_run_in_the_documented_order(self) -> None:
-        labels: list[str] = [label for label, _ in self.steps()]
-        self.assertEqual(
-            labels,
-            [
-                'Generating the item level table',
-                'Generating the item database',
-                'Generating the gear groups',
-                'Generating the food table',
-                'Generating the job icons',
-                'Generating the patch table',
-                'Generating the most speed per level',
-                'Comparing the counts with the last run',
-                'Building the page',
-            ],
-        )
+    def position(self, script: str) -> int:
+        """Where the step that runs `script` (a file name) is in the list."""
+        found: list[int] = [i for i, (_, command) in enumerate(self.steps()) if any(Path(part).name == script for part in command)]
+        self.assertEqual(len(found), 1, script)
+        return found[0]
+
+    def test_a_step_runs_after_the_steps_that_make_its_input(self) -> None:
+        """Only the dependencies are fixed: the gear groups read items.json, the speed table reads the item and food
+        tables, the summary reads the item generator's report, and the page is built from all of them, last."""
+        self.assertLess(self.position('gen_items.py'), self.position('gen_gear_groups.py'))
+        self.assertLess(self.position('gen_items.py'), self.position('gen_max_speed.ts'))
+        self.assertLess(self.position('gen_food.py'), self.position('gen_max_speed.ts'))
+        self.assertLess(self.position('gen_items.py'), self.position('summary.py'))
+        last: int = len(self.steps()) - 1
+        self.assertEqual(self.position('build.ts'), last)
+        for script in (
+            'gen_item_level.py',
+            'gen_gear_groups.py',
+            'gen_food.py',
+            'gen_job_icons.py',
+            'gen_patches.py',
+            'gen_max_speed.ts',
+            'summary.py',
+        ):
+            self.assertLess(self.position(script), last, script)
 
     def test_python_steps_use_utf8_and_the_node_steps_do_not(self) -> None:
         for label, command in self.steps():
